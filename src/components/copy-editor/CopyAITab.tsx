@@ -4,15 +4,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sparkles, Wand2, History, Loader2 } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session } from '@/types/copy-editor';
 import { AIGeneratedPreviewModal } from './AIGeneratedPreviewModal';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type Etapa = 1 | 2 | 3;
 
@@ -42,9 +47,14 @@ const PREFERENCIAS = [
 ];
 
 export const CopyAITab = () => {
-  const { copyType } = useCopyEditor();
+  const { copyId, copyType } = useCopyEditor();
   const { activeProject } = useProject();
+  const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const { toast } = useToast();
+
+  // Controle de abas
+  const [activeTab, setActiveTab] = useState('criar');
 
   // Etapa 1: Segmentação e Oferta
   const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
@@ -65,9 +75,45 @@ export const CopyAITab = () => {
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Histórico
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   // Carregar dados do projeto
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
+
+  // Carregar histórico quando mudar para a aba histórico
+  useEffect(() => {
+    if (activeTab === 'historico' && copyId) {
+      loadHistory();
+    }
+  }, [activeTab, copyId]);
+
+  const loadHistory = async () => {
+    if (!copyId) return;
+    
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('ai_generation_history')
+        .select('*')
+        .eq('copy_id', copyId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setHistory(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      toast({
+        title: 'Erro ao carregar histórico',
+        description: 'Tente novamente mais tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
 
   const handleGenerate = async () => {
@@ -138,6 +184,24 @@ export const CopyAITab = () => {
       if (data?.sessions && data.sessions.length > 0) {
         setGeneratedSessions(data.sessions);
         setShowPreviewModal(true);
+
+        // Salvar no histórico
+        if (copyId && activeWorkspace && user) {
+          const historyEntry = {
+            copy_id: copyId,
+            workspace_id: activeWorkspace.id,
+            created_by: user.id,
+            copy_type: copyType || 'outro',
+            project_identity: projectIdentity as any,
+            audience_segment: selectedAudience as any,
+            offer: selectedOffer as any,
+            parameters: { objetivos, estilos, tamanho, preferencias } as any,
+            prompt,
+            sessions: data.sessions as any,
+          };
+          
+          await supabase.from('ai_generation_history').insert(historyEntry);
+        }
       } else {
         toast({
           title: 'Nenhum conteúdo gerado',
@@ -172,10 +236,23 @@ export const CopyAITab = () => {
     setPrompt('');
     setEtapa(1);
     setGeneratedSessions([]);
+    
+    // Recarregar histórico se estiver na aba de histórico
+    if (activeTab === 'historico') {
+      loadHistory();
+    }
   };
 
-  // Etapa 1: Segmentação e Oferta
-  if (etapa === 1) {
+  const handleHistoryItemClick = (item: any) => {
+    setGeneratedSessions(item.sessions);
+    setShowPreviewModal(true);
+  };
+
+  // Renderizar conteúdo da aba Criar
+
+  const renderCriarTab = () => {
+    // Etapa 1: Segmentação e Oferta
+    if (etapa === 1) {
     return (
       <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
         <div className="space-y-6">
@@ -328,7 +405,6 @@ export const CopyAITab = () => {
   }
 
   // Etapa 3: Detalhes
-
   return (
     <>
       <div className="space-y-4">
@@ -362,6 +438,72 @@ export const CopyAITab = () => {
           )}
         </Button>
       </div>
+    </>
+  );
+};
+
+  return (
+    <>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="criar" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="otimizar" className="gap-2">
+            <Wand2 className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="gap-2">
+            <History className="h-4 w-4" />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="criar" className="flex-1 mt-0">
+          {renderCriarTab()}
+        </TabsContent>
+
+        <TabsContent value="otimizar" className="flex-1 mt-0">
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>Em breve: Otimizar conteúdo existente</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="historico" className="flex-1 mt-0">
+          <ScrollArea className="h-[calc(100vh-12rem)]">
+            {loadingHistory ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : history.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <p>Nenhuma geração anterior</p>
+              </div>
+            ) : (
+              <div className="space-y-3 p-4">
+                {history.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleHistoryItemClick(item)}
+                    className="w-full text-left p-4 rounded-lg border border-border hover:bg-accent transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{item.prompt}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDistanceToNow(new Date(item.created_at), { 
+                            addSuffix: true,
+                            locale: ptBR 
+                          })}
+                        </p>
+                      </div>
+                      <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
 
       <AIGeneratedPreviewModal
         open={showPreviewModal}

@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_generation_history: {
+        Row: {
+          audience_segment: Json | null
+          copy_id: string
+          copy_type: string | null
+          created_at: string
+          created_by: string
+          id: string
+          offer: Json | null
+          parameters: Json | null
+          project_identity: Json | null
+          prompt: string
+          sessions: Json
+          workspace_id: string
+        }
+        Insert: {
+          audience_segment?: Json | null
+          copy_id: string
+          copy_type?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          offer?: Json | null
+          parameters?: Json | null
+          project_identity?: Json | null
+          prompt: string
+          sessions: Json
+          workspace_id: string
+        }
+        Update: {
+          audience_segment?: Json | null
+          copy_id?: string
+          copy_type?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          offer?: Json | null
+          parameters?: Json | null
+          project_identity?: Json | null
+          prompt?: string
+          sessions?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_workspace"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       copies: {
         Row: {
           copy_count: number | null
