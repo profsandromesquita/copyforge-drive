@@ -37,7 +37,7 @@ export const WorkspaceUsers = () => {
         id,
         user_id,
         role,
-        profile:profiles (
+        profile:profiles!workspace_members_user_id_fkey (
           name,
           email
         )
