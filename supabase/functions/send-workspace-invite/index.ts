@@ -99,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const { error } = await resend.emails.send({
-      from: "CopyDrive <onboarding@resend.dev>",
+      from: "CopyDrive <nao-responda@copydrive.ai>",
       to: [email],
       subject: `Convite para workspace: ${workspace_name}`,
       html: emailHtml,
