@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          project_id: string | null
           sessions: Json
           title: string
           updated_at: string
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          project_id?: string | null
           sessions?: Json
           title?: string
           updated_at?: string
@@ -37,6 +39,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          project_id?: string | null
           sessions?: Json
           title?: string
           updated_at?: string
@@ -48,6 +51,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -85,6 +95,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          audience_segments: Json | null
+          brand_name: string | null
+          brand_personality: string[] | null
+          central_purpose: string | null
+          created_at: string | null
+          created_by: string
+          id: string
+          keywords: string[] | null
+          name: string
+          offers: Json | null
+          sector: string | null
+          updated_at: string | null
+          voice_tones: string[] | null
+          workspace_id: string
+        }
+        Insert: {
+          audience_segments?: Json | null
+          brand_name?: string | null
+          brand_personality?: string[] | null
+          central_purpose?: string | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          keywords?: string[] | null
+          name: string
+          offers?: Json | null
+          sector?: string | null
+          updated_at?: string | null
+          voice_tones?: string[] | null
+          workspace_id: string
+        }
+        Update: {
+          audience_segments?: Json | null
+          brand_name?: string | null
+          brand_personality?: string[] | null
+          central_purpose?: string | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          keywords?: string[] | null
+          name?: string
+          offers?: Json | null
+          sector?: string | null
+          updated_at?: string | null
+          voice_tones?: string[] | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
