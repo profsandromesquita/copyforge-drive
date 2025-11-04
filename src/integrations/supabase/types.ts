@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          folder_id: string | null
           id: string
           project_id: string | null
           sessions: Json
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          folder_id?: string | null
           id?: string
           project_id?: string | null
           sessions?: Json
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          folder_id?: string | null
           id?: string
           project_id?: string | null
           sessions?: Json
@@ -54,6 +57,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "copies_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "copies_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -62,6 +72,61 @@ export type Database = {
           },
           {
             foreignKeyName: "copies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      folders: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          id: string
+          name: string
+          parent_id: string | null
+          project_id: string | null
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

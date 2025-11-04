@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProjectProvider } from "@/hooks/useProject";
+import { DriveProvider } from "@/hooks/useDrive";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -27,18 +28,20 @@ const App = () => (
         <AuthProvider>
           <WorkspaceProvider>
             <ProjectProvider>
-              <Routes>
-              <Route path="/" element={<Navigate to="/auth" replace />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-              <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-              <Route path="/copy/:id" element={<ProtectedRoute><CopyEditor /></ProtectedRoute>} />
-              <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+              <DriveProvider>
+                <Routes>
+                <Route path="/" element={<Navigate to="/auth" replace />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/super-admin" element={<SuperAdmin />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+                <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
+                <Route path="/copy/:id" element={<ProtectedRoute><CopyEditor /></ProtectedRoute>} />
+                <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </DriveProvider>
             </ProjectProvider>
           </WorkspaceProvider>
         </AuthProvider>

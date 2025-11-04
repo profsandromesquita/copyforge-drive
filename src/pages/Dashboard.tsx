@@ -1,20 +1,44 @@
-import { Plus, MagnifyingGlass } from "phosphor-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Plus, MagnifyingGlass, FolderPlus } from "phosphor-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import DriveCard from "@/components/drive/DriveCard";
+import { Breadcrumbs } from "@/components/drive/Breadcrumbs";
+import { CreateFolderDialog } from "@/components/drive/CreateFolderDialog";
+import { useDrive } from "@/hooks/useDrive";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Dashboard = () => {
-  // Mock data
-  const items = [
-    { id: 1, type: "folder" as const, title: "Projeto Landing Page", subtitle: "5 itens" },
-    { id: 2, type: "copy" as const, title: "Copy Homepage - Versão 1", subtitle: "Editado há 2 horas" },
-    { id: 3, type: "funnel" as const, title: "Funil de Vendas Completo", subtitle: "3 etapas" },
-    { id: 4, type: "folder" as const, title: "Cliente XYZ", subtitle: "12 itens" },
-    { id: 5, type: "copy" as const, title: "Email de Boas-vindas", subtitle: "Editado ontem" },
-    { id: 6, type: "copy" as const, title: "Anúncio Facebook", subtitle: "Editado há 3 dias" },
-  ];
+  const navigate = useNavigate();
+  const { folders, copies, loading, navigateToFolder, createCopy } = useDrive();
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleCreateCopy = async () => {
+    const copy = await createCopy('Nova Copy');
+    if (copy) {
+      navigate(`/copy/${copy.id}`);
+    }
+  };
+
+  const filteredFolders = folders.filter(folder =>
+    folder.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCopies = copies.filter(copy =>
+    copy.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -23,7 +47,9 @@ const Dashboard = () => {
       <main className="flex-1 pb-20 lg:pb-0">
         {/* Header */}
         <div className="border-b border-border bg-background sticky top-0 z-40">
-          <div className="px-6 py-4">
+          <div className="px-6 py-4 space-y-4">
+            <Breadcrumbs />
+            
             <div className="flex items-center gap-4">
               <div className="flex-1 max-w-md relative">
                 <MagnifyingGlass 
@@ -33,33 +59,98 @@ const Dashboard = () => {
                 <Input
                   placeholder="Buscar..."
                   className="pl-10 bg-background"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button size="lg" className="gap-2">
-                <Plus size={20} weight="bold" />
-                <span className="hidden sm:inline">Novo</span>
-              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="lg" className="gap-2">
+                    <Plus size={20} weight="bold" />
+                    <span className="hidden sm:inline">Novo</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={handleCreateCopy}
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Nova Copy
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => setCreateFolderOpen(true)}
+                  >
+                    <FolderPlus size={18} className="mr-2" />
+                    Nova Pasta
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {items.map((item) => (
-              <DriveCard
-                key={item.id}
-                type={item.type}
-                title={item.title}
-                subtitle={item.subtitle}
-                onClick={() => console.log("Clicked:", item.title)}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {filteredFolders.length === 0 && filteredCopies.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum item nesta pasta'}
+                  </p>
+                  {!searchQuery && (
+                    <Button onClick={() => setCreateFolderOpen(true)}>
+                      <FolderPlus size={20} className="mr-2" />
+                      Criar Primeira Pasta
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredFolders.map((folder) => (
+                    <DriveCard
+                      key={folder.id}
+                      id={folder.id}
+                      type="folder"
+                      title={folder.name}
+                      subtitle={`Criada ${formatDistanceToNow(new Date(folder.created_at), { 
+                        addSuffix: true, 
+                        locale: ptBR 
+                      })}`}
+                      onClick={() => navigateToFolder(folder.id)}
+                    />
+                  ))}
+                  {filteredCopies.map((copy) => (
+                    <DriveCard
+                      key={copy.id}
+                      id={copy.id}
+                      type="copy"
+                      title={copy.title}
+                      subtitle={`Editada ${formatDistanceToNow(new Date(copy.updated_at), { 
+                        addSuffix: true, 
+                        locale: ptBR 
+                      })}`}
+                      onClick={() => navigate(`/copy/${copy.id}`)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
 
       <MobileMenu />
+      <CreateFolderDialog open={createFolderOpen} onOpenChange={setCreateFolderOpen} />
     </div>
   );
 };

@@ -1,0 +1,320 @@
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from './useWorkspace';
+import { useProject } from './useProject';
+import { useAuth } from './useAuth';
+import { toast } from 'sonner';
+
+interface Folder {
+  id: string;
+  workspace_id: string;
+  project_id: string | null;
+  parent_id: string | null;
+  name: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Copy {
+  id: string;
+  title: string;
+  workspace_id: string;
+  project_id: string | null;
+  folder_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DriveContextType {
+  folders: Folder[];
+  copies: Copy[];
+  currentFolder: Folder | null;
+  breadcrumbs: Folder[];
+  loading: boolean;
+  navigateToFolder: (folderId: string | null) => void;
+  createFolder: (name: string) => Promise<void>;
+  createCopy: (title: string) => Promise<Copy | null>;
+  deleteFolder: (folderId: string) => Promise<void>;
+  deleteCopy: (copyId: string) => Promise<void>;
+  renameFolder: (folderId: string, newName: string) => Promise<void>;
+  renameCopy: (copyId: string, newTitle: string) => Promise<void>;
+  refreshDrive: () => Promise<void>;
+}
+
+const DriveContext = createContext<DriveContextType | undefined>(undefined);
+
+export const DriveProvider = ({ children }: { children: ReactNode }) => {
+  const { activeWorkspace } = useWorkspace();
+  const { activeProject } = useProject();
+  const { user } = useAuth();
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [copies, setCopies] = useState<Copy[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Folder[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchDriveContent = useCallback(async (folderId: string | null = null) => {
+    if (!activeWorkspace?.id) return;
+
+    setLoading(true);
+    try {
+      // Fetch folders
+      const foldersQuery = supabase
+        .from('folders')
+        .select('*')
+        .eq('workspace_id', activeWorkspace.id)
+        .order('name');
+
+      if (folderId) {
+        foldersQuery.eq('parent_id', folderId);
+      } else {
+        foldersQuery.is('parent_id', null);
+      }
+
+      if (activeProject?.id) {
+        foldersQuery.eq('project_id', activeProject.id);
+      }
+
+      const { data: foldersData, error: foldersError } = await foldersQuery;
+      if (foldersError) throw foldersError;
+
+      // Fetch copies
+      const copiesQuery = supabase
+        .from('copies')
+        .select('*')
+        .eq('workspace_id', activeWorkspace.id)
+        .order('created_at', { ascending: false });
+
+      if (folderId) {
+        copiesQuery.eq('folder_id', folderId);
+      } else {
+        copiesQuery.is('folder_id', null);
+      }
+
+      if (activeProject?.id) {
+        copiesQuery.eq('project_id', activeProject.id);
+      }
+
+      const { data: copiesData, error: copiesError } = await copiesQuery;
+      if (copiesError) throw copiesError;
+
+      setFolders(foldersData || []);
+      setCopies(copiesData || []);
+
+      // Build breadcrumbs
+      if (folderId) {
+        const { data: folderData } = await supabase
+          .from('folders')
+          .select('*')
+          .eq('id', folderId)
+          .single();
+        
+        if (folderData) {
+          setCurrentFolder(folderData);
+          await buildBreadcrumbs(folderData);
+        }
+      } else {
+        setCurrentFolder(null);
+        setBreadcrumbs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching drive content:', error);
+      toast.error('Erro ao carregar conteúdo');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeWorkspace?.id, activeProject?.id]);
+
+  const buildBreadcrumbs = async (folder: Folder) => {
+    const crumbs: Folder[] = [folder];
+    let currentParentId = folder.parent_id;
+
+    while (currentParentId) {
+      const { data } = await supabase
+        .from('folders')
+        .select('*')
+        .eq('id', currentParentId)
+        .single();
+
+      if (data) {
+        crumbs.unshift(data);
+        currentParentId = data.parent_id;
+      } else {
+        break;
+      }
+    }
+
+    setBreadcrumbs(crumbs);
+  };
+
+  useEffect(() => {
+    fetchDriveContent(currentFolder?.id || null);
+  }, [fetchDriveContent, currentFolder?.id]);
+
+  const navigateToFolder = useCallback((folderId: string | null) => {
+    if (folderId === null) {
+      setCurrentFolder(null);
+      setBreadcrumbs([]);
+    } else {
+      fetchDriveContent(folderId);
+    }
+  }, [fetchDriveContent]);
+
+  const createFolder = useCallback(async (name: string) => {
+    if (!activeWorkspace?.id || !user?.id) {
+      toast.error('Workspace ou usuário não encontrado');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('folders')
+        .insert({
+          workspace_id: activeWorkspace.id,
+          project_id: activeProject?.id || null,
+          parent_id: currentFolder?.id || null,
+          name,
+          created_by: user.id,
+        });
+
+      if (error) throw error;
+
+      toast.success('Pasta criada com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Erro ao criar pasta');
+    }
+  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolder?.id, fetchDriveContent]);
+
+  const createCopy = useCallback(async (title: string): Promise<Copy | null> => {
+    if (!activeWorkspace?.id || !user?.id) {
+      toast.error('Workspace ou usuário não encontrado');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('copies')
+        .insert({
+          workspace_id: activeWorkspace.id,
+          project_id: activeProject?.id || null,
+          folder_id: currentFolder?.id || null,
+          title,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Copy criada com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+      return data as Copy;
+    } catch (error) {
+      console.error('Error creating copy:', error);
+      toast.error('Erro ao criar copy');
+      return null;
+    }
+  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolder?.id, fetchDriveContent]);
+
+  const deleteFolder = useCallback(async (folderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('folders')
+        .delete()
+        .eq('id', folderId);
+
+      if (error) throw error;
+
+      toast.success('Pasta excluída com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast.error('Erro ao excluir pasta');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  const deleteCopy = useCallback(async (copyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .delete()
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      toast.success('Copy excluída com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error deleting copy:', error);
+      toast.error('Erro ao excluir copy');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  const renameFolder = useCallback(async (folderId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from('folders')
+        .update({ name: newName })
+        .eq('id', folderId);
+
+      if (error) throw error;
+
+      toast.success('Pasta renomeada com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error renaming folder:', error);
+      toast.error('Erro ao renomear pasta');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  const renameCopy = useCallback(async (copyId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({ title: newTitle })
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      toast.success('Copy renomeada com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error renaming copy:', error);
+      toast.error('Erro ao renomear copy');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  const value: DriveContextType = {
+    folders,
+    copies,
+    currentFolder,
+    breadcrumbs,
+    loading,
+    navigateToFolder,
+    createFolder,
+    createCopy,
+    deleteFolder,
+    deleteCopy,
+    renameFolder,
+    renameCopy,
+    refreshDrive: () => fetchDriveContent(currentFolder?.id || null),
+  };
+
+  return (
+    <DriveContext.Provider value={value}>
+      {children}
+    </DriveContext.Provider>
+  );
+};
+
+export const useDrive = () => {
+  const context = useContext(DriveContext);
+  if (!context) {
+    throw new Error('useDrive must be used within DriveProvider');
+  }
+  return context;
+};
