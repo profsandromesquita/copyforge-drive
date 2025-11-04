@@ -116,7 +116,16 @@ export default function AcceptInvite() {
           invited_by: inviteData.invited_by,
         });
 
-      if (memberError) throw memberError;
+      // Check if error is duplicate key (user already member)
+      if (memberError && memberError.code !== '23505') {
+        // Only throw if it's not a duplicate key error
+        throw memberError;
+      }
+
+      // If user is already a member (duplicate key error), just update the invite status
+      if (memberError && memberError.code === '23505') {
+        console.log("User already member of workspace, updating invite status");
+      }
 
       // Update invite status
       const { error: updateError } = await supabase
@@ -141,6 +150,10 @@ export default function AcceptInvite() {
     } catch (error: any) {
       console.error("Error accepting invite:", error);
       toast.error(error.message || "Erro ao aceitar convite");
+      // Even on error, try to redirect to dashboard after a delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 2000);
     } finally {
       setProcessing(false);
     }
