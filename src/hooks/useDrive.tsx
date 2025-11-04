@@ -84,7 +84,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: foldersData, error: foldersError } = await foldersQuery;
       if (foldersError) throw foldersError;
 
-      // Fetch copies with creator info
+      // Fetch copies with creator info (exclude templates)
       const copiesQuery = supabase
         .from('copies')
         .select(`
@@ -92,6 +92,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
           creator:profiles!created_by(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
+        .eq('is_template', false)
         .order('created_at', { ascending: false });
 
       if (folderId) {

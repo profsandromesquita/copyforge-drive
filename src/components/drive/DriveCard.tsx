@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useDrive } from "@/hooks/useDrive";
 
 type CardType = "folder" | "copy" | "funnel";
@@ -28,6 +29,7 @@ interface DriveCardProps {
   subtitle?: string;
   creatorName?: string;
   creatorAvatar?: string | null;
+  status?: 'draft' | 'published';
   onClick?: () => void;
 }
 
@@ -37,7 +39,7 @@ const iconMap = {
   funnel: { icon: FunnelSimple, color: "text-foreground" },
 };
 
-const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, onClick }: DriveCardProps) => {
+const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, onClick }: DriveCardProps) => {
   const { icon: Icon, color } = iconMap[type];
   const { deleteFolder, deleteCopy, renameFolder, renameCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -85,9 +87,19 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, onCl
             
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
-                {title}
-              </h3>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                  {title}
+                </h3>
+                {type === 'copy' && status && (
+                  <Badge 
+                    variant={status === 'published' ? 'default' : 'secondary'}
+                    className="text-[10px] px-1.5 py-0 h-5"
+                  >
+                    {status === 'published' ? 'Publicado' : 'Rascunho'}
+                  </Badge>
+                )}
+              </div>
               {type !== 'copy' && subtitle && (
                 <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
               )}

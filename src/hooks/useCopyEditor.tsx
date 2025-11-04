@@ -9,6 +9,7 @@ interface CopyEditorContextType {
   sessions: Session[];
   selectedBlockId: string | null;
   isSaving: boolean;
+  status: 'draft' | 'published';
   
   setCopyId: (id: string) => void;
   setCopyTitle: (title: string) => void;
@@ -25,6 +26,7 @@ interface CopyEditorContextType {
   moveBlock: (blockId: string, toSessionId: string, toIndex: number) => void;
   selectBlock: (blockId: string | null) => void;
   
+  updateStatus: (newStatus: 'draft' | 'published') => Promise<void>;
   saveCopy: () => Promise<void>;
   loadCopy: (id: string) => Promise<void>;
 }
@@ -37,6 +39,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const { toast } = useToast();
 
   // Auto-save every 3 seconds
@@ -63,6 +66,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setCopyId(data.id);
       setCopyTitle(data.title);
       setSessions((data.sessions as any) || []);
+      setStatus((data.status as 'draft' | 'published') || 'draft');
     } catch (error) {
       console.error('Error loading copy:', error);
       toast({
@@ -83,6 +87,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         .update({
           title: copyTitle,
           sessions: sessions as any,
+          status,
         })
         .eq('id', copyId);
 
@@ -97,7 +102,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } finally {
       setIsSaving(false);
     }
-  }, [copyId, copyTitle, sessions, toast]);
+  }, [copyId, copyTitle, sessions, status, toast]);
 
   const addSession = useCallback(() => {
     const newSession: Session = {
@@ -227,12 +232,41 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSelectedBlockId(blockId);
   }, []);
 
+  const updateStatus = useCallback(async (newStatus: 'draft' | 'published') => {
+    if (!copyId) return;
+
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({ status: newStatus })
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      setStatus(newStatus);
+      toast({
+        title: newStatus === 'published' ? 'Copy publicada!' : 'Salvo como rascunho!',
+        description: newStatus === 'published' 
+          ? 'Sua copy está agora publicada.' 
+          : 'Sua copy foi salva como rascunho.',
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar o status.',
+        variant: 'destructive',
+      });
+    }
+  }, [copyId, toast]);
+
   const value: CopyEditorContextType = {
     copyId,
     copyTitle,
     sessions,
     selectedBlockId,
     isSaving,
+    status,
     setCopyId,
     setCopyTitle,
     addSession,
@@ -246,6 +280,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     duplicateBlock,
     moveBlock,
     selectBlock,
+    updateStatus,
     saveCopy,
     loadCopy,
   };

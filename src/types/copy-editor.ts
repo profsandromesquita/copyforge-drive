@@ -40,6 +40,8 @@ export interface Copy {
   title: string;
   copy_type?: CopyType;
   sessions: Session[];
+  status?: 'draft' | 'published';
+  is_template?: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;

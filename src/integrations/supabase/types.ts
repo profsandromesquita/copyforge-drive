@@ -21,8 +21,10 @@ export type Database = {
           created_by: string
           folder_id: string | null
           id: string
+          is_template: boolean | null
           project_id: string | null
           sessions: Json
+          status: string | null
           title: string
           updated_at: string
           workspace_id: string
@@ -33,8 +35,10 @@ export type Database = {
           created_by: string
           folder_id?: string | null
           id?: string
+          is_template?: boolean | null
           project_id?: string | null
           sessions?: Json
+          status?: string | null
           title?: string
           updated_at?: string
           workspace_id: string
@@ -45,8 +49,10 @@ export type Database = {
           created_by?: string
           folder_id?: string | null
           id?: string
+          is_template?: boolean | null
           project_id?: string | null
           sessions?: Json
+          status?: string | null
           title?: string
           updated_at?: string
           workspace_id?: string

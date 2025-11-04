@@ -43,6 +43,13 @@ const Dashboard = () => {
     copy.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const formatDate = (date: string) => {
+    return formatDistanceToNow(new Date(date), { 
+      addSuffix: true, 
+      locale: ptBR 
+    }).replace('há cerca de ', '').replace('há ', '');
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
@@ -132,7 +139,7 @@ const Dashboard = () => {
                       onClick={() => navigateToFolder(folder.id)}
                     />
                   ))}
-                  {filteredCopies.map((copy) => (
+                  {filteredCopies.map((copy: any) => (
                     <DriveCard
                       key={copy.id}
                       id={copy.id}
@@ -140,10 +147,8 @@ const Dashboard = () => {
                       title={copy.title}
                       creatorName={copy.creator?.name}
                       creatorAvatar={copy.creator?.avatar_url}
-                      subtitle={formatDistanceToNow(new Date(copy.updated_at), { 
-                        addSuffix: true, 
-                        locale: ptBR 
-                      }).replace('há cerca de ', '').replace('há ', '')}
+                      status={copy.status || 'draft'}
+                      subtitle={formatDate(copy.updated_at)}
                       onClick={() => navigate(`/copy/${copy.id}`)}
                     />
                   ))}
