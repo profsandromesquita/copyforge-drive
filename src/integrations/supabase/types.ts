@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       copies: {
         Row: {
+          copy_type: string | null
           created_at: string
           created_by: string
           folder_id: string | null
@@ -27,6 +28,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
+          copy_type?: string | null
           created_at?: string
           created_by: string
           folder_id?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
+          copy_type?: string | null
           created_at?: string
           created_by?: string
           folder_id?: string | null

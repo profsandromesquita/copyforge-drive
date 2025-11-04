@@ -32,10 +32,13 @@ export interface Session {
   blocks: Block[];
 }
 
+export type CopyType = 'landing_page' | 'anuncio' | 'vsl' | 'email' | 'webinar' | 'conteudo' | 'mensagem' | 'outro';
+
 export interface Copy {
   id: string;
   workspace_id: string;
   title: string;
+  copy_type?: CopyType;
   sessions: Session[];
   created_by: string;
   created_at: string;

@@ -39,7 +39,7 @@ interface DriveContextType {
   loading: boolean;
   navigateToFolder: (folderId: string | null) => void;
   createFolder: (name: string) => Promise<void>;
-  createCopy: (title: string) => Promise<Copy | null>;
+  createCopy: (title: string, copyType?: string) => Promise<Copy | null>;
   deleteFolder: (folderId: string) => Promise<void>;
   deleteCopy: (copyId: string) => Promise<void>;
   renameFolder: (folderId: string, newName: string) => Promise<void>;
@@ -196,7 +196,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolder?.id, fetchDriveContent]);
 
-  const createCopy = useCallback(async (title: string): Promise<Copy | null> => {
+  const createCopy = useCallback(async (title: string, copyType: string = 'outro'): Promise<Copy | null> => {
     if (!activeWorkspace?.id || !user?.id) {
       toast.error('Workspace ou usuário não encontrado');
       return null;
@@ -210,6 +210,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
           project_id: activeProject?.id || null,
           folder_id: currentFolder?.id || null,
           title,
+          copy_type: copyType,
           created_by: user.id,
         })
         .select()

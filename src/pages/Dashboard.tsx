@@ -8,6 +8,7 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import DriveCard from "@/components/drive/DriveCard";
 import { Breadcrumbs } from "@/components/drive/Breadcrumbs";
 import { CreateFolderDialog } from "@/components/drive/CreateFolderDialog";
+import { CreateCopyDialog, CopyType } from "@/components/drive/CreateCopyDialog";
 import { useDrive } from "@/hooks/useDrive";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -23,11 +24,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { folders, copies, loading, navigateToFolder, createCopy } = useDrive();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [createCopyOpen, setCreateCopyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleCreateCopy = async () => {
-    const copy = await createCopy('Nova Copy');
+  const handleCreateCopy = async (name: string, type: CopyType) => {
+    const copy = await createCopy(name, type);
     if (copy) {
+      setCreateCopyOpen(false);
       navigate(`/copy/${copy.id}`);
     }
   };
@@ -74,7 +77,7 @@ const Dashboard = () => {
                 <DropdownMenuContent align="end" className="bg-popover border-border z-50">
                   <DropdownMenuItem 
                     className="cursor-pointer"
-                    onClick={handleCreateCopy}
+                    onClick={() => setCreateCopyOpen(true)}
                   >
                     <Plus size={18} className="mr-2" />
                     Nova Copy
@@ -153,6 +156,11 @@ const Dashboard = () => {
 
       <MobileMenu />
       <CreateFolderDialog open={createFolderOpen} onOpenChange={setCreateFolderOpen} />
+      <CreateCopyDialog 
+        open={createCopyOpen} 
+        onOpenChange={setCreateCopyOpen}
+        onCreateCopy={handleCreateCopy}
+      />
     </div>
   );
 };
