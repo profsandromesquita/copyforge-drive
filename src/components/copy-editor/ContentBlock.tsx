@@ -4,7 +4,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { FormattingToolbar } from './FormattingToolbar';
 
 interface ContentBlockProps {
   block: Block;
@@ -21,18 +21,19 @@ interface ContentBlockProps {
 
 export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
   );
 
-  // Auto-resize textarea based on content
+  // Load content into contentEditable div
   useEffect(() => {
-    if (textareaRef.current && block.type === 'text') {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    if (editableRef.current && typeof block.content === 'string') {
+      if (editableRef.current.innerHTML !== block.content) {
+        editableRef.current.innerHTML = block.content;
+      }
     }
-  }, [block.content, block.type]);
+  }, [block.content, block.id]);
 
   const {
     attributes,
@@ -57,6 +58,45 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
     updateBlock(block.id, { content: value });
   };
 
+  const handleEditableChange = () => {
+    if (editableRef.current) {
+      const content = editableRef.current.innerHTML;
+      updateBlock(block.id, { content });
+    }
+  };
+
+  const handleAlignChange = (align: string) => {
+    updateBlock(block.id, { config: { ...block.config, textAlign: align as 'left' | 'center' | 'right' } });
+  };
+
+  const handleFontSizeChange = (size: string) => {
+    updateBlock(block.id, { config: { ...block.config, fontSize: size } });
+  };
+
+  const getFontSizeClass = () => {
+    switch (block.config?.fontSize) {
+      case 'small':
+        return 'text-sm';
+      case 'large':
+        return 'text-lg';
+      default:
+        return 'text-base';
+    }
+  };
+
+  const getTextAlignClass = () => {
+    switch (block.config?.textAlign) {
+      case 'center':
+        return 'text-center';
+      case 'right':
+        return 'text-right';
+      case 'justify':
+        return 'text-justify';
+      default:
+        return 'text-left';
+    }
+  };
+
   const handleListChange = (index: number, value: string) => {
     const newItems = [...listItems];
     newItems[index] = value;
@@ -78,38 +118,79 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
 
   const renderContent = () => {
     const content = typeof block.content === 'string' ? block.content : '';
+    const showToolbar = isSelected && ['headline', 'subheadline', 'text'].includes(block.type);
 
     switch (block.type) {
       case 'headline':
         return (
-          <Input
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            placeholder="Digite seu título..."
-            className="text-2xl font-bold border-none focus-visible:ring-0"
-          />
+          <>
+            {showToolbar && (
+              <FormattingToolbar
+                onFormat={handleEditableChange}
+                textAlign={block.config?.textAlign}
+                onAlignChange={handleAlignChange}
+                fontSize={block.config?.fontSize}
+                onFontSizeChange={handleFontSizeChange}
+              />
+            )}
+            <div
+              ref={editableRef}
+              contentEditable
+              onInput={handleEditableChange}
+              onBlur={handleEditableChange}
+              className={`text-2xl font-bold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              data-placeholder="Digite seu título..."
+              suppressContentEditableWarning
+            />
+          </>
         );
 
       case 'subheadline':
         return (
-          <Input
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            placeholder="Digite seu subtítulo..."
-            className="text-xl font-semibold border-none focus-visible:ring-0"
-          />
+          <>
+            {showToolbar && (
+              <FormattingToolbar
+                onFormat={handleEditableChange}
+                textAlign={block.config?.textAlign}
+                onAlignChange={handleAlignChange}
+                fontSize={block.config?.fontSize}
+                onFontSizeChange={handleFontSizeChange}
+              />
+            )}
+            <div
+              ref={editableRef}
+              contentEditable
+              onInput={handleEditableChange}
+              onBlur={handleEditableChange}
+              className={`text-xl font-semibold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              data-placeholder="Digite seu subtítulo..."
+              suppressContentEditableWarning
+            />
+          </>
         );
 
       case 'text':
         return (
-          <Textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => handleContentChange(e.target.value)}
-            placeholder="Digite seu texto..."
-            className="border-none focus-visible:ring-0 resize-none overflow-hidden"
-            style={{ minHeight: '24px' }}
-          />
+          <>
+            {showToolbar && (
+              <FormattingToolbar
+                onFormat={handleEditableChange}
+                textAlign={block.config?.textAlign}
+                onAlignChange={handleAlignChange}
+                fontSize={block.config?.fontSize}
+                onFontSizeChange={handleFontSizeChange}
+              />
+            )}
+            <div
+              ref={editableRef}
+              contentEditable
+              onInput={handleEditableChange}
+              onBlur={handleEditableChange}
+              className={`min-h-[24px] border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              data-placeholder="Digite seu texto..."
+              suppressContentEditableWarning
+            />
+          </>
         );
 
       case 'list':

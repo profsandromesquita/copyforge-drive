@@ -3,7 +3,7 @@ export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button';
 export interface BlockConfig {
   // Text block
   fontSize?: string;
-  textAlign?: 'left' | 'center' | 'right';
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
   color?: string;
   
   // Headline/Subheadline
