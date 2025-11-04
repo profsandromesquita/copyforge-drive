@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { copyType, objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer } = await req.json();
+    const { copyType, objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -20,7 +20,7 @@ serve(async (req) => {
     console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
 
     const systemPrompt = buildSystemPrompt(copyType);
-    const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer });
+    const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -167,12 +167,25 @@ function buildSystemPrompt(copyType: string): string {
 }
 
 function buildUserPrompt(params: any): string {
-  const { objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer } = params;
+  const { objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer } = params;
 
   const objetivosText = objetivos.length > 0 ? objetivos.join(", ") : "não especificado";
   const estilosText = estilos.length > 0 ? estilos.join(", ") : "não especificado";
   const tamanhosText = tamanhos.length > 0 ? tamanhos.join(", ") : "não especificado";
   const preferenciasText = preferencias.length > 0 ? preferencias.join(", ") : "não especificado";
+
+  let projectContext = "";
+  if (projectIdentity) {
+    projectContext = `
+**IDENTIDADE DO PROJETO:**
+- Nome da Marca: ${projectIdentity.brand_name || "não especificado"}
+- Setor: ${projectIdentity.sector || "não especificado"}
+- Propósito Central: ${projectIdentity.central_purpose || "não especificado"}
+- Tons de Voz: ${projectIdentity.voice_tones?.join(", ") || "não especificado"}
+- Personalidade da Marca: ${projectIdentity.brand_personality?.join(", ") || "não especificado"}
+- Palavras-chave: ${projectIdentity.keywords?.join(", ") || "não especificado"}
+`;
+  }
 
   let audienceContext = "";
   if (audienceSegment) {
@@ -206,13 +219,14 @@ function buildUserPrompt(params: any): string {
 
   return `
 Crie uma copy em português brasileiro com as seguintes características:
+${projectContext}${audienceContext}${offerContext}
+**PARÂMETROS DA COPY:**
+- Objetivos: ${objetivosText}
+- Estilo de Escrita: ${estilosText}
+- Tamanho: ${tamanhosText}
+- Preferências: ${preferenciasText}
 
-**Objetivos:** ${objetivosText}
-**Estilo de Escrita:** ${estilosText}
-**Tamanho:** ${tamanhosText}
-**Preferências:** ${preferenciasText}
-${audienceContext}${offerContext}
-**Detalhes:**
+**DETALHES DA COPY:**
 ${prompt}
 
 INSTRUÇÕES IMPORTANTES:

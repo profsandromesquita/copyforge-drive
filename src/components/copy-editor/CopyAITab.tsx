@@ -92,6 +92,16 @@ export const CopyAITab = () => {
         ? offers.find(o => o.id === offerId)
         : null;
 
+      // Preparar dados de identidade do projeto
+      const projectIdentity = activeProject ? {
+        brand_name: activeProject.brand_name,
+        sector: activeProject.sector,
+        central_purpose: activeProject.central_purpose,
+        voice_tones: activeProject.voice_tones,
+        brand_personality: activeProject.brand_personality,
+        keywords: activeProject.keywords,
+      } : null;
+
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
           copyType: copyType || 'outro',
@@ -100,6 +110,7 @@ export const CopyAITab = () => {
           tamanhos: tamanho ? [tamanho] : [],
           preferencias,
           prompt,
+          projectIdentity,
           audienceSegment: selectedAudience,
           offer: selectedOffer,
         },
