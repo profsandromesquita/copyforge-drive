@@ -14,13 +14,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { PreviewModal } from './PreviewModal';
+import { ImportModal } from './ImportModal';
+import { Session } from '@/types/copy-editor';
 
 export const EditorHeader = () => {
   const navigate = useNavigate();
-  const { copyId, copyTitle, setCopyTitle, isSaving, sessions, updateStatus } = useCopyEditor();
+  const { copyId, copyTitle, setCopyTitle, isSaving, sessions, updateStatus, importSessions } = useCopyEditor();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const handlePublish = async () => {
     await updateStatus('published');
@@ -69,6 +74,10 @@ export const EditorHeader = () => {
     }
   };
 
+  const handleImport = (importedSessions: Session[]) => {
+    importSessions(importedSessions);
+  };
+
   return (
     <header className="h-16 border-b bg-background flex items-center justify-between px-4 sticky top-0 z-50">
       <div className="flex items-center gap-4">
@@ -106,12 +115,12 @@ export const EditorHeader = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
           <Eye className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Pré-visualizar</span>
         </Button>
 
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
           <Upload className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Importar</span>
         </Button>
@@ -138,6 +147,19 @@ export const EditorHeader = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <PreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        title={copyTitle}
+        sessions={sessions}
+      />
+
+      <ImportModal
+        open={showImport}
+        onOpenChange={setShowImport}
+        onImport={handleImport}
+      />
     </header>
   );
 };

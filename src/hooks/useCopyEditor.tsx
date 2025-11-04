@@ -18,6 +18,7 @@ interface CopyEditorContextType {
   updateSession: (sessionId: string, updates: Partial<Session>) => void;
   duplicateSession: (sessionId: string) => void;
   reorderSessions: (startIndex: number, endIndex: number) => void;
+  importSessions: (sessions: Session[]) => void;
   
   addBlock: (sessionId: string, block: Omit<Block, 'id'>, index?: number) => void;
   removeBlock: (blockId: string) => void;
@@ -142,6 +143,10 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
     setSessions(result);
+  }, [sessions]);
+
+  const importSessions = useCallback((importedSessions: Session[]) => {
+    setSessions([...sessions, ...importedSessions]);
   }, [sessions]);
 
   const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>, index?: number) => {
@@ -274,6 +279,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     updateSession,
     duplicateSession,
     reorderSessions,
+    importSessions,
     addBlock,
     removeBlock,
     updateBlock,
