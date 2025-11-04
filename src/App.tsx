@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import Discover from "./pages/Discover";
 import CopyEditor from "./pages/CopyEditor";
+import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
               <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
               <Route path="/copy/:id" element={<ProtectedRoute><CopyEditor /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<ProtectedRoute><SuperAdmin /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

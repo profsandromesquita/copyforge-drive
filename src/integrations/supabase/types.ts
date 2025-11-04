@@ -198,6 +198,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_super_admin: { Args: { user_email: string }; Returns: Json }
       get_workspace_role: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
