@@ -1,0 +1,258 @@
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Session, Block } from '@/types/copy-editor';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface CopyEditorContextType {
+  copyId: string | null;
+  copyTitle: string;
+  sessions: Session[];
+  selectedBlockId: string | null;
+  isSaving: boolean;
+  
+  setCopyId: (id: string) => void;
+  setCopyTitle: (title: string) => void;
+  addSession: () => void;
+  removeSession: (sessionId: string) => void;
+  updateSession: (sessionId: string, updates: Partial<Session>) => void;
+  duplicateSession: (sessionId: string) => void;
+  reorderSessions: (startIndex: number, endIndex: number) => void;
+  
+  addBlock: (sessionId: string, block: Omit<Block, 'id'>) => void;
+  removeBlock: (blockId: string) => void;
+  updateBlock: (blockId: string, updates: Partial<Block>) => void;
+  duplicateBlock: (blockId: string) => void;
+  moveBlock: (blockId: string, toSessionId: string, toIndex: number) => void;
+  selectBlock: (blockId: string | null) => void;
+  
+  saveCopy: () => Promise<void>;
+  loadCopy: (id: string) => Promise<void>;
+}
+
+const CopyEditorContext = createContext<CopyEditorContextType | undefined>(undefined);
+
+export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [copyId, setCopyId] = useState<string | null>(null);
+  const [copyTitle, setCopyTitle] = useState('Nova Copy');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  // Auto-save every 3 seconds
+  useEffect(() => {
+    if (!copyId || sessions.length === 0) return;
+    
+    const timer = setTimeout(() => {
+      saveCopy();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [sessions, copyTitle, copyId]);
+
+  const loadCopy = useCallback(async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('copies')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      setCopyId(data.id);
+      setCopyTitle(data.title);
+      setSessions((data.sessions as any) || []);
+    } catch (error) {
+      console.error('Error loading copy:', error);
+      toast({
+        title: 'Erro ao carregar',
+        description: 'Não foi possível carregar a copy.',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  const saveCopy = useCallback(async () => {
+    if (!copyId) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({
+          title: copyTitle,
+          sessions: sessions as any,
+        })
+        .eq('id', copyId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving copy:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar a copy.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [copyId, copyTitle, sessions, toast]);
+
+  const addSession = useCallback(() => {
+    const newSession: Session = {
+      id: `session-${Date.now()}`,
+      title: `Sessão ${sessions.length + 1}`,
+      blocks: [],
+    };
+    setSessions([...sessions, newSession]);
+  }, [sessions]);
+
+  const removeSession = useCallback((sessionId: string) => {
+    setSessions(sessions.filter(s => s.id !== sessionId));
+  }, [sessions]);
+
+  const updateSession = useCallback((sessionId: string, updates: Partial<Session>) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, ...updates } : s));
+  }, [sessions]);
+
+  const duplicateSession = useCallback((sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    const newSession: Session = {
+      ...session,
+      id: `session-${Date.now()}`,
+      title: `${session.title} (Cópia)`,
+      blocks: session.blocks.map(block => ({
+        ...block,
+        id: `block-${Date.now()}-${Math.random()}`,
+      })),
+    };
+    setSessions([...sessions, newSession]);
+  }, [sessions]);
+
+  const reorderSessions = useCallback((startIndex: number, endIndex: number) => {
+    const result = Array.from(sessions);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    setSessions(result);
+  }, [sessions]);
+
+  const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>) => {
+    const newBlock: Block = {
+      ...block,
+      id: `block-${Date.now()}`,
+    };
+
+    setSessions(sessions.map(session => 
+      session.id === sessionId
+        ? { ...session, blocks: [...session.blocks, newBlock] }
+        : session
+    ));
+  }, [sessions]);
+
+  const removeBlock = useCallback((blockId: string) => {
+    setSessions(sessions.map(session => ({
+      ...session,
+      blocks: session.blocks.filter(b => b.id !== blockId),
+    })));
+    if (selectedBlockId === blockId) {
+      setSelectedBlockId(null);
+    }
+  }, [sessions, selectedBlockId]);
+
+  const updateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
+    setSessions(sessions.map(session => ({
+      ...session,
+      blocks: session.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b),
+    })));
+  }, [sessions]);
+
+  const duplicateBlock = useCallback((blockId: string) => {
+    setSessions(sessions.map(session => {
+      const blockIndex = session.blocks.findIndex(b => b.id === blockId);
+      if (blockIndex === -1) return session;
+
+      const block = session.blocks[blockIndex];
+      const newBlock: Block = {
+        ...block,
+        id: `block-${Date.now()}`,
+      };
+
+      const newBlocks = [...session.blocks];
+      newBlocks.splice(blockIndex + 1, 0, newBlock);
+
+      return { ...session, blocks: newBlocks };
+    }));
+  }, [sessions]);
+
+  const moveBlock = useCallback((blockId: string, toSessionId: string, toIndex: number) => {
+    let blockToMove: Block | null = null;
+
+    // Remove block from current session
+    const sessionsWithoutBlock = sessions.map(session => ({
+      ...session,
+      blocks: session.blocks.filter(b => {
+        if (b.id === blockId) {
+          blockToMove = b;
+          return false;
+        }
+        return true;
+      }),
+    }));
+
+    if (!blockToMove) return;
+
+    // Add block to new session
+    setSessions(sessionsWithoutBlock.map(session => {
+      if (session.id === toSessionId) {
+        const newBlocks = [...session.blocks];
+        newBlocks.splice(toIndex, 0, blockToMove!);
+        return { ...session, blocks: newBlocks };
+      }
+      return session;
+    }));
+  }, [sessions]);
+
+  const selectBlock = useCallback((blockId: string | null) => {
+    setSelectedBlockId(blockId);
+  }, []);
+
+  const value: CopyEditorContextType = {
+    copyId,
+    copyTitle,
+    sessions,
+    selectedBlockId,
+    isSaving,
+    setCopyId,
+    setCopyTitle,
+    addSession,
+    removeSession,
+    updateSession,
+    duplicateSession,
+    reorderSessions,
+    addBlock,
+    removeBlock,
+    updateBlock,
+    duplicateBlock,
+    moveBlock,
+    selectBlock,
+    saveCopy,
+    loadCopy,
+  };
+
+  return (
+    <CopyEditorContext.Provider value={value}>
+      {children}
+    </CopyEditorContext.Provider>
+  );
+};
+
+export const useCopyEditor = () => {
+  const context = useContext(CopyEditorContext);
+  if (!context) {
+    throw new Error('useCopyEditor must be used within CopyEditorProvider');
+  }
+  return context;
+};
