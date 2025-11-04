@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
@@ -45,7 +46,7 @@ export const CopyAITab = () => {
   // Etapa 1: Preferências
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [estilos, setEstilos] = useState<string[]>([]);
-  const [tamanhos, setTamanhos] = useState<string[]>([]);
+  const [tamanho, setTamanho] = useState<string>('');
   const [preferencias, setPreferencias] = useState<string[]>([]);
 
   // Etapa 2: Detalhes
@@ -83,7 +84,7 @@ export const CopyAITab = () => {
           copyType: copyType || 'outro',
           objetivos,
           estilos,
-          tamanhos,
+          tamanhos: tamanho ? [tamanho] : [],
           preferencias,
           prompt,
         },
@@ -138,7 +139,7 @@ export const CopyAITab = () => {
     // Reset form
     setObjetivos([]);
     setEstilos([]);
-    setTamanhos([]);
+    setTamanho('');
     setPreferencias([]);
     setPrompt('');
     setEtapa(1);
@@ -196,14 +197,10 @@ export const CopyAITab = () => {
           {/* Tamanho da Copy */}
           <div className="space-y-2">
             <Label className="font-semibold">Tamanho da Copy</Label>
-            <div className="space-y-2">
+            <RadioGroup value={tamanho} onValueChange={setTamanho}>
               {TAMANHOS.map((item) => (
                 <div key={item.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`tamanho-${item.value}`}
-                    checked={tamanhos.includes(item.value)}
-                    onCheckedChange={() => toggleArrayItem(tamanhos, setTamanhos, item.value)}
-                  />
+                  <RadioGroupItem value={item.value} id={`tamanho-${item.value}`} />
                   <label
                     htmlFor={`tamanho-${item.value}`}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
@@ -212,7 +209,7 @@ export const CopyAITab = () => {
                   </label>
                 </div>
               ))}
-            </div>
+            </RadioGroup>
           </div>
 
           {/* Outras Preferências */}
