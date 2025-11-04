@@ -99,6 +99,11 @@ const handler = async (req: Request): Promise<Response> => {
               font-size: 16px;
               margin-top: 8px;
             }
+            .logo-footer {
+              width: 80px;
+              height: auto;
+              margin: 0 auto 16px;
+            }
             .content {
               padding: 40px;
             }
@@ -154,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
             .cta-button {
               display: inline-block;
               background: linear-gradient(135deg, #FF5100 0%, #FF6B2C 100%);
-              color: white;
+              color: #ffffff !important;
               text-decoration: none;
               padding: 16px 48px;
               border-radius: 12px;
@@ -222,12 +227,12 @@ const handler = async (req: Request): Promise<Response> => {
         <body>
           <div class="email-wrapper">
             <div class="header">
-              <h1>🎯 Convite para Workspace</h1>
+              <h1>Convite para Workspace</h1>
               <p>Você foi convidado para colaborar!</p>
             </div>
             
             <div class="content">
-              <p class="greeting">Olá! 👋</p>
+              <p class="greeting">Olá!</p>
               
               <p class="message">
                 <strong>${inviter_name}</strong> convidou você para fazer parte do workspace no <strong>CopyDrive</strong>, a plataforma completa para gestão de copys e projetos de marketing.
@@ -236,11 +241,9 @@ const handler = async (req: Request): Promise<Response> => {
               <div class="workspace-card">
                 <div class="workspace-name">${workspace_name}</div>
                 <div class="workspace-info">
-                  <span>👤</span>
                   <span><strong>Convidado por:</strong> ${inviter_name}</span>
                 </div>
                 <div class="workspace-info">
-                  <span>🎭</span>
                   <span><strong>Seu cargo:</strong></span>
                 </div>
                 <span class="role-badge">${roleName}</span>
@@ -248,7 +251,7 @@ const handler = async (req: Request): Promise<Response> => {
 
               ${!hasAccount ? `
                 <p class="message">
-                  Como você ainda não possui uma conta no CopyDrive, será necessário criar uma antes de aceitar o convite. O processo é rápido e simples! 🚀
+                  Como você ainda não possui uma conta no CopyDrive, será necessário criar uma antes de aceitar o convite. O processo é rápido e simples!
                 </p>
               ` : `
                 <p class="message">
@@ -258,25 +261,22 @@ const handler = async (req: Request): Promise<Response> => {
 
               <div class="cta-container">
                 <a href="${inviteLink}" class="cta-button">
-                  ${hasAccount ? '✓ Aceitar Convite' : '🚀 Criar Conta e Aceitar'}
+                  ${hasAccount ? 'Aceitar Convite' : 'Criar Conta e Aceitar'}
                 </a>
               </div>
 
               <div class="divider"></div>
 
               <div class="note">
-                <strong>⏱️ Importante:</strong> Este convite é válido por 7 dias. Após este período, será necessário solicitar um novo convite.
+                <strong>Importante:</strong> Este convite é válido por 7 dias. Após este período, será necessário solicitar um novo convite.
                 <br><br>
                 Se você não deseja fazer parte deste workspace, pode simplesmente ignorar este email. Nenhuma ação adicional será necessária.
               </div>
             </div>
             
             <div class="footer">
-              <div class="footer-logo">CopyDrive</div>
-              <div class="footer-text">
-                Sistema completo de gestão de copys e projetos
-              </div>
-              <div class="footer-text" style="margin-top: 16px; font-size: 12px;">
+              <img src="https://app.copydrive.ai/favicon.svg" alt="CopyDrive" class="logo-footer" />
+              <div class="footer-text" style="margin-top: 8px; font-size: 12px;">
                 © ${new Date().getFullYear()} CopyDrive. Todos os direitos reservados.
               </div>
             </div>
