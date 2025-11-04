@@ -9,7 +9,7 @@ import { EditorSidebar } from '@/components/copy-editor/EditorSidebar';
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loadCopy, setCopyId, addSession } = useCopyEditor();
+  const { loadCopy, setCopyId } = useCopyEditor();
 
   useEffect(() => {
     if (!id) {
@@ -18,17 +18,8 @@ const CopyEditorContent = () => {
     }
 
     setCopyId(id);
-    loadCopy(id).then(() => {
-      // If no sessions exist, add the first one
-      const checkSessions = async () => {
-        const copyEditor = useCopyEditor();
-        if (copyEditor.sessions.length === 0) {
-          addSession();
-        }
-      };
-      checkSessions();
-    });
-  }, [id, loadCopy, setCopyId, navigate, addSession]);
+    loadCopy(id);
+  }, [id, loadCopy, setCopyId, navigate]);
 
   return (
     <div className="h-screen flex flex-col">
