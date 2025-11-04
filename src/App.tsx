@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import Discover from "./pages/Discover";
 import CopyEditor from "./pages/CopyEditor";
+import PublicCopy from "./pages/PublicCopy";
 import SuperAdmin from "./pages/SuperAdmin";
 import ProjectConfig from "./pages/ProjectConfig";
 import SignupInvite from "./pages/SignupInvite";
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/signup-invite" element={<SignupInvite />} />
                 <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
+                <Route path="/view/:id" element={<PublicCopy />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
                 <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />

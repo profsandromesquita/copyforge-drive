@@ -42,6 +42,10 @@ export interface Copy {
   sessions: Session[];
   status?: 'draft' | 'published';
   is_template?: boolean;
+  is_public?: boolean;
+  public_password?: string | null;
+  show_in_discover?: boolean;
+  copy_count?: number;
   created_by: string;
   created_at: string;
   updated_at: string;

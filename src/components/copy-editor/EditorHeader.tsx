@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { PreviewModal } from './PreviewModal';
 import { ImportModal } from './ImportModal';
+import { ShareModal } from './ShareModal';
 import { Session } from '@/types/copy-editor';
 
 export const EditorHeader = () => {
@@ -26,6 +27,7 @@ export const EditorHeader = () => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const handlePublish = async () => {
     await updateStatus('published');
@@ -125,7 +127,7 @@ export const EditorHeader = () => {
           <span className="hidden sm:inline">Importar</span>
         </Button>
 
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={() => setShowShare(true)}>
           <ShareNetwork className="h-4 w-4 mr-2" />
           <span className="hidden sm:inline">Compartilhar</span>
         </Button>
@@ -160,6 +162,14 @@ export const EditorHeader = () => {
         onOpenChange={setShowImport}
         onImport={handleImport}
       />
+
+      {copyId && (
+        <ShareModal
+          open={showShare}
+          onOpenChange={setShowShare}
+          copyId={copyId}
+        />
+      )}
     </header>
   );
 };

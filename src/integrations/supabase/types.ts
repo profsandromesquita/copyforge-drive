@@ -16,42 +16,54 @@ export type Database = {
     Tables: {
       copies: {
         Row: {
+          copy_count: number | null
           copy_type: string | null
           created_at: string
           created_by: string
           folder_id: string | null
           id: string
+          is_public: boolean | null
           is_template: boolean | null
           project_id: string | null
+          public_password: string | null
           sessions: Json
+          show_in_discover: boolean | null
           status: string | null
           title: string
           updated_at: string
           workspace_id: string
         }
         Insert: {
+          copy_count?: number | null
           copy_type?: string | null
           created_at?: string
           created_by: string
           folder_id?: string | null
           id?: string
+          is_public?: boolean | null
           is_template?: boolean | null
           project_id?: string | null
+          public_password?: string | null
           sessions?: Json
+          show_in_discover?: boolean | null
           status?: string | null
           title?: string
           updated_at?: string
           workspace_id: string
         }
         Update: {
+          copy_count?: number | null
           copy_type?: string | null
           created_at?: string
           created_by?: string
           folder_id?: string | null
           id?: string
+          is_public?: boolean | null
           is_template?: boolean | null
           project_id?: string | null
+          public_password?: string | null
           sessions?: Json
+          show_in_discover?: boolean | null
           status?: string | null
           title?: string
           updated_at?: string
