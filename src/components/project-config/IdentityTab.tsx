@@ -248,7 +248,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
           )}
         </div>
 
-        <Button type="submit" disabled={saving || !activeProject}>
+        <Button type="submit" disabled={saving || (!activeProject && !isNew)}>
           {saving ? 'Salvando...' : 'Salvar Identidade'}
         </Button>
       </div>
