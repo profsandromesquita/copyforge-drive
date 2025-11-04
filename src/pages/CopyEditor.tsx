@@ -11,7 +11,7 @@ import { Block } from '@/types/copy-editor';
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loadCopy, setCopyId, addBlock, moveBlock } = useCopyEditor();
+  const { loadCopy, setCopyId, addBlock, moveBlock, sessions } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
 
@@ -54,16 +54,26 @@ const CopyEditorContent = () => {
 
     // Dragging from toolbar
     if (activeData?.fromToolbar) {
-      let sessionId = overData?.session?.id;
+      let sessionId: string | undefined;
+      let insertIndex: number | undefined;
       
-      // If dropping over a block, get the session from that block
-      if (!sessionId && overData?.sessionId) {
+      // If dropping over a block, insert before it
+      if (overData?.block && overData?.sessionId) {
         sessionId = overData.sessionId;
+        const session = sessions.find(s => s.id === sessionId);
+        if (session) {
+          const blockIndex = session.blocks.findIndex(b => b.id === overData.block.id);
+          insertIndex = blockIndex >= 0 ? blockIndex : undefined;
+        }
       }
-      
       // If dropping directly over a session
-      if (!sessionId && over.id.toString().startsWith('session-')) {
+      else if (overData?.session?.id) {
+        sessionId = overData.session.id;
+        insertIndex = undefined; // Will add at the end
+      }
+      else if (over.id.toString().startsWith('session-')) {
         sessionId = over.id.toString();
+        insertIndex = undefined;
       }
 
       if (sessionId) {
@@ -71,7 +81,7 @@ const CopyEditorContent = () => {
           type: activeData.type,
           content: activeData.type === 'list' ? [''] : '',
           config: {},
-        });
+        }, insertIndex);
       }
       return;
     }
@@ -79,15 +89,25 @@ const CopyEditorContent = () => {
     // Moving block between sessions or reordering
     if (activeData?.block) {
       const blockId = activeData.block.id;
-      let toSessionId = overData?.session?.id;
+      let toSessionId: string | undefined;
+      let toIndex: number | undefined;
       
-      // If dropping over a block, get the session from that block
-      if (!toSessionId && overData?.sessionId) {
+      // If dropping over a block
+      if (overData?.block && overData?.sessionId) {
         toSessionId = overData.sessionId;
+        const session = sessions.find(s => s.id === toSessionId);
+        if (session) {
+          const blockIndex = session.blocks.findIndex(b => b.id === overData.block.id);
+          toIndex = blockIndex >= 0 ? blockIndex : session.blocks.length;
+        }
+      }
+      // If dropping over a session
+      else if (overData?.session?.id) {
+        toSessionId = overData.session.id;
+        toIndex = overData.session.blocks.length;
       }
 
-      if (toSessionId) {
-        const toIndex = overData?.session?.blocks.length || 0;
+      if (toSessionId !== undefined && toIndex !== undefined) {
         moveBlock(blockId, toSessionId, toIndex);
       }
     }

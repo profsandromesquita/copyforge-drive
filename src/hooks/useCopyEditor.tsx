@@ -18,7 +18,7 @@ interface CopyEditorContextType {
   duplicateSession: (sessionId: string) => void;
   reorderSessions: (startIndex: number, endIndex: number) => void;
   
-  addBlock: (sessionId: string, block: Omit<Block, 'id'>) => void;
+  addBlock: (sessionId: string, block: Omit<Block, 'id'>, index?: number) => void;
   removeBlock: (blockId: string) => void;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   duplicateBlock: (blockId: string) => void;
@@ -139,17 +139,25 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSessions(result);
   }, [sessions]);
 
-  const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>) => {
+  const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>, index?: number) => {
     const newBlock: Block = {
       ...block,
-      id: `block-${Date.now()}`,
+      id: `block-${Date.now()}-${Math.random()}`,
     };
 
-    setSessions(sessions.map(session => 
-      session.id === sessionId
-        ? { ...session, blocks: [...session.blocks, newBlock] }
-        : session
-    ));
+    setSessions(sessions.map(session => {
+      if (session.id === sessionId) {
+        const newBlocks = [...session.blocks];
+        // If index is provided, insert at that position, otherwise add at end
+        if (index !== undefined && index >= 0) {
+          newBlocks.splice(index, 0, newBlock);
+        } else {
+          newBlocks.push(newBlock);
+        }
+        return { ...session, blocks: newBlocks };
+      }
+      return session;
+    }));
   }, [sessions]);
 
   const removeBlock = useCallback((blockId: string) => {

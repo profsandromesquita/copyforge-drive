@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useDroppable } from '@dnd-kit/core';
 import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,11 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
     isDragging,
   } = useSortable({
     id: block.id,
+    data: { block, sessionId },
+  });
+
+  const { isOver, setNodeRef: setDroppableRef } = useDroppable({
+    id: `droppable-${block.id}`,
     data: { block, sessionId },
   });
 
@@ -149,17 +155,24 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`
-        group relative p-4 rounded-lg border bg-card
-        hover:border-primary transition-all
-        ${isDragging ? 'opacity-50' : ''}
-        ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}
-      `}
-      onClick={() => selectBlock(block.id)}
-    >
+    <>
+      {isOver && (
+        <div className="h-1 bg-primary rounded-full my-2 animate-pulse shadow-lg shadow-primary/50" />
+      )}
+      <div
+        ref={(node) => {
+          setNodeRef(node);
+          setDroppableRef(node);
+        }}
+        style={style}
+        className={`
+          group relative p-4 rounded-lg border bg-card
+          hover:border-primary transition-all
+          ${isDragging ? 'opacity-50' : ''}
+          ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}
+        `}
+        onClick={() => selectBlock(block.id)}
+      >
       <div className="flex gap-2">
         <div
           {...attributes}
@@ -197,5 +210,6 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         </DropdownMenu>
       </div>
     </div>
+    </>
   );
 };
