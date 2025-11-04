@@ -94,9 +94,6 @@ export function CreateCopyDialog({ open, onOpenChange, onCreateCopy }: CreateCop
       <DialogContent className="max-w-2xl p-0 gap-0">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="text-2xl">Criar Nova Copy</DialogTitle>
-          <DialogDescription>
-            Escolha o tipo de copy e dê um nome para começar
-          </DialogDescription>
         </DialogHeader>
         
         <div className="px-6 pb-6 space-y-6">
