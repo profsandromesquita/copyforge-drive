@@ -1,13 +1,17 @@
-import { Folder, Lightbulb, Sparkle, User } from "phosphor-react";
+import { Folder, Lightbulb, Sparkle, User, SignOut, Gear } from "phosphor-react";
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignOut, Gear } from "phosphor-react";
 
 const menuItems = [
   { icon: Folder, label: "Drive", path: "/dashboard" },
@@ -16,7 +20,13 @@ const menuItems = [
 ];
 
 const MobileMenu = () => {
+  const { user, signOut } = useAuth();
+  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
+    <>
+      <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <ul className="flex items-center justify-around px-4 py-3">
         {menuItems.map((item) => (
@@ -44,29 +54,51 @@ const MobileMenu = () => {
               <User size={24} weight="bold" />
               <span className="text-xs font-medium">Conta</span>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover border-border mb-2">
-              <DropdownMenuItem className="cursor-pointer">
-                <User size={18} className="mr-2" />
-                Minha Conta
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                Alternar Workspace
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Gear size={18} className="mr-2" />
-                Configurações do Workspace
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-destructive">
-                <SignOut size={18} className="mr-2" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+          <DropdownMenuContent align="end" className="w-56 bg-popover border-border mb-2">
+            <DropdownMenuItem className="cursor-pointer">
+              <User size={18} className="mr-2" />
+              Minha Conta
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            
+            {workspaces.length > 1 && (
+              <>
+                <DropdownMenuLabel>Alternar Workspace</DropdownMenuLabel>
+                {workspaces.map((workspace) => (
+                  <DropdownMenuItem
+                    key={workspace.id}
+                    className="cursor-pointer"
+                    onClick={() => setActiveWorkspace(workspace)}
+                  >
+                    {workspace.name}
+                    {activeWorkspace?.id === workspace.id && " ✓"}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Gear size={18} className="mr-2" />
+              Configurações do Workspace
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive"
+              onClick={signOut}
+            >
+              <SignOut size={18} className="mr-2" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
           </DropdownMenu>
         </li>
       </ul>
     </nav>
+    </>
   );
 };
 

@@ -1,19 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText } from "phosphor-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar autenticação
-    console.log("Auth submit:", { email, password, name, isLogin });
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error(error.message || "Erro ao fazer login");
+        }
+      } else {
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          toast.error(error.message || "Erro ao criar conta");
+        } else {
+          toast.success("Conta criada com sucesso!");
+        }
+      }
+    } catch (error) {
+      toast.error("Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,8 +105,8 @@ const Auth = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              {isLogin ? "Entrar" : "Criar conta"}
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? "Processando..." : (isLogin ? "Entrar" : "Criar conta")}
             </Button>
           </form>
 

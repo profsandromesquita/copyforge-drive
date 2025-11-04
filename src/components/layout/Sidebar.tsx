@@ -1,9 +1,14 @@
 import { FileText, Folder, Lightbulb, Sparkle, User, SignOut, Gear } from "phosphor-react";
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -15,7 +20,13 @@ const menuItems = [
 ];
 
 const Sidebar = () => {
+  const { user, signOut } = useAuth();
+  const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
+    <>
+      <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-background h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-border">
@@ -59,8 +70,12 @@ const Sidebar = () => {
                 <User size={20} weight="bold" className="text-primary-foreground" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium text-sm text-foreground">Usuário</p>
-                <p className="text-xs text-muted-foreground">Workspace Ativo</p>
+                <p className="font-medium text-sm text-foreground truncate">
+                  {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {activeWorkspace?.name || 'Carregando...'}
+                </p>
               </div>
             </div>
           </DropdownMenuTrigger>
@@ -70,15 +85,36 @@ const Sidebar = () => {
               Minha Conta
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
-              Alternar Workspace
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+            
+            {workspaces.length > 1 && (
+              <>
+                <DropdownMenuLabel>Alternar Workspace</DropdownMenuLabel>
+                {workspaces.map((workspace) => (
+                  <DropdownMenuItem
+                    key={workspace.id}
+                    className="cursor-pointer"
+                    onClick={() => setActiveWorkspace(workspace)}
+                  >
+                    {workspace.name}
+                    {activeWorkspace?.id === workspace.id && " ✓"}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => setSettingsOpen(true)}
+            >
               <Gear size={18} className="mr-2" />
               Configurações do Workspace
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive">
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive"
+              onClick={signOut}
+            >
               <SignOut size={18} className="mr-2" />
               Sair
             </DropdownMenuItem>
@@ -86,6 +122,7 @@ const Sidebar = () => {
         </DropdownMenu>
       </div>
     </aside>
+    </>
   );
 };
 
