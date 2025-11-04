@@ -176,7 +176,6 @@ export const CopyAITab = () => {
                 <SelectValue placeholder="Selecione um público-alvo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
                 {audienceSegments.map((segment: AudienceSegment) => (
                   <SelectItem key={segment.id} value={segment.id}>
                     {segment.avatar} - {segment.segment}
@@ -194,7 +193,6 @@ export const CopyAITab = () => {
                 <SelectValue placeholder="Selecione uma oferta" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhuma</SelectItem>
                 {offers.map((offer: Offer) => (
                   <SelectItem key={offer.id} value={offer.id}>
                     {offer.name}
