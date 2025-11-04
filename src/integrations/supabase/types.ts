@@ -304,6 +304,7 @@ export type Database = {
       }
       workspaces: {
         Row: {
+          avatar_url: string | null
           created_at: string
           created_by: string
           id: string
@@ -311,6 +312,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -318,6 +320,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           created_by?: string
           id?: string

@@ -97,7 +97,9 @@ export const WorkspaceUsers = () => {
     setInviting(false);
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Deseja realmente remover ${memberName} do workspace?`)) return;
+
     const { error } = await supabase
       .from('workspace_members')
       .delete()
@@ -108,6 +110,21 @@ export const WorkspaceUsers = () => {
       console.error(error);
     } else {
       toast.success("Membro removido com sucesso");
+      fetchMembers();
+    }
+  };
+
+  const handleChangeRole = async (memberId: string, newRole: 'admin' | 'editor') => {
+    const { error } = await supabase
+      .from('workspace_members')
+      .update({ role: newRole })
+      .eq('id', memberId);
+
+    if (error) {
+      toast.error("Erro ao alterar cargo");
+      console.error(error);
+    } else {
+      toast.success("Cargo alterado com sucesso");
       fetchMembers();
     }
   };
@@ -184,18 +201,36 @@ export const WorkspaceUsers = () => {
         <h4 className="font-semibold">Membros Atuais</h4>
         <div className="border border-border rounded-lg divide-y divide-border">
           {members.map((member) => (
-            <div key={member.id} className="p-4 flex items-center justify-between">
-              <div className="flex-1">
-                <p className="font-medium">{member.profile.name}</p>
-                <p className="text-sm text-muted-foreground">{member.profile.email}</p>
+            <div key={member.id} className="p-4 flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{member.profile.name}</p>
+                <p className="text-sm text-muted-foreground truncate">{member.profile.email}</p>
               </div>
-              <div className="flex items-center gap-4">
-                {getRoleBadge(member.role)}
+              <div className="flex items-center gap-3">
+                {member.role === 'owner' ? (
+                  getRoleBadge(member.role)
+                ) : activeWorkspace?.role !== 'editor' ? (
+                  <Select 
+                    value={member.role} 
+                    onValueChange={(value: 'admin' | 'editor') => handleChangeRole(member.id, value)}
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="editor">Editor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  getRoleBadge(member.role)
+                )}
+                
                 {member.role !== 'owner' && activeWorkspace?.role !== 'editor' && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveMember(member.id)}
+                    onClick={() => handleRemoveMember(member.id, member.profile.name)}
                   >
                     <Trash size={18} className="text-destructive" />
                   </Button>

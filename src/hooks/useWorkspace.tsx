@@ -5,6 +5,7 @@ import { useAuth } from "./useAuth";
 interface Workspace {
   id: string;
   name: string;
+  avatar_url?: string | null;
   role: 'owner' | 'admin' | 'editor';
 }
 
@@ -40,7 +41,8 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
         role,
         workspace:workspaces (
           id,
-          name
+          name,
+          avatar_url
         )
       `)
       .eq('user_id', user.id);
@@ -54,6 +56,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     const workspaceList = data?.map((item: any) => ({
       id: item.workspace.id,
       name: item.workspace.name,
+      avatar_url: item.workspace.avatar_url,
       role: item.role
     })) || [];
 
