@@ -18,6 +18,29 @@ interface SessionBlockProps {
   session: Session;
 }
 
+interface DropZoneProps {
+  sessionId: string;
+  index: number;
+}
+
+const DropZone = ({ sessionId, index }: DropZoneProps) => {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `dropzone-${sessionId}-${index}`,
+    data: { sessionId, insertIndex: index },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-3 transition-all ${isOver ? 'h-8' : ''}`}
+    >
+      {isOver && (
+        <div className="h-1 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50 mx-4" />
+      )}
+    </div>
+  );
+};
+
 export const SessionBlock = ({ session }: SessionBlockProps) => {
   const { updateSession, removeSession, duplicateSession } = useCopyEditor();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -82,7 +105,7 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
         </DropdownMenu>
       </div>
 
-      <div className="space-y-3 min-h-[100px]">
+      <div className="space-y-1 min-h-[100px]">
         {session.blocks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Arraste blocos da toolbar para começar
@@ -92,9 +115,13 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
             items={session.blocks.map(b => b.id)}
             strategy={verticalListSortingStrategy}
           >
-            {session.blocks.map((block) => (
-              <ContentBlock key={block.id} block={block} sessionId={session.id} />
+            {session.blocks.map((block, index) => (
+              <div key={block.id}>
+                <DropZone sessionId={session.id} index={index} />
+                <ContentBlock block={block} sessionId={session.id} />
+              </div>
             ))}
+            <DropZone sessionId={session.id} index={session.blocks.length} />
           </SortableContext>
         )}
       </div>

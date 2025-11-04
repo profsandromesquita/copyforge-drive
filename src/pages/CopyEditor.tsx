@@ -57,8 +57,14 @@ const CopyEditorContent = () => {
       let sessionId: string | undefined;
       let insertIndex: number | undefined;
       
+      // Check if dropping on a dropzone
+      if (over.id.toString().startsWith('dropzone-')) {
+        const parts = over.id.toString().split('-');
+        sessionId = parts.slice(1, -1).join('-'); // Get session ID (handling UUIDs with dashes)
+        insertIndex = parseInt(parts[parts.length - 1]); // Get index
+      }
       // If dropping over a block, insert before it
-      if (overData?.block && overData?.sessionId) {
+      else if (overData?.block && overData?.sessionId) {
         sessionId = overData.sessionId;
         const session = sessions.find(s => s.id === sessionId);
         if (session) {
@@ -69,7 +75,7 @@ const CopyEditorContent = () => {
       // If dropping directly over a session
       else if (overData?.session?.id) {
         sessionId = overData.session.id;
-        insertIndex = undefined; // Will add at the end
+        insertIndex = undefined;
       }
       else if (over.id.toString().startsWith('session-')) {
         sessionId = over.id.toString();
@@ -92,8 +98,14 @@ const CopyEditorContent = () => {
       let toSessionId: string | undefined;
       let toIndex: number | undefined;
       
+      // Check if dropping on a dropzone
+      if (over.id.toString().startsWith('dropzone-')) {
+        const parts = over.id.toString().split('-');
+        toSessionId = parts.slice(1, -1).join('-');
+        toIndex = parseInt(parts[parts.length - 1]);
+      }
       // If dropping over a block
-      if (overData?.block && overData?.sessionId) {
+      else if (overData?.block && overData?.sessionId) {
         toSessionId = overData.sessionId;
         const session = sessions.find(s => s.id === toSessionId);
         if (session) {
