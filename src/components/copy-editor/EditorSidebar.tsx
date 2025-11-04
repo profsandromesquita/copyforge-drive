@@ -1,8 +1,10 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListBullets } from 'phosphor-react';
 import { StructureTree } from './StructureTree';
 import { BlockSettings } from './BlockSettings';
+import { CopyAITab } from './CopyAITab';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useEffect, useState } from 'react';
 
@@ -23,22 +25,36 @@ export const EditorSidebar = () => {
 
   const sidebarContent = (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold">
-          {selectedBlock ? 'Configurações' : 'Estrutura'}
-        </h2>
-      </div>
+      <Tabs defaultValue={selectedBlock ? "configuracoes" : "estrutura"} className="flex-1 flex flex-col">
+        <div className="p-4 border-b">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="estrutura">Estrutura</TabsTrigger>
+            <TabsTrigger value="copy-ia">Copy IA</TabsTrigger>
+            {selectedBlock && (
+              <TabsTrigger value="configuracoes">Config.</TabsTrigger>
+            )}
+          </TabsList>
+        </div>
 
-      <div className="flex-1 p-4 overflow-y-auto">
-        {selectedBlock ? (
-          <BlockSettings
-            block={selectedBlock}
-            onBack={() => selectBlock(null)}
-          />
-        ) : (
-          <StructureTree sessions={sessions} />
-        )}
-      </div>
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="estrutura" className="h-full p-4 overflow-y-auto mt-0">
+            <StructureTree sessions={sessions} />
+          </TabsContent>
+
+          <TabsContent value="copy-ia" className="h-full p-4 overflow-y-auto mt-0">
+            <CopyAITab />
+          </TabsContent>
+
+          {selectedBlock && (
+            <TabsContent value="configuracoes" className="h-full p-4 overflow-y-auto mt-0">
+              <BlockSettings
+                block={selectedBlock}
+                onBack={() => selectBlock(null)}
+              />
+            </TabsContent>
+          )}
+        </div>
+      </Tabs>
     </div>
   );
 

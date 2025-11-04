@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Session, Block } from '@/types/copy-editor';
+import { Session, Block, CopyType } from '@/types/copy-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface CopyEditorContextType {
   copyId: string | null;
   copyTitle: string;
+  copyType: CopyType | undefined;
   sessions: Session[];
   selectedBlockId: string | null;
   isSaving: boolean;
@@ -37,6 +38,7 @@ const CopyEditorContext = createContext<CopyEditorContextType | undefined>(undef
 export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [copyId, setCopyId] = useState<string | null>(null);
   const [copyTitle, setCopyTitle] = useState('Nova Copy');
+  const [copyType, setCopyType] = useState<CopyType | undefined>(undefined);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -66,6 +68,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       setCopyId(data.id);
       setCopyTitle(data.title);
+      setCopyType(data.copy_type as CopyType);
       setSessions((data.sessions as any) || []);
       setStatus((data.status as 'draft' | 'published') || 'draft');
     } catch (error) {
@@ -268,6 +271,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const value: CopyEditorContextType = {
     copyId,
     copyTitle,
+    copyType,
     sessions,
     selectedBlockId,
     isSaving,
