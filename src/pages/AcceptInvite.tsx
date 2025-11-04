@@ -135,16 +135,20 @@ export default function AcceptInvite() {
 
       if (updateError) throw updateError;
 
-      toast.success(`Você agora faz parte do workspace ${inviteData.workspace.name}!`);
+      const workspaceName = inviteData?.workspace?.name || "este workspace";
+      toast.success(`Você agora faz parte do workspace ${workspaceName}!`);
 
       // Refresh workspaces and set as active
       await refreshWorkspaces();
-      setActiveWorkspace({
-        id: inviteData.workspace.id,
-        name: inviteData.workspace.name,
-        avatar_url: inviteData.workspace.avatar_url,
-        role: inviteData.role,
-      });
+      
+      if (inviteData?.workspace?.id) {
+        setActiveWorkspace({
+          id: inviteData.workspace.id,
+          name: inviteData.workspace.name || "Workspace",
+          avatar_url: inviteData.workspace.avatar_url,
+          role: inviteData.role,
+        });
+      }
 
       navigate("/dashboard");
     } catch (error: any) {
@@ -186,6 +190,10 @@ export default function AcceptInvite() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  if (!inviteData) {
+    return null;
   }
 
   const roleName = inviteData.role === "admin" ? "Administrador" : "Editor";
