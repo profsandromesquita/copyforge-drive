@@ -27,21 +27,37 @@ export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
   const getPreviewContent = () => {
     if (!copy.sessions || copy.sessions.length === 0) return null;
     const firstSession = copy.sessions[0];
-    const firstBlocks = firstSession.blocks.slice(0, 3);
+    const firstBlocks = firstSession.blocks.slice(0, 6);
 
-    return firstBlocks.map((block) => {
+    return firstBlocks.map((block, index) => {
       if (block.type === 'headline') {
         return (
-          <h3 key={block.id} className="text-lg font-semibold line-clamp-2">
+          <h3 key={block.id} className="text-base font-bold line-clamp-1 mb-2">
             {block.content}
           </h3>
         );
       }
+      if (block.type === 'subheadline') {
+        return (
+          <h4 key={block.id} className="text-sm font-semibold line-clamp-1 mb-1.5">
+            {block.content}
+          </h4>
+        );
+      }
       if (block.type === 'text') {
         return (
-          <p key={block.id} className="text-sm text-muted-foreground line-clamp-2">
+          <p key={block.id} className="text-xs text-muted-foreground/80 line-clamp-2 mb-1.5">
             {block.content}
           </p>
+        );
+      }
+      if (block.type === 'list' && Array.isArray(block.content)) {
+        return (
+          <ul key={block.id} className="text-xs text-muted-foreground/80 space-y-0.5 mb-1.5">
+            {block.content.slice(0, 2).map((item, i) => (
+              <li key={i} className="line-clamp-1">• {item}</li>
+            ))}
+          </ul>
         );
       }
       return null;
@@ -50,16 +66,26 @@ export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
 
   return (
     <>
-      <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
-        <CardContent className="flex-1 p-6">
-          <div className="space-y-3">
-            {/* Preview Content */}
-            <div className="min-h-[80px] space-y-2">
+      <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+        {/* Visual Preview Section */}
+        <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
+          <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
+            <div className="space-y-1">
               {getPreviewContent()}
             </div>
+          </div>
+          {/* Bottom Fade Overlay */}
+          <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+          {/* Preview Icon Badge */}
+          <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
+            <Eye className="h-3 w-3 text-muted-foreground" />
+          </div>
+        </div>
 
+        <CardContent className="flex-1 p-4 md:p-6">
+          <div className="space-y-3">
             {/* Title */}
-            <h2 className="text-xl font-bold line-clamp-1">{copy.title}</h2>
+            <h2 className="text-lg md:text-xl font-bold line-clamp-1">{copy.title}</h2>
 
             {/* Creator Info */}
             <div className="flex items-center gap-3">
