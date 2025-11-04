@@ -138,17 +138,13 @@ export default function AcceptInvite() {
       const workspaceName = inviteData?.workspace?.name || "este workspace";
       toast.success(`Você agora faz parte do workspace ${workspaceName}!`);
 
-      // Refresh workspaces and set as active
-      await refreshWorkspaces();
-      
+      // Save the workspace ID to localStorage before refreshing
       if (inviteData?.workspace?.id) {
-        setActiveWorkspace({
-          id: inviteData.workspace.id,
-          name: inviteData.workspace.name || "Workspace",
-          avatar_url: inviteData.workspace.avatar_url,
-          role: inviteData.role,
-        });
+        localStorage.setItem('activeWorkspaceId', inviteData.workspace.id);
       }
+
+      // Refresh workspaces (will pick up the saved workspace ID)
+      await refreshWorkspaces();
 
       navigate("/dashboard");
     } catch (error: any) {
