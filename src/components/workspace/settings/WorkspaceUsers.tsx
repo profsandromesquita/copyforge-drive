@@ -19,9 +19,17 @@ interface WorkspaceMember {
   };
 }
 
+interface PendingInvite {
+  id: string;
+  email: string;
+  role: 'admin' | 'editor';
+  created_at: string;
+}
+
 export const WorkspaceUsers = () => {
   const { activeWorkspace } = useWorkspace();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<'admin' | 'editor'>("editor");
@@ -50,6 +58,15 @@ export const WorkspaceUsers = () => {
     } else {
       setMembers(data as any);
     }
+    
+    // Fetch pending invites
+    const { data: invites } = await supabase
+      .from('workspace_invitations')
+      .select('id, email, role, created_at')
+      .eq('workspace_id', activeWorkspace.id)
+      .eq('status', 'pending');
+    
+    setPendingInvites((invites || []) as PendingInvite[]);
     setLoading(false);
   };
 
@@ -58,43 +75,96 @@ export const WorkspaceUsers = () => {
   }, [activeWorkspace]);
 
   const handleInvite = async () => {
-    if (!activeWorkspace || !inviteEmail) return;
+    if (!activeWorkspace || !inviteEmail || !inviteRole) return;
 
     setInviting(true);
 
-    // Check if user exists
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', inviteEmail)
-      .single();
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
 
-    if (!profiles) {
-      toast.error("Usuário não encontrado");
-      setInviting(false);
-      return;
-    }
+      if (!user) {
+        toast.error('Você precisa estar logado');
+        setInviting(false);
+        return;
+      }
 
-    // Add member to workspace
-    const { error } = await supabase
-      .from('workspace_members')
-      .insert({
-        workspace_id: activeWorkspace.id,
-        user_id: profiles.id,
-        role: inviteRole
+      // Check if user is already a member
+      const { data: existingMember } = await supabase
+        .from('workspace_members')
+        .select('user_id, profiles!inner(email)')
+        .eq('workspace_id', activeWorkspace.id);
+
+      const isAlreadyMember = existingMember?.some(
+        (member: any) => member.profiles.email === inviteEmail
+      );
+
+      if (isAlreadyMember) {
+        toast.error('Este usuário já é membro do workspace');
+        setInviting(false);
+        return;
+      }
+
+      // Check if there's already a pending invite
+      const { data: pendingInvite } = await supabase
+        .from('workspace_invitations')
+        .select('id')
+        .eq('workspace_id', activeWorkspace.id)
+        .eq('email', inviteEmail)
+        .eq('status', 'pending')
+        .single();
+
+      if (pendingInvite) {
+        toast.error('Já existe um convite pendente para este email');
+        setInviting(false);
+        return;
+      }
+
+      // Create invitation
+      const { data: invitation, error: inviteError } = await supabase
+        .from('workspace_invitations')
+        .insert({
+          workspace_id: activeWorkspace.id,
+          email: inviteEmail,
+          role: inviteRole,
+          invited_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (inviteError) throw inviteError;
+
+      // Get current user's profile for inviter name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', user.id)
+        .single();
+
+      // Send invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-workspace-invite', {
+        body: {
+          workspace_id: activeWorkspace.id,
+          email: inviteEmail,
+          role: inviteRole,
+          token: invitation.token,
+          workspace_name: activeWorkspace.name,
+          inviter_name: profile?.name || 'Um membro',
+        },
       });
 
-    if (error) {
-      toast.error("Erro ao adicionar membro");
-      console.error(error);
-    } else {
-      toast.success("Membro adicionado com sucesso");
-      setInviteEmail("");
-      setInviteRole("editor");
-      fetchMembers();
-    }
+      if (emailError) throw emailError;
 
-    setInviting(false);
+      toast.success(`Convite enviado para ${inviteEmail}!`);
+      setInviteEmail('');
+      setInviteRole('editor');
+      fetchMembers();
+    } catch (error: any) {
+      console.error('Error inviting user:', error);
+      toast.error(error.message || 'Erro ao enviar convite');
+    } finally {
+      setInviting(false);
+    }
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
@@ -125,6 +195,21 @@ export const WorkspaceUsers = () => {
       console.error(error);
     } else {
       toast.success("Cargo alterado com sucesso");
+      fetchMembers();
+    }
+  };
+
+  const handleCancelInvite = async (inviteId: string) => {
+    const { error } = await supabase
+      .from('workspace_invitations')
+      .delete()
+      .eq('id', inviteId);
+
+    if (error) {
+      toast.error("Erro ao cancelar convite");
+      console.error(error);
+    } else {
+      toast.success("Convite cancelado");
       fetchMembers();
     }
   };
@@ -195,6 +280,42 @@ export const WorkspaceUsers = () => {
           {inviting ? "Enviando..." : "Enviar Convite"}
         </Button>
       </div>
+
+      {/* Pending Invites */}
+      {pendingInvites.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="font-semibold">Convites Pendentes</h4>
+          <div className="border border-border rounded-lg divide-y divide-border">
+            {pendingInvites.map((invite) => (
+              <div key={invite.id} className="p-4 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{invite.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Convite enviado em {new Date(invite.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                    Pendente
+                  </Badge>
+                  <Badge variant="secondary">
+                    {invite.role === 'admin' ? 'Admin' : 'Editor'}
+                  </Badge>
+                  {activeWorkspace?.role !== 'editor' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCancelInvite(invite.id)}
+                    >
+                      <Trash size={18} className="text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Members List */}
       <div className="space-y-2">
