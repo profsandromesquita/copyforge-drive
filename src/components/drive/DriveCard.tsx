@@ -76,71 +76,76 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, onCl
         {/* Subtle gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        <div className="relative flex items-start gap-3">
-          {/* Icon */}
-          <div className={`${color} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-            <Icon size={28} weight="duotone" />
+        <div className="relative space-y-3">
+          <div className="flex items-start gap-3">
+            {/* Icon */}
+            <div className={`${color} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
+              <Icon size={28} weight="duotone" />
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
+                {title}
+              </h3>
+              {type !== 'copy' && subtitle && (
+                <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
+              )}
+            </div>
+            
+            {/* Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger 
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
+              >
+                <DotsThree size={20} weight="bold" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRenameDialogOpen(true);
+                  }}
+                >
+                  <Pencil size={16} className="mr-2" />
+                  Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
+                >
+                  <Trash size={16} className="mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
-              {title}
-            </h3>
-            {type === 'copy' && creatorName ? (
-              <div className="flex items-center gap-2 mt-1.5">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={creatorAvatar || undefined} />
-                  <AvatarFallback className="text-[10px]">
-                    {creatorName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="line-clamp-1">{creatorName}</span>
-                  {subtitle && (
-                    <>
-                      <span>•</span>
-                      <span className="whitespace-nowrap">{subtitle}</span>
-                    </>
-                  )}
-                </div>
+
+          {/* Creator info - Full width at bottom for copy cards */}
+          {type === 'copy' && creatorName && (
+            <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={creatorAvatar || undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {creatorName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 flex-1">
+                <span className="truncate">{creatorName}</span>
+                {subtitle && (
+                  <>
+                    <span>•</span>
+                    <span className="whitespace-nowrap">{subtitle}</span>
+                  </>
+                )}
               </div>
-            ) : subtitle ? (
-              <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
-            ) : null}
-          </div>
-          
-          {/* Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger 
-              onClick={(e) => e.stopPropagation()}
-              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
-            >
-              <DotsThree size={20} weight="bold" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border z-50">
-              <DropdownMenuItem 
-                className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setRenameDialogOpen(true);
-                }}
-              >
-                <Pencil size={16} className="mr-2" />
-                Renomear
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="cursor-pointer text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-              >
-                <Trash size={16} className="mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          )}
         </div>
       </div>
 
