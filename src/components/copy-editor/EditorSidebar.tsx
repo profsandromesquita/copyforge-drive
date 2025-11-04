@@ -24,15 +24,12 @@ export const EditorSidebar = () => {
     .find(b => b.id === selectedBlockId);
 
   const sidebarContent = (
-    <div className="h-full flex flex-col">
-      <Tabs defaultValue={selectedBlock ? "configuracoes" : "estrutura"} className="flex-1 flex flex-col">
+    <div className="h-full flex flex-col relative">
+      <Tabs defaultValue="estrutura" className="flex-1 flex flex-col">
         <div className="p-4 border-b">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="estrutura">Estrutura</TabsTrigger>
             <TabsTrigger value="copy-ia">Copy IA</TabsTrigger>
-            {selectedBlock && (
-              <TabsTrigger value="configuracoes">Config.</TabsTrigger>
-            )}
           </TabsList>
         </div>
 
@@ -44,17 +41,19 @@ export const EditorSidebar = () => {
           <TabsContent value="copy-ia" className="h-full p-4 overflow-y-auto mt-0">
             <CopyAITab />
           </TabsContent>
-
-          {selectedBlock && (
-            <TabsContent value="configuracoes" className="h-full p-4 overflow-y-auto mt-0">
-              <BlockSettings
-                block={selectedBlock}
-                onBack={() => selectBlock(null)}
-              />
-            </TabsContent>
-          )}
         </div>
       </Tabs>
+
+      {selectedBlock && (
+        <div className="absolute inset-0 bg-background z-10">
+          <div className="h-full p-4 overflow-y-auto">
+            <BlockSettings
+              block={selectedBlock}
+              onBack={() => selectBlock(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
