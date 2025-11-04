@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon } from 'phosphor-react';
@@ -21,9 +21,18 @@ interface ContentBlockProps {
 
 export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
   );
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current && block.type === 'text') {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [block.content, block.type]);
 
   const {
     attributes,
@@ -94,10 +103,12 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
       case 'text':
         return (
           <Textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder="Digite seu texto..."
-            className="min-h-[100px] border-none focus-visible:ring-0 resize-none"
+            className="border-none focus-visible:ring-0 resize-none overflow-hidden"
+            style={{ minHeight: '24px' }}
           />
         );
 
