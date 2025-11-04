@@ -21,7 +21,7 @@ interface SessionBlockProps {
 export const SessionBlock = ({ session }: SessionBlockProps) => {
   const { updateSession, removeSession, duplicateSession } = useCopyEditor();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: session.id,
     data: { session },
   });
@@ -29,7 +29,10 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
   return (
     <div
       ref={setNodeRef}
-      className="p-6 rounded-xl border-2 border-dashed bg-card/50 space-y-4"
+      className={`
+        p-6 rounded-xl border-2 border-dashed bg-card/50 space-y-4 transition-all
+        ${isOver ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border'}
+      `}
     >
       <div className="flex items-center justify-between">
         {isEditingTitle ? (

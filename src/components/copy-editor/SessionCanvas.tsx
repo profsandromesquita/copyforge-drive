@@ -1,5 +1,5 @@
 import { Plus } from 'phosphor-react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SessionBlock } from './SessionBlock';
 import { Button } from '@/components/ui/button';
@@ -10,17 +10,29 @@ import { Block } from '@/types/copy-editor';
 export const SessionCanvas = () => {
   const { sessions, addSession, addBlock, moveBlock } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const [activeType, setActiveType] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     if (active.data.current?.block) {
       setActiveBlock(active.data.current.block);
+    } else if (active.data.current?.fromToolbar) {
+      setActiveType(active.data.current.type);
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveBlock(null);
+    setActiveType(null);
 
     if (!over) return;
 
@@ -29,7 +41,18 @@ export const SessionCanvas = () => {
 
     // Dragging from toolbar
     if (activeData?.fromToolbar) {
-      const sessionId = overData?.session?.id;
+      let sessionId = overData?.session?.id;
+      
+      // If dropping over a block, get the session from that block
+      if (!sessionId && overData?.sessionId) {
+        sessionId = overData.sessionId;
+      }
+      
+      // If dropping directly over a session
+      if (!sessionId && over.id.toString().startsWith('session-')) {
+        sessionId = over.id.toString();
+      }
+
       if (sessionId) {
         addBlock(sessionId, {
           type: activeData.type,
@@ -41,17 +64,25 @@ export const SessionCanvas = () => {
     }
 
     // Moving block between sessions or reordering
-    if (activeData?.block && overData?.session) {
+    if (activeData?.block) {
       const blockId = activeData.block.id;
-      const toSessionId = overData.session.id;
-      const toIndex = overData.session.blocks.length;
+      let toSessionId = overData?.session?.id;
+      
+      // If dropping over a block, get the session from that block
+      if (!toSessionId && overData?.sessionId) {
+        toSessionId = overData.sessionId;
+      }
 
-      moveBlock(blockId, toSessionId, toIndex);
+      if (toSessionId) {
+        const toIndex = overData?.session?.blocks.length || 0;
+        moveBlock(blockId, toSessionId, toIndex);
+      }
     }
   };
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -88,8 +119,12 @@ export const SessionCanvas = () => {
 
       <DragOverlay>
         {activeBlock ? (
-          <div className="p-4 rounded-lg border bg-card opacity-80">
-            {activeBlock.type}
+          <div className="p-4 rounded-lg border-2 border-primary bg-card shadow-lg">
+            <span className="font-medium">{activeBlock.type}</span>
+          </div>
+        ) : activeType ? (
+          <div className="p-4 rounded-lg border-2 border-primary bg-card shadow-lg">
+            <span className="font-medium">{activeType}</span>
           </div>
         ) : null}
       </DragOverlay>

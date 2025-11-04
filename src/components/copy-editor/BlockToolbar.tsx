@@ -22,8 +22,8 @@ const ToolbarBlock = ({ type, icon, label }: ToolbarBlockProps) => {
       className={`
         flex items-center gap-2 px-4 py-2 rounded-lg border bg-card
         hover:border-primary hover:bg-accent cursor-grab active:cursor-grabbing
-        transition-all min-w-fit
-        ${isDragging ? 'opacity-50' : ''}
+        transition-all min-w-fit shadow-sm hover:shadow-md
+        ${isDragging ? 'opacity-50 scale-95' : ''}
       `}
     >
       <div className="text-primary">{icon}</div>
