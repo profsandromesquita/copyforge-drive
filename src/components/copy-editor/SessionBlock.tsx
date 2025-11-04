@@ -42,16 +42,24 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
 };
 
 export const SessionBlock = ({ session }: SessionBlockProps) => {
-  const { updateSession, removeSession, duplicateSession } = useCopyEditor();
+  const { updateSession, removeSession, duplicateSession, selectBlock } = useCopyEditor();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id: session.id,
     data: { session },
   });
 
+  const handleSessionClick = (e: React.MouseEvent) => {
+    // Only deselect if clicking directly on the session container (not on blocks)
+    if (e.target === e.currentTarget) {
+      selectBlock(null);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
+      onClick={handleSessionClick}
       className={`
         p-6 rounded-xl border-2 border-dashed bg-card/50 space-y-4 transition-all
         ${isOver ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border'}
@@ -105,7 +113,7 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
         </DropdownMenu>
       </div>
 
-      <div className="space-y-1 min-h-[100px]">
+      <div className="space-y-1 min-h-[100px]" onClick={handleSessionClick}>
         {session.blocks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Arraste blocos da toolbar para começar
