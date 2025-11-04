@@ -143,8 +143,8 @@ export const AIGeneratedPreviewModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <ScrollArea className="h-[500px] pr-4">
+          <div className="space-y-4 pb-4">
             {generatedSessions.map((session) => (
               <div key={session.id} className="border rounded-lg p-4">
                 {/* Session checkbox */}
