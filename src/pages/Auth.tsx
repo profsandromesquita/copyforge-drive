@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText } from "phosphor-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import copyDriveLogo from "@/assets/copydrive-logo.png";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -51,12 +51,13 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="bg-primary p-3 rounded-xl">
-              <FileText size={32} weight="bold" className="text-primary-foreground" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <img 
+              src={copyDriveLogo} 
+              alt="CopyDrive" 
+              className="h-12"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Copy Drive</h1>
           <p className="text-muted-foreground">
             {isLogin ? "Acesse sua conta" : "Crie sua conta"}
           </p>

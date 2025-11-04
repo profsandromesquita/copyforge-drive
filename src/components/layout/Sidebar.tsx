@@ -6,6 +6,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { ProjectSelector } from "./ProjectSelector";
+import copyDriveLogo from "@/assets/copydrive-logo.png";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,11 +35,12 @@ const Sidebar = () => {
     <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-background h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary p-2 rounded-lg">
-            <FileText size={24} weight="bold" className="text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">Copy Drive</span>
+        <div className="flex items-center justify-center">
+          <img 
+            src={copyDriveLogo} 
+            alt="CopyDrive" 
+            className="h-8"
+          />
         </div>
       </div>
 
