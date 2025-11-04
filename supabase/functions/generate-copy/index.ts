@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { copyType, objetivos, estilos, tamanhos, preferencias, prompt } = await req.json();
+    const { copyType, objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -20,7 +20,7 @@ serve(async (req) => {
     console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
 
     const systemPrompt = buildSystemPrompt(copyType);
-    const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt });
+    const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -167,12 +167,42 @@ function buildSystemPrompt(copyType: string): string {
 }
 
 function buildUserPrompt(params: any): string {
-  const { objetivos, estilos, tamanhos, preferencias, prompt } = params;
+  const { objetivos, estilos, tamanhos, preferencias, prompt, audienceSegment, offer } = params;
 
   const objetivosText = objetivos.length > 0 ? objetivos.join(", ") : "não especificado";
   const estilosText = estilos.length > 0 ? estilos.join(", ") : "não especificado";
   const tamanhosText = tamanhos.length > 0 ? tamanhos.join(", ") : "não especificado";
   const preferenciasText = preferencias.length > 0 ? preferencias.join(", ") : "não especificado";
+
+  let audienceContext = "";
+  if (audienceSegment) {
+    audienceContext = `
+**PÚBLICO-ALVO:**
+- Avatar: ${audienceSegment.avatar}
+- Segmento: ${audienceSegment.segment}
+- Situação Atual: ${audienceSegment.current_situation}
+- Resultado Desejado: ${audienceSegment.desired_result}
+- Nível de Consciência: ${audienceSegment.awareness_level}
+- Objeções: ${audienceSegment.objections?.join(", ") || "não especificado"}
+- Tom de Comunicação: ${audienceSegment.communication_tone}
+`;
+  }
+
+  let offerContext = "";
+  if (offer) {
+    offerContext = `
+**OFERTA:**
+- Nome: ${offer.name}
+- Tipo: ${offer.type}
+- Descrição: ${offer.short_description}
+- Benefício Principal: ${offer.main_benefit}
+- Mecanismo Único: ${offer.unique_mechanism}
+- Diferenciais: ${offer.differentials?.join(", ") || "não especificado"}
+- Prova: ${offer.proof}
+- Garantia: ${offer.guarantee || "não especificado"}
+- CTA: ${offer.cta}
+`;
+  }
 
   return `
 Crie uma copy em português brasileiro com as seguintes características:
@@ -181,7 +211,7 @@ Crie uma copy em português brasileiro com as seguintes características:
 **Estilo de Escrita:** ${estilosText}
 **Tamanho:** ${tamanhosText}
 **Preferências:** ${preferenciasText}
-
+${audienceContext}${offerContext}
 **Detalhes:**
 ${prompt}
 

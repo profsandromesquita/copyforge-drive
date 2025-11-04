@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,12 +6,15 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session } from '@/types/copy-editor';
 import { AIGeneratedPreviewModal } from './AIGeneratedPreviewModal';
+import { AudienceSegment, Offer } from '@/types/project-config';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-type Etapa = 1 | 2;
+type Etapa = 1 | 2 | 3;
 
 const OBJETIVOS = [
   { value: 'venda', label: 'Venda' },
@@ -40,15 +43,20 @@ const PREFERENCIAS = [
 
 export const CopyAITab = () => {
   const { copyType } = useCopyEditor();
+  const { activeProject } = useProject();
   const { toast } = useToast();
 
-  // Etapa 1: Preferências
+  // Etapa 1: Segmentação e Oferta
+  const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
+  const [offerId, setOfferId] = useState<string>('');
+
+  // Etapa 2: Preferências
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [estilos, setEstilos] = useState<string[]>([]);
   const [tamanho, setTamanho] = useState<string>('');
   const [preferencias, setPreferencias] = useState<string[]>([]);
 
-  // Etapa 2: Detalhes
+  // Etapa 3: Detalhes
   const [prompt, setPrompt] = useState('');
 
   // Controle de UI
@@ -56,6 +64,10 @@ export const CopyAITab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // Carregar dados do projeto
+  const audienceSegments = activeProject?.audience_segments || [];
+  const offers = activeProject?.offers || [];
 
 
   const handleGenerate = async () => {
@@ -71,6 +83,15 @@ export const CopyAITab = () => {
     setIsGenerating(true);
 
     try {
+      // Buscar dados do público e oferta selecionados
+      const selectedAudience = audienceSegmentId 
+        ? audienceSegments.find(s => s.id === audienceSegmentId)
+        : null;
+      
+      const selectedOffer = offerId
+        ? offers.find(o => o.id === offerId)
+        : null;
+
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
           copyType: copyType || 'outro',
@@ -79,6 +100,8 @@ export const CopyAITab = () => {
           tamanhos: tamanho ? [tamanho] : [],
           preferencias,
           prompt,
+          audienceSegment: selectedAudience,
+          offer: selectedOffer,
         },
       });
 
@@ -129,6 +152,8 @@ export const CopyAITab = () => {
 
   const handleSuccess = () => {
     // Reset form
+    setAudienceSegmentId('');
+    setOfferId('');
     setObjetivos([]);
     setEstilos([]);
     setTamanho('');
@@ -138,7 +163,57 @@ export const CopyAITab = () => {
     setGeneratedSessions([]);
   };
 
+  // Etapa 1: Segmentação e Oferta
   if (etapa === 1) {
+    return (
+      <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
+        <div className="space-y-6">
+          {/* Segmentação do Público */}
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Segmentação do Público (Opcional)</Label>
+            <Select value={audienceSegmentId} onValueChange={setAudienceSegmentId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um público-alvo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {audienceSegments.map((segment: AudienceSegment) => (
+                  <SelectItem key={segment.id} value={segment.id}>
+                    {segment.avatar} - {segment.segment}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Oferta */}
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Oferta (Opcional)</Label>
+            <Select value={offerId} onValueChange={setOfferId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma oferta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhuma</SelectItem>
+                {offers.map((offer: Offer) => (
+                  <SelectItem key={offer.id} value={offer.id}>
+                    {offer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={() => setEtapa(2)} className="w-full">
+            Próxima Etapa
+          </Button>
+        </div>
+      </ScrollArea>
+    );
+  }
+
+  // Etapa 2: Preferências
+  if (etapa === 2) {
     return (
       <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
         <div className="space-y-6">
@@ -230,19 +305,26 @@ export const CopyAITab = () => {
             </ToggleGroup>
           </div>
 
-          <Button onClick={() => setEtapa(2)} className="w-full">
-            Próxima Etapa
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setEtapa(1)} className="flex-1">
+              ← Voltar
+            </Button>
+            <Button onClick={() => setEtapa(3)} className="flex-1">
+              Próxima Etapa
+            </Button>
+          </div>
         </div>
       </ScrollArea>
     );
   }
 
+  // Etapa 3: Detalhes
+
   return (
     <>
       <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setEtapa(1)} className="w-full justify-start">
-          ← Voltar para Preferências
+        <Button variant="ghost" onClick={() => setEtapa(2)} className="w-full justify-start">
+          ← Voltar
         </Button>
 
         <div className="space-y-2">
