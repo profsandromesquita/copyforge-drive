@@ -1,8 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ListBullets } from 'phosphor-react';
-import { StructureTree } from './StructureTree';
 import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
@@ -25,24 +23,11 @@ export const EditorSidebar = () => {
 
   const sidebarContent = (
     <div className="h-full flex flex-col relative">
-      <Tabs defaultValue="estrutura" className="flex-1 flex flex-col">
-        <div className="p-4 border-b">
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="estrutura">Estrutura</TabsTrigger>
-            <TabsTrigger value="copy-ia">Copy IA</TabsTrigger>
-          </TabsList>
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full p-4 overflow-y-auto">
+          <CopyAITab />
         </div>
-
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="estrutura" className="h-full p-4 overflow-y-auto mt-0">
-            <StructureTree sessions={sessions} />
-          </TabsContent>
-
-          <TabsContent value="copy-ia" className="h-full p-4 overflow-y-auto mt-0">
-            <CopyAITab />
-          </TabsContent>
-        </div>
-      </Tabs>
+      </div>
 
       {selectedBlock && (
         <div className="absolute inset-0 bg-background z-10">
