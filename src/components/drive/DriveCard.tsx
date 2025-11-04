@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDrive } from "@/hooks/useDrive";
 
 type CardType = "folder" | "copy" | "funnel";
@@ -25,6 +26,8 @@ interface DriveCardProps {
   type: CardType;
   title: string;
   subtitle?: string;
+  creatorName?: string;
+  creatorAvatar?: string | null;
   onClick?: () => void;
 }
 
@@ -34,7 +37,7 @@ const iconMap = {
   funnel: { icon: FunnelSimple, color: "text-foreground" },
 };
 
-const DriveCard = ({ id, type, title, subtitle, onClick }: DriveCardProps) => {
+const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, onClick }: DriveCardProps) => {
   const { icon: Icon, color } = iconMap[type];
   const { deleteFolder, deleteCopy, renameFolder, renameCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -84,9 +87,27 @@ const DriveCard = ({ id, type, title, subtitle, onClick }: DriveCardProps) => {
             <h3 className="font-semibold text-sm text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
               {title}
             </h3>
-            {subtitle && (
+            {type === 'copy' && creatorName ? (
+              <div className="flex items-center gap-2 mt-1.5">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={creatorAvatar || undefined} />
+                  <AvatarFallback className="text-[10px]">
+                    {creatorName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="line-clamp-1">{creatorName}</span>
+                  {subtitle && (
+                    <>
+                      <span>•</span>
+                      <span className="whitespace-nowrap">{subtitle}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : subtitle ? (
               <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
-            )}
+            ) : null}
           </div>
           
           {/* Menu */}

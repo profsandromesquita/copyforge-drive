@@ -25,6 +25,10 @@ interface Copy {
   created_by: string;
   created_at: string;
   updated_at: string;
+  creator?: {
+    name: string;
+    avatar_url: string | null;
+  };
 }
 
 interface DriveContextType {
@@ -80,10 +84,13 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: foldersData, error: foldersError } = await foldersQuery;
       if (foldersError) throw foldersError;
 
-      // Fetch copies
+      // Fetch copies with creator info
       const copiesQuery = supabase
         .from('copies')
-        .select('*')
+        .select(`
+          *,
+          creator:profiles!created_by(name, avatar_url)
+        `)
         .eq('workspace_id', activeWorkspace.id)
         .order('created_at', { ascending: false });
 

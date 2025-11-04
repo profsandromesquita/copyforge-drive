@@ -135,10 +135,12 @@ const Dashboard = () => {
                       id={copy.id}
                       type="copy"
                       title={copy.title}
-                      subtitle={`Editada ${formatDistanceToNow(new Date(copy.updated_at), { 
+                      creatorName={copy.creator?.name}
+                      creatorAvatar={copy.creator?.avatar_url}
+                      subtitle={formatDistanceToNow(new Date(copy.updated_at), { 
                         addSuffix: true, 
                         locale: ptBR 
-                      })}`}
+                      }).replace('há cerca de ', '').replace('há ', '')}
                       onClick={() => navigate(`/copy/${copy.id}`)}
                     />
                   ))}
