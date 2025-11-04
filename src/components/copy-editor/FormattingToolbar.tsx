@@ -48,6 +48,7 @@ interface FormattingToolbarProps {
   onAlignChange: (align: string) => void;
   fontSize?: string;
   onFontSizeChange: (size: string) => void;
+  onFocusMode?: () => void;
 }
 
 export const FormattingToolbar = ({
@@ -56,6 +57,7 @@ export const FormattingToolbar = ({
   onAlignChange,
   fontSize = 'medium',
   onFontSizeChange,
+  onFocusMode,
 }: FormattingToolbarProps) => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -260,12 +262,13 @@ export const FormattingToolbar = ({
             <LinkIcon className="h-4 w-4" />
           </Button>
 
-          {/* Fullscreen - placeholder */}
+          {/* Focus Mode */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {}}
+            onClick={onFocusMode}
             className="h-8 w-8 p-0"
+            title="Modo Foco"
           >
             <Maximize className="h-4 w-4" />
           </Button>

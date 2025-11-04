@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { FormattingToolbar } from './FormattingToolbar';
+import { FocusModeModal } from './FocusModeModal';
 
 interface ContentBlockProps {
   block: Block;
@@ -22,6 +23,7 @@ interface ContentBlockProps {
 export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
   const editableRef = useRef<HTMLDivElement>(null);
+  const [showFocusMode, setShowFocusMode] = useState(false);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
   );
@@ -97,6 +99,14 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
     }
   };
 
+  const handleFocusModeOpen = () => {
+    setShowFocusMode(true);
+  };
+
+  const handleFocusModeSave = (content: string, config: typeof block.config) => {
+    updateBlock(block.id, { content, config });
+  };
+
   const handleListChange = (index: number, value: string) => {
     const newItems = [...listItems];
     newItems[index] = value;
@@ -131,6 +141,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 onAlignChange={handleAlignChange}
                 fontSize={block.config?.fontSize}
                 onFontSizeChange={handleFontSizeChange}
+                onFocusMode={handleFocusModeOpen}
               />
             )}
             <div
@@ -141,6 +152,14 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               className={`text-2xl font-bold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu título..."
               suppressContentEditableWarning
+            />
+            <FocusModeModal
+              open={showFocusMode}
+              onOpenChange={setShowFocusMode}
+              content={typeof block.content === 'string' ? block.content : ''}
+              blockType={block.type}
+              config={block.config}
+              onSave={handleFocusModeSave}
             />
           </>
         );
@@ -155,6 +174,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 onAlignChange={handleAlignChange}
                 fontSize={block.config?.fontSize}
                 onFontSizeChange={handleFontSizeChange}
+                onFocusMode={handleFocusModeOpen}
               />
             )}
             <div
@@ -165,6 +185,14 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               className={`text-xl font-semibold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu subtítulo..."
               suppressContentEditableWarning
+            />
+            <FocusModeModal
+              open={showFocusMode}
+              onOpenChange={setShowFocusMode}
+              content={typeof block.content === 'string' ? block.content : ''}
+              blockType={block.type}
+              config={block.config}
+              onSave={handleFocusModeSave}
             />
           </>
         );
@@ -179,6 +207,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 onAlignChange={handleAlignChange}
                 fontSize={block.config?.fontSize}
                 onFontSizeChange={handleFontSizeChange}
+                onFocusMode={handleFocusModeOpen}
               />
             )}
             <div
@@ -189,6 +218,14 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               className={`min-h-[24px] border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu texto..."
               suppressContentEditableWarning
+            />
+            <FocusModeModal
+              open={showFocusMode}
+              onOpenChange={setShowFocusMode}
+              content={typeof block.content === 'string' ? block.content : ''}
+              blockType={block.type}
+              config={block.config}
+              onSave={handleFocusModeSave}
             />
           </>
         );
