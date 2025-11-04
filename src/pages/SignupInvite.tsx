@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import copydriveIcon from "@/assets/copydrive-icon.svg";
 
 export default function SignupInvite() {
   const [searchParams] = useSearchParams();
@@ -141,8 +142,8 @@ export default function SignupInvite() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-3xl">👋</span>
+          <div className="mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+            <img src={copydriveIcon} alt="CopyDrive" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl">Criar Conta</CardTitle>
           <CardDescription>
