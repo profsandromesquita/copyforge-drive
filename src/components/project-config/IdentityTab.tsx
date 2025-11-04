@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +14,8 @@ import { X, Plus } from 'phosphor-react';
 import { VoiceInput } from './VoiceInput';
 import { SECTORS, VOICE_TONES, BRAND_PERSONALITIES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -27,7 +30,10 @@ interface IdentityTabProps {
 }
 
 export const IdentityTab = ({ isNew }: IdentityTabProps) => {
-  const { activeProject, createProject, refreshProjects } = useProject();
+  const navigate = useNavigate();
+  const { activeProject, createProject, refreshProjects, setActiveProject } = useProject();
+  const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const [voiceTones, setVoiceTones] = useState<string[]>([]);
   const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -89,7 +95,41 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         keywords: keywords,
       };
 
-      if (activeProject) {
+      if (isNew && !activeProject) {
+        // Create new project with identity data
+        if (!activeWorkspace?.id || !user?.id) {
+          toast.error('Workspace ou usuário não encontrado');
+          return;
+        }
+
+        const projectName = data.brand_name || 'Novo Projeto';
+        
+        const { data: projectData, error: createError } = await supabase
+          .from('projects')
+          .insert({
+            workspace_id: activeWorkspace.id,
+            name: projectName,
+            created_by: user.id,
+            ...updates,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          if (createError.code === '23505') {
+            toast.error('Já existe um projeto com este nome neste workspace');
+          } else {
+            throw createError;
+          }
+          return;
+        }
+
+        toast.success('Projeto criado com sucesso!');
+        await refreshProjects();
+        setActiveProject(projectData as any);
+        navigate(`/project/${projectData.id}`);
+      } else if (activeProject) {
+        // Update existing project
         const { error } = await supabase
           .from('projects')
           .update(updates)
@@ -248,8 +288,8 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
           )}
         </div>
 
-        <Button type="submit" disabled={saving || (!activeProject && !isNew)}>
-          {saving ? 'Salvando...' : 'Salvar Identidade'}
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
         </Button>
       </div>
     </form>
