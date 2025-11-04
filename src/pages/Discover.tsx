@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { DiscoverCard } from '@/components/discover/DiscoverCard';
@@ -9,6 +10,7 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
 
 const Discover = () => {
+  const navigate = useNavigate();
   const { copies, loading, copyCopy } = useDiscover();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
@@ -29,7 +31,10 @@ const Discover = () => {
       activeWorkspace.id,
       activeProject?.id || null,
       folderId,
-      user.id
+      user.id,
+      (newCopyId) => {
+        navigate(`/copy/${newCopyId}`);
+      }
     );
 
     setSelectedCopyId(null);

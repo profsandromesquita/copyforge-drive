@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@/types/copy-editor';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface DiscoverCopy {
   id: string;
@@ -19,7 +18,6 @@ interface DiscoverCopy {
 export const useDiscover = () => {
   const [copies, setCopies] = useState<DiscoverCopy[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDiscoverCopies();
@@ -72,7 +70,8 @@ export const useDiscover = () => {
     workspaceId: string,
     projectId: string | null,
     folderId: string | null,
-    userId: string
+    userId: string,
+    onSuccess: (newCopyId: string) => void
   ) => {
     try {
       // Fetch original copy
@@ -106,7 +105,7 @@ export const useDiscover = () => {
       await incrementCopyCount(copyId);
 
       toast.success('Copy copiada com sucesso!');
-      navigate(`/copy/${newCopy.id}`);
+      onSuccess(newCopy.id);
     } catch (error) {
       console.error('Error copying copy:', error);
       toast.error('Erro ao copiar copy');
