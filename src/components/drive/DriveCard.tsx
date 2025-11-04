@@ -68,19 +68,34 @@ const DriveCard = ({ id, type, title, subtitle, onClick }: DriveCardProps) => {
     <>
       <div
         onClick={onClick}
-        className="group bg-card border border-border rounded-2xl p-5 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer"
+        className="group relative bg-card border border-border/50 rounded-xl p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
       >
-        <div className="flex items-start justify-between mb-4">
-          <div className={`${color} group-hover:scale-110 transition-transform`}>
-            <Icon size={32} weight="bold" />
+        {/* Subtle gradient overlay on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className="relative flex items-start gap-3">
+          {/* Icon */}
+          <div className={`${color} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
+            <Icon size={28} weight="duotone" />
           </div>
           
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm text-foreground mb-0.5 line-clamp-1 group-hover:text-primary transition-colors">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
+            )}
+          </div>
+          
+          {/* Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger 
               onClick={(e) => e.stopPropagation()}
-              className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-accent"
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
             >
-              <DotsThree size={24} weight="bold" />
+              <DotsThree size={20} weight="bold" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover border-border z-50">
               <DropdownMenuItem 
@@ -105,13 +120,6 @@ const DriveCard = ({ id, type, title, subtitle, onClick }: DriveCardProps) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        <div>
-          <h3 className="font-semibold text-foreground mb-1 line-clamp-1">{title}</h3>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground line-clamp-1">{subtitle}</p>
-          )}
         </div>
       </div>
 
