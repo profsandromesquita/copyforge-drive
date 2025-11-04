@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
@@ -58,13 +57,6 @@ export const CopyAITab = () => {
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  const toggleArrayItem = (arr: string[], setArr: (val: string[]) => void, value: string) => {
-    if (arr.includes(value)) {
-      setArr(arr.filter(v => v !== value));
-    } else {
-      setArr([...arr, value]);
-    }
-  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -151,87 +143,91 @@ export const CopyAITab = () => {
       <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
         <div className="space-y-6">
           {/* Objetivo da Copy */}
-          <div className="space-y-2">
-            <Label className="font-semibold">Objetivo da Copy</Label>
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Objetivo da Copy</Label>
+            <ToggleGroup 
+              type="multiple" 
+              value={objetivos} 
+              onValueChange={setObjetivos}
+              className="grid grid-cols-2 gap-2"
+            >
               {OBJETIVOS.map((item) => (
-                <div key={item.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`objetivo-${item.value}`}
-                    checked={objetivos.includes(item.value)}
-                    onCheckedChange={() => toggleArrayItem(objetivos, setObjetivos, item.value)}
-                  />
-                  <label
-                    htmlFor={`objetivo-${item.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {item.label}
-                  </label>
-                </div>
+                <ToggleGroupItem 
+                  key={item.value} 
+                  value={item.value}
+                  variant="outline"
+                  className="text-sm h-9"
+                >
+                  {item.label}
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           {/* Estilo da Escrita */}
-          <div className="space-y-2">
-            <Label className="font-semibold">Estilo da Escrita</Label>
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Estilo da Escrita</Label>
+            <ToggleGroup 
+              type="multiple" 
+              value={estilos} 
+              onValueChange={setEstilos}
+              className="grid grid-cols-2 gap-2"
+            >
               {ESTILOS.map((item) => (
-                <div key={item.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`estilo-${item.value}`}
-                    checked={estilos.includes(item.value)}
-                    onCheckedChange={() => toggleArrayItem(estilos, setEstilos, item.value)}
-                  />
-                  <label
-                    htmlFor={`estilo-${item.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {item.label}
-                  </label>
-                </div>
+                <ToggleGroupItem 
+                  key={item.value} 
+                  value={item.value}
+                  variant="outline"
+                  className="text-sm h-9"
+                >
+                  {item.label}
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           {/* Tamanho da Copy */}
-          <div className="space-y-2">
-            <Label className="font-semibold">Tamanho da Copy</Label>
-            <RadioGroup value={tamanho} onValueChange={setTamanho}>
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Tamanho da Copy</Label>
+            <ToggleGroup 
+              type="single" 
+              value={tamanho} 
+              onValueChange={setTamanho}
+              className="grid grid-cols-3 gap-2"
+            >
               {TAMANHOS.map((item) => (
-                <div key={item.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={item.value} id={`tamanho-${item.value}`} />
-                  <label
-                    htmlFor={`tamanho-${item.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {item.label}
-                  </label>
-                </div>
+                <ToggleGroupItem 
+                  key={item.value} 
+                  value={item.value}
+                  variant="outline"
+                  className="text-sm h-9"
+                >
+                  {item.label}
+                </ToggleGroupItem>
               ))}
-            </RadioGroup>
+            </ToggleGroup>
           </div>
 
           {/* Outras Preferências */}
-          <div className="space-y-2">
-            <Label className="font-semibold">Outras Preferências</Label>
-            <div className="space-y-2">
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Outras Preferências</Label>
+            <ToggleGroup 
+              type="multiple" 
+              value={preferencias} 
+              onValueChange={setPreferencias}
+              className="grid grid-cols-2 gap-2"
+            >
               {PREFERENCIAS.map((item) => (
-                <div key={item.value} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`preferencia-${item.value}`}
-                    checked={preferencias.includes(item.value)}
-                    onCheckedChange={() => toggleArrayItem(preferencias, setPreferencias, item.value)}
-                  />
-                  <label
-                    htmlFor={`preferencia-${item.value}`}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    {item.label}
-                  </label>
-                </div>
+                <ToggleGroupItem 
+                  key={item.value} 
+                  value={item.value}
+                  variant="outline"
+                  className="text-sm h-9"
+                >
+                  {item.label}
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           <Button onClick={() => setEtapa(2)} className="w-full">
