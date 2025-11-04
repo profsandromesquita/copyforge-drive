@@ -18,6 +18,7 @@ import {
   AlignJustify,
   Link as LinkIcon,
   Maximize,
+  Palette,
 } from 'lucide-react';
 import {
   Dialog,
@@ -26,8 +27,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+const COLOR_PALETTE = [
+  '#000000', '#2C3E50', '#34495E', '#7F8C8D',
+  '#95A5A6', '#E74C3C', '#E67E22', '#F39C12',
+  '#27AE60', '#3498DB', '#9B59B6', '#FFFFFF',
+  '#F1C40F',
+];
 
 interface FormattingToolbarProps {
   onFormat: () => void;
@@ -46,6 +59,8 @@ export const FormattingToolbar = ({
 }: FormattingToolbarProps) => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentColor, setCurrentColor] = useState('#000000');
   const [activeFormats, setActiveFormats] = useState({
     bold: false,
     italic: false,
@@ -88,6 +103,12 @@ export const FormattingToolbar = ({
       setShowLinkDialog(false);
       setLinkUrl('');
     }
+  };
+
+  const applyColor = (color: string) => {
+    applyFormat('foreColor', color);
+    setCurrentColor(color);
+    setShowColorPicker(false);
   };
 
   return (
@@ -174,6 +195,58 @@ export const FormattingToolbar = ({
               <SelectItem value="large">Grande</SelectItem>
             </SelectContent>
           </Select>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          {/* Color Picker */}
+          <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 relative"
+              >
+                <Palette className="h-4 w-4" />
+                <div 
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full"
+                  style={{ backgroundColor: currentColor }}
+                />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="start">
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Cor do texto</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {COLOR_PALETTE.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => applyColor(color)}
+                      className={`w-10 h-10 rounded-md border-2 transition-all hover:scale-110 ${
+                        currentColor === color ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Input
+                    value={currentColor}
+                    onChange={(e) => setCurrentColor(e.target.value)}
+                    placeholder="#000000"
+                    className="h-8 text-xs font-mono"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => applyColor(currentColor)}
+                    className="h-8"
+                  >
+                    Aplicar
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <Separator orientation="vertical" className="h-6" />
 
