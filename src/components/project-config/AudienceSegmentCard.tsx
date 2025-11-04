@@ -17,8 +17,8 @@ export const AudienceSegmentCard = ({ segment, onEdit, onDelete }: AudienceSegme
     <div className="bg-card border border-border rounded-lg p-6 space-y-4">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="font-bold text-lg">{segment.avatar}</h3>
-          <p className="text-sm text-muted-foreground mt-1">{segment.segment}</p>
+          <h3 className="font-bold text-lg">{segment.name}</h3>
+          <p className="text-sm text-muted-foreground mt-1">{segment.avatar} • {segment.segment}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" onClick={() => onEdit(segment)}>

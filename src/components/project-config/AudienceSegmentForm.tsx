@@ -24,7 +24,7 @@ interface AudienceSegmentFormProps {
 export const AudienceSegmentForm = ({ open, onOpenChange, segment, allSegments, onSave }: AudienceSegmentFormProps) => {
   const { activeProject, refreshProjects } = useProject();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
-    avatar: '', segment: '', current_situation: '', desired_result: '',
+    name: '', avatar: '', segment: '', current_situation: '', desired_result: '',
     awareness_level: 'unaware', objections: [], communication_tone: ''
   });
   const [newObjection, setNewObjection] = useState('');
@@ -34,12 +34,12 @@ export const AudienceSegmentForm = ({ open, onOpenChange, segment, allSegments, 
     if (segment) {
       setFormData(segment);
     } else {
-      setFormData({ avatar: '', segment: '', current_situation: '', desired_result: '', awareness_level: 'unaware', objections: [], communication_tone: '' });
+      setFormData({ name: '', avatar: '', segment: '', current_situation: '', desired_result: '', awareness_level: 'unaware', objections: [], communication_tone: '' });
     }
   }, [segment, open]);
 
   const handleSave = async () => {
-    if (!formData.avatar || !formData.segment || !formData.current_situation || !formData.desired_result) {
+    if (!formData.name || !formData.avatar || !formData.segment || !formData.current_situation || !formData.desired_result) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -70,8 +70,9 @@ export const AudienceSegmentForm = ({ open, onOpenChange, segment, allSegments, 
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{segment ? 'Editar' : 'Adicionar'} Segmento de Público</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
-          <div><Label>Avatar/Persona *</Label><Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} /></div>
-          <div><Label>Segmento/Nicho *</Label><Input value={formData.segment} onChange={e => setFormData({...formData, segment: e.target.value})} /></div>
+          <div><Label>Nome do Público *</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Empreendedores Iniciantes" /></div>
+          <div><Label>Avatar/Persona *</Label><Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} placeholder="Ex: João, 35 anos" /></div>
+          <div><Label>Segmento/Nicho *</Label><Input value={formData.segment} onChange={e => setFormData({...formData, segment: e.target.value})} placeholder="Ex: E-commerce de moda" /></div>
           
           <div><Label>Situação atual *</Label>
             <div className="relative">

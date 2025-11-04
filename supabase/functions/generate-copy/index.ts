@@ -191,6 +191,7 @@ function buildUserPrompt(params: any): string {
   if (audienceSegment) {
     audienceContext = `
 **PÚBLICO-ALVO:**
+- Nome: ${audienceSegment.name}
 - Avatar: ${audienceSegment.avatar}
 - Segmento: ${audienceSegment.segment}
 - Situação Atual: ${audienceSegment.current_situation}

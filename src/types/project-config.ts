@@ -1,5 +1,6 @@
 export interface AudienceSegment {
   id: string;
+  name: string; // nome do público
   avatar: string; // persona principal
   segment: string; // segmento/nicho
   current_situation: string; // dor principal
