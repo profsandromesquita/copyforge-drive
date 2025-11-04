@@ -55,15 +55,15 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange }: WorkspaceSettings
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto">
-            <Tabs value={activeTab} className="h-full">
-              <TabsContent value="general" className="p-6 mt-0">
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Tabs value={activeTab} className="h-full flex flex-col">
+              <TabsContent value="general" className="flex-1 overflow-y-auto p-6 mt-0">
                 <WorkspaceGeneral />
               </TabsContent>
-              <TabsContent value="users" className="p-6 mt-0">
+              <TabsContent value="users" className="flex-1 overflow-y-auto p-6 mt-0">
                 <WorkspaceUsers />
               </TabsContent>
-              <TabsContent value="billing" className="p-6 mt-0">
+              <TabsContent value="billing" className="flex-1 overflow-y-auto p-6 mt-0">
                 <WorkspaceBilling />
               </TabsContent>
             </Tabs>
