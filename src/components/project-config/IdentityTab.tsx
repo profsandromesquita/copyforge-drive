@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'phosphor-react';
+import { VoiceInput } from './VoiceInput';
 import { SECTORS, VOICE_TONES, BRAND_PERSONALITIES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,12 +150,21 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         {/* Propósito Central */}
         <div className="space-y-2">
           <Label htmlFor="central_purpose">Propósito central</Label>
-          <Textarea
-            id="central_purpose"
-            {...register('central_purpose')}
-            placeholder="Qual é o propósito da sua marca?"
-            rows={3}
-          />
+          <div className="relative">
+            <Textarea
+              id="central_purpose"
+              {...register('central_purpose')}
+              placeholder="Qual é o propósito da sua marca?"
+              rows={3}
+              className="pr-12"
+            />
+            <VoiceInput
+              onTranscript={(text) => {
+                const currentValue = watch('central_purpose') || '';
+                setValue('central_purpose', currentValue ? `${currentValue} ${text}` : text);
+              }}
+            />
+          </div>
         </div>
 
         {/* Tom de Voz */}

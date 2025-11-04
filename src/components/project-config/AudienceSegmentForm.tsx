@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X } from 'phosphor-react';
+import { VoiceInput } from './VoiceInput';
 import { AudienceSegment, AWARENESS_LEVELS } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,11 +72,30 @@ export const AudienceSegmentForm = ({ open, onOpenChange, segment, allSegments, 
         <div className="space-y-4 py-4">
           <div><Label>Avatar/Persona *</Label><Input value={formData.avatar} onChange={e => setFormData({...formData, avatar: e.target.value})} /></div>
           <div><Label>Segmento/Nicho *</Label><Input value={formData.segment} onChange={e => setFormData({...formData, segment: e.target.value})} /></div>
-          <div><Label>Situação atual *</Label><Textarea value={formData.current_situation} onChange={e => setFormData({...formData, current_situation: e.target.value})} rows={3} /></div>
-          <div><Label>Resultado desejado *</Label><Textarea value={formData.desired_result} onChange={e => setFormData({...formData, desired_result: e.target.value})} rows={3} /></div>
+          
+          <div><Label>Situação atual *</Label>
+            <div className="relative">
+              <Textarea value={formData.current_situation} onChange={e => setFormData({...formData, current_situation: e.target.value})} rows={3} className="pr-12" />
+              <VoiceInput onTranscript={(text) => setFormData({...formData, current_situation: formData.current_situation ? `${formData.current_situation} ${text}` : text})} />
+            </div>
+          </div>
+          
+          <div><Label>Resultado desejado *</Label>
+            <div className="relative">
+              <Textarea value={formData.desired_result} onChange={e => setFormData({...formData, desired_result: e.target.value})} rows={3} className="pr-12" />
+              <VoiceInput onTranscript={(text) => setFormData({...formData, desired_result: formData.desired_result ? `${formData.desired_result} ${text}` : text})} />
+            </div>
+          </div>
+          
           <div><Label>Nível de consciência</Label><Select value={formData.awareness_level} onValueChange={v => setFormData({...formData, awareness_level: v as any})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{AWARENESS_LEVELS.map(l => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}</SelectContent></Select></div>
           <div><Label>Objeções</Label><div className="flex gap-2"><Input value={newObjection} onChange={e => setNewObjection(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newObjection.trim()) { setFormData({...formData, objections: [...(formData.objections || []), newObjection.trim()]}); setNewObjection(''); } } }} /><Button type="button" size="icon" onClick={() => { if (newObjection.trim()) { setFormData({...formData, objections: [...(formData.objections || []), newObjection.trim()]}); setNewObjection(''); } }}><Plus size={20} /></Button></div>{formData.objections && formData.objections.length > 0 && <div className="flex flex-wrap gap-2 mt-2">{formData.objections.map((obj, i) => <Badge key={i} variant="secondary">{obj}<button type="button" onClick={() => setFormData({...formData, objections: formData.objections?.filter((_, idx) => idx !== i)})} className="ml-2"><X size={14} /></button></Badge>)}</div>}</div>
-          <div><Label>Tom de comunicação</Label><Textarea value={formData.communication_tone} onChange={e => setFormData({...formData, communication_tone: e.target.value})} rows={2} /></div>
+          
+          <div><Label>Tom de comunicação</Label>
+            <div className="relative">
+              <Textarea value={formData.communication_tone} onChange={e => setFormData({...formData, communication_tone: e.target.value})} rows={2} className="pr-12" />
+              <VoiceInput onTranscript={(text) => setFormData({...formData, communication_tone: formData.communication_tone ? `${formData.communication_tone} ${text}` : text})} />
+            </div>
+          </div>
         </div>
         <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button><Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button></DialogFooter>
       </DialogContent>

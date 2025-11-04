@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectConfigHeader } from '@/components/project-config/ProjectConfigHeader';
+import { QualityIndicator } from '@/components/project-config/QualityIndicator';
 import { IdentityTab } from '@/components/project-config/IdentityTab';
 import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
@@ -54,7 +55,9 @@ const ProjectConfig = () => {
     <div className="min-h-screen bg-background">
       <ProjectConfigHeader isNew={isNew} />
       
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <QualityIndicator />
+        
         <Tabs defaultValue="identity" className="space-y-6">
           <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="identity">Identidade</TabsTrigger>
