@@ -149,7 +149,22 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [sessions]);
 
   const importSessions = useCallback((importedSessions: Session[]) => {
-    setSessions([...sessions, ...importedSessions]);
+    // Regenerar IDs únicos para sessões e blocos importados
+    let blockCounter = 0;
+    const sessionsWithNewIds = importedSessions.map((session, sessionIndex) => ({
+      ...session,
+      id: `session-${Date.now()}-${sessionIndex}-${Math.random()}`,
+      blocks: session.blocks.map((block) => {
+        blockCounter++;
+        return {
+          ...block,
+          id: `block-${Date.now()}-${blockCounter}-${Math.random()}`,
+          config: block.config || {} // Garantir que config sempre existe
+        };
+      })
+    }));
+    
+    setSessions([...sessions, ...sessionsWithNewIds]);
   }, [sessions]);
 
   const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>, index?: number) => {
