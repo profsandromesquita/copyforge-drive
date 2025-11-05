@@ -145,11 +145,20 @@ serve(async (req) => {
         
         if (authHeader) {
           try {
+            // Criar cliente Supabase com service role para verificar o token
+            const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+            const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            
+            // Obter usuário do token
             const token = authHeader.replace('Bearer ', '');
-            const { data: { user } } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-              headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_SERVICE_ROLE_KEY }
-            }).then(r => r.json());
-            userId = user?.id;
+            const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+            
+            if (error) {
+              console.error('Error getting user:', error);
+            } else {
+              userId = user?.id;
+              console.log('User ID obtido:', userId);
+            }
           } catch (e) {
             console.error('Error getting user from token:', e);
           }
