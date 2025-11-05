@@ -1,4 +1,4 @@
-import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
+import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, Trash } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -364,6 +364,175 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                 onChange={(e) => updateConfig('link', e.target.value)}
                 placeholder="https://..."
               />
+            </div>
+          </>
+        );
+
+      case 'form':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Título do Formulário</Label>
+              <Input
+                value={block.config?.formTitle || ''}
+                onChange={(e) => updateConfig('formTitle', e.target.value)}
+                placeholder="Digite o título..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Texto do Botão</Label>
+              <Input
+                value={block.config?.formButtonText || 'Enviar'}
+                onChange={(e) => updateConfig('formButtonText', e.target.value)}
+                placeholder="Enviar"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cor do Botão</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={block.config?.formButtonColor || '#22c55e'}
+                  onChange={(e) => updateConfig('formButtonColor', e.target.value)}
+                  className="w-20 h-10 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={block.config?.formButtonColor || '#22c55e'}
+                  onChange={(e) => updateConfig('formButtonColor', e.target.value)}
+                  placeholder="#22c55e"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Alinhamento</Label>
+              <ToggleGroup 
+                type="single" 
+                value={block.config?.textAlign || 'left'}
+                onValueChange={(value) => value && updateConfig('textAlign', value)}
+                className="justify-start gap-2"
+              >
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignLeft size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Alinhar ao centro" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignCenter size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignRight size={20} />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Campos do Formulário</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentFields = block.config?.formFields || [];
+                    updateConfig('formFields', [
+                      ...currentFields,
+                      {
+                        id: `field-${Date.now()}`,
+                        type: 'text' as const,
+                        label: '',
+                        placeholder: '',
+                        required: false,
+                      },
+                    ]);
+                  }}
+                >
+                  + Adicionar Campo
+                </Button>
+              </div>
+
+              {(block.config?.formFields || []).map((field, index) => (
+                <div key={field.id} className="p-3 border rounded-lg space-y-2 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">Campo {index + 1}</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const currentFields = block.config?.formFields || [];
+                        updateConfig(
+                          'formFields',
+                          currentFields.filter((_, i) => i !== index)
+                        );
+                      }}
+                    >
+                      <Trash size={14} />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Tipo</Label>
+                    <Select
+                      value={field.type}
+                      onValueChange={(value) => {
+                        const currentFields = [...(block.config?.formFields || [])];
+                        currentFields[index] = { ...field, type: value as 'text' | 'email' | 'phone' };
+                        updateConfig('formFields', currentFields);
+                      }}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="text">Texto</SelectItem>
+                        <SelectItem value="email">E-mail</SelectItem>
+                        <SelectItem value="phone">Telefone</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Label</Label>
+                    <Input
+                      value={field.label}
+                      onChange={(e) => {
+                        const currentFields = [...(block.config?.formFields || [])];
+                        currentFields[index] = { ...field, label: e.target.value };
+                        updateConfig('formFields', currentFields);
+                      }}
+                      placeholder="Nome do campo"
+                      className="h-8"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Placeholder</Label>
+                    <Input
+                      value={field.placeholder}
+                      onChange={(e) => {
+                        const currentFields = [...(block.config?.formFields || [])];
+                        currentFields[index] = { ...field, placeholder: e.target.value };
+                        updateConfig('formFields', currentFields);
+                      }}
+                      placeholder="Digite aqui..."
+                      className="h-8"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <Label className="text-xs">Obrigatório</Label>
+                    <Switch
+                      checked={field.required}
+                      onCheckedChange={(checked) => {
+                        const currentFields = [...(block.config?.formFields || [])];
+                        currentFields[index] = { ...field, required: checked };
+                        updateConfig('formFields', currentFields);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         );

@@ -83,10 +83,33 @@ const CopyEditorContent = () => {
       }
 
       if (sessionId) {
+        const defaultContent = activeData.type === 'list' ? [''] : '';
+        const defaultConfig = activeData.type === 'form' ? {
+          formTitle: 'Preencha o formulário',
+          formButtonText: 'Enviar',
+          formButtonColor: '#22c55e',
+          formFields: [
+            {
+              id: `field-${Date.now()}-1`,
+              type: 'text' as const,
+              label: 'Nome',
+              placeholder: 'Digite seu nome',
+              required: true,
+            },
+            {
+              id: `field-${Date.now()}-2`,
+              type: 'email' as const,
+              label: 'E-mail',
+              placeholder: 'seu@email.com',
+              required: true,
+            },
+          ],
+        } : {};
+
         addBlock(sessionId, {
           type: activeData.type,
-          content: activeData.type === 'list' ? [''] : '',
-          config: {},
+          content: defaultContent,
+          config: defaultConfig,
         }, insertIndex);
       }
       return;

@@ -1,4 +1,12 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form';
+
+export interface FormField {
+  id: string;
+  type: 'text' | 'email' | 'phone';
+  label: string;
+  placeholder: string;
+  required: boolean;
+}
 
 export interface BlockConfig {
   // Text block
@@ -22,6 +30,12 @@ export interface BlockConfig {
   buttonSubtitle?: string;
   buttonRounded?: boolean;
   buttonIcon?: 'none' | 'check' | 'arrow-right' | 'star' | 'heart' | 'download' | 'play' | 'shopping-cart' | 'plus';
+  
+  // Form
+  formTitle?: string;
+  formButtonText?: string;
+  formButtonColor?: string;
+  formFields?: FormField[];
 }
 
 export interface Block {

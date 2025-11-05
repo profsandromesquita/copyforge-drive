@@ -188,6 +188,59 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
           </div>
         );
 
+      case 'form':
+        const formTitle = block.config?.formTitle || 'Preencha o formulário';
+        const formButtonText = block.config?.formButtonText || 'Enviar';
+        const formButtonColor = block.config?.formButtonColor || '#22c55e';
+        const formFields = block.config?.formFields || [];
+        const formAlign = block.config?.textAlign || 'left';
+
+        const getFormAlignClass = () => {
+          switch (formAlign) {
+            case 'center':
+              return 'items-center';
+            case 'right':
+              return 'items-end';
+            default:
+              return 'items-start';
+          }
+        };
+
+        return (
+          <div className={`flex flex-col ${getFormAlignClass()} space-y-4 max-w-md w-full`}>
+            {formTitle && (
+              <h3 className="text-lg font-semibold">{formTitle}</h3>
+            )}
+            <form className="w-full space-y-3" onSubmit={(e) => e.preventDefault()}>
+              {formFields.map((field) => (
+                <div key={field.id} className="space-y-1.5">
+                  <label className="text-sm font-medium flex items-center gap-1">
+                    {field.label}
+                    {field.required && <span className="text-destructive">*</span>}
+                  </label>
+                  <input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    required={field.required}
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                    disabled
+                  />
+                </div>
+              ))}
+              {formFields.length > 0 && (
+                <button
+                  type="submit"
+                  className="w-full px-6 py-2 rounded-md font-medium text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: formButtonColor }}
+                  disabled
+                >
+                  {formButtonText}
+                </button>
+              )}
+            </form>
+          </div>
+        );
+
       default:
         return null;
     }
