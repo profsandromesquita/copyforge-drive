@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Lock, Sun, Moon, Search, X } from 'lucide-react';
+import { Lock, Sun, Moon, Search, X, Menu } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { BlockPreview } from '@/components/copy-editor/BlockPreview';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import copyDriveIcon from '@/assets/copydrive-icon.svg';
 
 const PublicCopy = () => {
@@ -22,6 +23,7 @@ const PublicCopy = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [structureOpen, setStructureOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -98,6 +100,14 @@ const PublicCopy = () => {
     navigator.clipboard.writeText(searchQuery).catch(() => {});
   };
 
+  const scrollToBlock = (sessionId: string, blockId: string) => {
+    const element = document.getElementById(`block-${sessionId}-${blockId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setStructureOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -159,11 +169,40 @@ const PublicCopy = () => {
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-4">
-            {/* Left: Logo or Simple Text */}
-            <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium text-muted-foreground">
-                Visualização Pública
-              </span>
+            {/* Left: Structure Menu */}
+            <div className="flex items-center gap-2">
+              <Sheet open={structureOpen} onOpenChange={setStructureOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Estrutura da Copy</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 space-y-4">
+                    {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
+                      <div key={session.id} className="space-y-2">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                          {session.title}
+                        </h3>
+                        <div className="ml-3 space-y-1">
+                          {session.blocks.map((block) => (
+                            <button
+                              key={block.id}
+                              onClick={() => scrollToBlock(session.id, block.id)}
+                              className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors"
+                            >
+                              <span className="capitalize">{block.type}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
 
             {/* Right: Actions */}
@@ -276,7 +315,9 @@ const PublicCopy = () => {
               </div>
               <div className="space-y-3">
                 {session.blocks.map((block) => (
-                  <BlockPreview key={block.id} block={block} />
+                  <div key={block.id} id={`block-${session.id}-${block.id}`}>
+                    <BlockPreview block={block} />
+                  </div>
                 ))}
               </div>
             </section>
