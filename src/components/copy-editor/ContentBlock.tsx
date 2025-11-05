@@ -310,9 +310,9 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                   value={item}
                   onChange={(e) => handleListChange(index, e.target.value)}
                   placeholder="Item da lista..."
-                  className="border-none focus-visible:ring-0 max-w-md"
+                  className={`border-none focus-visible:ring-0 ${isSelected ? 'max-w-md' : 'flex-1'}`}
                 />
-                {listItems.length > 1 && (
+                {isSelected && listItems.length > 1 && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -324,11 +324,13 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 )}
               </div>
             ))}
-            <div className={`flex ${getListAlignmentClass()}`}>
-              <Button variant="outline" size="sm" onClick={addListItem}>
-                + Adicionar item
-              </Button>
-            </div>
+            {isSelected && (
+              <div className={`flex ${getListAlignmentClass()}`}>
+                <Button variant="outline" size="sm" onClick={addListItem}>
+                  + Adicionar item
+                </Button>
+              </div>
+            )}
           </div>
         );
 
