@@ -117,9 +117,8 @@ export const EditorHeader = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
-          <Eye className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Pré-visualizar</span>
+        <Button variant="ghost" size="icon" onClick={() => setShowPreview(true)}>
+          <Eye className="h-5 w-5" />
         </Button>
 
         <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
