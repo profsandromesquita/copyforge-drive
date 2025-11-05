@@ -117,13 +117,6 @@ export const WorkspaceGeneral = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-bold mb-2">Configurações Gerais</h3>
-        <p className="text-sm text-muted-foreground">
-          Gerencie as informações básicas do seu workspace
-        </p>
-      </div>
-
       <div className="space-y-6">
         {/* Avatar Upload */}
         <div className="space-y-3">

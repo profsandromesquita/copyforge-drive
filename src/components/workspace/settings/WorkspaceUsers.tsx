@@ -236,13 +236,6 @@ export const WorkspaceUsers = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-bold mb-2">Membros do Workspace</h3>
-        <p className="text-sm text-muted-foreground">
-          Gerencie os membros e permissões do workspace
-        </p>
-      </div>
-
       {/* Invite Form */}
       <div className="border border-border rounded-lg p-4 space-y-4">
         <div className="flex items-center gap-2">
