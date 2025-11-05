@@ -57,11 +57,23 @@ export const BlockToolbar = () => {
     const checkOverflow = () => {
       if (containerRef.current) {
         const container = containerRef.current;
-        const scrollHeight = container.scrollHeight;
-        const clientHeight = container.clientHeight;
         
-        // Verifica se há conteúdo que ultrapassa a altura visível
-        setHasOverflow(scrollHeight > clientHeight + 5);
+        // Temporariamente expandir para medir a altura total
+        const wasExpanded = isExpanded;
+        if (!isExpanded) {
+          container.style.maxHeight = 'none';
+        }
+        
+        const scrollHeight = container.scrollHeight;
+        const singleLineHeight = 60;
+        
+        // Restaurar estado anterior
+        if (!wasExpanded) {
+          container.style.maxHeight = `${singleLineHeight}px`;
+        }
+        
+        // Verifica se há conteúdo que ultrapassa uma linha
+        setHasOverflow(scrollHeight > singleLineHeight + 5);
       }
     };
 
@@ -75,7 +87,7 @@ export const BlockToolbar = () => {
       window.removeEventListener('resize', checkOverflow);
       clearTimeout(timeout);
     };
-  }, [blocks]);
+  }, [blocks, isExpanded]);
 
   return (
     <div className="border-b bg-background sticky top-16 z-40">
