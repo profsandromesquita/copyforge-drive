@@ -133,53 +133,57 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-muted/30 sticky top-0 z-40 rounded-tl-3xl">
-          <div className="px-6 py-4 space-y-4">
-            <Breadcrumbs />
-            
-            <div className="flex items-center gap-4">
-              <div className="flex-1 max-w-md relative">
-                <MagnifyingGlass 
-                  size={20} 
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  placeholder="Buscar..."
-                  className="pl-10 bg-background"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+      <div className="flex-1 flex flex-col">
+        {/* Header com barra de pesquisa */}
+        <header className="bg-background px-6 py-4 sticky top-0 z-40">
+          <div className="flex-1 max-w-md relative">
+            <MagnifyingGlass 
+              size={20} 
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              placeholder="Buscar..."
+              className="pl-10 bg-muted/30"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </header>
+
+        <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
+          {/* Breadcrumbs e botão Novo */}
+          <div className="bg-muted/30 sticky top-0 z-40 rounded-tl-3xl">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <Breadcrumbs />
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="lg" className="gap-2">
+                      <Plus size={20} weight="bold" />
+                      <span className="hidden sm:inline">Novo</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => setCreateCopyOpen(true)}
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Nova Copy
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => setCreateFolderOpen(true)}
+                    >
+                      <FolderPlus size={18} className="mr-2" />
+                      Nova Pasta
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="lg" className="gap-2">
-                    <Plus size={20} weight="bold" />
-                    <span className="hidden sm:inline">Novo</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border-border z-50">
-                  <DropdownMenuItem 
-                    className="cursor-pointer"
-                    onClick={() => setCreateCopyOpen(true)}
-                  >
-                    <Plus size={18} className="mr-2" />
-                    Nova Copy
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="cursor-pointer"
-                    onClick={() => setCreateFolderOpen(true)}
-                  >
-                    <FolderPlus size={18} className="mr-2" />
-                    Nova Pasta
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
-        </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
@@ -277,8 +281,9 @@ const Dashboard = () => {
               </>
             )}
           </DndContext>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
 
       <MobileMenu />
       <CreateFolderDialog open={createFolderOpen} onOpenChange={setCreateFolderOpen} />
