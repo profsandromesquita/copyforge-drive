@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Slider } from '@/components/ui/slider';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { supabase } from '@/integrations/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 interface BlockSettingsProps {
@@ -31,10 +31,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
     updateBlock(block.id, { content });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImageUpload = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione apenas arquivos de imagem');
@@ -77,6 +74,40 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
       setIsUploading(false);
     }
   };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
+  const handlePaste = async (e: ClipboardEvent) => {
+    if (block.type !== 'image') return;
+    
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          await handleImageUpload(file);
+        }
+        break;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (block.type === 'image') {
+      window.addEventListener('paste', handlePaste);
+      return () => {
+        window.removeEventListener('paste', handlePaste);
+      };
+    }
+  }, [block.type]);
 
   const renderSettings = () => {
     switch (block.type) {
@@ -587,25 +618,16 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                   onClick={() => document.getElementById('image-upload')?.click()}
                 >
                   <Upload size={16} className="mr-2" />
-                  {isUploading ? 'Enviando...' : 'Escolher Imagem'}
+                  {isUploading ? 'Enviando...' : 'Escolher Imagem ou Colar (Ctrl+V)'}
                 </Button>
                 <input
                   id="image-upload"
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleImageUpload}
+                  onChange={handleFileInputChange}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input
-                value={block.config?.imageUrl || ''}
-                onChange={(e) => updateConfig('imageUrl', e.target.value)}
-                placeholder="https://exemplo.com/imagem.jpg"
-              />
             </div>
 
             <div className="space-y-2">
