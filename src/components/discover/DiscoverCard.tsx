@@ -39,7 +39,7 @@ export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
         {/* Visual Preview Section */}
         <div className="relative h-48 md:h-56 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
           <div className="absolute inset-0 p-3 md:p-4 overflow-hidden">
-            <div className="space-y-1 scale-[0.65] md:scale-75 origin-top-left transform-gpu pointer-events-none w-full">
+            <div className="space-y-0.5 scale-[0.55] md:scale-[0.6] origin-top-left transform-gpu pointer-events-none" style={{ width: '180%' }}>
               {firstBlocks.length > 0 ? (
                 firstBlocks.map((block) => (
                   <div key={block.id} className="opacity-90">
