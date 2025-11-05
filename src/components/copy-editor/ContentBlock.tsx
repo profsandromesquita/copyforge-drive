@@ -124,6 +124,17 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
     }
   };
 
+  const getListAlignmentClass = () => {
+    switch (block.config?.textAlign) {
+      case 'center':
+        return 'justify-center';
+      case 'right':
+        return 'justify-end';
+      default:
+        return 'justify-start';
+    }
+  };
+
   const handleFocusModeOpen = () => {
     // Pegar o conteúdo atual do editableRef antes de abrir o modal
     const currentContent = editableRef.current?.innerHTML || (typeof block.content === 'string' ? block.content : '');
@@ -282,9 +293,9 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         };
 
         return (
-          <div className={`space-y-2`}>
+          <div className="space-y-2">
             {listItems.map((item, index) => (
-              <div key={index} className={`flex gap-2 ${getTextAlignClass()}`}>
+              <div key={index} className={`flex gap-2 ${getListAlignmentClass()}`}>
                 {block.config?.listStyle === 'numbers' && block.config?.showListIcons !== false ? (
                   <span 
                     style={{ color: block.config?.listIconColor || '#ff6b35' }}
@@ -299,7 +310,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                   value={item}
                   onChange={(e) => handleListChange(index, e.target.value)}
                   placeholder="Item da lista..."
-                  className="border-none focus-visible:ring-0"
+                  className="border-none focus-visible:ring-0 max-w-md"
                 />
                 {listItems.length > 1 && (
                   <Button
@@ -313,7 +324,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 )}
               </div>
             ))}
-            <div className={getTextAlignClass()}>
+            <div className={`flex ${getListAlignmentClass()}`}>
               <Button variant="outline" size="sm" onClick={addListItem}>
                 + Adicionar item
               </Button>
