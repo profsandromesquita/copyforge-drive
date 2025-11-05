@@ -31,10 +31,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          // Only redirect to dashboard if not on a public page
+          // Only redirect to dashboard if not on a public page or admin panel
           const currentPath = window.location.pathname;
           console.log('Signed in, current path:', currentPath);
-          if (!currentPath.startsWith('/view/')) {
+          if (!currentPath.startsWith('/view/') && !currentPath.startsWith('/painel/admin')) {
             navigate('/dashboard');
           }
         } else if (event === 'SIGNED_OUT') {
