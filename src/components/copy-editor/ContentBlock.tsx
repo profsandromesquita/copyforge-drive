@@ -153,7 +153,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`text-2xl font-bold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              className={`text-2xl font-bold border-none focus:outline-none ${getTextAlignClass()}`}
               data-placeholder="Digite seu título..."
               suppressContentEditableWarning
             />
@@ -186,7 +186,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`text-xl font-semibold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              className={`text-xl font-semibold border-none focus:outline-none ${getTextAlignClass()}`}
               data-placeholder="Digite seu subtítulo..."
               suppressContentEditableWarning
             />
