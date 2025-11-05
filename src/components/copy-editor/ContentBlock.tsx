@@ -550,6 +550,75 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
           </div>
         );
 
+      case 'video':
+        const videoUrl = block.config?.videoUrl || '';
+        const videoTitle = block.config?.videoTitle || '';
+        const videoSize = block.config?.videoSize || 'md';
+        
+        const getVideoSizeClass = () => {
+          switch (videoSize) {
+            case 'sm':
+              return 'max-w-xs';
+            case 'lg':
+              return 'max-w-4xl';
+            default:
+              return 'max-w-2xl';
+          }
+        };
+
+        const getEmbedUrl = (url: string) => {
+          if (!url) return null;
+          
+          // YouTube
+          const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+          const youtubeMatch = url.match(youtubeRegex);
+          if (youtubeMatch) {
+            return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+          }
+          
+          // Vimeo
+          const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+          const vimeoMatch = url.match(vimeoRegex);
+          if (vimeoMatch) {
+            return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+          }
+          
+          // Se já for uma URL embed válida
+          if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com/video/')) {
+            return url;
+          }
+          
+          return null;
+        };
+
+        const embedUrl = getEmbedUrl(videoUrl);
+
+        return (
+          <div className="space-y-2">
+            <div className={`${getVideoSizeClass()} w-full mx-auto`}>
+              {embedUrl ? (
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
+                  <span className="text-muted-foreground">
+                    {videoUrl ? 'URL de vídeo inválida' : 'Adicione uma URL de vídeo'}
+                  </span>
+                </div>
+              )}
+            </div>
+            {videoTitle && (
+              <p className="text-sm text-muted-foreground text-center">{videoTitle}</p>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }

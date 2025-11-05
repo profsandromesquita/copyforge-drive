@@ -683,6 +683,114 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           </>
         );
 
+      case 'video':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>URL do Vídeo</Label>
+              <Input
+                value={block.config?.videoUrl || ''}
+                onChange={(e) => updateConfig('videoUrl', e.target.value)}
+                placeholder="Cole a URL do YouTube ou Vimeo..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Suporta vídeos do YouTube e Vimeo
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Upload de Vídeo</Label>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={isUploading}
+                  onClick={() => document.getElementById('video-upload')?.click()}
+                >
+                  <Upload size={16} className="mr-2" />
+                  {isUploading ? 'Enviando...' : 'Escolher Vídeo'}
+                </Button>
+                <input
+                  id="video-upload"
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    if (!file.type.startsWith('video/')) {
+                      toast.error('Por favor, selecione apenas arquivos de vídeo');
+                      return;
+                    }
+
+                    if (file.size > 100 * 1024 * 1024) {
+                      toast.error('O vídeo deve ter no máximo 100MB');
+                      return;
+                    }
+
+                    setIsUploading(true);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) {
+                        toast.error('Você precisa estar autenticado para fazer upload');
+                        return;
+                      }
+
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                      const { data, error } = await supabase.storage
+                        .from('copy-videos')
+                        .upload(fileName, file);
+
+                      if (error) throw error;
+
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('copy-videos')
+                        .getPublicUrl(data.path);
+
+                      updateConfig('videoUrl', publicUrl);
+                      toast.success('Vídeo enviado com sucesso!');
+                    } catch (error) {
+                      console.error('Error uploading video:', error);
+                      toast.error('Erro ao enviar vídeo');
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Título (opcional)</Label>
+              <Input
+                value={block.config?.videoTitle || ''}
+                onChange={(e) => updateConfig('videoTitle', e.target.value)}
+                placeholder="Título do vídeo..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tamanho</Label>
+              <Select
+                value={block.config?.videoSize || 'md'}
+                onValueChange={(value) => updateConfig('videoSize', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="sm">Pequeno</SelectItem>
+                  <SelectItem value="md">Médio</SelectItem>
+                  <SelectItem value="lg">Grande</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
+        );
+
       default:
         return null;
     }

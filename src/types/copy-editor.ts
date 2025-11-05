@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video';
 
 export interface FormField {
   id: string;
@@ -43,6 +43,11 @@ export interface BlockConfig {
   aspectRatio?: string;
   imageSize?: 'sm' | 'md' | 'lg';
   roundedBorders?: boolean;
+  
+  // Video
+  videoUrl?: string;
+  videoTitle?: string;
+  videoSize?: 'sm' | 'md' | 'lg';
 }
 
 export interface Block {
