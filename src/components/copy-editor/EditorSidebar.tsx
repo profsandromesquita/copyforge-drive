@@ -104,15 +104,11 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       </Button>
 
       {/* Sidebar with slide animation */}
-      <aside 
-        className={`
-          fixed right-0 top-0 h-full z-40
-          w-[416px] border-l bg-background transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
-        `}
-      >
-        {sidebarContent}
-      </aside>
+      {isOpen && (
+        <aside className="w-[416px] border-l bg-background flex-shrink-0">
+          {sidebarContent}
+        </aside>
+      )}
     </>
   );
 };
