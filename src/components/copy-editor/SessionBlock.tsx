@@ -92,7 +92,7 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
       ref={setNodeRef}
       onClick={handleSessionClick}
       className={`
-        p-6 rounded-xl bg-white space-y-4 transition-all group
+        p-6 rounded-xl bg-card space-y-4 transition-all group border border-border
         ${isOver ? 'border-2 border-dashed border-primary bg-primary/5 scale-[1.02]' : ''}
       `}
     >
@@ -110,7 +110,7 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
           />
         ) : (
           <h2
-            className="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 flex items-center gap-2 transition-colors"
+            className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2 transition-colors"
             onClick={() => setIsEditingTitle(true)}
           >
             {session.title}
