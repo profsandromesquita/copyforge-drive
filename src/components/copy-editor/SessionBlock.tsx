@@ -62,7 +62,7 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
       ref={setNodeRef}
       onClick={handleSessionClick}
       className={`
-        p-6 rounded-xl border-2 border-dashed bg-card/50 space-y-4 transition-all
+        p-6 rounded-xl border-2 border-dashed bg-white space-y-4 transition-all
         ${isOver ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border'}
       `}
     >
