@@ -73,12 +73,12 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     <>
       <div
         onClick={onClick}
-        className="group relative bg-card border border-border/50 rounded-xl p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+        className="group relative bg-card border border-border/50 rounded-xl p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[140px] flex flex-col"
       >
         {/* Subtle gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        <div className="relative space-y-3">
+        <div className="relative flex-1 flex flex-col">
           <div className="flex items-start gap-3">
             {/* Icon */}
             <div className={`${color} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
@@ -87,7 +87,7 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
             
             {/* Content */}
             <div className="flex-1 min-w-0 space-y-1">
-              <h3 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
+              <h3 className="font-semibold text-xs text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
                 {title}
               </h3>
               {type === 'copy' && status && (
@@ -138,7 +138,7 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
           </div>
 
           {/* Footer - Creator or subtitle */}
-          <div className="pt-2 border-t border-border/30">
+          <div className="pt-3 mt-auto border-t border-border/30">
             {type === 'copy' && creatorName ? (
               <div className="flex items-center gap-2">
                 <Avatar className="h-5 w-5">
