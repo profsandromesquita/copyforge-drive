@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const COPY_TYPES = [
-  { value: 'email', label: 'E-mail' },
   { value: 'landing_page', label: 'Landing Page' },
   { value: 'anuncio', label: 'Anúncio' },
-  { value: 'post_rede_social', label: 'Post Rede Social' },
-  { value: 'artigo_blog', label: 'Artigo Blog' },
-  { value: 'script_video', label: 'Script Vídeo' },
+  { value: 'vsl', label: 'Video de Vendas' },
+  { value: 'email', label: 'E-mail' },
+  { value: 'webinar', label: 'Webinar' },
+  { value: 'conteudo', label: 'Conteúdo' },
+  { value: 'mensagem', label: 'Mensagem' },
   { value: 'outro', label: 'Outro' },
 ];
 
