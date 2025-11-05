@@ -137,7 +137,7 @@ const Templates = () => {
       
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
-        <header className="bg-background px-6 py-4 sticky top-0 z-40 border-b border-border">
+        <header className="bg-background px-6 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 max-w-md">
               <div className="relative">
