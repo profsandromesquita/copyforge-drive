@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
-import DriveCard from "@/components/drive/DriveCard";
+import FolderCard from "@/components/drive/FolderCard";
+import CopyCard from "@/components/drive/CopyCard";
 import { Breadcrumbs } from "@/components/drive/Breadcrumbs";
 import { CreateFolderDialog } from "@/components/drive/CreateFolderDialog";
 import { CreateCopyDialog, CopyType } from "@/components/drive/CreateCopyDialog";
@@ -92,12 +93,34 @@ const Dashboard = () => {
     
     const folder = filteredFolders.find(f => f.id === activeId);
     if (folder) {
-      return { type: 'folder' as const, data: folder };
+      return { 
+        type: 'folder' as const, 
+        component: (
+          <FolderCard
+            id={folder.id}
+            title={folder.name}
+            folderId={folder.parent_id}
+          />
+        )
+      };
     }
     
     const copy = filteredCopies.find((c: any) => c.id === activeId);
     if (copy) {
-      return { type: 'copy' as const, data: copy as any };
+      return { 
+        type: 'copy' as const, 
+        component: (
+          <CopyCard
+            id={copy.id}
+            title={copy.title}
+            folderId={copy.folder_id}
+            creatorName={copy.creator?.name}
+            creatorAvatar={copy.creator?.avatar_url}
+            status={(copy as any).status || 'draft'}
+            subtitle={formatDate(copy.updated_at)}
+          />
+        )
+      };
     }
     
     return null;
@@ -158,7 +181,7 @@ const Dashboard = () => {
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 space-y-6">
           <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
@@ -170,24 +193,23 @@ const Dashboard = () => {
             }}>
               {activeItem && (
                 <div className="rotate-3 scale-105 opacity-90">
-                  <DriveCard
-                    id={activeItem.data.id}
-                    type={activeItem.type}
-                    title={activeItem.type === 'folder' ? activeItem.data.name : activeItem.data.title}
-                    folderId={activeItem.type === 'folder' ? activeItem.data.parent_id : activeItem.data.folder_id}
-                    subtitle={formatDate(activeItem.data.updated_at)}
-                    creatorName={activeItem.type === 'copy' ? activeItem.data.creator?.name : undefined}
-                    creatorAvatar={activeItem.type === 'copy' ? activeItem.data.creator?.avatar_url : undefined}
-                    status={activeItem.type === 'copy' ? (activeItem.data.status || 'draft') : undefined}
-                  />
+                  {activeItem.component}
                 </div>
               )}
             </DragOverlay>
+            
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-                ))}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {[...Array(8)].map((_, i) => (
+                    <Skeleton key={i} className="h-64 w-full rounded-lg" />
+                  ))}
+                </div>
               </div>
             ) : (
               <>
@@ -204,32 +226,50 @@ const Dashboard = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredFolders.map((folder) => (
-                      <DriveCard
-                        key={folder.id}
-                        id={folder.id}
-                        type="folder"
-                        title={folder.name}
-                        folderId={folder.parent_id}
-                        subtitle={formatDate(folder.updated_at)}
-                        onClick={() => navigateToFolder(folder.id)}
-                      />
-                    ))}
-                    {filteredCopies.map((copy: any) => (
-                      <DriveCard
-                        key={copy.id}
-                        id={copy.id}
-                        type="copy"
-                        title={copy.title}
-                        folderId={copy.folder_id}
-                        creatorName={copy.creator?.name}
-                        creatorAvatar={copy.creator?.avatar_url}
-                        status={copy.status || 'draft'}
-                        subtitle={formatDate(copy.updated_at)}
-                        onClick={() => navigate(`/copy/${copy.id}`)}
-                      />
-                    ))}
+                  <div className="space-y-6">
+                    {/* Folders Section */}
+                    {filteredFolders.length > 0 && (
+                      <div>
+                        <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+                          Pastas
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                          {filteredFolders.map((folder) => (
+                            <FolderCard
+                              key={folder.id}
+                              id={folder.id}
+                              title={folder.name}
+                              folderId={folder.parent_id}
+                              onClick={() => navigateToFolder(folder.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Copies Section */}
+                    {filteredCopies.length > 0 && (
+                      <div>
+                        <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+                          Copies
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {filteredCopies.map((copy: any) => (
+                            <CopyCard
+                              key={copy.id}
+                              id={copy.id}
+                              title={copy.title}
+                              folderId={copy.folder_id}
+                              creatorName={copy.creator?.name}
+                              creatorAvatar={copy.creator?.avatar_url}
+                              status={copy.status || 'draft'}
+                              subtitle={formatDate(copy.updated_at)}
+                              onClick={() => navigate(`/copy/${copy.id}`)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
