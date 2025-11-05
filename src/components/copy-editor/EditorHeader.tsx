@@ -133,7 +133,10 @@ export const EditorHeader = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant={status === 'published' ? 'default' : 'secondary'}>
+            <Button 
+              variant={status === 'published' ? 'default' : 'secondary'}
+              className="focus-visible:ring-0 focus-visible:ring-offset-0"
+            >
               {status === 'published' ? 'Publicada' : 'Salva'}
             </Button>
           </DropdownMenuTrigger>
