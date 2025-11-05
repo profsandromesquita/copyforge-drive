@@ -41,8 +41,17 @@ export const useTemplates = () => {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  const createFromTemplate = useCallback(async (templateId: string): Promise<Copy | null> => {
-    if (!activeWorkspace?.id || !user?.id) {
+  const createFromTemplate = useCallback(async (
+    templateId: string,
+    workspaceId?: string,
+    projectId?: string | null,
+    folderId?: string | null,
+    userId?: string
+  ): Promise<Copy | null> => {
+    const finalWorkspaceId = workspaceId || activeWorkspace?.id;
+    const finalUserId = userId || user?.id;
+
+    if (!finalWorkspaceId || !finalUserId) {
       toast.error('Workspace ou usuário não encontrado');
       return null;
     }
@@ -62,13 +71,14 @@ export const useTemplates = () => {
         .from('copies')
         .insert({
           title: `${template.title} (Cópia)`,
-          workspace_id: activeWorkspace.id,
-          project_id: template.project_id,
+          workspace_id: finalWorkspaceId,
+          project_id: projectId !== undefined ? projectId : template.project_id,
+          folder_id: folderId || null,
           copy_type: template.copy_type,
           sessions: template.sessions,
           is_template: false,
           status: 'draft',
-          created_by: user.id,
+          created_by: finalUserId,
         })
         .select()
         .single();

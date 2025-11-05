@@ -6,16 +6,43 @@ import { Button } from '@/components/ui/button';
 import { useTemplates } from '@/hooks/useTemplates';
 import TemplateCard from '@/components/templates/TemplateCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
+import { useAuth } from '@/hooks/useAuth';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useProject } from '@/hooks/useProject';
+import { useState } from 'react';
 
 const Templates = () => {
   const navigate = useNavigate();
   const { templates, loading, createFromTemplate, deleteTemplate, duplicateTemplate } = useTemplates();
+  const { user } = useAuth();
+  const { activeWorkspace } = useWorkspace();
+  const { activeProject } = useProject();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [showDestinationModal, setShowDestinationModal] = useState(false);
 
-  const handleUseTemplate = async (templateId: string) => {
-    const newCopy = await createFromTemplate(templateId);
+  const handleUseTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setShowDestinationModal(true);
+  };
+
+  const handleConfirmDestination = async (folderId: string | null) => {
+    if (!selectedTemplateId || !activeWorkspace?.id || !user?.id) return;
+
+    const newCopy = await createFromTemplate(
+      selectedTemplateId,
+      activeWorkspace.id,
+      activeProject?.id || null,
+      folderId,
+      user.id
+    );
+
     if (newCopy) {
       navigate(`/copy/${newCopy.id}`);
     }
+
+    setShowDestinationModal(false);
+    setSelectedTemplateId(null);
   };
 
   const handleEditTemplate = (templateId: string) => {
@@ -79,6 +106,16 @@ const Templates = () => {
       </main>
 
       <MobileMenu />
+
+      {activeWorkspace && (
+        <CopyDestinationModal
+          open={showDestinationModal}
+          onOpenChange={setShowDestinationModal}
+          onConfirm={handleConfirmDestination}
+          workspaceId={activeWorkspace.id}
+          projectId={activeProject?.id || null}
+        />
+      )}
     </div>
   );
 };
