@@ -9,7 +9,26 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { copyType, objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer } = await req.json();
+    const body = await req.json();
+    const { 
+      copyType, 
+      objectives, 
+      styles, 
+      size, 
+      preferences, 
+      prompt, 
+      projectIdentity, 
+      audienceSegment, 
+      offer,
+      copyId,
+      workspaceId 
+    } = body;
+
+    // Mapear parâmetros do inglês para português e garantir que sejam arrays
+    const objetivos = Array.isArray(objectives) ? objectives : [];
+    const estilos = Array.isArray(styles) ? styles : [];
+    const tamanhos = size ? [size] : [];
+    const preferencias = Array.isArray(preferences) ? preferences : [];
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -136,6 +155,55 @@ serve(async (req) => {
     }));
 
     console.log(`Copy gerada com sucesso: ${sessionsWithIds.length} sessões`);
+
+    // Salvar no histórico
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
+        const historyData = {
+          copy_id: copyId,
+          workspace_id: workspaceId,
+          copy_type: copyType,
+          prompt,
+          parameters: {
+            objectives: objetivos,
+            styles: estilos,
+            size: tamanhos[0] || '',
+            preferences: preferencias,
+            hasProjectIdentity: !!projectIdentity,
+            hasAudienceSegment: !!audienceSegment,
+            hasOffer: !!offer,
+          },
+          project_identity: projectIdentity || null,
+          audience_segment: audienceSegment || null,
+          offer: offer || null,
+          sessions: sessionsWithIds,
+          generation_type: 'create',
+        };
+
+        const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_generation_history`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            "Prefer": "return=minimal",
+          },
+          body: JSON.stringify(historyData),
+        });
+
+        if (!historyResponse.ok) {
+          console.error("Erro ao salvar histórico:", await historyResponse.text());
+        } else {
+          console.log("Histórico salvo com sucesso");
+        }
+      }
+    } catch (historyError) {
+      console.error("Erro ao salvar no histórico:", historyError);
+      // Não falhar a requisição se o histórico falhar
+    }
 
     return new Response(
       JSON.stringify({ sessions: sessionsWithIds }),
