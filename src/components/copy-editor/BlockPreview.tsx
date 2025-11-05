@@ -208,7 +208,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
 
         return (
           <div className={`flex flex-col ${getFormAlignClass()} space-y-4 max-w-md w-full`}>
-            {formTitle && (
+            {formTitle && formTitle.trim() && (
               <h3 className="text-lg font-semibold">{formTitle}</h3>
             )}
             <form className="w-full space-y-3" onSubmit={(e) => e.preventDefault()}>
