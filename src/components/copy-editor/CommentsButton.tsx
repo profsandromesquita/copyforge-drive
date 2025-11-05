@@ -26,6 +26,8 @@ export const CommentsButton = ({ comments = [], onAddComment, onUpdateComment, o
   const { user } = useAuth();
 
   const getUserDisplayName = () => {
+    console.log('User metadata:', user?.user_metadata);
+    console.log('User email:', user?.email);
     return user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   };
 
