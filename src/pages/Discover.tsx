@@ -45,7 +45,7 @@ const Discover = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1 pb-20 lg:pb-0 bg-[#EEEEEE]">
         <div className="p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Descobrir</h1>
