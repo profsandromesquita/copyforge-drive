@@ -9,6 +9,12 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      // Wait for auth to finish loading
+      if (loading) {
+        console.log('Auth still loading...');
+        return;
+      }
+
       console.log('Checking admin status for user:', user?.id);
       
       if (!user) {
@@ -37,7 +43,7 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     };
 
     checkAdminStatus();
-  }, [user]);
+  }, [user, loading]);
 
   if (loading || isAdmin === null) {
     return (
