@@ -1,4 +1,4 @@
-import { FileText, Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus } from "phosphor-react";
+import { FileText, Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus, FolderPlus } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,7 @@ import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettings
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { ProjectSelector } from "./ProjectSelector";
 import copyDriveLogo from "@/assets/copydrive-logo.png";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +23,12 @@ const menuItems = [
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
 ];
 
-const Sidebar = () => {
+interface SidebarProps {
+  onCreateCopy?: () => void;
+  onCreateFolder?: () => void;
+}
+
+const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
   const { user, signOut } = useAuth();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -46,6 +52,34 @@ const Sidebar = () => {
 
       {/* Project Selector */}
       <ProjectSelector />
+
+      {/* Botão Novo */}
+      <div className="px-4 pb-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="lg" className="w-full gap-2">
+              <Plus size={20} weight="bold" />
+              <span>Novo</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-popover border-border z-50 w-56">
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={onCreateCopy}
+            >
+              <Plus size={18} className="mr-2" />
+              Nova Copy
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={onCreateFolder}
+            >
+              <FolderPlus size={18} className="mr-2" />
+              Nova Pasta
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Menu */}
       <nav className="flex-1 p-4">

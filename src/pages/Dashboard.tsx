@@ -151,37 +151,10 @@ const Dashboard = () => {
         </header>
 
         <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
-          {/* Breadcrumbs e botão Novo */}
+          {/* Breadcrumbs */}
           <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
             <div className="px-6 py-4">
-              <div className="flex items-center justify-between gap-4">
-                <Breadcrumbs />
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="lg" className="gap-2">
-                      <Plus size={20} weight="bold" />
-                      <span className="hidden sm:inline">Novo</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-popover border-border z-50">
-                    <DropdownMenuItem 
-                      className="cursor-pointer"
-                      onClick={() => setCreateCopyOpen(true)}
-                    >
-                      <Plus size={18} className="mr-2" />
-                      Nova Copy
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="cursor-pointer"
-                      onClick={() => setCreateFolderOpen(true)}
-                    >
-                      <FolderPlus size={18} className="mr-2" />
-                      Nova Pasta
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <Breadcrumbs />
             </div>
           </div>
 
