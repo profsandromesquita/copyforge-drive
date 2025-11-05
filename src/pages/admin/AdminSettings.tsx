@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GeneralSettings } from "@/components/admin/settings/GeneralSettings";
 import { IntegrationsSettings } from "@/components/admin/settings/IntegrationsSettings";
 import { UsersSettings } from "@/components/admin/settings/UsersSettings";
+import { AISettings } from "@/components/admin/settings/AISettings";
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("geral");
@@ -23,6 +24,7 @@ export default function AdminSettings() {
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="integracoes">Integrações</TabsTrigger>
             <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+            <TabsTrigger value="ia">IA</TabsTrigger>
           </TabsList>
 
           <TabsContent value="geral">
@@ -35,6 +37,10 @@ export default function AdminSettings() {
 
           <TabsContent value="usuarios">
             <UsersSettings />
+          </TabsContent>
+
+          <TabsContent value="ia">
+            <AISettings />
           </TabsContent>
         </Tabs>
       </div>
