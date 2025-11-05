@@ -19,6 +19,19 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Force light mode on login page
+    document.documentElement.classList.remove('dark');
+    
+    return () => {
+      // Restore theme preference on unmount
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (user) {
       // Redirect to the specified path or dashboard
       navigate(redirectPath || '/dashboard');
