@@ -1095,7 +1095,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                 </Button>
               </div>
 
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-4">
                 {testimonialItems.map((item, index) => (
                   <div key={item.id} className="p-3 border rounded-lg space-y-3 bg-muted/30">
                     <div className="flex items-center justify-between">
