@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Lock, Sun, Moon, Search, X, Menu } from 'lucide-react';
+import { Lock, Sun, Moon, Search, X, Menu, Type, Heading1, Heading2, List, MousePointerClick, Image as ImageIcon, Quote, HelpCircle, FileText, CheckSquare, Mail, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,25 @@ const PublicCopy = () => {
     }
   };
 
+  const getBlockIcon = (type: string) => {
+    const iconMap: Record<string, any> = {
+      text: Type,
+      headline: Heading1,
+      subheadline: Heading2,
+      list: List,
+      button: MousePointerClick,
+      image: ImageIcon,
+      quote: Quote,
+      faq: HelpCircle,
+      testimonial: Star,
+      form: FileText,
+      checklist: CheckSquare,
+      email: Mail,
+    };
+    const Icon = iconMap[type] || Type;
+    return <Icon className="h-4 w-4" />;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -177,24 +196,43 @@ const PublicCopy = () => {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80">
-                  <SheetHeader>
-                    <SheetTitle>Estrutura da Copy</SheetTitle>
+                <SheetContent side="left" className="w-[340px] sm:w-[400px]">
+                  <SheetHeader className="space-y-3 pb-4 border-b">
+                    <SheetTitle className="text-xl font-semibold">Estrutura</SheetTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Navegue pelos blocos da copy
+                    </p>
                   </SheetHeader>
-                  <div className="mt-6 space-y-4">
-                    {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
-                      <div key={session.id} className="space-y-2">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                          {session.title}
-                        </h3>
-                        <div className="ml-3 space-y-1">
-                          {session.blocks.map((block) => (
+                  <div className="mt-6 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)] pr-2 custom-scrollbar">
+                    {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session, index: number) => (
+                      <div key={session.id} className="space-y-3">
+                        <div className="flex items-center gap-2 px-2">
+                          <div className="h-6 w-1 bg-primary rounded-full" />
+                          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                            {session.title}
+                          </h3>
+                          <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                            {session.blocks.length}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 ml-1">
+                          {session.blocks.map((block, blockIndex) => (
                             <button
                               key={block.id}
                               onClick={() => scrollToBlock(session.id, block.id)}
-                              className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors"
+                              className="w-full group flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-accent/50 transition-all duration-200 border border-transparent hover:border-border"
                             >
-                              <span className="capitalize">{block.type}</span>
+                              <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                {getBlockIcon(block.type)}
+                              </div>
+                              <div className="flex-1 text-left">
+                                <p className="font-medium capitalize text-foreground group-hover:text-primary transition-colors">
+                                  {block.type}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Bloco {blockIndex + 1}
+                                </p>
+                              </div>
                             </button>
                           ))}
                         </div>
