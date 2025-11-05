@@ -15,6 +15,17 @@ interface TemplateCardProps {
   onDelete: (templateId: string) => void;
 }
 
+const COPY_TYPE_LABELS: Record<string, string> = {
+  'landing_page': 'Landing Page',
+  'anuncio': 'Anúncio',
+  'vsl': 'Video de Vendas',
+  'email': 'E-mail',
+  'webinar': 'Webinar',
+  'conteudo': 'Conteúdo',
+  'mensagem': 'Mensagem',
+  'outro': 'Outro',
+};
+
 const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: TemplateCardProps) => {
   const [showPreview, setShowPreview] = useState(false);
 
@@ -82,7 +93,14 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: Templa
         <CardContent className="flex-1 p-4 md:p-6">
           <div className="space-y-3">
             {/* Title */}
-            <h2 className="text-lg md:text-xl font-bold line-clamp-1">{template.title}</h2>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold line-clamp-1">{template.title}</h2>
+              {template.copy_type && (
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  {COPY_TYPE_LABELS[template.copy_type] || template.copy_type}
+                </p>
+              )}
+            </div>
 
             {/* Stats */}
             <div className="flex items-center gap-3">

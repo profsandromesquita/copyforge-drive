@@ -191,6 +191,7 @@ const Dashboard = () => {
             status={(copy as any).status || 'draft'}
             subtitle={formatDate(copy.updated_at)}
             sessions={(copy as any).sessions}
+            copyType={(copy as any).copy_type}
           />
         )
       };
@@ -323,6 +324,7 @@ const Dashboard = () => {
                               status={copy.status || 'draft'}
                               subtitle={formatDate(copy.updated_at)}
                               sessions={copy.sessions}
+                              copyType={copy.copy_type}
                               onClick={() => navigate(`/copy/${copy.id}`)}
                             />
                           ))}

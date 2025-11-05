@@ -33,10 +33,22 @@ interface CopyCardProps {
   status?: 'draft' | 'published';
   folderId?: string | null;
   sessions?: Session[];
+  copyType?: string;
   onClick?: () => void;
 }
 
-const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, onClick }: CopyCardProps) => {
+const COPY_TYPE_LABELS: Record<string, string> = {
+  'landing_page': 'Landing Page',
+  'anuncio': 'Anúncio',
+  'vsl': 'Video de Vendas',
+  'email': 'E-mail',
+  'webinar': 'Webinar',
+  'conteudo': 'Conteúdo',
+  'mensagem': 'Mensagem',
+  'outro': 'Outro',
+};
+
+const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, copyType, onClick }: CopyCardProps) => {
   const { deleteCopy, renameCopy, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
@@ -97,14 +109,21 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
       >
         {/* Header Section - Icon, Title and Menu */}
         <div className="p-3 pb-2 border-b" style={{ backgroundColor: '#F8E9E7' }}>
-          <div className="flex items-center gap-2">
-            <div className="text-primary shrink-0">
+          <div className="flex items-start gap-2">
+            <div className="text-primary shrink-0 mt-0.5">
               <FileText size={20} weight="duotone" />
             </div>
             
-            <h3 className="flex-1 text-sm font-medium text-foreground truncate">
-              {title}
-            </h3>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-foreground truncate leading-tight">
+                {title}
+              </h3>
+              {copyType && (
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                  {COPY_TYPE_LABELS[copyType] || copyType}
+                </p>
+              )}
+            </div>
             
             <DropdownMenu>
               <DropdownMenuTrigger 

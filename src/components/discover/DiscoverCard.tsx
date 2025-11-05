@@ -14,6 +14,7 @@ interface DiscoverCardProps {
     title: string;
     sessions: Session[];
     copy_count: number;
+    copy_type?: string;
     creator: {
       name: string;
       avatar_url: string | null;
@@ -21,6 +22,17 @@ interface DiscoverCardProps {
   };
   onCopy: (copyId: string) => void;
 }
+
+const COPY_TYPE_LABELS: Record<string, string> = {
+  'landing_page': 'Landing Page',
+  'anuncio': 'Anúncio',
+  'vsl': 'Video de Vendas',
+  'email': 'E-mail',
+  'webinar': 'Webinar',
+  'conteudo': 'Conteúdo',
+  'mensagem': 'Mensagem',
+  'outro': 'Outro',
+};
 
 export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
   const [showPreview, setShowPreview] = useState(false);
@@ -64,7 +76,14 @@ export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
         <CardContent className="flex-1 p-4 md:p-6">
           <div className="space-y-3">
             {/* Title */}
-            <h2 className="text-lg md:text-xl font-bold line-clamp-1">{copy.title}</h2>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold line-clamp-1">{copy.title}</h2>
+              {copy.copy_type && (
+                <p className="text-xs text-muted-foreground/60 mt-1">
+                  {COPY_TYPE_LABELS[copy.copy_type] || copy.copy_type}
+                </p>
+              )}
+            </div>
 
             {/* Creator Info */}
             <div className="flex items-center gap-3">
