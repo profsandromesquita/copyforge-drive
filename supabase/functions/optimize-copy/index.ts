@@ -290,6 +290,13 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
+    
+    // Extrair informações de uso (tokens)
+    const usage = data.usage || {};
+    const inputTokens = usage.prompt_tokens || 0;
+    const outputTokens = usage.completion_tokens || 0;
+    const totalTokens = usage.total_tokens || 0;
+    
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
@@ -331,7 +338,12 @@ Deno.serve(async (req) => {
         sessions: sessionsWithIds,
         project_identity: projectIdentity || null,
         audience_segment: audienceSegment || null,
-        offer: offer || null
+        offer: offer || null,
+        model_used: 'google/gemini-2.5-flash',
+        generation_category: 'text',
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        total_tokens: totalTokens,
       });
 
     if (historyError) {

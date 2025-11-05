@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, imageUrl, type = 'generate' } = await req.json();
+    const { prompt, imageUrl, type = 'generate', copyId, workspaceId } = await req.json();
 
     if (!prompt || !prompt.trim()) {
       throw new Error('Prompt é obrigatório');
@@ -93,6 +93,12 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Resposta da API recebida:', JSON.stringify(data, null, 2));
 
+    // Extrair informações de uso (tokens)
+    const usage = data.usage || {};
+    const inputTokens = usage.prompt_tokens || 0;
+    const outputTokens = usage.completion_tokens || 0;
+    const totalTokens = usage.total_tokens || 0;
+
     // Extrair a imagem base64 da resposta - tentar diferentes estruturas
     let generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
@@ -119,6 +125,52 @@ serve(async (req) => {
     }
     
     console.log('Imagem extraída com sucesso');
+
+    // Salvar no histórico se copyId e workspaceId forem fornecidos
+    try {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
+        const historyData = {
+          copy_id: copyId,
+          workspace_id: workspaceId,
+          generation_type: type === 'generate' ? 'create' : type === 'optimize' ? 'optimize' : 'variation',
+          copy_type: 'image',
+          prompt,
+          parameters: {
+            type,
+            hasImageUrl: !!imageUrl,
+          },
+          sessions: [{ title: 'Imagem Gerada', blocks: [{ type: 'image', content: generatedImageUrl }] }],
+          model_used: 'google/gemini-2.5-flash-image-preview',
+          generation_category: 'image',
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          total_tokens: totalTokens,
+        };
+
+        const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_generation_history`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify(historyData),
+        });
+
+        if (!historyResponse.ok) {
+          console.error('Erro ao salvar histórico:', await historyResponse.text());
+        } else {
+          console.log('Histórico de imagem salvo com sucesso');
+        }
+      }
+    } catch (historyError) {
+      console.error('Erro ao salvar histórico de imagem:', historyError);
+      // Não falhar a requisição se o histórico falhar
+    }
 
     return new Response(
       JSON.stringify({ imageUrl: generatedImageUrl }),

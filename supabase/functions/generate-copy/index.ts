@@ -135,6 +135,12 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Resposta da IA recebida");
 
+    // Extrair informações de uso (tokens)
+    const usage = data.usage || {};
+    const inputTokens = usage.prompt_tokens || 0;
+    const outputTokens = usage.completion_tokens || 0;
+    const totalTokens = usage.total_tokens || 0;
+
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       console.error("Nenhum tool call encontrado na resposta");
@@ -181,6 +187,11 @@ serve(async (req) => {
           offer: offer || null,
           sessions: sessionsWithIds,
           generation_type: 'create',
+          model_used: 'google/gemini-2.5-flash',
+          generation_category: 'text',
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          total_tokens: totalTokens,
         };
 
         const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_generation_history`, {

@@ -46,6 +46,7 @@ import { AdminRoute } from "./components/auth/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClientes from "./pages/admin/AdminClientes";
 import AdminClienteDetalhes from "./pages/admin/AdminClienteDetalhes";
+import AdminCopies from "./pages/admin/AdminCopies";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
                   <Route path="/painel/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                   <Route path="/painel/admin/clientes" element={<AdminRoute><AdminClientes /></AdminRoute>} />
                   <Route path="/painel/admin/clientes/:id" element={<AdminRoute><AdminClienteDetalhes /></AdminRoute>} />
+                  <Route path="/painel/admin/copies" element={<AdminRoute><AdminCopies /></AdminRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

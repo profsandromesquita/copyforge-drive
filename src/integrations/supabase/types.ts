@@ -21,14 +21,19 @@ export type Database = {
           copy_type: string | null
           created_at: string
           created_by: string
+          generation_category: string | null
           generation_type: string | null
           id: string
+          input_tokens: number | null
+          model_used: string | null
           offer: Json | null
           original_content: Json | null
+          output_tokens: number | null
           parameters: Json | null
           project_identity: Json | null
           prompt: string
           sessions: Json
+          total_tokens: number | null
           workspace_id: string
         }
         Insert: {
@@ -37,14 +42,19 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by: string
+          generation_category?: string | null
           generation_type?: string | null
           id?: string
+          input_tokens?: number | null
+          model_used?: string | null
           offer?: Json | null
           original_content?: Json | null
+          output_tokens?: number | null
           parameters?: Json | null
           project_identity?: Json | null
           prompt: string
           sessions: Json
+          total_tokens?: number | null
           workspace_id: string
         }
         Update: {
@@ -53,14 +63,19 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by?: string
+          generation_category?: string | null
           generation_type?: string | null
           id?: string
+          input_tokens?: number | null
+          model_used?: string | null
           offer?: Json | null
           original_content?: Json | null
+          output_tokens?: number | null
           parameters?: Json | null
           project_identity?: Json | null
           prompt?: string
           sessions?: Json
+          total_tokens?: number | null
           workspace_id?: string
         }
         Relationships: [
