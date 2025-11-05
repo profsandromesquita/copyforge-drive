@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, imageUrl, type = 'generate', aspectRatio = '16:9' } = await req.json();
+    const { prompt, imageUrl, type = 'generate' } = await req.json();
 
     if (!prompt || !prompt.trim()) {
       throw new Error('Prompt é obrigatório');
@@ -23,15 +23,15 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    // Criar prompt mais explícito para geração de imagem
+    // Criar prompt para geração de imagem
     let enhancedPrompt = '';
     
     if (type === 'generate') {
-      enhancedPrompt = `Generate a high-quality image: ${prompt}. Image aspect ratio should be ${aspectRatio}. Create a detailed, visually appealing image.`;
+      enhancedPrompt = `Generate a high-quality, detailed image: ${prompt}`;
     } else if (type === 'optimize') {
-      enhancedPrompt = `Improve this image based on: ${prompt}. Maintain aspect ratio ${aspectRatio}. Enhance quality and details.`;
+      enhancedPrompt = `Improve this image based on: ${prompt}. Enhance quality and details.`;
     } else {
-      enhancedPrompt = `Create a variation of this image: ${prompt}. Keep aspect ratio ${aspectRatio}. Generate a creative alternative version.`;
+      enhancedPrompt = `Create a variation of this image: ${prompt}. Generate a creative alternative version.`;
     }
     
     console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, enhancedPrompt);
