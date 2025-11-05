@@ -56,7 +56,7 @@ const Sidebar = () => {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+                  `flex items-center gap-3 px-4 py-3 rounded-full transition-colors ${
                     isActive
                       ? "text-primary"
                       : "text-foreground hover:bg-accent"
