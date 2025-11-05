@@ -80,6 +80,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ai_generation_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_copy"
             columns: ["copy_id"]
             isOneToOne: false

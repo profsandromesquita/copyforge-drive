@@ -45,58 +45,72 @@ export const useAdminCopies = (filters: CopyFilters = {}, page: number = 1, page
   return useQuery({
     queryKey: ["admin-copies", filters, page, pageSize],
     queryFn: async () => {
-      let query = supabase
+      // Buscar dados do histórico
+      let historyQuery = supabase
         .from("ai_generation_history")
-        .select(`
-          *,
-          profiles (
-            name,
-            email,
-            avatar_url
-          ),
-          workspaces (
-            name,
-            avatar_url
-          )
-        `, { count: 'exact' })
+        .select("*", { count: 'exact' })
         .order("created_at", { ascending: false });
 
       // Aplicar filtros
       if (filters.search) {
-        query = query.or(`prompt.ilike.%${filters.search}%,profiles.name.ilike.%${filters.search}%,profiles.email.ilike.%${filters.search}%`);
+        historyQuery = historyQuery.ilike("prompt", `%${filters.search}%`);
       }
 
       if (filters.workspaceId) {
-        query = query.eq("workspace_id", filters.workspaceId);
+        historyQuery = historyQuery.eq("workspace_id", filters.workspaceId);
       }
 
       if (filters.category) {
-        query = query.eq("generation_category", filters.category);
+        historyQuery = historyQuery.eq("generation_category", filters.category);
       }
 
       if (filters.model) {
-        query = query.eq("model_used", filters.model);
+        historyQuery = historyQuery.eq("model_used", filters.model);
       }
 
       if (filters.startDate) {
-        query = query.gte("created_at", filters.startDate);
+        historyQuery = historyQuery.gte("created_at", filters.startDate);
       }
 
       if (filters.endDate) {
-        query = query.lte("created_at", filters.endDate);
+        historyQuery = historyQuery.lte("created_at", filters.endDate);
       }
 
       // Paginação
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
-      query = query.range(from, to);
+      historyQuery = historyQuery.range(from, to);
 
-      const { data, error, count } = await query;
+      const { data: historyData, error: historyError, count } = await historyQuery;
 
-      if (error) throw error;
+      if (historyError) throw historyError;
+
+      // Buscar dados de profiles e workspaces separadamente
+      const userIds = [...new Set((historyData || []).map(h => h.created_by).filter(Boolean))];
+      const workspaceIds = [...new Set((historyData || []).map(h => h.workspace_id).filter(Boolean))];
+
+      const [profilesRes, workspacesRes] = await Promise.all([
+        userIds.length > 0 
+          ? supabase.from("profiles").select("id, name, email, avatar_url").in("id", userIds)
+          : Promise.resolve({ data: [], error: null }),
+        workspaceIds.length > 0
+          ? supabase.from("workspaces").select("id, name, avatar_url").in("id", workspaceIds)
+          : Promise.resolve({ data: [], error: null })
+      ]);
+
+      // Criar maps para lookup rápido
+      const profilesMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+      const workspacesMap = new Map((workspacesRes.data || []).map(w => [w.id, w]));
+
+      // Combinar dados
+      const generations = (historyData || []).map(history => ({
+        ...history,
+        profiles: history.created_by ? profilesMap.get(history.created_by) : null,
+        workspaces: history.workspace_id ? workspacesMap.get(history.workspace_id) : null,
+      }));
 
       return {
-        generations: (data || []) as any as CopyGeneration[],
+        generations: generations as any as CopyGeneration[],
         totalCount: count || 0,
         totalPages: Math.ceil((count || 0) / pageSize),
       };
@@ -108,29 +122,35 @@ export const useAdminCopyDetails = (generationId: string) => {
   return useQuery({
     queryKey: ["admin-copy-details", generationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Buscar histórico
+      const { data: historyData, error } = await supabase
         .from("ai_generation_history")
-        .select(`
-          *,
-          profiles (
-            name,
-            email,
-            avatar_url
-          ),
-          workspaces (
-            name,
-            avatar_url
-          ),
-          copies (
-            title
-          )
-        `)
+        .select("*")
         .eq("id", generationId)
         .single();
 
       if (error) throw error;
+      if (!historyData) throw new Error("Generation not found");
 
-      return data as any as CopyGeneration & { copies: { title: string } };
+      // Buscar dados relacionados
+      const [profileRes, workspaceRes, copyRes] = await Promise.all([
+        historyData.created_by 
+          ? supabase.from("profiles").select("name, email, avatar_url").eq("id", historyData.created_by).single()
+          : Promise.resolve({ data: null, error: null }),
+        historyData.workspace_id
+          ? supabase.from("workspaces").select("name, avatar_url").eq("id", historyData.workspace_id).single()
+          : Promise.resolve({ data: null, error: null }),
+        historyData.copy_id
+          ? supabase.from("copies").select("title").eq("id", historyData.copy_id).maybeSingle()
+          : Promise.resolve({ data: null, error: null })
+      ]);
+
+      return {
+        ...historyData,
+        profiles: profileRes.data,
+        workspaces: workspaceRes.data,
+        copies: copyRes.data,
+      } as any as CopyGeneration & { copies: { title: string } };
     },
     enabled: !!generationId,
   });
