@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +83,7 @@ const MobileMenu = () => {
               <User size={18} className="mr-2" />
               Minha Conta
             </DropdownMenuItem>
+            <ThemeToggle />
             <DropdownMenuSeparator />
             
             <DropdownMenuItem 

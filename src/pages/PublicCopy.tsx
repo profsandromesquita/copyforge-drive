@@ -185,7 +185,7 @@ const PublicCopy = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-[#EEEEEE] backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-muted/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Structure Menu */}
@@ -316,7 +316,7 @@ const PublicCopy = () => {
       </header>
 
       {/* Copy Title and Creator Section */}
-      <div className="border-b bg-[#EEEEEE]">
+      <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             {copy.title}
