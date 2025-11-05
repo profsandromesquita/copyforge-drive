@@ -85,10 +85,13 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
-        style={{ opacity: isDragging ? 0.5 : 1 }}
-        className={`group relative flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer bg-background hover:bg-accent/50 ${
+        className={`group relative flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:bg-accent/50 ${
           isOver ? 'ring-2 ring-primary shadow-lg scale-102' : ''
         } ${isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
+        style={{
+          backgroundColor: '#F8E9E7',
+          opacity: isDragging ? 0.5 : 1
+        }}
       >
         <div className="text-muted-foreground shrink-0">
           <Folder size={24} weight="fill" />
