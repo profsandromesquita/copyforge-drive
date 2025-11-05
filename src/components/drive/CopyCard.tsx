@@ -216,17 +216,17 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Footer - Appears on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-t border-border/50" style={{ background: 'linear-gradient(to top, #F8E9E7, #F8E9E7 80%, transparent)' }}>
+        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: 'linear-gradient(to top, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.4) 60%, transparent)' }}>
           <div className="flex items-center justify-between gap-2">
             {creatorName ? (
               <div className="flex items-center gap-2">
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage src={creatorAvatar || undefined} />
-                  <AvatarFallback className="text-[10px] bg-primary/10">
+                  <AvatarFallback className="text-[10px] bg-white/20 text-white">
                     {creatorName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] text-muted-foreground font-medium">
+                <span className="text-[10px] text-white font-medium">
                   {creatorName}
                 </span>
               </div>
@@ -235,7 +235,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
             )}
             
             {subtitle && (
-              <span className="text-[10px] text-muted-foreground/70 shrink-0">
+              <span className="text-[10px] text-white/80 shrink-0">
                 {subtitle}
               </span>
             )}
