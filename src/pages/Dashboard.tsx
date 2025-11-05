@@ -133,10 +133,7 @@ const Dashboard = () => {
                       type="folder"
                       title={folder.name}
                       folderId={folder.parent_id}
-                      subtitle={`Criada ${formatDistanceToNow(new Date(folder.created_at), { 
-                        addSuffix: true, 
-                        locale: ptBR 
-                      })}`}
+                      subtitle={formatDate(folder.updated_at)}
                       onClick={() => navigateToFolder(folder.id)}
                     />
                   ))}
