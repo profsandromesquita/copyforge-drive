@@ -118,6 +118,7 @@ const Dashboard = () => {
             creatorAvatar={copy.creator?.avatar_url}
             status={(copy as any).status || 'draft'}
             subtitle={formatDate(copy.updated_at)}
+            sessions={(copy as any).sessions}
           />
         )
       };
@@ -264,6 +265,7 @@ const Dashboard = () => {
                               creatorAvatar={copy.creator?.avatar_url}
                               status={copy.status || 'draft'}
                               subtitle={formatDate(copy.updated_at)}
+                              sessions={copy.sessions}
                               onClick={() => navigate(`/copy/${copy.id}`)}
                             />
                           ))}

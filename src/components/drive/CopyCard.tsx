@@ -21,6 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useDrive } from "@/hooks/useDrive";
 import MoveModal from "./MoveModal";
+import { BlockPreview } from "@/components/copy-editor/BlockPreview";
+import { Session } from "@/types/copy-editor";
 
 interface CopyCardProps {
   id: string;
@@ -30,15 +32,24 @@ interface CopyCardProps {
   creatorAvatar?: string | null;
   status?: 'draft' | 'published';
   folderId?: string | null;
+  sessions?: Session[];
   onClick?: () => void;
 }
 
-const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, onClick }: CopyCardProps) => {
+const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, onClick }: CopyCardProps) => {
   const { deleteCopy, renameCopy, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
+
+  const getFirstBlocks = () => {
+    if (!sessions || sessions.length === 0) return [];
+    const firstSession = sessions[0];
+    return firstSession.blocks.slice(0, 4);
+  };
+
+  const firstBlocks = getFirstBlocks();
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: id,
@@ -149,12 +160,26 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Preview Section */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-background to-muted/5 flex items-center justify-center p-6 relative">
-          <div className="text-center max-w-[85%]">
-            <p className="text-xs text-muted-foreground/60 line-clamp-4 leading-relaxed">
-              {title}
-            </p>
+        <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden">
+          <div className="absolute inset-0 p-2 overflow-hidden">
+            <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
+              {firstBlocks.length > 0 ? (
+                firstBlocks.map((block) => (
+                  <div key={block.id} className="opacity-90">
+                    <BlockPreview block={block} />
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FileText size={48} weight="duotone" className="text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground/60">Sem conteúdo</p>
+                </div>
+              )}
+            </div>
           </div>
+          
+          {/* Bottom Fade Overlay */}
+          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
           
           {/* Status Badge - positioned absolute */}
           {status && (
