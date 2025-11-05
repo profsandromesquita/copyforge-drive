@@ -1142,14 +1142,96 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-xs">URL da Foto (opcional)</Label>
-                      <Input
-                        value={item.photo || ''}
-                        onChange={(e) => updateTestimonialItem(item.id, 'photo', e.target.value)}
-                        placeholder="https://..."
-                        className="h-8"
-                      />
+                    <div className="space-y-2">
+                      <Label className="text-xs">Foto do Cliente (opcional)</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          disabled={isUploading}
+                          type="button"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (!file) return;
+
+                              if (!file.type.startsWith('image/')) {
+                                toast.error('Por favor, selecione apenas arquivos de imagem');
+                                return;
+                              }
+
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error('A imagem deve ter no máximo 5MB');
+                                return;
+                              }
+
+                              setIsUploading(true);
+                              try {
+                                const { data: { user } } = await supabase.auth.getUser();
+                                if (!user) {
+                                  toast.error('Você precisa estar autenticado para fazer upload');
+                                  return;
+                                }
+
+                                const fileExt = file.name.split('.').pop();
+                                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                                const { data, error } = await supabase.storage
+                                  .from('copy-images')
+                                  .upload(fileName, file);
+
+                                if (error) throw error;
+
+                                const { data: { publicUrl } } = supabase.storage
+                                  .from('copy-images')
+                                  .getPublicUrl(data.path);
+
+                                updateTestimonialItem(item.id, 'photo', publicUrl);
+                                toast.success('Foto enviada com sucesso!');
+                              } catch (error) {
+                                console.error('Error uploading photo:', error);
+                                toast.error('Erro ao enviar foto');
+                              } finally {
+                                setIsUploading(false);
+                              }
+                            };
+                            input.click();
+                          }}
+                        >
+                          <Upload size={14} className="mr-2" />
+                          {isUploading ? 'Enviando...' : 'Upload'}
+                        </Button>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">ou</span>
+                          <Input
+                            value={item.photo || ''}
+                            onChange={(e) => updateTestimonialItem(item.id, 'photo', e.target.value)}
+                            placeholder="URL da foto"
+                            className="h-8 flex-1"
+                          />
+                        </div>
+                      </div>
+                      {item.photo && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <img 
+                            src={item.photo} 
+                            alt="Preview" 
+                            className="w-12 h-12 rounded-full object-cover border"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-xs text-destructive"
+                            onClick={() => updateTestimonialItem(item.id, 'photo', '')}
+                          >
+                            Remover foto
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
