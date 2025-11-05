@@ -135,6 +135,19 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
     }
   };
 
+  const getFontWeightClass = () => {
+    switch (block.config?.fontWeight) {
+      case 'normal':
+        return 'font-normal';
+      case 'semibold':
+        return 'font-semibold';
+      case 'extrabold':
+        return 'font-extrabold';
+      default:
+        return block.type === 'headline' ? 'font-bold' : 'font-semibold';
+    }
+  };
+
   const handleFocusModeOpen = () => {
     // Pegar o conteúdo atual do editableRef antes de abrir o modal
     const currentContent = editableRef.current?.innerHTML || (typeof block.content === 'string' ? block.content : '');
@@ -188,7 +201,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`font-bold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              className={`border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
               data-placeholder="Digite seu título..."
               suppressContentEditableWarning
             />
@@ -221,7 +234,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`font-semibold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
+              className={`border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
               data-placeholder="Digite seu subtítulo..."
               suppressContentEditableWarning
             />
