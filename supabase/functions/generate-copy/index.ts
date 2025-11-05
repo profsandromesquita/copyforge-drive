@@ -63,6 +63,7 @@ serve(async (req) => {
                               },
                               config: {
                                 type: "object",
+                                description: "Configurações do bloco (fontSize, textAlign, color, etc). SEMPRE inclua config vazio {} mesmo se não tiver configurações específicas.",
                                 properties: {
                                   fontSize: { type: "string" },
                                   textAlign: { type: "string" },

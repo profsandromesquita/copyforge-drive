@@ -230,10 +230,19 @@ Deno.serve(async (req) => {
                         },
                         config: {
                           type: "object",
-                          description: "Configurações opcionais do bloco"
+                          description: "Configurações do bloco (fontSize, textAlign, color, etc). SEMPRE inclua config vazio {} mesmo se não tiver configurações específicas.",
+                          properties: {
+                            fontSize: { type: "string" },
+                            textAlign: { type: "string" },
+                            color: { type: "string" },
+                            backgroundColor: { type: "string" },
+                            textColor: { type: "string" },
+                            buttonSize: { type: "string" },
+                            link: { type: "string" }
+                          }
                         }
                       },
-                      required: ["type", "content"]
+                      required: ["type", "content", "config"]
                     }
                   }
                 },

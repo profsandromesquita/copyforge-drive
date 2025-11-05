@@ -55,7 +55,7 @@ export const FocusModeModal = ({
   onSave,
 }: FocusModeModalProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [localConfig, setLocalConfig] = useState<BlockConfig>(config);
+  const [localConfig, setLocalConfig] = useState<BlockConfig>(config || {});
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -74,7 +74,7 @@ export const FocusModeModal = ({
   }, [content, open]);
 
   useEffect(() => {
-    setLocalConfig(config);
+    setLocalConfig(config || {});
   }, [config]);
 
   useEffect(() => {
