@@ -16,7 +16,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
   const updateConfig = (key: string, value: any) => {
     updateBlock(block.id, {
-      config: { ...block.config, [key]: value },
+      config: { ...(block.config || {}), [key]: value },
     });
   };
 
@@ -28,7 +28,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Tamanho da Fonte</Label>
               <Select
-                value={block.config.fontSize || '16px'}
+                value={block.config?.fontSize || '16px'}
                 onValueChange={(value) => updateConfig('fontSize', value)}
               >
                 <SelectTrigger>
@@ -45,7 +45,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Alinhamento</Label>
               <Select
-                value={block.config.textAlign || 'left'}
+                value={block.config?.textAlign || 'left'}
                 onValueChange={(value) => updateConfig('textAlign', value)}
               >
                 <SelectTrigger>
@@ -68,7 +68,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Peso da Fonte</Label>
               <Select
-                value={block.config.fontWeight || 'bold'}
+                value={block.config?.fontWeight || 'bold'}
                 onValueChange={(value) => updateConfig('fontWeight', value)}
               >
                 <SelectTrigger>
@@ -86,7 +86,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Alinhamento</Label>
               <Select
-                value={block.config.textAlign || 'left'}
+                value={block.config?.textAlign || 'left'}
                 onValueChange={(value) => updateConfig('textAlign', value)}
               >
                 <SelectTrigger>
@@ -107,7 +107,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           <div className="space-y-2">
             <Label>Estilo da Lista</Label>
             <Select
-              value={block.config.listStyle || 'bullets'}
+              value={block.config?.listStyle || 'bullets'}
               onValueChange={(value) => updateConfig('listStyle', value)}
             >
               <SelectTrigger>
@@ -127,7 +127,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Tamanho</Label>
               <Select
-                value={block.config.buttonSize || 'md'}
+                value={block.config?.buttonSize || 'md'}
                 onValueChange={(value) => updateConfig('buttonSize', value)}
               >
                 <SelectTrigger>
@@ -144,7 +144,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             <div className="space-y-2">
               <Label>Link (URL)</Label>
               <Input
-                value={block.config.link || ''}
+                value={block.config?.link || ''}
                 onChange={(e) => updateConfig('link', e.target.value)}
                 placeholder="https://..."
               />
