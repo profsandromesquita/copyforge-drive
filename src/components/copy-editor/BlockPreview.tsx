@@ -1,5 +1,6 @@
 import { Block } from '@/types/copy-editor';
 import { Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface BlockPreviewProps {
   block: Block;
@@ -7,13 +8,37 @@ interface BlockPreviewProps {
 
 export const BlockPreview = ({ block }: BlockPreviewProps) => {
   const getFontSizeClass = () => {
-    switch (block.config?.fontSize) {
-      case 'small':
-        return 'text-sm';
-      case 'large':
-        return 'text-lg';
+    const fontSize = block.config?.fontSize || 'medium';
+    
+    switch (block.type) {
+      case 'headline':
+        switch (fontSize) {
+          case 'small':
+            return 'text-xl';
+          case 'large':
+            return 'text-3xl';
+          default:
+            return 'text-2xl';
+        }
+      case 'subheadline':
+        switch (fontSize) {
+          case 'small':
+            return 'text-lg';
+          case 'large':
+            return 'text-2xl';
+          default:
+            return 'text-xl';
+        }
+      case 'text':
       default:
-        return 'text-base';
+        switch (fontSize) {
+          case 'small':
+            return 'text-sm';
+          case 'large':
+            return 'text-lg';
+          default:
+            return 'text-base';
+        }
     }
   };
 
@@ -30,6 +55,17 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
     }
   };
 
+  const getListAlignmentClass = () => {
+    switch (block.config?.textAlign) {
+      case 'center':
+        return 'justify-center';
+      case 'right':
+        return 'justify-end';
+      default:
+        return 'justify-start';
+    }
+  };
+
   const getFontWeightClass = () => {
     switch (block.config?.fontWeight) {
       case 'normal':
@@ -39,7 +75,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
       case 'extrabold':
         return 'font-extrabold';
       default:
-        return 'font-bold';
+        return block.type === 'headline' ? 'font-bold' : 'font-semibold';
     }
   };
 
@@ -47,16 +83,16 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
     switch (block.type) {
       case 'headline':
         return (
-          <h2 
-            className={`text-2xl ${getFontWeightClass()} ${getTextAlignClass()}`}
+          <div 
+            className={`${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
 
       case 'subheadline':
         return (
-          <h3 
-            className={`text-xl ${getFontWeightClass()} ${getTextAlignClass()}`}
+          <div 
+            className={`${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
@@ -81,29 +117,29 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
           
           switch (block.config?.listStyle) {
             case 'numbers':
-              return <span style={iconStyle} className="font-medium">{index + 1}.</span>;
+              return <span style={iconStyle} className="font-medium mt-2">{index + 1}.</span>;
             case 'check':
-              return <span style={iconStyle} className="text-lg">✓</span>;
+              return <span style={iconStyle} className="text-lg mt-2">✓</span>;
             case 'arrow':
-              return <span style={iconStyle} className="text-lg">→</span>;
+              return <span style={iconStyle} className="text-lg mt-2">→</span>;
             case 'star':
-              return <span style={iconStyle} className="text-lg">★</span>;
+              return <span style={iconStyle} className="text-lg mt-2">★</span>;
             case 'heart':
-              return <span style={iconStyle} className="text-lg">♥</span>;
+              return <span style={iconStyle} className="text-lg mt-2">♥</span>;
             default:
-              return <span style={iconStyle}>•</span>;
+              return <span style={iconStyle} className="mt-2">•</span>;
           }
         };
 
         return (
-          <ul className={`space-y-1 ${showIcons ? 'pl-4' : ''} ${getTextAlignClass()}`}>
+          <div className="space-y-2">
             {items.map((item, index) => (
-              <li key={index} className="flex gap-2">
+              <div key={index} className={`flex gap-2 ${getListAlignmentClass()}`}>
                 {getListIcon(index)}
-                <span>{item}</span>
-              </li>
+                <span className="flex-1">{item}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         );
 
       case 'button':
@@ -117,11 +153,11 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
         const getButtonAlignClass = () => {
           switch (buttonAlign) {
             case 'center':
-              return 'text-center';
+              return 'justify-center';
             case 'right':
-              return 'text-right';
+              return 'justify-end';
             default:
-              return 'text-left';
+              return 'justify-start';
           }
         };
 
@@ -161,7 +197,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
         };
 
         return (
-          <div className={getButtonAlignClass()}>
+          <div className={`flex ${getButtonAlignClass()}`}>
             <button 
               style={{
                 backgroundColor: buttonBgColor,
@@ -306,13 +342,209 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
           </div>
         );
 
+      case 'video':
+        const videoUrl = block.config?.videoUrl || '';
+        const videoTitle = block.config?.videoTitle || '';
+        const videoSize = block.config?.videoSize || 'md';
+        
+        const getVideoSizeClass = () => {
+          switch (videoSize) {
+            case 'sm':
+              return 'max-w-xs';
+            case 'lg':
+              return 'max-w-4xl';
+            default:
+              return 'max-w-2xl';
+          }
+        };
+
+        const getEmbedUrl = (url: string) => {
+          if (!url) return null;
+          const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+          const youtubeMatch = url.match(youtubeRegex);
+          if (youtubeMatch) return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+          const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+          const vimeoMatch = url.match(vimeoRegex);
+          if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+          if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com/video/')) return url;
+          return null;
+        };
+
+        const embedUrl = getEmbedUrl(videoUrl);
+
+        return (
+          <div className="space-y-2">
+            <div className={`${getVideoSizeClass()} w-full mx-auto`}>
+              {embedUrl ? (
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
+                  <span className="text-muted-foreground text-sm">
+                    {videoUrl ? 'URL de vídeo inválida' : 'Sem vídeo'}
+                  </span>
+                </div>
+              )}
+            </div>
+            {videoTitle && (
+              <p className="text-sm text-muted-foreground text-center">{videoTitle}</p>
+            )}
+          </div>
+        );
+
+      case 'audio':
+        const audioUrl = block.config?.audioUrl || '';
+        const audioTitle = block.config?.audioTitle || '';
+        const audioArtist = block.config?.audioArtist || '';
+        const showControls = block.config?.showControls !== false;
+        const showWaveform = block.config?.showWaveform !== false;
+
+        return (
+          <div className="space-y-3 max-w-2xl mx-auto">
+            {(audioTitle || audioArtist) && (
+              <div className="text-center space-y-1">
+                {audioTitle && <h4 className="font-semibold text-lg">{audioTitle}</h4>}
+                {audioArtist && <p className="text-sm text-muted-foreground">{audioArtist}</p>}
+              </div>
+            )}
+            {showWaveform && audioUrl && (
+              <div className="flex items-center gap-1 h-16 px-4 bg-muted rounded-lg">
+                {[...Array(40)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-primary rounded-full"
+                    style={{ height: `${Math.random() * 60 + 20}%`, opacity: 0.7 }}
+                  />
+                ))}
+              </div>
+            )}
+            {audioUrl ? (
+              <audio src={audioUrl} controls={showControls} className="w-full" />
+            ) : (
+              <div className="w-full h-12 bg-muted flex items-center justify-center rounded-lg">
+                <span className="text-muted-foreground text-sm">Sem áudio</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'faq':
+        const faqTitle = block.config?.faqTitle || '';
+        const showNumbering = block.config?.showNumbering !== false;
+        const expandedByDefault = block.config?.expandedByDefault === true;
+        const faqItems = block.config?.faqItems || [];
+        const faqAlign = block.config?.textAlign || 'left';
+
+        const getFaqAlignClass = () => {
+          switch (faqAlign) {
+            case 'center':
+              return 'items-center text-center';
+            case 'right':
+              return 'items-end text-right';
+            default:
+              return 'items-start text-left';
+          }
+        };
+
+        return (
+          <div className={`space-y-4 max-w-3xl w-full flex flex-col ${getFaqAlignClass()}`}>
+            {faqTitle && <h3 className="text-xl font-bold">{faqTitle}</h3>}
+            {faqItems.length > 0 ? (
+              <Accordion 
+                type="single" 
+                collapsible 
+                className="w-full space-y-2"
+                defaultValue={expandedByDefault ? faqItems[0]?.id : undefined}
+              >
+                {faqItems.map((item, index) => (
+                  <AccordionItem 
+                    key={item.id} 
+                    value={item.id}
+                    className="border rounded-lg px-4 bg-card"
+                  >
+                    <AccordionTrigger className="hover:no-underline py-4">
+                      <span className="font-medium text-left">
+                        {showNumbering && <span className="text-primary mr-2">{index + 1}.</span>}
+                        {item.question || 'Pergunta'}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 text-muted-foreground">
+                      {item.answer || 'Resposta'}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground text-sm">
+                Sem perguntas
+              </div>
+            )}
+          </div>
+        );
+
+      case 'testimonial':
+        const testimonialTitle = block.config?.testimonialTitle || '';
+        const showPhotos = block.config?.showPhotos !== false;
+        const showRatings = block.config?.showRatings !== false;
+        const testimonialItems = block.config?.testimonialItems || [];
+
+        return (
+          <div className="space-y-6 max-w-4xl w-full">
+            {testimonialTitle && <h3 className="text-2xl font-bold text-center">{testimonialTitle}</h3>}
+            {testimonialItems.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2">
+                {testimonialItems.map((item) => (
+                  <div key={item.id} className="border rounded-lg p-6 bg-card space-y-4">
+                    <div className="flex items-start gap-4">
+                      {showPhotos && item.photo && (
+                        <img 
+                          src={item.photo} 
+                          alt={item.name}
+                          className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-lg">{item.name || 'Cliente'}</h4>
+                        {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+                        {showRatings && (
+                          <div className="flex gap-1 mt-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i}
+                                size={16}
+                                weight={i < item.rating ? 'fill' : 'regular'}
+                                className={i < item.rating ? 'text-yellow-500' : 'text-muted-foreground'}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground italic">"{item.text || 'Depoimento'}"</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="w-full p-6 border-2 border-dashed rounded-lg text-center text-muted-foreground text-sm">
+                Sem depoimentos
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }
   };
 
   return (
-    <div className="p-3 rounded-lg border bg-background/50">
+    <div className="p-4 rounded-lg bg-card">
       {renderContent()}
     </div>
   );
