@@ -23,8 +23,16 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    // Adicionar a proporção ao prompt
-    const enhancedPrompt = `${prompt}. Aspect ratio: ${aspectRatio}.`;
+    // Criar prompt mais explícito para geração de imagem
+    let enhancedPrompt = '';
+    
+    if (type === 'generate') {
+      enhancedPrompt = `Generate a high-quality image: ${prompt}. Image aspect ratio should be ${aspectRatio}. Create a detailed, visually appealing image.`;
+    } else if (type === 'optimize') {
+      enhancedPrompt = `Improve this image based on: ${prompt}. Maintain aspect ratio ${aspectRatio}. Enhance quality and details.`;
+    } else {
+      enhancedPrompt = `Create a variation of this image: ${prompt}. Keep aspect ratio ${aspectRatio}. Generate a creative alternative version.`;
+    }
     
     console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, enhancedPrompt);
 
