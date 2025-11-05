@@ -73,7 +73,7 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     <>
       <div
         onClick={onClick}
-        className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[120px] flex flex-col ${
+        className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[100px] flex flex-col ${
           type === 'folder' 
             ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700' 
             : 'bg-card border-border/50 hover:border-primary/30'
@@ -147,10 +147,16 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
                 </span>
               )}
               
+              {subtitle && type === 'copy' && (
+                <span className="text-[10px] text-muted-foreground/70 shrink-0">
+                  {subtitle}
+                </span>
+              )}
+              
               {type === 'copy' && status && (
                 <Badge 
                   variant="outline"
-                  className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ${
+                  className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ml-auto ${
                     status === 'published' 
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
                       : 'bg-muted text-muted-foreground border-border'
@@ -158,12 +164,6 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
                 >
                   {status === 'published' ? 'Publicado' : 'Rascunho'}
                 </Badge>
-              )}
-              
-              {subtitle && type === 'copy' && (
-                <span className="text-[10px] text-muted-foreground/70 ml-auto shrink-0">
-                  {subtitle}
-                </span>
               )}
             </div>
           </div>
