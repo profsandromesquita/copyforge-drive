@@ -21,7 +21,7 @@ import { Session } from '@/types/copy-editor';
 
 export const EditorHeader = () => {
   const navigate = useNavigate();
-  const { copyId, copyTitle, setCopyTitle, isSaving, sessions, updateStatus, importSessions } = useCopyEditor();
+  const { copyId, copyTitle, setCopyTitle, isSaving, sessions, status, updateStatus, importSessions } = useCopyEditor();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -133,7 +133,9 @@ export const EditorHeader = () => {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button>Publicar</Button>
+            <Button variant={status === 'published' ? 'default' : 'secondary'}>
+              {status === 'published' ? 'Publicada' : 'Salva'}
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handlePublish}>
