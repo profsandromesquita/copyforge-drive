@@ -298,6 +298,18 @@ Deno.serve(async (req) => {
 
     const generatedContent = JSON.parse(toolCall.function.arguments);
 
+    // Adicionar IDs únicos às sessões e blocos
+    const timestamp = Date.now();
+    const sessionsWithIds = generatedContent.sessions.map((session: any, sessionIndex: number) => ({
+      ...session,
+      id: `optimize-session-${timestamp}-${sessionIndex}`,
+      blocks: session.blocks.map((block: any, blockIndex: number) => ({
+        ...block,
+        id: `optimize-block-${timestamp}-${sessionIndex}-${blockIndex}`,
+        config: block.config || {},
+      })),
+    }));
+
     // Salvar no histórico
     const { error: historyError } = await supabase
       .from('ai_generation_history')
@@ -316,7 +328,7 @@ Deno.serve(async (req) => {
           hasOffer: !!offer
         },
         original_content: originalContent,
-        sessions: generatedContent.sessions,
+        sessions: sessionsWithIds,
         project_identity: projectIdentity || null,
         audience_segment: audienceSegment || null,
         offer: offer || null
@@ -327,7 +339,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ sessions: generatedContent.sessions }),
+      JSON.stringify({ sessions: sessionsWithIds }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
