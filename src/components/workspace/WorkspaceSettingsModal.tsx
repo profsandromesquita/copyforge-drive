@@ -15,7 +15,7 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange }: WorkspaceSettings
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[600px] p-0 gap-0 flex flex-col">
+      <DialogContent className="max-w-4xl h-[600px] p-0 gap-0 flex flex-col">
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
           <div className="w-64 border-r border-border bg-muted/30 p-6 overflow-y-auto">
