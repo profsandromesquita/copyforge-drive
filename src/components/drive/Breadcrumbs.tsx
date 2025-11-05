@@ -6,14 +6,13 @@ export const Breadcrumbs = () => {
   const { breadcrumbs, navigateToFolder } = useDrive();
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex items-center gap-2">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => navigateToFolder(null)}
-        className="gap-2"
+        className="gap-2 text-base"
       >
-        <House size={16} weight="bold" />
         Drive
       </Button>
       
@@ -24,7 +23,7 @@ export const Breadcrumbs = () => {
             variant="ghost"
             size="sm"
             onClick={() => navigateToFolder(folder.id)}
-            className={index === breadcrumbs.length - 1 ? 'font-semibold' : ''}
+            className={`text-base ${index === breadcrumbs.length - 1 ? 'font-semibold' : ''}`}
           >
             {folder.name}
           </Button>
