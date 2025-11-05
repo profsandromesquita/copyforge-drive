@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -29,19 +29,52 @@ import {
 } from "@/components/ui/pagination";
 import { useQueryClient } from "@tanstack/react-query";
 import { calculateGenerationCost, formatCost } from "@/lib/ai-pricing";
+import { toast } from "sonner";
 
 export default function AdminCopies() {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [selectedGeneration, setSelectedGeneration] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useAdminCopies(filters, page, 20);
 
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL");
+      const data = await response.json();
+      const usdBrl = data.USDBRL;
+      setExchangeRate(parseFloat(usdBrl.bid));
+    } catch (error) {
+      console.error("Erro ao buscar cotação:", error);
+      toast.error("Erro ao buscar cotação do dólar");
+    }
+  };
+
+  const formatCurrency = (value: number, currency: "USD" | "BRL") => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(value);
+  };
+
+  const convertToBRL = (usdValue: number): number => {
+    if (!exchangeRate) return 0;
+    return usdValue * exchangeRate;
+  };
+
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-copies"] });
     refetch();
+    fetchExchangeRate();
   };
 
   const getCategoryColor = (category: string) => {
@@ -199,15 +232,31 @@ export default function AdminCopies() {
                         {formatTokens(generation.total_tokens)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="font-mono text-sm text-green-600 dark:text-green-400 font-semibold">
-                          {formatCost(
-                            calculateGenerationCost(
-                              generation.model_used || 'google/gemini-2.5-flash',
-                              generation.input_tokens || 0,
-                              generation.output_tokens || 0
-                            )
+                        <div className="flex flex-col items-end">
+                          <span className="font-mono text-sm text-green-600 dark:text-green-400 font-semibold">
+                            {formatCost(
+                              calculateGenerationCost(
+                                generation.model_used || 'google/gemini-2.5-flash',
+                                generation.input_tokens || 0,
+                                generation.output_tokens || 0
+                              )
+                            )}
+                          </span>
+                          {exchangeRate && (
+                            <span className="font-mono text-xs text-muted-foreground mt-0.5">
+                              {formatCurrency(
+                                convertToBRL(
+                                  calculateGenerationCost(
+                                    generation.model_used || 'google/gemini-2.5-flash',
+                                    generation.input_tokens || 0,
+                                    generation.output_tokens || 0
+                                  )
+                                ),
+                                "BRL"
+                              )}
+                            </span>
                           )}
-                        </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
