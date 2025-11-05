@@ -56,7 +56,7 @@ const Dashboard = () => {
       
       <main className="flex-1 pb-20 lg:pb-0 bg-[#EEEEEE]">
         {/* Header */}
-        <div className="bg-background sticky top-0 z-40">
+        <div className="bg-[#EEEEEE] sticky top-0 z-40">
           <div className="px-6 py-4 space-y-4">
             <Breadcrumbs />
             
