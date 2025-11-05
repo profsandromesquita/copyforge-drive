@@ -12,7 +12,6 @@ import { Breadcrumbs } from "@/components/drive/Breadcrumbs";
 import { CreateFolderDialog } from "@/components/drive/CreateFolderDialog";
 import { CreateCopyDialog, CopyType } from "@/components/drive/CreateCopyDialog";
 import { useDrive } from "@/hooks/useDrive";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import copyDriveLogo from "@/assets/copydrive-logo.png";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -204,16 +204,14 @@ const Dashboard = () => {
             </DragOverlay>
             
             {loading ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => (
-                    <Skeleton key={i} className="h-64 w-full rounded-lg" />
-                  ))}
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                  <img 
+                    src={copyDriveLogo} 
+                    alt="Loading" 
+                    className="h-16 animate-spin"
+                  />
+                  <p className="text-muted-foreground text-sm">Carregando...</p>
                 </div>
               </div>
             ) : (
