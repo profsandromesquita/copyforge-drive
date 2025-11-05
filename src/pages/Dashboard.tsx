@@ -54,7 +54,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0">
+      <main className="flex-1 pb-20 lg:pb-0 bg-[#EEEEEE]">
         {/* Header */}
         <div className="bg-background sticky top-0 z-40">
           <div className="px-6 py-4 space-y-4">
@@ -103,7 +103,7 @@ const Dashboard = () => {
         </div>
 
         {/* Content */}
-        <div className="p-6 bg-[#EEEEEE]">
+        <div className="p-6">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
