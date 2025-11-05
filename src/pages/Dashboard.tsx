@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import copyDriveLogo from "@/assets/copydrive-logo.png";
+import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -207,7 +207,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="flex flex-col items-center gap-4">
                   <img 
-                    src={copyDriveLogo} 
+                    src={copyDriveIcon} 
                     alt="Loading" 
                     className="h-16 animate-spin"
                   />
