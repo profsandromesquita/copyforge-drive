@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CopyEditorProvider, useCopyEditor } from '@/hooks/useCopyEditor';
 import { EditorHeader } from '@/components/copy-editor/EditorHeader';
@@ -12,12 +12,13 @@ import { Block } from '@/types/copy-editor';
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loadCopy, setCopyId, addBlock, moveBlock, sessions, isLoading } = useCopyEditor();
+  const { loadCopy, setCopyId, addBlock, moveBlock, sessions, isLoading, selectedBlockId } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [showImageAI, setShowImageAI] = useState(false);
   const [imageBlockId, setImageBlockId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const prevSelectedBlockId = useRef<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -36,6 +37,21 @@ const CopyEditorContent = () => {
     setCopyId(id);
     loadCopy(id);
   }, [id, loadCopy, setCopyId, navigate]);
+
+  // Abrir sidebar quando um bloco é selecionado
+  useEffect(() => {
+    if (selectedBlockId && selectedBlockId !== prevSelectedBlockId.current) {
+      setSidebarOpen(true);
+    }
+    prevSelectedBlockId.current = selectedBlockId;
+  }, [selectedBlockId]);
+
+  // Abrir sidebar quando Image AI é ativado
+  useEffect(() => {
+    if (showImageAI) {
+      setSidebarOpen(true);
+    }
+  }, [showImageAI]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
