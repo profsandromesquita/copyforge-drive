@@ -184,4 +184,24 @@ All colors MUST be HSL.
       opacity: 0;
     }
   }
+
+  /* Preview scale for card previews - reduces all block elements proportionally */
+  .preview-scale button {
+    @apply text-xs px-3 py-1.5 gap-1;
+  }
+
+  .preview-scale img,
+  .preview-scale video,
+  .preview-scale audio,
+  .preview-scale iframe {
+    @apply max-h-20;
+  }
+
+  .preview-scale form input {
+    @apply text-xs py-1 px-2;
+  }
+
+  .preview-scale form button {
+    @apply text-xs py-1 px-3;
+  }
 }
