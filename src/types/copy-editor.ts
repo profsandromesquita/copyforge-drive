@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video' | 'audio';
 
 export interface FormField {
   id: string;
@@ -48,6 +48,13 @@ export interface BlockConfig {
   videoUrl?: string;
   videoTitle?: string;
   videoSize?: 'sm' | 'md' | 'lg';
+  
+  // Audio
+  audioUrl?: string;
+  audioTitle?: string;
+  audioArtist?: string;
+  showControls?: boolean;
+  showWaveform?: boolean;
 }
 
 export interface Block {

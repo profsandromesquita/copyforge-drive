@@ -791,6 +791,122 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           </>
         );
 
+      case 'audio':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>URL do Áudio</Label>
+              <Input
+                value={block.config?.audioUrl || ''}
+                onChange={(e) => updateConfig('audioUrl', e.target.value)}
+                placeholder="Cole a URL do áudio..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Suporta MP3, WAV, OGG e outros formatos
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Upload de Áudio</Label>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={isUploading}
+                  onClick={() => document.getElementById('audio-upload')?.click()}
+                >
+                  <Upload size={16} className="mr-2" />
+                  {isUploading ? 'Enviando...' : 'Escolher Áudio'}
+                </Button>
+                <input
+                  id="audio-upload"
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    if (!file.type.startsWith('audio/')) {
+                      toast.error('Por favor, selecione apenas arquivos de áudio');
+                      return;
+                    }
+
+                    if (file.size > 50 * 1024 * 1024) {
+                      toast.error('O áudio deve ter no máximo 50MB');
+                      return;
+                    }
+
+                    setIsUploading(true);
+                    try {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) {
+                        toast.error('Você precisa estar autenticado para fazer upload');
+                        return;
+                      }
+
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                      const { data, error } = await supabase.storage
+                        .from('copy-audios')
+                        .upload(fileName, file);
+
+                      if (error) throw error;
+
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('copy-audios')
+                        .getPublicUrl(data.path);
+
+                      updateConfig('audioUrl', publicUrl);
+                      toast.success('Áudio enviado com sucesso!');
+                    } catch (error) {
+                      console.error('Error uploading audio:', error);
+                      toast.error('Erro ao enviar áudio');
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Título (opcional)</Label>
+              <Input
+                value={block.config?.audioTitle || ''}
+                onChange={(e) => updateConfig('audioTitle', e.target.value)}
+                placeholder="Título do áudio..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Artista (opcional)</Label>
+              <Input
+                value={block.config?.audioArtist || ''}
+                onChange={(e) => updateConfig('audioArtist', e.target.value)}
+                placeholder="Nome do artista..."
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Controles</Label>
+              <Switch
+                checked={block.config?.showControls !== false}
+                onCheckedChange={(checked) => updateConfig('showControls', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Forma de Ondas</Label>
+              <Switch
+                checked={block.config?.showWaveform !== false}
+                onCheckedChange={(checked) => updateConfig('showWaveform', checked)}
+              />
+            </div>
+          </>
+        );
+
       default:
         return null;
     }

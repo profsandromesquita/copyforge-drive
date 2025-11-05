@@ -619,6 +619,57 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
           </div>
         );
 
+      case 'audio':
+        const audioUrl = block.config?.audioUrl || '';
+        const audioTitle = block.config?.audioTitle || '';
+        const audioArtist = block.config?.audioArtist || '';
+        const showControls = block.config?.showControls !== false;
+        const showWaveform = block.config?.showWaveform !== false;
+
+        return (
+          <div className="space-y-3 max-w-2xl mx-auto">
+            {(audioTitle || audioArtist) && (
+              <div className="text-center space-y-1">
+                {audioTitle && (
+                  <h4 className="font-semibold text-lg">{audioTitle}</h4>
+                )}
+                {audioArtist && (
+                  <p className="text-sm text-muted-foreground">{audioArtist}</p>
+                )}
+              </div>
+            )}
+            
+            {showWaveform && audioUrl && (
+              <div className="flex items-center gap-1 h-16 px-4 bg-muted rounded-lg">
+                {[...Array(40)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-primary rounded-full transition-all"
+                    style={{
+                      height: `${Math.random() * 60 + 20}%`,
+                      opacity: 0.7,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {audioUrl ? (
+              <audio
+                src={audioUrl}
+                controls={showControls}
+                className="w-full"
+              />
+            ) : (
+              <div className="w-full h-12 bg-muted flex items-center justify-center rounded-lg">
+                <span className="text-muted-foreground text-sm">
+                  Adicione uma URL de áudio ou faça upload
+                </span>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }
