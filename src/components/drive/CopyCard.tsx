@@ -96,7 +96,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         }`}
       >
         {/* Header Section - Icon, Title and Menu */}
-        <div className="p-3 pb-2 border-b bg-background/50">
+        <div className="p-3 pb-2 border-b" style={{ backgroundColor: '#F8E9E7' }}>
           <div className="flex items-center gap-2">
             <div className="text-primary shrink-0">
               <FileText size={20} weight="duotone" />
@@ -160,8 +160,8 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Preview Section */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden">
-          <div className="absolute inset-0 p-2 overflow-hidden">
+        <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden px-4">
+          <div className="absolute inset-x-4 top-0 bottom-0 p-2 overflow-hidden">
             <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
               {firstBlocks.length > 0 ? (
                 firstBlocks.map((block) => (
@@ -197,7 +197,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Footer - Appears on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background via-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-t border-border/50">
+        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-t border-border/50" style={{ background: 'linear-gradient(to top, #F8E9E7, #F8E9E7 80%, transparent)' }}>
           <div className="flex items-center justify-between gap-2">
             {creatorName ? (
               <div className="flex items-center gap-2">
