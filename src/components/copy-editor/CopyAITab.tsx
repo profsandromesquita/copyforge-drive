@@ -785,30 +785,58 @@ export const CopyAITab = () => {
                 <p>Nenhuma geração anterior</p>
               </div>
             ) : (
-              <div className="space-y-3 p-4">
+              <div className="grid gap-3 p-4">
                 {history.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleHistoryItemClick(item)}
-                    className="w-full text-left p-4 rounded-lg border border-border hover:bg-accent transition-colors"
+                    className="group w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:border-primary/30"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.prompt}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                    <div className="space-y-3">
+                      {/* Header com tipo e data */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {item.generation_type === 'optimize' ? (
+                            <>
+                              <Wand2 className="h-4 w-4 text-primary" />
+                              <Badge variant="secondary" className="text-xs">Otimização</Badge>
+                            </>
+                          ) : item.generation_type === 'variation' ? (
+                            <>
+                              <CopyIcon className="h-4 w-4 text-primary" />
+                              <Badge variant="secondary" className="text-xs">Variação</Badge>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 text-primary" />
+                              <Badge variant="secondary" className="text-xs">Criação</Badge>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                           {formatDistanceToNow(new Date(item.created_at), { 
                             addSuffix: true,
                             locale: ptBR 
                           })}
-                        </p>
+                        </span>
                       </div>
-                      {item.generation_type === 'optimize' ? (
-                        <Wand2 className="h-4 w-4 text-primary flex-shrink-0" />
-                      ) : item.generation_type === 'variation' ? (
-                        <CopyIcon className="h-4 w-4 text-primary flex-shrink-0" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
-                      )}
+
+                      {/* Prompt */}
+                      <p className="text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-primary transition-colors">
+                        {item.prompt}
+                      </p>
+
+                      {/* Footer com informações adicionais */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="px-2 py-1 bg-muted rounded">
+                          {item.sessions?.length || 0} sessão(ões)
+                        </span>
+                        {item.copy_type && (
+                          <span className="px-2 py-1 bg-muted rounded capitalize">
+                            {item.copy_type.replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}
