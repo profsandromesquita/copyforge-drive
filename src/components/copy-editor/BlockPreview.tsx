@@ -241,6 +241,71 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
           </div>
         );
 
+      case 'image':
+        const imageUrl = block.config?.imageUrl || '';
+        const imageDescription = block.config?.imageDescription || '';
+        const aspectRatio = block.config?.aspectRatio || '16:9';
+        const imageSize = block.config?.imageSize || 'md';
+        const roundedBorders = block.config?.roundedBorders !== false;
+        
+        const getImageSizeClass = () => {
+          switch (imageSize) {
+            case 'sm':
+              return 'max-w-xs';
+            case 'lg':
+              return 'max-w-4xl';
+            default:
+              return 'max-w-2xl';
+          }
+        };
+
+        const getAspectRatioClass = () => {
+          const ratios: Record<string, string> = {
+            '2:1': 'aspect-[2/1]',
+            '16:9': 'aspect-[16/9]',
+            '3:2': 'aspect-[3/2]',
+            '14:10': 'aspect-[14/10]',
+            '4:3': 'aspect-[4/3]',
+            '5:4': 'aspect-[5/4]',
+            '1:1': 'aspect-square',
+            '4:5': 'aspect-[4/5]',
+            '3:4': 'aspect-[3/4]',
+            '10:14': 'aspect-[10/14]',
+            '2:3': 'aspect-[2/3]',
+            '6:10': 'aspect-[6/10]',
+            '9:16': 'aspect-[9/16]',
+            '1:2': 'aspect-[1/2]',
+          };
+          return ratios[aspectRatio] || 'aspect-[16/9]';
+        };
+
+        return (
+          <div className="space-y-2">
+            <div className={`${getImageSizeClass()} w-full mx-auto`}>
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={imageDescription || 'Imagem'}
+                  className={`w-full h-full object-cover ${getAspectRatioClass()} ${
+                    roundedBorders ? 'rounded-lg' : ''
+                  }`}
+                />
+              ) : (
+                <div
+                  className={`w-full ${getAspectRatioClass()} bg-muted flex items-center justify-center ${
+                    roundedBorders ? 'rounded-lg' : ''
+                  }`}
+                >
+                  <span className="text-muted-foreground text-sm">Sem imagem</span>
+                </div>
+              )}
+            </div>
+            {imageDescription && (
+              <p className="text-sm text-muted-foreground text-center">{imageDescription}</p>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }

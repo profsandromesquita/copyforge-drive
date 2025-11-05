@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image';
 
 export interface FormField {
   id: string;
@@ -36,6 +36,13 @@ export interface BlockConfig {
   formButtonText?: string;
   formButtonColor?: string;
   formFields?: FormField[];
+  
+  // Image
+  imageUrl?: string;
+  imageDescription?: string;
+  aspectRatio?: string;
+  imageSize?: 'sm' | 'md' | 'lg';
+  roundedBorders?: boolean;
 }
 
 export interface Block {

@@ -516,6 +516,82 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           </>
         );
 
+      case 'image':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>URL da Imagem</Label>
+              <Input
+                value={block.config?.imageUrl || ''}
+                onChange={(e) => updateConfig('imageUrl', e.target.value)}
+                placeholder="https://exemplo.com/imagem.jpg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Descrição da Imagem</Label>
+              <Input
+                value={block.config?.imageDescription || ''}
+                onChange={(e) => updateConfig('imageDescription', e.target.value)}
+                placeholder="Texto abaixo da imagem..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Proporção</Label>
+              <Select
+                value={block.config?.aspectRatio || '16:9'}
+                onValueChange={(value) => updateConfig('aspectRatio', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="2:1">2:1</SelectItem>
+                  <SelectItem value="16:9">16:9</SelectItem>
+                  <SelectItem value="3:2">3:2</SelectItem>
+                  <SelectItem value="14:10">14:10</SelectItem>
+                  <SelectItem value="4:3">4:3</SelectItem>
+                  <SelectItem value="5:4">5:4</SelectItem>
+                  <SelectItem value="1:1">1:1</SelectItem>
+                  <SelectItem value="4:5">4:5</SelectItem>
+                  <SelectItem value="3:4">3:4</SelectItem>
+                  <SelectItem value="10:14">10:14</SelectItem>
+                  <SelectItem value="2:3">2:3</SelectItem>
+                  <SelectItem value="6:10">6:10</SelectItem>
+                  <SelectItem value="9:16">9:16</SelectItem>
+                  <SelectItem value="1:2">1:2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tamanho</Label>
+              <Select
+                value={block.config?.imageSize || 'md'}
+                onValueChange={(value) => updateConfig('imageSize', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="sm">Pequeno</SelectItem>
+                  <SelectItem value="md">Médio</SelectItem>
+                  <SelectItem value="lg">Grande</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Bordas Arredondadas</Label>
+              <Switch
+                checked={block.config?.roundedBorders !== false}
+                onCheckedChange={(checked) => updateConfig('roundedBorders', checked)}
+              />
+            </div>
+          </>
+        );
+
       default:
         return null;
     }
