@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from 'next-themes';
 import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
+import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -112,8 +113,15 @@ const Discover = () => {
           {/* Content */}
           <div className="p-6 space-y-6">
             {loading ? (
-              <div className="text-center py-20">
-                <p className="text-muted-foreground">Carregando...</p>
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                  <img 
+                    src={copyDriveIcon} 
+                    alt="Loading" 
+                    className="h-16 animate-spin"
+                  />
+                  <p className="text-muted-foreground text-sm">Carregando...</p>
+                </div>
               </div>
             ) : filteredCopies.length === 0 ? (
               <div className="text-center py-20">

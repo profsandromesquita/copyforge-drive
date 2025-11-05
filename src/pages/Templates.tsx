@@ -17,6 +17,7 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears, isWithinInterval } from 'date-fns';
+import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -167,10 +168,15 @@ const Templates = () => {
           {/* Content */}
           <div className="p-6 space-y-6">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <Skeleton key={i} className="h-48 rounded-xl" />
-                ))}
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                  <img 
+                    src={copyDriveIcon} 
+                    alt="Loading" 
+                    className="h-16 animate-spin"
+                  />
+                  <p className="text-muted-foreground text-sm">Carregando...</p>
+                </div>
               </div>
             ) : filteredTemplates.length === 0 ? (
               <div className="text-center py-20">
