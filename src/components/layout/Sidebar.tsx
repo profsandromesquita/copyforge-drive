@@ -54,7 +54,7 @@ const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
       <ProjectSelector />
 
       {/* Botão Novo */}
-      <div className="px-4 pb-2">
+      <div className="px-4 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="lg" className="w-full gap-2">
