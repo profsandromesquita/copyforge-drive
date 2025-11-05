@@ -12,6 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { FormattingToolbar } from './FormattingToolbar';
 import { FocusModeModal } from './FocusModeModal';
@@ -665,6 +671,65 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                 <span className="text-muted-foreground text-sm">
                   Adicione uma URL de áudio ou faça upload
                 </span>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'faq':
+        const faqTitle = block.config?.faqTitle || '';
+        const showNumbering = block.config?.showNumbering !== false;
+        const expandedByDefault = block.config?.expandedByDefault === true;
+        const faqItems = block.config?.faqItems || [];
+        const faqAlign = block.config?.textAlign || 'left';
+
+        const getFaqAlignClass = () => {
+          switch (faqAlign) {
+            case 'center':
+              return 'items-center text-center';
+            case 'right':
+              return 'items-end text-right';
+            default:
+              return 'items-start text-left';
+          }
+        };
+
+        return (
+          <div className={`space-y-4 max-w-3xl w-full flex flex-col ${getFaqAlignClass()}`}>
+            {faqTitle && (
+              <h3 className="text-xl font-bold">{faqTitle}</h3>
+            )}
+            
+            {faqItems.length > 0 ? (
+              <Accordion 
+                type="single" 
+                collapsible 
+                className="w-full space-y-2"
+                defaultValue={expandedByDefault ? faqItems[0]?.id : undefined}
+              >
+                {faqItems.map((item, index) => (
+                  <AccordionItem 
+                    key={item.id} 
+                    value={item.id}
+                    className="border rounded-lg px-4 bg-card"
+                  >
+                    <AccordionTrigger className="hover:no-underline py-4">
+                      <span className="font-medium text-left">
+                        {showNumbering && (
+                          <span className="text-primary mr-2">{index + 1}.</span>
+                        )}
+                        {item.question || 'Pergunta sem título'}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 text-muted-foreground">
+                      {item.answer || 'Resposta vazia'}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="w-full p-8 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+                Adicione perguntas nas configurações do bloco
               </div>
             )}
           </div>

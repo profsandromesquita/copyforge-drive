@@ -907,6 +907,133 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           </>
         );
 
+      case 'faq':
+        const faqItems = block.config?.faqItems || [];
+        
+        const addFaqItem = () => {
+          const newItem = {
+            id: `faq-${Date.now()}`,
+            question: '',
+            answer: ''
+          };
+          updateConfig('faqItems', [...faqItems, newItem]);
+        };
+
+        const removeFaqItem = (id: string) => {
+          updateConfig('faqItems', faqItems.filter(item => item.id !== id));
+        };
+
+        const updateFaqItem = (id: string, field: 'question' | 'answer', value: string) => {
+          updateConfig('faqItems', faqItems.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+          ));
+        };
+
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Título da Sessão (opcional)</Label>
+              <Input
+                value={block.config?.faqTitle || ''}
+                onChange={(e) => updateConfig('faqTitle', e.target.value)}
+                placeholder="Perguntas Frequentes"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Alinhamento</Label>
+              <ToggleGroup 
+                type="single" 
+                value={block.config?.textAlign || 'left'}
+                onValueChange={(value) => value && updateConfig('textAlign', value)}
+                className="justify-start gap-2"
+              >
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignLeft size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Alinhar ao centro" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignCenter size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignRight size={20} />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Numeração</Label>
+              <Switch
+                checked={block.config?.showNumbering !== false}
+                onCheckedChange={(checked) => updateConfig('showNumbering', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Expandido por Padrão</Label>
+              <Switch
+                checked={block.config?.expandedByDefault === true}
+                onCheckedChange={(checked) => updateConfig('expandedByDefault', checked)}
+              />
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Perguntas e Respostas</Label>
+                <Button size="sm" onClick={addFaqItem} variant="outline">
+                  <Plus size={16} className="mr-2" />
+                  Adicionar Pergunta
+                </Button>
+              </div>
+
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {faqItems.map((item, index) => (
+                  <div key={item.id} className="p-3 border rounded-lg space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Pergunta {index + 1}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={() => removeFaqItem(item.id)}
+                      >
+                        <Trash size={14} />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Pergunta</Label>
+                      <Input
+                        value={item.question}
+                        onChange={(e) => updateFaqItem(item.id, 'question', e.target.value)}
+                        placeholder="Digite a pergunta..."
+                        className="h-8"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Resposta</Label>
+                      <Input
+                        value={item.answer}
+                        onChange={(e) => updateFaqItem(item.id, 'answer', e.target.value)}
+                        placeholder="Digite a resposta..."
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {faqItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhuma pergunta adicionada ainda
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        );
+
       default:
         return null;
     }

@@ -1,4 +1,10 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video' | 'audio';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video' | 'audio' | 'faq';
+
+export interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
 
 export interface FormField {
   id: string;
@@ -55,6 +61,12 @@ export interface BlockConfig {
   audioArtist?: string;
   showControls?: boolean;
   showWaveform?: boolean;
+  
+  // FAQ
+  faqTitle?: string;
+  showNumbering?: boolean;
+  expandedByDefault?: boolean;
+  faqItems?: FAQItem[];
 }
 
 export interface Block {
