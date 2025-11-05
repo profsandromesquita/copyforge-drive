@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Session, Block } from "@/types/copy-editor";
 import { ArrowRight, Copy, Replace, RotateCw } from "lucide-react";
-import { ContentBlock } from "./ContentBlock";
+import { BlockPreview } from "./BlockPreview";
 
 interface OptimizeComparisonModalProps {
   open: boolean;
@@ -67,12 +67,11 @@ export function OptimizeComparisonModal({
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
                       {session.title}
                     </h4>
-                    <div className="space-y-2 pointer-events-none opacity-90">
+                    <div className="space-y-2">
                       {session.blocks.map((block) => (
-                        <ContentBlock
+                        <BlockPreview
                           key={block.id}
                           block={block}
-                          sessionId={session.id}
                         />
                       ))}
                     </div>
@@ -101,12 +100,11 @@ export function OptimizeComparisonModal({
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
                       {session.title}
                     </h4>
-                    <div className="space-y-2 pointer-events-none opacity-90">
+                    <div className="space-y-2">
                       {session.blocks.map((block) => (
-                        <ContentBlock
+                        <BlockPreview
                           key={block.id}
                           block={block}
-                          sessionId={session.id}
                         />
                       ))}
                     </div>
