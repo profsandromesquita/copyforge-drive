@@ -590,10 +590,25 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {block.type === 'image' && (
-              <DropdownMenuItem onClick={() => onShowImageAI?.(block.id)}>
-                <Sparkles size={16} className="mr-2" />
-                Gerar com IA
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem onClick={() => onShowImageAI?.(block.id)}>
+                  <Sparkles size={16} className="mr-2" />
+                  Gerar com IA
+                </DropdownMenuItem>
+                {block.config.imageUrl && (
+                  <DropdownMenuItem onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = block.config.imageUrl || '';
+                    link.download = `imagem-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}>
+                    <DownloadSimple size={16} className="mr-2" />
+                    Baixar
+                  </DropdownMenuItem>
+                )}
+              </>
             )}
             <DropdownMenuItem onClick={() => duplicateBlock(block.id)}>
               <CopyIcon size={16} className="mr-2" />
