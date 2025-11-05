@@ -282,17 +282,17 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         };
 
         return (
-          <div className={`space-y-2 ${getTextAlignClass()}`}>
+          <div className={`space-y-2`}>
             {listItems.map((item, index) => (
-              <div key={index} className="flex gap-2">
+              <div key={index} className={`flex gap-2 ${getTextAlignClass()}`}>
                 {block.config?.listStyle === 'numbers' && block.config?.showListIcons !== false ? (
                   <span 
                     style={{ color: block.config?.listIconColor || '#ff6b35' }}
-                    className="mt-2 font-medium"
+                    className="mt-2 font-medium flex-shrink-0"
                   >
                     {index + 1}.
                   </span>
-                ) : (
+                ) : block.config?.showListIcons !== false && (
                   getListIcon()
                 )}
                 <Input
@@ -306,15 +306,18 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                     variant="ghost"
                     size="icon"
                     onClick={() => removeListItem(index)}
+                    className="flex-shrink-0"
                   >
                     <Trash size={16} />
                   </Button>
                 )}
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addListItem}>
-              + Adicionar item
-            </Button>
+            <div className={getTextAlignClass()}>
+              <Button variant="outline" size="sm" onClick={addListItem}>
+                + Adicionar item
+              </Button>
+            </div>
           </div>
         );
 

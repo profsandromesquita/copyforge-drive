@@ -1,10 +1,11 @@
-import { ArrowLeft } from 'phosphor-react';
+import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 
 interface BlockSettingsProps {
@@ -45,19 +46,22 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
             <div className="space-y-2">
               <Label>Alinhamento</Label>
-              <Select
+              <ToggleGroup 
+                type="single" 
                 value={block.config?.textAlign || 'left'}
-                onValueChange={(value) => updateConfig('textAlign', value)}
+                onValueChange={(value) => value && updateConfig('textAlign', value)}
+                className="justify-start gap-2"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">Esquerda</SelectItem>
-                  <SelectItem value="center">Centro</SelectItem>
-                  <SelectItem value="right">Direita</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignLeft size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Alinhar ao centro" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignCenter size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignRight size={20} />
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
           </>
         );
@@ -86,19 +90,22 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
             <div className="space-y-2">
               <Label>Alinhamento</Label>
-              <Select
+              <ToggleGroup 
+                type="single" 
                 value={block.config?.textAlign || 'left'}
-                onValueChange={(value) => updateConfig('textAlign', value)}
+                onValueChange={(value) => value && updateConfig('textAlign', value)}
+                className="justify-start gap-2"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="left">Esquerda</SelectItem>
-                  <SelectItem value="center">Centro</SelectItem>
-                  <SelectItem value="right">Direita</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignLeft size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Alinhar ao centro" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignCenter size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignRight size={20} />
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
           </>
         );
@@ -128,19 +135,22 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
             <div className="space-y-2">
               <Label>Alinhamento</Label>
-              <Select
+              <ToggleGroup 
+                type="single" 
                 value={block.config?.textAlign || 'left'}
-                onValueChange={(value) => updateConfig('textAlign', value)}
+                onValueChange={(value) => value && updateConfig('textAlign', value)}
+                className="justify-start gap-2"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="left">Esquerda</SelectItem>
-                  <SelectItem value="center">Centro</SelectItem>
-                  <SelectItem value="right">Direita</SelectItem>
-                </SelectContent>
-              </Select>
+                <ToggleGroupItem value="left" aria-label="Alinhar à esquerda" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignLeft size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="center" aria-label="Alinhar ao centro" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignCenter size={20} />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="right" aria-label="Alinhar à direita" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+                  <TextAlignRight size={20} />
+                </ToggleGroupItem>
+              </ToggleGroup>
             </div>
 
             <div className="flex items-center justify-between">
