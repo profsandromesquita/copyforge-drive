@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -175,6 +176,10 @@ serve(async (req) => {
       
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
         console.log("Iniciando salvamento do histórico...");
+        
+        // Criar client Supabase Admin para obter o usuário do token
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
         // Obter o auth header do request para pegar o usuário autenticado
         const authHeader = req.headers.get('Authorization');
         let userId = null;
@@ -182,13 +187,21 @@ serve(async (req) => {
         if (authHeader) {
           try {
             const token = authHeader.replace('Bearer ', '');
-            const { data: { user } } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-              headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_SERVICE_ROLE_KEY }
-            }).then(r => r.json());
-            userId = user?.id;
+            const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+            
+            if (error) {
+              console.error('Error getting user from token:', error);
+            } else {
+              userId = user?.id;
+              console.log('✓ User ID obtido do token:', userId);
+            }
           } catch (e) {
             console.error('Error getting user from token:', e);
           }
+        }
+        
+        if (!userId) {
+          console.error('⚠️ Não foi possível obter o userId do token');
         }
         
         const historyData = {
