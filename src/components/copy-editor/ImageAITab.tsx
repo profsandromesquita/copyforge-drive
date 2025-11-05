@@ -19,9 +19,20 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
   const [optimizePrompt, setOptimizePrompt] = useState('');
   const [variationPrompt, setVariationPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { updateBlock } = useCopyEditor();
+  const { updateBlock, addBlock, sessions } = useCopyEditor();
 
   const hasImage = !!block.config.imageUrl;
+
+  // Encontrar a sessão e índice do bloco atual
+  const getBlockPosition = () => {
+    for (const session of sessions) {
+      const blockIndex = session.blocks.findIndex(b => b.id === block.id);
+      if (blockIndex !== -1) {
+        return { sessionId: session.id, blockIndex };
+      }
+    }
+    return null;
+  };
 
   const handleGenerate = async (type: 'generate' | 'optimize' | 'variation') => {
     const prompt = type === 'generate' ? generatePrompt : type === 'optimize' ? optimizePrompt : variationPrompt;
@@ -61,11 +72,29 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
       }
 
       if (data?.imageUrl) {
-        updateBlock(block.id, {
-          config: {
-            imageUrl: data.imageUrl
+        if (type === 'variation') {
+          // Criar um novo bloco de imagem com a variação
+          const position = getBlockPosition();
+          if (position) {
+            addBlock(position.sessionId, {
+              type: 'image',
+              content: '',
+              config: {
+                imageUrl: data.imageUrl,
+                aspectRatio: block.config.aspectRatio || '16/9',
+                imageSize: block.config.imageSize || 'md',
+                roundedBorders: block.config.roundedBorders || false,
+              }
+            }, position.blockIndex + 1);
           }
-        });
+        } else {
+          // Atualizar o bloco existente para gerar e otimizar
+          updateBlock(block.id, {
+            config: {
+              imageUrl: data.imageUrl
+            }
+          });
+        }
 
         const successMessage = type === 'generate' ? 'Imagem gerada com sucesso!' : 
                              type === 'optimize' ? 'Imagem otimizada com sucesso!' : 
