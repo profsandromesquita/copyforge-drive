@@ -143,7 +143,7 @@ const Dashboard = () => {
             />
             <Input
               placeholder="Buscar..."
-              className="pl-10 bg-muted/30"
+              className="pl-10 bg-muted/30 rounded-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
