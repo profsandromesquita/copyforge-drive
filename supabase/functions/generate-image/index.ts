@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, imageUrl, type = 'generate' } = await req.json();
+    const { prompt, imageUrl, type = 'generate', aspectRatio = '16:9' } = await req.json();
 
     if (!prompt || !prompt.trim()) {
       throw new Error('Prompt é obrigatório');
@@ -23,14 +23,17 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, prompt);
+    // Adicionar a proporção ao prompt
+    const enhancedPrompt = `${prompt}. Aspect ratio: ${aspectRatio}.`;
+    
+    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, enhancedPrompt);
 
     const messageContent: any = type === 'generate' 
-      ? prompt 
+      ? enhancedPrompt 
       : [
           {
             type: 'text',
-            text: prompt
+            text: enhancedPrompt
           },
           {
             type: 'image_url',

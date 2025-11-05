@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkles, Loader2, Wand2, Shuffle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,15 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
 
   const hasImage = !!block.config.imageUrl;
 
+  const aspectRatios = [
+    '2:1', '16:9', '3:2', '14:10', '4:3', '5:4', '1:1', 
+    '4:5', '3:4', '10:14', '2:3', '6:10', '9:16', '1:2'
+  ];
+  
+  const [generateAspectRatio, setGenerateAspectRatio] = useState(block.config?.aspectRatio || '16:9');
+  const [optimizeAspectRatio, setOptimizeAspectRatio] = useState(block.config?.aspectRatio || '16:9');
+  const [variationAspectRatio, setVariationAspectRatio] = useState(block.config?.aspectRatio || '16:9');
+
   // Encontrar a sessão e índice do bloco atual
   const getBlockPosition = () => {
     for (const session of sessions) {
@@ -36,6 +46,7 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
 
   const handleGenerate = async (type: 'generate' | 'optimize' | 'variation') => {
     const prompt = type === 'generate' ? generatePrompt : type === 'optimize' ? optimizePrompt : variationPrompt;
+    const aspectRatio = type === 'generate' ? generateAspectRatio : type === 'optimize' ? optimizeAspectRatio : variationAspectRatio;
     
     if (!prompt.trim()) {
       toast.error('Por favor, descreva a imagem que deseja gerar');
@@ -49,7 +60,7 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
 
     setIsGenerating(true);
     try {
-      const body: any = { prompt };
+      const body: any = { prompt, aspectRatio };
       
       if (type === 'optimize' || type === 'variation') {
         body.imageUrl = block.config.imageUrl;
@@ -81,7 +92,7 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
               content: '',
               config: {
                 imageUrl: data.imageUrl,
-                aspectRatio: block.config.aspectRatio || '16/9',
+                aspectRatio: variationAspectRatio,
                 imageSize: block.config.imageSize || 'md',
                 roundedBorders: block.config.roundedBorders || false,
               }
@@ -89,9 +100,11 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
           }
         } else {
           // Atualizar o bloco existente para gerar e otimizar
+          const selectedAspectRatio = type === 'generate' ? generateAspectRatio : optimizeAspectRatio;
           updateBlock(block.id, {
             config: {
-              imageUrl: data.imageUrl
+              imageUrl: data.imageUrl,
+              aspectRatio: selectedAspectRatio
             }
           });
         }
@@ -140,6 +153,23 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
             />
           </div>
 
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Proporção</Label>
+              <span className="text-sm text-muted-foreground">
+                {generateAspectRatio}
+              </span>
+            </div>
+            <Slider
+              value={[aspectRatios.indexOf(generateAspectRatio)]}
+              onValueChange={([value]) => setGenerateAspectRatio(aspectRatios[value])}
+              min={0}
+              max={aspectRatios.length - 1}
+              step={1}
+              className="w-full"
+            />
+          </div>
+
           <Button
             onClick={() => handleGenerate('generate')}
             disabled={isGenerating || !generatePrompt.trim()}
@@ -172,6 +202,23 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
             />
           </div>
 
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Proporção</Label>
+              <span className="text-sm text-muted-foreground">
+                {optimizeAspectRatio}
+              </span>
+            </div>
+            <Slider
+              value={[aspectRatios.indexOf(optimizeAspectRatio)]}
+              onValueChange={([value]) => setOptimizeAspectRatio(aspectRatios[value])}
+              min={0}
+              max={aspectRatios.length - 1}
+              step={1}
+              className="w-full"
+            />
+          </div>
+
           <Button
             onClick={() => handleGenerate('optimize')}
             disabled={isGenerating || !optimizePrompt.trim()}
@@ -201,6 +248,23 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
               placeholder="Descreva a variação desejada. Exemplo: Mude o horário para manhã, altere as cores para tons pastéis..."
               className="min-h-[120px]"
               disabled={isGenerating}
+            />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Proporção</Label>
+              <span className="text-sm text-muted-foreground">
+                {variationAspectRatio}
+              </span>
+            </div>
+            <Slider
+              value={[aspectRatios.indexOf(variationAspectRatio)]}
+              onValueChange={([value]) => setVariationAspectRatio(aspectRatios[value])}
+              min={0}
+              max={aspectRatios.length - 1}
+              step={1}
+              className="w-full"
             />
           </div>
 
