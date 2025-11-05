@@ -13,7 +13,7 @@ const menuItems = [
   { icon: Users, label: "Clientes", path: "/painel/admin/clientes" },
   { icon: FolderOpen, label: "Workspaces", path: "/painel/admin/workspaces" },
   { icon: FileText, label: "Copy IA", path: "/painel/admin/copies" },
-  { icon: Gear, label: "Configurações", path: "/painel/admin/configuracoes" },
+  { icon: Gear, label: "Configurações", path: "/painel/admin/settings" },
 ];
 
 export const AdminSidebar = () => {
