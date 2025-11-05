@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
 import { Plus, MagnifyingGlass, FolderPlus } from "phosphor-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,8 +87,6 @@ const Dashboard = () => {
     }
   };
 
-  const allItems = [...filteredFolders.map(f => f.id), ...filteredCopies.map(c => c.id)];
-
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
@@ -149,59 +146,57 @@ const Dashboard = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={allItems} strategy={rectSortingStrategy}>
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {filteredFolders.length === 0 && filteredCopies.length === 0 ? (
-                    <div className="text-center py-12">
-                      <p className="text-muted-foreground mb-4">
-                        {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum item nesta pasta'}
-                      </p>
-                      {!searchQuery && (
-                        <Button onClick={() => setCreateFolderOpen(true)}>
-                          <FolderPlus size={20} className="mr-2" />
-                          Criar Primeira Pasta
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {filteredFolders.map((folder) => (
-                        <DriveCard
-                          key={folder.id}
-                          id={folder.id}
-                          type="folder"
-                          title={folder.name}
-                          folderId={folder.parent_id}
-                          subtitle={formatDate(folder.updated_at)}
-                          onClick={() => navigateToFolder(folder.id)}
-                        />
-                      ))}
-                      {filteredCopies.map((copy: any) => (
-                        <DriveCard
-                          key={copy.id}
-                          id={copy.id}
-                          type="copy"
-                          title={copy.title}
-                          folderId={copy.folder_id}
-                          creatorName={copy.creator?.name}
-                          creatorAvatar={copy.creator?.avatar_url}
-                          status={copy.status || 'draft'}
-                          subtitle={formatDate(copy.updated_at)}
-                          onClick={() => navigate(`/copy/${copy.id}`)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </SortableContext>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {filteredFolders.length === 0 && filteredCopies.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">
+                      {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum item nesta pasta'}
+                    </p>
+                    {!searchQuery && (
+                      <Button onClick={() => setCreateFolderOpen(true)}>
+                        <FolderPlus size={20} className="mr-2" />
+                        Criar Primeira Pasta
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredFolders.map((folder) => (
+                      <DriveCard
+                        key={folder.id}
+                        id={folder.id}
+                        type="folder"
+                        title={folder.name}
+                        folderId={folder.parent_id}
+                        subtitle={formatDate(folder.updated_at)}
+                        onClick={() => navigateToFolder(folder.id)}
+                      />
+                    ))}
+                    {filteredCopies.map((copy: any) => (
+                      <DriveCard
+                        key={copy.id}
+                        id={copy.id}
+                        type="copy"
+                        title={copy.title}
+                        folderId={copy.folder_id}
+                        creatorName={copy.creator?.name}
+                        creatorAvatar={copy.creator?.avatar_url}
+                        status={copy.status || 'draft'}
+                        subtitle={formatDate(copy.updated_at)}
+                        onClick={() => navigate(`/copy/${copy.id}`)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </DndContext>
         </div>
       </main>

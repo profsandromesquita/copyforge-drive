@@ -1,7 +1,6 @@
 import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil, ArrowsDownUp } from "phosphor-react";
-import { useState, forwardRef } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,16 +50,9 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [isOver, setIsOver] = useState(false);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
+  // Draggable for all items
+  const { attributes, listeners, setNodeRef: setDragNodeRef, isDragging } = useDraggable({
     id: id,
     data: {
       type: type,
@@ -68,10 +60,21 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     }
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  // Droppable only for folders
+  const { setNodeRef: setDropNodeRef, isOver } = useDroppable({
+    id: id,
+    disabled: type !== 'folder',
+    data: {
+      type: type,
+    }
+  });
+
+  // Combine refs for folders (both draggable and droppable)
+  const setNodeRef = (node: HTMLElement | null) => {
+    setDragNodeRef(node);
+    if (type === 'folder') {
+      setDropNodeRef(node);
+    }
   };
 
   const handleRename = async () => {
@@ -105,17 +108,6 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (type === 'folder') {
-      setIsOver(true);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setIsOver(false);
-  };
-
   const handleCardClick = (e: React.MouseEvent) => {
     // Não executar onClick se estiver arrastando
     if (!isDragging && onClick) {
@@ -127,17 +119,15 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     <>
       <div
         ref={setNodeRef}
-        style={style}
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[100px] flex flex-col ${
+        style={{ opacity: isDragging ? 0.5 : 1 }}
+        className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden h-[100px] flex flex-col ${
           type === 'folder' 
             ? `bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700 ${isOver ? 'ring-2 ring-primary shadow-xl scale-105' : ''}` 
             : 'bg-card border-border/50 hover:border-primary/30'
-        } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        } ${isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
       >
         {/* Subtle gradient overlay on hover */}
         <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
