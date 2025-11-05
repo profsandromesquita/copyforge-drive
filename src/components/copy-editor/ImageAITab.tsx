@@ -8,6 +8,7 @@ import { Sparkles, Loader2, Wand2, Shuffle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { useWorkspace } from '@/hooks/useWorkspace';
 import { Block } from '@/types/copy-editor';
 
 interface ImageAITabProps {
@@ -20,7 +21,8 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
   const [optimizePrompt, setOptimizePrompt] = useState('');
   const [variationPrompt, setVariationPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { updateBlock, addBlock, sessions } = useCopyEditor();
+  const { updateBlock, addBlock, sessions, copyId } = useCopyEditor();
+  const { activeWorkspace } = useWorkspace();
 
   const hasImage = !!block.config.imageUrl;
 
@@ -58,7 +60,11 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
       }
 
       const { data, error } = await supabase.functions.invoke('generate-image', {
-        body
+        body: {
+          ...body,
+          copyId,
+          workspaceId: activeWorkspace?.id,
+        }
       });
 
       if (error) {

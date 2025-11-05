@@ -131,7 +131,14 @@ serve(async (req) => {
       const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
+      console.log("=== DEBUG HISTÓRICO IMAGEM ===");
+      console.log("SUPABASE_URL:", !!SUPABASE_URL);
+      console.log("SUPABASE_SERVICE_ROLE_KEY:", !!SUPABASE_SERVICE_ROLE_KEY);
+      console.log("copyId:", copyId);
+      console.log("workspaceId:", workspaceId);
+      
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
+        console.log("Iniciando salvamento do histórico de imagem...");
         // Obter o auth header do request para pegar o usuário autenticado
         const authHeader = req.headers.get('Authorization');
         let userId = null;
@@ -179,10 +186,13 @@ serve(async (req) => {
         });
 
         if (!historyResponse.ok) {
-          console.error('Erro ao salvar histórico:', await historyResponse.text());
+          const errorText = await historyResponse.text();
+          console.error('Erro ao salvar histórico:', errorText);
         } else {
-          console.log('Histórico de imagem salvo com sucesso');
+          console.log('✓ Histórico de imagem salvo com sucesso!');
         }
+      } else {
+        console.log("⚠️ Não foi possível salvar histórico de imagem - parâmetros faltando");
       }
     } catch (historyError) {
       console.error('Erro ao salvar histórico de imagem:', historyError);
