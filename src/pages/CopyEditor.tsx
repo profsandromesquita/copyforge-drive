@@ -103,6 +103,13 @@ const CopyEditorContent = () => {
               placeholder: 'seu@email.com',
               required: true,
             },
+            {
+              id: `field-${Date.now()}-3`,
+              type: 'phone' as const,
+              label: 'WhatsApp',
+              placeholder: '(00) 00000-0000',
+              required: true,
+            },
           ],
         } : {};
 
