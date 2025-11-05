@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, imageUrl, type = 'generate' } = await req.json();
 
     if (!prompt || !prompt.trim()) {
       throw new Error('Prompt é obrigatório');
@@ -23,7 +23,22 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    console.log('Gerando imagem com prompt:', prompt);
+    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, prompt);
+
+    const messageContent: any = type === 'generate' 
+      ? prompt 
+      : [
+          {
+            type: 'text',
+            text: prompt
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: imageUrl
+            }
+          }
+        ];
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -36,7 +51,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: messageContent
           }
         ],
         modalities: ['image', 'text']
@@ -68,14 +83,14 @@ serve(async (req) => {
     console.log('Resposta da API recebida');
 
     // Extrair a imagem base64 da resposta
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
-    if (!imageUrl) {
+    if (!generatedImageUrl) {
       throw new Error('Nenhuma imagem foi gerada');
     }
 
     return new Response(
-      JSON.stringify({ imageUrl }),
+      JSON.stringify({ imageUrl: generatedImageUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

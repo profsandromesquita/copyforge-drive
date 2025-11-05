@@ -49,7 +49,10 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI }: Edi
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <ImageAITab blockId={imageBlockId} onClose={onCloseImageAI || (() => {})} />
+            <ImageAITab 
+              block={sessions.flatMap(s => s.blocks).find(b => b.id === imageBlockId)!} 
+              onClose={onCloseImageAI || (() => {})} 
+            />
           </div>
         </div>
       )}
