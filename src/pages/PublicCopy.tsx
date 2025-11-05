@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { BlockPreview } from '@/components/copy-editor/BlockPreview';
 
 const PublicCopy = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,64 +60,6 @@ const PublicCopy = () => {
       toast.success('Acesso liberado!');
     } else {
       toast.error('Senha incorreta');
-    }
-  };
-
-  const renderBlock = (block: any) => {
-    const { type, content, config } = block;
-
-    const style: React.CSSProperties = {
-      fontSize: config.fontSize || '16px',
-      textAlign: config.textAlign || 'left',
-      color: config.color || 'inherit',
-      fontWeight: config.fontWeight || 'normal',
-    };
-
-    switch (type) {
-      case 'headline':
-        return (
-          <h1 className="text-4xl font-bold mb-4" style={style}>
-            {content}
-          </h1>
-        );
-      case 'subheadline':
-        return (
-          <h2 className="text-2xl font-semibold mb-3" style={style}>
-            {content}
-          </h2>
-        );
-      case 'text':
-        return (
-          <p className="mb-3" style={style}>
-            {content}
-          </p>
-        );
-      case 'list':
-        return (
-          <ul className={`mb-3 ${config.listStyle === 'numbers' ? 'list-decimal' : 'list-disc'} pl-6`} style={style}>
-            {Array.isArray(content) && content.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-        );
-      case 'button':
-        return (
-          <Button
-            className="mb-3"
-            style={{
-              backgroundColor: config.backgroundColor,
-              color: config.textColor,
-            }}
-            size={config.buttonSize || 'md'}
-            asChild
-          >
-            <a href={config.link || '#'} target="_blank" rel="noopener noreferrer">
-              {content}
-            </a>
-          </Button>
-        );
-      default:
-        return null;
     }
   };
 
@@ -191,19 +134,23 @@ const PublicCopy = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
-          <section key={session.id} className="mb-12">
-            <h2 className="text-2xl font-bold mb-6 pb-2 border-b">
-              {session.title}
-            </h2>
-            <div className="space-y-4">
-              {session.blocks.map((block) => (
-                <div key={block.id}>{renderBlock(block)}</div>
-              ))}
-            </div>
-          </section>
-        ))}
+      <main className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="space-y-6">
+          {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
+            <section key={session.id} className="space-y-4">
+              <div className="border-b pb-2">
+                <h2 className="text-lg font-semibold text-primary">
+                  {session.title}
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {session.blocks.map((block) => (
+                  <BlockPreview key={block.id} block={block} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </main>
     </div>
   );
