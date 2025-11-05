@@ -133,9 +133,9 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30">
+      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
         {/* Header */}
-        <div className="bg-muted/30 sticky top-0 z-40">
+        <div className="bg-muted/30 sticky top-0 z-40 rounded-tl-3xl">
           <div className="px-6 py-4 space-y-4">
             <Breadcrumbs />
             

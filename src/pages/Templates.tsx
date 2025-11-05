@@ -53,7 +53,7 @@ const Templates = () => {
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30">
+      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">

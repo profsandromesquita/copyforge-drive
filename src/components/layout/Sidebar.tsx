@@ -33,7 +33,7 @@ const Sidebar = () => {
     <>
       <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CreateWorkspaceModal open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen} />
-    <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-background h-screen sticky top-0">
+    <aside className="hidden lg:flex flex-col w-64 bg-background h-screen sticky top-0">
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-center">
