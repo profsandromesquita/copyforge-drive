@@ -5,9 +5,16 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
+  const handleToggle = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    // Salva a preferência do tema do editor
+    localStorage.setItem('editor-theme', newTheme);
+  };
+
   return (
     <DropdownMenuItem
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      onClick={handleToggle}
       className="cursor-pointer"
     >
       {theme === "dark" ? (

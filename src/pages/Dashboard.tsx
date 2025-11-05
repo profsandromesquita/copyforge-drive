@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
 import { Plus, MagnifyingGlass, FolderPlus } from "phosphor-react";
 import { Button } from "@/components/ui/button";
@@ -24,11 +25,17 @@ import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy } = useDrive();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Força modo claro no Dashboard
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

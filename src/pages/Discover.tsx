@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { DiscoverCard } from '@/components/discover/DiscoverCard';
@@ -11,12 +12,18 @@ import { useProject } from '@/hooks/useProject';
 
 const Discover = () => {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const { copies, loading, copyCopy } = useDiscover();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
   const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
+
+  // Força modo claro no Discover
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
 
   const handleCopy = (copyId: string) => {
     setSelectedCopyId(copyId);

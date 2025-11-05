@@ -14,6 +14,28 @@ import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import Discover from "./pages/Discover";
 import CopyEditor from "./pages/CopyEditor";
+import { useEffect } from "react";
+import { useTheme } from "next-themes";
+
+// Wrapper para permitir tema apenas no CopyEditor
+const CopyEditorWithTheme = () => {
+  const { setTheme } = useTheme();
+  
+  useEffect(() => {
+    // Restaura o tema salvo do editor (se existir)
+    const editorTheme = localStorage.getItem('editor-theme');
+    if (editorTheme) {
+      setTheme(editorTheme);
+    }
+    
+    return () => {
+      // Volta para light mode ao sair do editor
+      setTheme('light');
+    };
+  }, [setTheme]);
+  
+  return <CopyEditor />;
+};
 import PublicCopy from "./pages/PublicCopy";
 import SuperAdmin from "./pages/SuperAdmin";
 import ProjectConfig from "./pages/ProjectConfig";
@@ -25,7 +47,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -44,7 +66,7 @@ const App = () => (
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                   <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
                   <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-                  <Route path="/copy/:id" element={<ProtectedRoute><CopyEditor /></ProtectedRoute>} />
+                  <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

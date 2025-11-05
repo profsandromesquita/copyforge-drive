@@ -10,16 +10,23 @@ import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 
 const Templates = () => {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const { templates, loading, createFromTemplate, deleteTemplate, duplicateTemplate } = useTemplates();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
+
+  // Força modo claro no Templates
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
 
   const handleUseTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);

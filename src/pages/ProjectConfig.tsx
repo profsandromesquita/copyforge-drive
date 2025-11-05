@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectConfigHeader } from '@/components/project-config/ProjectConfigHeader';
 import { QualityIndicator } from '@/components/project-config/QualityIndicator';
@@ -12,9 +13,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 const ProjectConfig = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const { projects, activeProject, setActiveProject, createProject, refreshProjects } = useProject();
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Força modo claro no ProjectConfig
+  useEffect(() => {
+    setTheme('light');
+  }, [setTheme]);
 
   useEffect(() => {
     const init = async () => {
