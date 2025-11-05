@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SessionBlockProps {
   session: Session;
@@ -45,6 +46,7 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
 
 export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
   const { updateSession, removeSession, duplicateSession, selectBlock } = useCopyEditor();
+  const { user } = useAuth();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id: session.id,
@@ -60,14 +62,22 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
 
   const handleAddComment = (text: string) => {
     const newComment = {
-      id: `comment-${Date.now()}`,
+      id: crypto.randomUUID(),
       text,
-      author: 'Usuário', // TODO: pegar do auth
+      author: user?.user_metadata?.name || user?.email || 'Usuário',
       createdAt: new Date().toISOString(),
     };
     
     updateSession(session.id, {
       comments: [...(session.comments || []), newComment],
+    });
+  };
+
+  const handleUpdateComment = (commentId: string, text: string) => {
+    updateSession(session.id, {
+      comments: (session.comments || []).map(c => 
+        c.id === commentId ? { ...c, text } : c
+      ),
     });
   };
 
@@ -109,9 +119,10 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
         )}
 
         <div className="flex items-center gap-2">
-          <CommentsButton
+          <CommentsButton 
             comments={session.comments}
             onAddComment={handleAddComment}
+            onUpdateComment={handleUpdateComment}
             onDeleteComment={handleDeleteComment}
           />
 

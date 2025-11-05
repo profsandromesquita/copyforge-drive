@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { useAuth } from '@/hooks/useAuth';
 import { FormattingToolbar } from './FormattingToolbar';
 import { FocusModeModal } from './FocusModeModal';
 
@@ -31,6 +32,7 @@ interface ContentBlockProps {
 
 export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
+  const { user } = useAuth();
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [focusModeContent, setFocusModeContent] = useState('');
@@ -803,14 +805,22 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
   const handleAddComment = (text: string) => {
     const newComment = {
-      id: `comment-${Date.now()}`,
+      id: crypto.randomUUID(),
       text,
-      author: 'Usuário', // TODO: pegar do auth
+      author: user?.user_metadata?.name || user?.email || 'Usuário',
       createdAt: new Date().toISOString(),
     };
     
     updateBlock(block.id, {
       comments: [...(block.comments || []), newComment],
+    });
+  };
+
+  const handleUpdateComment = (commentId: string, text: string) => {
+    updateBlock(block.id, {
+      comments: (block.comments || []).map(c => 
+        c.id === commentId ? { ...c, text } : c
+      ),
     });
   };
 
@@ -844,11 +854,12 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
         <div className="flex-1">{renderContent()}</div>
 
         <div className="flex items-start gap-1">
-          <CommentsButton
-            comments={block.comments}
-            onAddComment={handleAddComment}
-            onDeleteComment={handleDeleteComment}
-          />
+            <CommentsButton 
+              comments={block.comments}
+              onAddComment={handleAddComment}
+              onUpdateComment={handleUpdateComment}
+              onDeleteComment={handleDeleteComment}
+            />
 
           <DropdownMenu>
           <DropdownMenuTrigger asChild>
