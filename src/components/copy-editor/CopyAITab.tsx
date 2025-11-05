@@ -525,9 +525,9 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="font-semibold">Objetivos</Label>
-              <ToggleGroup type="multiple" value={objetivos} onValueChange={setObjetivos}>
+              <ToggleGroup type="multiple" value={objetivos} onValueChange={setObjetivos} className="flex flex-wrap gap-2 justify-start">
                 {OBJETIVOS.map((obj) => (
-                  <ToggleGroupItem key={obj.value} value={obj.value}>
+                  <ToggleGroupItem key={obj.value} value={obj.value} className="flex-shrink-0">
                     {obj.label}
                   </ToggleGroupItem>
                 ))}
@@ -536,9 +536,9 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="font-semibold">Estilos</Label>
-              <ToggleGroup type="multiple" value={estilos} onValueChange={setEstilos}>
+              <ToggleGroup type="multiple" value={estilos} onValueChange={setEstilos} className="flex flex-wrap gap-2 justify-start">
                 {ESTILOS.map((estilo) => (
-                  <ToggleGroupItem key={estilo.value} value={estilo.value}>
+                  <ToggleGroupItem key={estilo.value} value={estilo.value} className="flex-shrink-0">
                     {estilo.label}
                   </ToggleGroupItem>
                 ))}
@@ -547,9 +547,9 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="font-semibold">Tamanho</Label>
-              <ToggleGroup type="single" value={tamanho} onValueChange={setTamanho}>
+              <ToggleGroup type="single" value={tamanho} onValueChange={setTamanho} className="flex flex-wrap gap-2 justify-start">
                 {TAMANHOS.map((tam) => (
-                  <ToggleGroupItem key={tam.value} value={tam.value}>
+                  <ToggleGroupItem key={tam.value} value={tam.value} className="flex-shrink-0">
                     {tam.label}
                   </ToggleGroupItem>
                 ))}
@@ -558,9 +558,9 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="font-semibold">Preferências</Label>
-              <ToggleGroup type="multiple" value={preferencias} onValueChange={setPreferencias}>
+              <ToggleGroup type="multiple" value={preferencias} onValueChange={setPreferencias} className="flex flex-wrap gap-2 justify-start">
                 {PREFERENCIAS.map((pref) => (
-                  <ToggleGroupItem key={pref.value} value={pref.value}>
+                  <ToggleGroupItem key={pref.value} value={pref.value} className="flex-shrink-0">
                     {pref.label}
                   </ToggleGroupItem>
                 ))}
