@@ -15,6 +15,13 @@ export interface TestimonialItem {
   photo?: string;
 }
 
+export interface Comment {
+  id: string;
+  text: string;
+  author: string;
+  createdAt: string;
+}
+
 export interface FormField {
   id: string;
   type: 'text' | 'email' | 'phone';
@@ -89,12 +96,14 @@ export interface Block {
   type: BlockType;
   content: string | string[]; // string for most, string[] for lists
   config: BlockConfig;
+  comments?: Comment[];
 }
 
 export interface Session {
   id: string;
   title: string;
   blocks: Block[];
+  comments?: Comment[];
 }
 
 export type CopyType = 'landing_page' | 'anuncio' | 'vsl' | 'email' | 'webinar' | 'conteudo' | 'mensagem' | 'outro';

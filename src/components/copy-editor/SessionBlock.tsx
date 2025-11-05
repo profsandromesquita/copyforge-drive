@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { DotsThree, Copy as CopyIcon, Trash, PencilSimple } from 'phosphor-react';
+import { DotsThree, Copy as CopyIcon, Trash, PencilSimple, ChatCircle } from 'phosphor-react';
 import { Session } from '@/types/copy-editor';
 import { ContentBlock } from './ContentBlock';
+import { CommentsButton } from './CommentsButton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,12 +58,31 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
     }
   };
 
+  const handleAddComment = (text: string) => {
+    const newComment = {
+      id: `comment-${Date.now()}`,
+      text,
+      author: 'Usuário', // TODO: pegar do auth
+      createdAt: new Date().toISOString(),
+    };
+    
+    updateSession(session.id, {
+      comments: [...(session.comments || []), newComment],
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    updateSession(session.id, {
+      comments: (session.comments || []).filter(c => c.id !== commentId),
+    });
+  };
+
   return (
     <div
       ref={setNodeRef}
       onClick={handleSessionClick}
       className={`
-        p-6 rounded-xl bg-white space-y-4 transition-all
+        p-6 rounded-xl bg-white space-y-4 transition-all group
         ${isOver ? 'border-2 border-dashed border-primary bg-primary/5 scale-[1.02]' : ''}
       `}
     >
@@ -88,7 +108,14 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
           </h2>
         )}
 
-        <DropdownMenu>
+        <div className="flex items-center gap-2">
+          <CommentsButton
+            comments={session.comments}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+          />
+
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               <DotsThree size={20} />
@@ -112,6 +139,7 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       <div className="space-y-1 min-h-[100px]" onClick={handleSessionClick}>

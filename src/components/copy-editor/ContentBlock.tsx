@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
+import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, ChatCircle } from 'phosphor-react';
 import { Sparkles } from 'lucide-react';
 import { Block } from '@/types/copy-editor';
+import { CommentsButton } from './CommentsButton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -800,6 +801,25 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     }
   };
 
+  const handleAddComment = (text: string) => {
+    const newComment = {
+      id: `comment-${Date.now()}`,
+      text,
+      author: 'Usuário', // TODO: pegar do auth
+      createdAt: new Date().toISOString(),
+    };
+    
+    updateBlock(block.id, {
+      comments: [...(block.comments || []), newComment],
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    updateBlock(block.id, {
+      comments: (block.comments || []).filter(c => c.id !== commentId),
+    });
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -823,7 +843,14 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
         <div className="flex-1">{renderContent()}</div>
 
-        <DropdownMenu>
+        <div className="flex items-start gap-1">
+          <CommentsButton
+            comments={block.comments}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+          />
+
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -868,6 +895,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
     </div>
   );
