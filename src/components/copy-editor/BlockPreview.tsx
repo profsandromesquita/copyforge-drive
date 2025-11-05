@@ -189,7 +189,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
         );
 
       case 'form':
-        const formTitle = block.config?.formTitle || 'Preencha o formulário';
+        const formTitle = block.config?.formTitle;
         const formButtonText = block.config?.formButtonText || 'Enviar';
         const formButtonColor = block.config?.formButtonColor || '#22c55e';
         const formFields = block.config?.formFields || [];
