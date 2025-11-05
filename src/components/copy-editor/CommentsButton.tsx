@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { ChatCircle, PencilSimple, Trash } from 'phosphor-react';
+import { ChatCircle, PencilSimple, Trash, DotsThree } from 'phosphor-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { Comment } from '@/types/copy-editor';
 import { useAuth } from '@/hooks/useAuth';
@@ -109,37 +115,40 @@ export const CommentsButton = ({ comments = [], onAddComment, onUpdateComment, o
           {comments.length > 0 && (
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {comments.map((comment) => (
-                <div key={comment.id} className="p-3 bg-muted/50 rounded-lg space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground">
-                        {comment.author.includes('@') ? comment.author.split('@')[0] : comment.author}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</p>
-                    </div>
+                <div key={comment.id} className="p-3 bg-muted/50 rounded-lg space-y-2 relative">
+                  <div className="flex items-start justify-between gap-2 pr-6">
+                    <p className="text-xs font-medium text-foreground">
+                      {comment.author.includes('@') ? comment.author.split('@')[0] : comment.author}
+                    </p>
                     {isOwnComment(comment.author) && (
-                      <div className="flex gap-1">
-                        {onUpdateComment && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 hover:bg-muted"
-                            onClick={() => handleStartEdit(comment)}
+                            className="h-6 w-6 p-0 absolute top-2 right-2 hover:bg-muted"
                           >
-                            <PencilSimple size={14} />
+                            <DotsThree size={16} weight="bold" />
                           </Button>
-                        )}
-                        {onDeleteComment && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => onDeleteComment(comment.id)}
-                          >
-                            <Trash size={14} />
-                          </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          {onUpdateComment && (
+                            <DropdownMenuItem onClick={() => handleStartEdit(comment)} className="gap-2">
+                              <PencilSimple size={16} />
+                              Editar
+                            </DropdownMenuItem>
+                          )}
+                          {onDeleteComment && (
+                            <DropdownMenuItem 
+                              onClick={() => onDeleteComment(comment.id)}
+                              className="gap-2 text-destructive focus:text-destructive"
+                            >
+                              <Trash size={16} />
+                              Excluir
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                   
@@ -169,7 +178,12 @@ export const CommentsButton = ({ comments = [], onAddComment, onUpdateComment, o
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap break-words">{comment.text}</p>
+                    <>
+                      <p className="text-sm whitespace-pre-wrap break-words pr-2">{comment.text}</p>
+                      <div className="flex justify-end">
+                        <p className="text-[10px] text-muted-foreground/60">{formatDate(comment.createdAt)}</p>
+                      </div>
+                    </>
                   )}
                 </div>
               ))}
