@@ -1034,6 +1034,156 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           </>
         );
 
+      case 'testimonial':
+        const testimonialItems = block.config?.testimonialItems || [];
+        
+        const addTestimonialItem = () => {
+          const newItem = {
+            id: `testimonial-${Date.now()}`,
+            name: '',
+            description: '',
+            text: '',
+            rating: 5,
+            photo: ''
+          };
+          updateConfig('testimonialItems', [...testimonialItems, newItem]);
+        };
+
+        const removeTestimonialItem = (id: string) => {
+          updateConfig('testimonialItems', testimonialItems.filter(item => item.id !== id));
+        };
+
+        const updateTestimonialItem = (id: string, field: keyof import('@/types/copy-editor').TestimonialItem, value: any) => {
+          updateConfig('testimonialItems', testimonialItems.map(item =>
+            item.id === id ? { ...item, [field]: value } : item
+          ));
+        };
+
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Título da Sessão (opcional)</Label>
+              <Input
+                value={block.config?.testimonialTitle || ''}
+                onChange={(e) => updateConfig('testimonialTitle', e.target.value)}
+                placeholder="O que nossos clientes dizem"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Fotos</Label>
+              <Switch
+                checked={block.config?.showPhotos !== false}
+                onCheckedChange={(checked) => updateConfig('showPhotos', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Avaliações</Label>
+              <Switch
+                checked={block.config?.showRatings !== false}
+                onCheckedChange={(checked) => updateConfig('showRatings', checked)}
+              />
+            </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Lista de Depoimentos</Label>
+                <Button size="sm" onClick={addTestimonialItem} variant="outline">
+                  <Plus size={16} className="mr-2" />
+                  Adicionar Depoimento
+                </Button>
+              </div>
+
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {testimonialItems.map((item, index) => (
+                  <div key={item.id} className="p-3 border rounded-lg space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Depoimento {index + 1}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={() => removeTestimonialItem(item.id)}
+                      >
+                        <Trash size={14} />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Nome do Cliente</Label>
+                      <Input
+                        value={item.name}
+                        onChange={(e) => updateTestimonialItem(item.id, 'name', e.target.value)}
+                        placeholder="Nome completo..."
+                        className="h-8"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Descrição (Cargo ou Empresa)</Label>
+                      <Input
+                        value={item.description}
+                        onChange={(e) => updateTestimonialItem(item.id, 'description', e.target.value)}
+                        placeholder="CEO na Empresa X..."
+                        className="h-8"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">Texto do Depoimento</Label>
+                      <Input
+                        value={item.text}
+                        onChange={(e) => updateTestimonialItem(item.id, 'text', e.target.value)}
+                        placeholder="Escreva o depoimento..."
+                        className="h-8"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs">URL da Foto (opcional)</Label>
+                      <Input
+                        value={item.photo || ''}
+                        onChange={(e) => updateTestimonialItem(item.id, 'photo', e.target.value)}
+                        placeholder="https://..."
+                        className="h-8"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Avaliação ({item.rating} estrelas)</Label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => updateTestimonialItem(item.id, 'rating', star)}
+                            className="hover:scale-110 transition-transform"
+                          >
+                            <Star 
+                              size={24}
+                              weight={star <= item.rating ? 'fill' : 'regular'}
+                              className={star <= item.rating ? 'text-yellow-500' : 'text-muted-foreground'}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {testimonialItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum depoimento adicionado ainda
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        );
+
       default:
         return null;
     }

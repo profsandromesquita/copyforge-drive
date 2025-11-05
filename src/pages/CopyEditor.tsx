@@ -113,6 +113,11 @@ const CopyEditorContent = () => {
               required: true,
             },
           ],
+        } : activeData.type === 'testimonial' ? {
+          testimonialTitle: '',
+          showPhotos: true,
+          showRatings: true,
+          testimonialItems: [],
         } : {};
 
         addBlock(sessionId, {

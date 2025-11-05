@@ -735,6 +735,66 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
           </div>
         );
 
+      case 'testimonial':
+        const testimonialTitle = block.config?.testimonialTitle || '';
+        const showPhotos = block.config?.showPhotos !== false;
+        const showRatings = block.config?.showRatings !== false;
+        const testimonialItems = block.config?.testimonialItems || [];
+
+        return (
+          <div className="space-y-6 max-w-4xl w-full">
+            {testimonialTitle && (
+              <h3 className="text-2xl font-bold text-center">{testimonialTitle}</h3>
+            )}
+            
+            {testimonialItems.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2">
+                {testimonialItems.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="border rounded-lg p-6 bg-card space-y-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      {showPhotos && item.photo && (
+                        <img 
+                          src={item.photo} 
+                          alt={item.name}
+                          className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-lg">{item.name || 'Nome do cliente'}</h4>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                        )}
+                        {showRatings && (
+                          <div className="flex gap-1 mt-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i}
+                                size={16}
+                                weight={i < item.rating ? 'fill' : 'regular'}
+                                className={i < item.rating ? 'text-yellow-500' : 'text-muted-foreground'}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground italic">
+                      "{item.text || 'Texto do depoimento'}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="w-full p-8 border-2 border-dashed rounded-lg text-center text-muted-foreground">
+                Adicione depoimentos nas configurações do bloco
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }

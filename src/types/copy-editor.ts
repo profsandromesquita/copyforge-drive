@@ -1,9 +1,18 @@
-export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video' | 'audio' | 'faq';
+export type BlockType = 'text' | 'headline' | 'subheadline' | 'list' | 'button' | 'form' | 'image' | 'video' | 'audio' | 'faq' | 'testimonial';
 
 export interface FAQItem {
   id: string;
   question: string;
   answer: string;
+}
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  description: string;
+  text: string;
+  rating: number;
+  photo?: string;
 }
 
 export interface FormField {
@@ -67,6 +76,12 @@ export interface BlockConfig {
   showNumbering?: boolean;
   expandedByDefault?: boolean;
   faqItems?: FAQItem[];
+  
+  // Testimonial
+  testimonialTitle?: string;
+  showPhotos?: boolean;
+  showRatings?: boolean;
+  testimonialItems?: TestimonialItem[];
 }
 
 export interface Block {

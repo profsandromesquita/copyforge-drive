@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
-import { TextT, TextHOne, TextHTwo, ListBullets, Hand, Article, Image, VideoCamera, SpeakerHigh, Question } from 'phosphor-react';
+import { TextT, TextHOne, TextHTwo, ListBullets, Hand, Article, Image, VideoCamera, SpeakerHigh, Question, Quotes } from 'phosphor-react';
 import { BlockType } from '@/types/copy-editor';
 
 interface ToolbarBlockProps {
@@ -44,6 +44,7 @@ export const BlockToolbar = () => {
     { type: 'video', icon: <VideoCamera size={20} />, label: 'Vídeo' },
     { type: 'audio', icon: <SpeakerHigh size={20} />, label: 'Áudio' },
     { type: 'faq', icon: <Question size={20} />, label: 'FAQ' },
+    { type: 'testimonial', icon: <Quotes size={20} />, label: 'Depoimento' },
   ];
 
   return (
