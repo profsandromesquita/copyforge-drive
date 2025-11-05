@@ -59,6 +59,11 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
         body.type = type;
       }
 
+      console.log('=== DEBUG FRONTEND IMAGE ===');
+      console.log('copyId:', copyId);
+      console.log('workspaceId:', activeWorkspace?.id);
+      console.log('body:', body);
+
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: {
           ...body,
