@@ -21,8 +21,10 @@ export type Database = {
           copy_type: string | null
           created_at: string
           created_by: string
+          generation_type: string | null
           id: string
           offer: Json | null
+          original_content: Json | null
           parameters: Json | null
           project_identity: Json | null
           prompt: string
@@ -35,8 +37,10 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by: string
+          generation_type?: string | null
           id?: string
           offer?: Json | null
+          original_content?: Json | null
           parameters?: Json | null
           project_identity?: Json | null
           prompt: string
@@ -49,8 +53,10 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by?: string
+          generation_type?: string | null
           id?: string
           offer?: Json | null
+          original_content?: Json | null
           parameters?: Json | null
           project_identity?: Json | null
           prompt?: string

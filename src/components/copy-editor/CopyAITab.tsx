@@ -5,15 +5,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles, Wand2, History, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Session } from '@/types/copy-editor';
+import { Session, Block } from '@/types/copy-editor';
 import { AIGeneratedPreviewModal } from './AIGeneratedPreviewModal';
+import { SelectContentModal } from './SelectContentModal';
+import { OptimizeComparisonModal } from './OptimizeComparisonModal';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDistanceToNow } from 'date-fns';
@@ -47,7 +51,7 @@ const PREFERENCIAS = [
 ];
 
 export const CopyAITab = () => {
-  const { copyId, copyType } = useCopyEditor();
+  const { copyId, copyType, sessions: copySessions, importSessions, updateSession } = useCopyEditor();
   const { activeProject } = useProject();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
@@ -56,34 +60,35 @@ export const CopyAITab = () => {
   // Controle de abas
   const [activeTab, setActiveTab] = useState('criar');
 
-  // Etapa 1: Segmentação e Oferta
+  // Estado para criação
   const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
   const [offerId, setOfferId] = useState<string>('');
-
-  // Etapa 2: Preferências
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [estilos, setEstilos] = useState<string[]>([]);
   const [tamanho, setTamanho] = useState<string>('');
   const [preferencias, setPreferencias] = useState<string[]>([]);
-
-  // Etapa 3: Detalhes
   const [prompt, setPrompt] = useState('');
-
-  // Controle de UI
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Estado para otimização
+  const [showSelectModal, setShowSelectModal] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<{ sessions: Session[], blocks: Block[] } | null>(null);
+  const [optimizeAction, setOptimizeAction] = useState<'otimizar' | 'variacao' | null>(null);
+  const [optimizeInstructions, setOptimizeInstructions] = useState('');
+  const [optimizedSessions, setOptimizedSessions] = useState<Session[]>([]);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+
   // Histórico
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Carregar dados do projeto
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
 
-  // Carregar histórico quando mudar para a aba histórico
   useEffect(() => {
     if (activeTab === 'historico' && copyId) {
       loadHistory();
@@ -103,11 +108,11 @@ export const CopyAITab = () => {
 
       if (error) throw error;
       setHistory(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
+    } catch (error: any) {
+      console.error('Error loading history:', error);
       toast({
         title: 'Erro ao carregar histórico',
-        description: 'Tente novamente mais tarde.',
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
@@ -115,64 +120,94 @@ export const CopyAITab = () => {
     }
   };
 
+  const resetForm = () => {
+    setEtapa(1);
+    setAudienceSegmentId('');
+    setOfferId('');
+    setObjetivos([]);
+    setEstilos([]);
+    setTamanho('');
+    setPreferencias([]);
+    setPrompt('');
+  };
+
+  const resetOptimizeForm = () => {
+    setSelectedContent(null);
+    setOptimizeAction(null);
+    setOptimizeInstructions('');
+    setOptimizedSessions([]);
+  };
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast({
-        title: 'Campo obrigatório',
-        description: 'Por favor, descreva os detalhes da sua copy.',
+        title: 'Prompt obrigatório',
+        description: 'Por favor, descreva o que você precisa para sua copy.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!copyId || !activeWorkspace || !user) {
+      toast({
+        title: 'Erro',
+        description: 'Informações do workspace não encontradas',
         variant: 'destructive',
       });
       return;
     }
 
     setIsGenerating(true);
-
     try {
-      // Buscar dados do público e oferta selecionados
-      const selectedAudience = audienceSegmentId 
-        ? audienceSegments.find(s => s.id === audienceSegmentId)
-        : null;
-      
-      const selectedOffer = offerId
-        ? offers.find(o => o.id === offerId)
-        : null;
+      let projectIdentity = null;
+      let audienceSegment = null;
+      let offer = null;
 
-      // Preparar dados de identidade do projeto
-      const projectIdentity = activeProject ? {
-        brand_name: activeProject.brand_name,
-        sector: activeProject.sector,
-        central_purpose: activeProject.central_purpose,
-        voice_tones: activeProject.voice_tones,
-        brand_personality: activeProject.brand_personality,
-        keywords: activeProject.keywords,
-      } : null;
+      if (activeProject) {
+        projectIdentity = {
+          brand_name: activeProject.brand_name,
+          sector: activeProject.sector,
+          central_purpose: activeProject.central_purpose,
+          voice_tones: activeProject.voice_tones,
+          brand_personality: activeProject.brand_personality,
+        };
+
+        if (audienceSegmentId) {
+          audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
+        }
+
+        if (offerId) {
+          offer = offers.find(o => o.id === offerId);
+        }
+      }
 
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
           copyType: copyType || 'outro',
-          objetivos,
-          estilos,
-          tamanhos: tamanho ? [tamanho] : [],
-          preferencias,
           prompt,
+          objectives: objetivos,
+          styles: estilos,
+          size: tamanho,
+          preferences: preferencias,
           projectIdentity,
-          audienceSegment: selectedAudience,
-          offer: selectedOffer,
-        },
+          audienceSegment,
+          offer,
+          copyId,
+          workspaceId: activeWorkspace.id,
+        }
       });
 
       if (error) {
-        if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+        if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
           toast({
-            title: 'Limite de uso excedido',
-            description: 'Você atingiu o limite de gerações. Aguarde alguns minutos.',
+            title: 'Limite de requisições atingido',
+            description: 'Tente novamente em alguns instantes.',
             variant: 'destructive',
           });
-        } else if (error.message?.includes('402') || error.message?.includes('Créditos')) {
+        } else if (error.message?.includes('insufficient_credits') || error.message?.includes('402')) {
           toast({
             title: 'Créditos insuficientes',
-            description: 'Adicione créditos em Configurações → Workspace → Uso.',
+            description: 'Adicione mais créditos para continuar.',
             variant: 'destructive',
           });
         } else {
@@ -181,39 +216,18 @@ export const CopyAITab = () => {
         return;
       }
 
-      if (data?.sessions && data.sessions.length > 0) {
-        setGeneratedSessions(data.sessions);
-        setShowPreviewModal(true);
+      setGeneratedSessions(data.sessions);
+      setShowPreviewModal(true);
+      toast({
+        title: 'Copy gerada com sucesso!',
+        description: 'Visualize e importe o conteúdo gerado.',
+      });
 
-        // Salvar no histórico
-        if (copyId && activeWorkspace && user) {
-          const historyEntry = {
-            copy_id: copyId,
-            workspace_id: activeWorkspace.id,
-            created_by: user.id,
-            copy_type: copyType || 'outro',
-            project_identity: projectIdentity as any,
-            audience_segment: selectedAudience as any,
-            offer: selectedOffer as any,
-            parameters: { objetivos, estilos, tamanho, preferencias } as any,
-            prompt,
-            sessions: data.sessions as any,
-          };
-          
-          await supabase.from('ai_generation_history').insert(historyEntry);
-        }
-      } else {
-        toast({
-          title: 'Nenhum conteúdo gerado',
-          description: 'Tente ajustar suas preferências ou detalhes.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao gerar copy:', error);
+    } catch (error: any) {
+      console.error('Error generating copy:', error);
       toast({
         title: 'Erro ao gerar copy',
-        description: 'Ocorreu um erro. Tente novamente.',
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
@@ -226,21 +240,11 @@ export const CopyAITab = () => {
   };
 
   const handleSuccess = () => {
-    // Reset form
-    setAudienceSegmentId('');
-    setOfferId('');
-    setObjetivos([]);
-    setEstilos([]);
-    setTamanho('');
-    setPreferencias([]);
-    setPrompt('');
-    setEtapa(1);
-    setGeneratedSessions([]);
-    
-    // Recarregar histórico se estiver na aba de histórico
-    if (activeTab === 'historico') {
-      loadHistory();
-    }
+    setShowPreviewModal(false);
+    resetForm();
+    toast({
+      title: 'Copy importada com sucesso!',
+    });
   };
 
   const handleHistoryItemClick = (item: any) => {
@@ -248,199 +252,366 @@ export const CopyAITab = () => {
     setShowPreviewModal(true);
   };
 
-  // Renderizar conteúdo da aba Criar
+  const handleContentSelect = (sessions: Session[], blocks: Block[]) => {
+    setSelectedContent({ sessions, blocks });
+    setOptimizeAction(null);
+    setOptimizeInstructions('');
+  };
+
+  const handleActionSelect = (action: 'otimizar' | 'variacao') => {
+    setOptimizeAction(action);
+  };
+
+  const handleOptimizeGenerate = async () => {
+    if (!selectedContent || !optimizeAction || !optimizeInstructions.trim()) {
+      toast({
+        title: 'Instruções obrigatórias',
+        description: 'Preencha as instruções antes de gerar',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsOptimizing(true);
+    try {
+      const { data: copyData } = await supabase
+        .from('copies')
+        .select('workspace_id, project_id')
+        .eq('id', copyId)
+        .single();
+
+      if (!copyData) throw new Error('Copy não encontrada');
+
+      let projectIdentity = null;
+      let audienceSegment = null;
+      let offer = null;
+
+      if (copyData.project_id) {
+        const { data: projectData } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', copyData.project_id)
+          .single();
+
+        if (projectData) {
+          projectIdentity = {
+            brand_name: projectData.brand_name,
+            sector: projectData.sector,
+            central_purpose: projectData.central_purpose,
+            voice_tones: projectData.voice_tones,
+            brand_personality: projectData.brand_personality
+          };
+
+          if (audienceSegmentId && Array.isArray(projectData.audience_segments)) {
+            audienceSegment = (projectData.audience_segments as any[]).find((s: any) => s.id === audienceSegmentId);
+          }
+
+          if (offerId && Array.isArray(projectData.offers)) {
+            offer = (projectData.offers as any[]).find((o: any) => o.id === offerId);
+          }
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('optimize-copy', {
+        body: {
+          action: optimizeAction,
+          originalContent: selectedContent.sessions,
+          instructions: optimizeInstructions,
+          projectIdentity,
+          audienceSegment,
+          offer,
+          copyId,
+          workspaceId: copyData.workspace_id
+        }
+      });
+
+      if (error) {
+        if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
+          toast({
+            title: 'Limite de requisições atingido',
+            description: 'Tente novamente em alguns instantes.',
+            variant: 'destructive',
+          });
+        } else if (error.message?.includes('insufficient_credits') || error.message?.includes('402')) {
+          toast({
+            title: 'Créditos insuficientes',
+            description: 'Adicione mais créditos para continuar.',
+            variant: 'destructive',
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      setOptimizedSessions(data.sessions);
+      setShowComparisonModal(true);
+      toast({
+        title: 'Conteúdo gerado com sucesso!',
+      });
+
+    } catch (error: any) {
+      console.error('Error optimizing:', error);
+      toast({
+        title: 'Erro ao gerar conteúdo',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const handleReplace = () => {
+    if (!selectedContent || !optimizedSessions) return;
+
+    selectedContent.sessions.forEach((originalSession, idx) => {
+      if (optimizedSessions[idx]) {
+        updateSession(originalSession.id, {
+          title: optimizedSessions[idx].title,
+          blocks: optimizedSessions[idx].blocks
+        });
+      }
+    });
+
+    setShowComparisonModal(false);
+    resetOptimizeForm();
+    toast({
+      title: 'Conteúdo substituído com sucesso!',
+    });
+  };
+
+  const handleAdd = () => {
+    if (!optimizedSessions) return;
+
+    importSessions(optimizedSessions);
+    setShowComparisonModal(false);
+    resetOptimizeForm();
+    toast({
+      title: 'Novo conteúdo adicionado com sucesso!',
+    });
+  };
+
+  const handleRegenerate = async (regenerateInstructions: string) => {
+    if (!selectedContent || !optimizeAction) return;
+
+    setIsOptimizing(true);
+    try {
+      const { data: copyData } = await supabase
+        .from('copies')
+        .select('workspace_id, project_id')
+        .eq('id', copyId)
+        .single();
+
+      if (!copyData) throw new Error('Copy não encontrada');
+
+      let projectIdentity = null;
+      let audienceSegment = null;
+      let offer = null;
+
+      if (copyData.project_id) {
+        const { data: projectData } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', copyData.project_id)
+          .single();
+
+        if (projectData) {
+          projectIdentity = {
+            brand_name: projectData.brand_name,
+            sector: projectData.sector,
+            central_purpose: projectData.central_purpose,
+            voice_tones: projectData.voice_tones,
+            brand_personality: projectData.brand_personality
+          };
+
+          if (audienceSegmentId && Array.isArray(projectData.audience_segments)) {
+            audienceSegment = (projectData.audience_segments as any[]).find((s: any) => s.id === audienceSegmentId);
+          }
+
+          if (offerId && Array.isArray(projectData.offers)) {
+            offer = (projectData.offers as any[]).find((o: any) => o.id === offerId);
+          }
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('optimize-copy', {
+        body: {
+          action: optimizeAction,
+          originalContent: selectedContent.sessions,
+          instructions: optimizeInstructions,
+          regenerateInstructions,
+          projectIdentity,
+          audienceSegment,
+          offer,
+          copyId,
+          workspaceId: copyData.workspace_id
+        }
+      });
+
+      if (error) throw error;
+
+      setOptimizedSessions(data.sessions);
+      toast({
+        title: 'Conteúdo regenerado com sucesso!',
+      });
+
+    } catch (error: any) {
+      console.error('Error regenerating:', error);
+      toast({
+        title: 'Erro ao regenerar conteúdo',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
 
   const renderCriarTab = () => {
-    // Etapa 1: Segmentação e Oferta
+    // Etapa 1
     if (etapa === 1) {
+      return (
+        <ScrollArea className="h-[calc(100vh-12rem)]">
+          <div className="space-y-6 p-4">
+            <div className="space-y-2">
+              <Label className="font-semibold">Público-Alvo</Label>
+              <Select value={audienceSegmentId} onValueChange={setAudienceSegmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o público-alvo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {audienceSegments.map((segment: AudienceSegment) => (
+                    <SelectItem key={segment.id} value={segment.id}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">Oferta</Label>
+              <Select value={offerId} onValueChange={setOfferId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a oferta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {offers.map((offer: Offer) => (
+                    <SelectItem key={offer.id} value={offer.id}>
+                      {offer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button onClick={() => setEtapa(2)} className="w-full">
+              Próximo
+            </Button>
+          </div>
+        </ScrollArea>
+      );
+    }
+
+    // Etapa 2
+    if (etapa === 2) {
+      return (
+        <ScrollArea className="h-[calc(100vh-12rem)]">
+          <div className="space-y-6 p-4">
+            <Button variant="ghost" onClick={() => setEtapa(1)} className="w-full justify-start">
+              ← Voltar
+            </Button>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">Objetivos</Label>
+              <ToggleGroup type="multiple" value={objetivos} onValueChange={setObjetivos}>
+                {OBJETIVOS.map((obj) => (
+                  <ToggleGroupItem key={obj.value} value={obj.value}>
+                    {obj.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">Estilos</Label>
+              <ToggleGroup type="multiple" value={estilos} onValueChange={setEstilos}>
+                {ESTILOS.map((estilo) => (
+                  <ToggleGroupItem key={estilo.value} value={estilo.value}>
+                    {estilo.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">Tamanho</Label>
+              <ToggleGroup type="single" value={tamanho} onValueChange={setTamanho}>
+                {TAMANHOS.map((tam) => (
+                  <ToggleGroupItem key={tam.value} value={tam.value}>
+                    {tam.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-semibold">Preferências</Label>
+              <ToggleGroup type="multiple" value={preferencias} onValueChange={setPreferencias}>
+                {PREFERENCIAS.map((pref) => (
+                  <ToggleGroupItem key={pref.value} value={pref.value}>
+                    {pref.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+
+            <Button onClick={() => setEtapa(3)} className="w-full">
+              Próximo
+            </Button>
+          </div>
+        </ScrollArea>
+      );
+    }
+
+    // Etapa 3
     return (
-      <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
-        <div className="space-y-6">
-          {/* Segmentação do Público */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Segmentação do Público (Opcional)</Label>
-            <Select value={audienceSegmentId} onValueChange={setAudienceSegmentId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um público-alvo" />
-              </SelectTrigger>
-              <SelectContent>
-                {audienceSegments.map((segment: AudienceSegment) => (
-                  <SelectItem key={segment.id} value={segment.id}>
-                    {segment.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <ScrollArea className="h-[calc(100vh-12rem)]">
+        <div className="space-y-4 p-4">
+          <Button variant="ghost" onClick={() => setEtapa(2)} className="w-full justify-start">
+            ← Voltar
+          </Button>
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Detalhes da Copy</Label>
+            <Textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Descreva o que você precisa para sua copy..."
+              rows={12}
+              className="resize-none"
+            />
           </div>
 
-          {/* Oferta */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Oferta (Opcional)</Label>
-            <Select value={offerId} onValueChange={setOfferId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma oferta" />
-              </SelectTrigger>
-              <SelectContent>
-                {offers.map((offer: Offer) => (
-                  <SelectItem key={offer.id} value={offer.id}>
-                    {offer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button onClick={() => setEtapa(2)} className="w-full">
-            Próxima Etapa
+          <Button
+            onClick={handleGenerate}
+            disabled={!prompt.trim() || isGenerating}
+            className="w-full"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              'Gerar Copy com IA'
+            )}
           </Button>
         </div>
       </ScrollArea>
     );
-  }
-
-  // Etapa 2: Preferências
-  if (etapa === 2) {
-    return (
-      <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
-        <div className="space-y-6">
-          {/* Objetivo da Copy */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Objetivo da Copy</Label>
-            <ToggleGroup 
-              type="multiple" 
-              value={objetivos} 
-              onValueChange={setObjetivos}
-              className="grid grid-cols-2 gap-2"
-            >
-              {OBJETIVOS.map((item) => (
-                <ToggleGroupItem 
-                  key={item.value} 
-                  value={item.value}
-                  variant="outline"
-                  className="text-sm h-9"
-                >
-                  {item.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          {/* Estilo da Escrita */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Estilo da Escrita</Label>
-            <ToggleGroup 
-              type="multiple" 
-              value={estilos} 
-              onValueChange={setEstilos}
-              className="grid grid-cols-2 gap-2"
-            >
-              {ESTILOS.map((item) => (
-                <ToggleGroupItem 
-                  key={item.value} 
-                  value={item.value}
-                  variant="outline"
-                  className="text-sm h-9"
-                >
-                  {item.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          {/* Tamanho da Copy */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Tamanho da Copy</Label>
-            <ToggleGroup 
-              type="single" 
-              value={tamanho} 
-              onValueChange={setTamanho}
-              className="grid grid-cols-3 gap-2"
-            >
-              {TAMANHOS.map((item) => (
-                <ToggleGroupItem 
-                  key={item.value} 
-                  value={item.value}
-                  variant="outline"
-                  className="text-sm h-9"
-                >
-                  {item.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          {/* Outras Preferências */}
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Outras Preferências</Label>
-            <ToggleGroup 
-              type="multiple" 
-              value={preferencias} 
-              onValueChange={setPreferencias}
-              className="grid grid-cols-2 gap-2"
-            >
-              {PREFERENCIAS.map((item) => (
-                <ToggleGroupItem 
-                  key={item.value} 
-                  value={item.value}
-                  variant="outline"
-                  className="text-sm h-9"
-                >
-                  {item.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setEtapa(1)} className="flex-1">
-              ← Voltar
-            </Button>
-            <Button onClick={() => setEtapa(3)} className="flex-1">
-              Próxima Etapa
-            </Button>
-          </div>
-        </div>
-      </ScrollArea>
-    );
-  }
-
-  // Etapa 3: Detalhes
-  return (
-    <>
-      <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setEtapa(2)} className="w-full justify-start">
-          ← Voltar
-        </Button>
-
-        <div className="space-y-2">
-          <Label className="font-semibold">Detalhes da Copy</Label>
-          <Textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Descreva o que você precisa para sua copy..."
-            rows={12}
-            className="resize-none"
-          />
-        </div>
-
-        <Button
-          onClick={handleGenerate}
-          disabled={!prompt.trim() || isGenerating}
-          className="w-full"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Gerando...
-            </>
-          ) : (
-            'Gerar Copy com IA'
-          )}
-        </Button>
-      </div>
-    </>
-  );
-};
+  };
 
   return (
     <>
@@ -462,9 +633,145 @@ export const CopyAITab = () => {
         </TabsContent>
 
         <TabsContent value="otimizar" className="flex-1 mt-0">
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Em breve: Otimizar conteúdo existente</p>
-          </div>
+          {!selectedContent ? (
+            <div className="flex items-center justify-center h-full">
+              <Button 
+                size="lg"
+                onClick={() => {
+                  if (copySessions.length === 0) {
+                    toast({
+                      title: 'Nenhum conteúdo disponível',
+                      description: 'Adicione conteúdo à copy antes de otimizar',
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
+                  setShowSelectModal(true);
+                }}
+              >
+                <Wand2 className="h-5 w-5 mr-2" />
+                Selecionar Conteúdo
+              </Button>
+            </div>
+          ) : !optimizeAction ? (
+            <ScrollArea className="h-[calc(100vh-12rem)]">
+              <div className="space-y-6 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">Conteúdo Selecionado</h3>
+                  <Button variant="outline" size="sm" onClick={() => setShowSelectModal(true)}>
+                    Alterar Seleção
+                  </Button>
+                </div>
+
+                <div className="grid gap-3 mb-6">
+                  {selectedContent.sessions.map(session => (
+                    <Card key={session.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{session.title}</span>
+                          <Badge variant="secondary">{session.blocks.length} blocos</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Escolha uma ação:</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card 
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleActionSelect('otimizar')}
+                    >
+                      <CardContent className="p-6 text-center space-y-3">
+                        <Wand2 className="h-8 w-8 mx-auto text-primary" />
+                        <div>
+                          <h4 className="font-semibold mb-1">Otimizar</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Melhore o conteúdo mantendo a estrutura
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card 
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => handleActionSelect('variacao')}
+                    >
+                      <CardContent className="p-6 text-center space-y-3">
+                        <CopyIcon className="h-8 w-8 mx-auto text-primary" />
+                        <div>
+                          <h4 className="font-semibold mb-1">Criar Variação</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Crie uma versão alternativa completa
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          ) : (
+            <ScrollArea className="h-[calc(100vh-12rem)]">
+              <div className="space-y-6 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {optimizeAction === 'otimizar' ? (
+                      <>
+                        <Wand2 className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold text-lg">Otimizar Conteúdo</h3>
+                      </>
+                    ) : (
+                      <>
+                        <CopyIcon className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold text-lg">Criar Variação</h3>
+                      </>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setOptimizeAction(null)}>
+                    Voltar
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="font-medium">
+                    Instruções para o Agente
+                  </Label>
+                  <Textarea
+                    value={optimizeInstructions}
+                    onChange={(e) => setOptimizeInstructions(e.target.value)}
+                    placeholder={
+                      optimizeAction === 'otimizar'
+                        ? "Ex: Torne mais persuasivo, adicione senso de urgência, melhore a clareza..."
+                        : "Ex: Crie uma versão mais formal, adapte para LinkedIn, use abordagem emocional..."
+                    }
+                    rows={6}
+                    className="resize-none"
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleOptimizeGenerate} 
+                  disabled={isOptimizing || !optimizeInstructions.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isOptimizing ? (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Gerar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </ScrollArea>
+          )}
         </TabsContent>
 
         <TabsContent value="historico" className="flex-1 mt-0">
@@ -495,7 +802,13 @@ export const CopyAITab = () => {
                           })}
                         </p>
                       </div>
-                      <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                      {item.generation_type === 'optimize' ? (
+                        <Wand2 className="h-4 w-4 text-primary flex-shrink-0" />
+                      ) : item.generation_type === 'variation' ? (
+                        <CopyIcon className="h-4 w-4 text-primary flex-shrink-0" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
+                      )}
                     </div>
                   </button>
                 ))}
@@ -507,10 +820,28 @@ export const CopyAITab = () => {
 
       <AIGeneratedPreviewModal
         open={showPreviewModal}
-        onOpenChange={setShowPreviewModal}
+        onOpenChange={handleModalClose}
         generatedSessions={generatedSessions}
         onClose={handleModalClose}
         onSuccess={handleSuccess}
+      />
+
+      <SelectContentModal
+        open={showSelectModal}
+        onOpenChange={setShowSelectModal}
+        sessions={copySessions}
+        onConfirm={handleContentSelect}
+      />
+
+      <OptimizeComparisonModal
+        open={showComparisonModal}
+        onOpenChange={setShowComparisonModal}
+        originalContent={selectedContent?.sessions || []}
+        generatedContent={optimizedSessions}
+        onReplace={handleReplace}
+        onAdd={handleAdd}
+        onRegenerate={handleRegenerate}
+        isRegenerating={isOptimizing}
       />
     </>
   );
