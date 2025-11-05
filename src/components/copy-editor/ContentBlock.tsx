@@ -560,10 +560,10 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
       ref={setNodeRef}
       style={style}
       className={`
-        group relative p-4 rounded-lg border bg-card
-        hover:border-primary transition-all
+        group relative p-4 rounded-lg bg-card
+        hover:border hover:border-primary transition-all
         ${isDragging ? 'opacity-50' : ''}
-        ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}
+        ${isSelected ? 'border border-primary ring-2 ring-primary/20' : ''}
       `}
       onClick={() => selectBlock(block.id)}
     >
