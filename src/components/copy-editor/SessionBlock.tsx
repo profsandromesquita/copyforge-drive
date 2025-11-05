@@ -79,7 +79,7 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
           />
         ) : (
           <h2
-            className="text-sm font-medium text-orange-400/70 cursor-pointer hover:text-orange-400 flex items-center gap-2 transition-colors"
+            className="text-sm font-medium text-gray-400 cursor-pointer hover:text-gray-300 flex items-center gap-2 transition-colors"
             onClick={() => setIsEditingTitle(true)}
           >
             {session.title}
