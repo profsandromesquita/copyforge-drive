@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon } from 'lucide-react';
+import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -20,6 +20,7 @@ import { SelectContentModal } from './SelectContentModal';
 import { OptimizeComparisonModal } from './OptimizeComparisonModal';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -85,6 +86,8 @@ export const CopyAITab = () => {
   // Histórico
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showPromptDialog, setShowPromptDialog] = useState(false);
+  const [selectedPromptItem, setSelectedPromptItem] = useState<any>(null);
 
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
@@ -787,9 +790,8 @@ export const CopyAITab = () => {
             ) : (
               <div className="grid gap-3 p-4">
                 {history.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    onClick={() => handleHistoryItemClick(item)}
                     className="group w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:border-primary/30"
                   >
                     <div className="space-y-3">
@@ -813,38 +815,160 @@ export const CopyAITab = () => {
                             </>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {formatDistanceToNow(new Date(item.created_at), { 
-                            addSuffix: true,
-                            locale: ptBR 
-                          })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPromptItem(item);
+                              setShowPromptDialog(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDistanceToNow(new Date(item.created_at), { 
+                              addSuffix: true,
+                              locale: ptBR 
+                            })}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Prompt */}
-                      <p className="text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-primary transition-colors">
-                        {item.prompt}
-                      </p>
+                      {/* Prompt - clicável para visualizar */}
+                      <button
+                        onClick={() => handleHistoryItemClick(item)}
+                        className="w-full text-left"
+                      >
+                        <p className="text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-primary transition-colors">
+                          {item.prompt}
+                        </p>
+                      </button>
 
                       {/* Footer com informações adicionais */}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="px-2 py-1 bg-muted rounded">
-                          {item.sessions?.length || 0} sessão(ões)
-                        </span>
-                        {item.copy_type && (
-                          <span className="px-2 py-1 bg-muted rounded capitalize">
-                            {item.copy_type.replace('_', ' ')}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="px-2 py-1 bg-muted rounded">
+                            {item.sessions?.length || 0} sessão(ões)
                           </span>
-                        )}
+                          {item.copy_type && (
+                            <span className="px-2 py-1 bg-muted rounded capitalize">
+                              {item.copy_type.replace('_', ' ')}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleHistoryItemClick(item)}
+                          className="text-xs"
+                        >
+                          Visualizar Copy
+                        </Button>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
           </ScrollArea>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog para visualizar prompt completo */}
+      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Prompt</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh] pr-4">
+            {selectedPromptItem && (
+              <div className="space-y-4">
+                {/* Tipo e Data */}
+                <div className="flex items-center gap-3 pb-3 border-b">
+                  {selectedPromptItem.generation_type === 'optimize' ? (
+                    <>
+                      <Wand2 className="h-5 w-5 text-primary" />
+                      <Badge variant="secondary">Otimização</Badge>
+                    </>
+                  ) : selectedPromptItem.generation_type === 'variation' ? (
+                    <>
+                      <CopyIcon className="h-5 w-5 text-primary" />
+                      <Badge variant="secondary">Variação</Badge>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <Badge variant="secondary">Criação</Badge>
+                    </>
+                  )}
+                  <span className="text-sm text-muted-foreground ml-auto">
+                    {formatDistanceToNow(new Date(selectedPromptItem.created_at), { 
+                      addSuffix: true,
+                      locale: ptBR 
+                    })}
+                  </span>
+                </div>
+
+                {/* Prompt */}
+                <div>
+                  <Label className="text-sm font-semibold mb-2 block">Prompt Completo:</Label>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {selectedPromptItem.prompt}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Parâmetros */}
+                {selectedPromptItem.parameters && (
+                  <div>
+                    <Label className="text-sm font-semibold mb-2 block">Parâmetros:</Label>
+                    <div className="space-y-2">
+                      {selectedPromptItem.parameters.objectives && selectedPromptItem.parameters.objectives.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">Objetivos:</span>
+                          {selectedPromptItem.parameters.objectives.map((obj: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">{obj}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {selectedPromptItem.parameters.styles && selectedPromptItem.parameters.styles.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">Estilos:</span>
+                          {selectedPromptItem.parameters.styles.map((style: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="text-xs">{style}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {selectedPromptItem.parameters.size && (
+                        <div className="flex gap-2">
+                          <span className="text-xs text-muted-foreground">Tamanho:</span>
+                          <Badge variant="outline" className="text-xs">{selectedPromptItem.parameters.size}</Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Informações adicionais */}
+                <div className="flex items-center gap-3 pt-3 border-t">
+                  <span className="text-xs px-2 py-1 bg-muted rounded">
+                    {selectedPromptItem.sessions?.length || 0} sessão(ões) geradas
+                  </span>
+                  {selectedPromptItem.copy_type && (
+                    <span className="text-xs px-2 py-1 bg-muted rounded capitalize">
+                      {selectedPromptItem.copy_type.replace('_', ' ')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       <AIGeneratedPreviewModal
         open={showPreviewModal}
