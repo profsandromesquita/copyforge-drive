@@ -1,4 +1,4 @@
-import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, Trash } from 'phosphor-react';
+import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, Trash, Upload } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Slider } from '@/components/ui/slider';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { supabase } from '@/integrations/supabase/client';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface BlockSettingsProps {
   block: Block;
@@ -15,6 +19,7 @@ interface BlockSettingsProps {
 
 export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
   const { updateBlock } = useCopyEditor();
+  const [isUploading, setIsUploading] = useState(false);
 
   const updateConfig = (key: string, value: any) => {
     updateBlock(block.id, {
@@ -24,6 +29,53 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
   const updateContent = (content: string) => {
     updateBlock(block.id, { content });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Você precisa estar autenticado para fazer upload');
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('copy-images')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('copy-images')
+        .getPublicUrl(data.path);
+
+      updateConfig('imageUrl', publicUrl);
+      toast.success('Imagem enviada com sucesso!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const renderSettings = () => {
@@ -517,8 +569,36 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
         );
 
       case 'image':
+        const aspectRatios = [
+          '2:1', '16:9', '3:2', '14:10', '4:3', '5:4', '1:1', 
+          '4:5', '3:4', '10:14', '2:3', '6:10', '9:16', '1:2'
+        ];
+        const currentRatioIndex = aspectRatios.indexOf(block.config?.aspectRatio || '16:9');
+        
         return (
           <>
+            <div className="space-y-3">
+              <Label>Upload de Imagem</Label>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={isUploading}
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <Upload size={16} className="mr-2" />
+                  {isUploading ? 'Enviando...' : 'Escolher Imagem'}
+                </Button>
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>URL da Imagem</Label>
               <Input
@@ -537,32 +617,21 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Proporção</Label>
-              <Select
-                value={block.config?.aspectRatio || '16:9'}
-                onValueChange={(value) => updateConfig('aspectRatio', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="2:1">2:1</SelectItem>
-                  <SelectItem value="16:9">16:9</SelectItem>
-                  <SelectItem value="3:2">3:2</SelectItem>
-                  <SelectItem value="14:10">14:10</SelectItem>
-                  <SelectItem value="4:3">4:3</SelectItem>
-                  <SelectItem value="5:4">5:4</SelectItem>
-                  <SelectItem value="1:1">1:1</SelectItem>
-                  <SelectItem value="4:5">4:5</SelectItem>
-                  <SelectItem value="3:4">3:4</SelectItem>
-                  <SelectItem value="10:14">10:14</SelectItem>
-                  <SelectItem value="2:3">2:3</SelectItem>
-                  <SelectItem value="6:10">6:10</SelectItem>
-                  <SelectItem value="9:16">9:16</SelectItem>
-                  <SelectItem value="1:2">1:2</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Proporção</Label>
+                <span className="text-sm text-muted-foreground">
+                  {block.config?.aspectRatio || '16:9'}
+                </span>
+              </div>
+              <Slider
+                value={[currentRatioIndex]}
+                onValueChange={([value]) => updateConfig('aspectRatio', aspectRatios[value])}
+                min={0}
+                max={aspectRatios.length - 1}
+                step={1}
+                className="w-full"
+              />
             </div>
 
             <div className="space-y-2">
