@@ -1,6 +1,8 @@
+import { useState, useEffect, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { TextT, TextHOne, TextHTwo, ListBullets, Hand, Article, Image, VideoCamera, SpeakerHigh, Question, Quotes } from 'phosphor-react';
+import { TextT, TextHOne, TextHTwo, ListBullets, Hand, Article, Image, VideoCamera, SpeakerHigh, Question, Quotes, CaretDown, CaretUp } from 'phosphor-react';
 import { BlockType } from '@/types/copy-editor';
+import { Button } from '@/components/ui/button';
 
 interface ToolbarBlockProps {
   type: BlockType;
@@ -33,6 +35,10 @@ const ToolbarBlock = ({ type, icon, label }: ToolbarBlockProps) => {
 };
 
 export const BlockToolbar = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const blocks: ToolbarBlockProps[] = [
     { type: 'text', icon: <TextT size={20} />, label: 'Texto' },
     { type: 'headline', icon: <TextHOne size={20} />, label: 'Headline' },
@@ -47,12 +53,60 @@ export const BlockToolbar = () => {
     { type: 'testimonial', icon: <Quotes size={20} />, label: 'Depoimento' },
   ];
 
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+        
+        // Verifica se há conteúdo que ultrapassa a altura visível
+        setHasOverflow(scrollHeight > clientHeight + 5);
+      }
+    };
+
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    
+    // Timeout para garantir que a medição aconteça após renderização
+    const timeout = setTimeout(checkOverflow, 100);
+
+    return () => {
+      window.removeEventListener('resize', checkOverflow);
+      clearTimeout(timeout);
+    };
+  }, [blocks]);
+
   return (
     <div className="border-b bg-background sticky top-16 z-40">
-      <div className="flex gap-3 px-4 py-3 overflow-x-auto">
-        {blocks.map((block) => (
-          <ToolbarBlock key={block.type} {...block} />
-        ))}
+      <div className="relative">
+        <div 
+          ref={containerRef}
+          className={`flex flex-wrap gap-3 px-4 py-3 transition-all duration-300 ${
+            isExpanded ? 'max-h-none' : 'max-h-[60px] overflow-hidden'
+          }`}
+        >
+          {blocks.map((block) => (
+            <ToolbarBlock key={block.type} {...block} />
+          ))}
+        </div>
+
+        {hasOverflow && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="bg-background/95 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all border"
+            >
+              {isExpanded ? (
+                <CaretUp size={20} weight="bold" className="text-primary" />
+              ) : (
+                <CaretDown size={20} weight="bold" className="text-primary" />
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
