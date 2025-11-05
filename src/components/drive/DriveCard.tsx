@@ -73,7 +73,7 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     <>
       <div
         onClick={onClick}
-        className={`group relative border rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[120px] flex flex-col ${
+        className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[120px] flex flex-col ${
           type === 'folder' 
             ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700' 
             : 'bg-card border-border/50 hover:border-primary/30'
@@ -85,10 +85,10 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
         }`} />
         
         <div className="relative flex-1 flex flex-col">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2.5">
             {/* Icon */}
             <div className="text-muted-foreground/60 shrink-0 transition-transform duration-300 group-hover:scale-110">
-              <Icon size={26} weight="duotone" />
+              <Icon size={24} weight="duotone" />
             </div>
             
             {/* Content */}
@@ -132,7 +132,7 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
           </div>
 
           {/* Footer - Avatar and status badge in same line */}
-          <div className="pt-2.5 mt-auto border-t border-border/30">
+          <div className="pt-2 mt-auto border-t border-border/30">
             <div className="flex items-center justify-between gap-2">
               {type === 'copy' && creatorName ? (
                 <Avatar className="h-5 w-5 shrink-0">
