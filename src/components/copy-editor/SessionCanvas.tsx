@@ -12,7 +12,7 @@ export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
   const { sessions, addSession } = useCopyEditor();
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[hsl(var(--canvas-background))]">
+    <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[hsl(var(--canvas-background))] custom-scrollbar">
       {sessions.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-muted-foreground mb-4">
