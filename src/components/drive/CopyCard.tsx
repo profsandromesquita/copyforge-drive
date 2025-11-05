@@ -90,13 +90,16 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         {...attributes}
         {...listeners}
         onClick={handleCardClick}
-        style={{ opacity: isDragging ? 0.5 : 1 }}
-        className={`group relative border rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-card hover:shadow-md ${
+        style={{ 
+          opacity: isDragging ? 0.5 : 1,
+          backgroundColor: '#F8E9E7'
+        }}
+        className={`group relative border-none rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden hover:shadow-lg ${
           isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'
         }`}
       >
         {/* Header Section - Icon, Title and Menu */}
-        <div className="p-3 pb-2 border-b" style={{ backgroundColor: '#F8E9E7' }}>
+        <div className="p-4 pb-3">
           <div className="flex items-center gap-2">
             <div className="text-primary shrink-0">
               <FileText size={20} weight="duotone" />
@@ -109,7 +112,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
             <DropdownMenu>
               <DropdownMenuTrigger 
                 onClick={(e) => e.stopPropagation()}
-                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/50"
               >
                 <DotsThree size={20} weight="bold" />
               </DropdownMenuTrigger>
@@ -160,54 +163,56 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Preview Section */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden px-4">
-          <div className="absolute inset-x-4 top-0 bottom-0 p-2 overflow-hidden">
-            <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
-              {firstBlocks.length > 0 ? (
-                firstBlocks.map((block) => (
-                  <div key={block.id} className="opacity-90">
-                    <BlockPreview block={block} />
+        <div className="px-4 pb-4">
+          <div className="aspect-[4/3] bg-white rounded-xl relative overflow-hidden shadow-sm">
+            <div className="absolute inset-0 p-3 overflow-hidden">
+              <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
+                {firstBlocks.length > 0 ? (
+                  firstBlocks.map((block) => (
+                    <div key={block.id} className="opacity-90">
+                      <BlockPreview block={block} />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText size={48} weight="duotone" className="text-muted-foreground/40 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground/60">Sem conteúdo</p>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <FileText size={48} weight="duotone" className="text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/60">Sem conteúdo</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+            
+            {/* Bottom Fade Overlay */}
+            <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+            
+            {/* Status Badge - positioned absolute */}
+            {status && (
+              <Badge 
+                variant="outline"
+                className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium ${
+                  status === 'published' 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-gray-100 text-gray-700 border-gray-200'
+                }`}
+              >
+                {status === 'published' ? 'Publicado' : 'Rascunho'}
+              </Badge>
+            )}
           </div>
-          
-          {/* Bottom Fade Overlay */}
-          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
-          
-          {/* Status Badge - positioned absolute */}
-          {status && (
-            <Badge 
-              variant="outline"
-              className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium ${
-                status === 'published' 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
-                  : 'bg-muted text-muted-foreground border-border'
-              }`}
-            >
-              {status === 'published' ? 'Publicado' : 'Rascunho'}
-            </Badge>
-          )}
         </div>
 
         {/* Footer - Appears on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-t border-border/50" style={{ background: 'linear-gradient(to top, #F8E9E7, #F8E9E7 80%, transparent)' }}>
+        <div className="p-4 pt-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="flex items-center justify-between gap-2">
             {creatorName ? (
               <div className="flex items-center gap-2">
-                <Avatar className="h-5 w-5 shrink-0">
+                <Avatar className="h-6 w-6 shrink-0">
                   <AvatarImage src={creatorAvatar || undefined} />
                   <AvatarFallback className="text-[10px] bg-primary/10">
                     {creatorName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] text-muted-foreground font-medium">
+                <span className="text-xs text-foreground/80 font-medium">
                   {creatorName}
                 </span>
               </div>
@@ -216,7 +221,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
             )}
             
             {subtitle && (
-              <span className="text-[10px] text-muted-foreground/70 shrink-0">
+              <span className="text-xs text-foreground/60 shrink-0">
                 {subtitle}
               </span>
             )}
