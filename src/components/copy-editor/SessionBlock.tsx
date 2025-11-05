@@ -79,11 +79,11 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
           />
         ) : (
           <h2
-            className="text-xl font-semibold cursor-pointer hover:text-primary flex items-center gap-2"
+            className="text-sm font-medium text-orange-400/70 cursor-pointer hover:text-orange-400 flex items-center gap-2 transition-colors"
             onClick={() => setIsEditingTitle(true)}
           >
             {session.title}
-            <PencilSimple size={16} className="opacity-0 group-hover:opacity-100" />
+            <PencilSimple size={14} className="opacity-0 group-hover:opacity-100" />
           </h2>
         )}
 
