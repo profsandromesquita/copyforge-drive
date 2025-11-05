@@ -1,11 +1,10 @@
-import { FileText, DotsThree, Trash, Pencil, Copy as CopyIcon } from "phosphor-react";
-import { useState } from "react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState } from 'react';
+import { Eye, Copy as CopyIcon } from 'lucide-react';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Copy } from '@/types/copy-editor';
 
 interface TemplateCardProps {
@@ -17,17 +16,45 @@ interface TemplateCardProps {
 }
 
 const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: TemplateCardProps) => {
-  const handleDelete = () => {
-    if (confirm(`Deseja realmente excluir o modelo "${template.title}"?`)) {
-      onDelete(template.id);
-    }
-  };
+  const [showPreview, setShowPreview] = useState(false);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+  const getPreviewContent = () => {
+    if (!template.sessions || template.sessions.length === 0) return null;
+    const firstSession = template.sessions[0];
+    const firstBlocks = firstSession.blocks.slice(0, 6);
+
+    return firstBlocks.map((block) => {
+      if (block.type === 'headline') {
+        return (
+          <h3 key={block.id} className="text-base font-bold line-clamp-1 mb-2">
+            {block.content}
+          </h3>
+        );
+      }
+      if (block.type === 'subheadline') {
+        return (
+          <h4 key={block.id} className="text-sm font-semibold line-clamp-1 mb-1.5">
+            {block.content}
+          </h4>
+        );
+      }
+      if (block.type === 'text') {
+        return (
+          <p key={block.id} className="text-xs text-muted-foreground/80 line-clamp-2 mb-1.5">
+            {block.content}
+          </p>
+        );
+      }
+      if (block.type === 'list' && Array.isArray(block.content)) {
+        return (
+          <ul key={block.id} className="text-xs text-muted-foreground/80 space-y-0.5 mb-1.5">
+            {block.content.slice(0, 2).map((item, i) => (
+              <li key={i} className="line-clamp-1">• {item}</li>
+            ))}
+          </ul>
+        );
+      }
+      return null;
     });
   };
 
@@ -35,77 +62,68 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: Templa
   const blocksCount = template.sessions?.reduce((acc, session) => acc + (session.blocks?.length || 0), 0) || 0;
 
   return (
-    <div className="group relative bg-card border border-border/50 rounded-xl p-5 hover:border-primary/30 hover:shadow-lg transition-all duration-300 overflow-hidden">
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <div className="relative space-y-4">
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className="text-primary shrink-0 transition-transform duration-300 group-hover:scale-110">
-            <FileText size={32} weight="duotone" />
-          </div>
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">
-              {template.title}
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{sessionsCount} sessões</span>
-              <span>•</span>
-              <span>{blocksCount} blocos</span>
+    <>
+      <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+        {/* Visual Preview Section */}
+        <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
+          <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
+            <div className="space-y-1">
+              {getPreviewContent()}
             </div>
           </div>
-          
-          {/* Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger 
-              onClick={(e) => e.stopPropagation()}
-              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
-            >
-              <DotsThree size={20} weight="bold" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border-border z-50">
-              <DropdownMenuItem 
-                className="cursor-pointer"
-                onClick={() => onEdit(template.id)}
-              >
-                <Pencil size={16} className="mr-2" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="cursor-pointer"
-                onClick={() => onDuplicate(template.id)}
-              >
-                <CopyIcon size={16} className="mr-2" />
-                Duplicar
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="cursor-pointer text-destructive"
-                onClick={handleDelete}
-              >
-                <Trash size={16} className="mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Bottom Fade Overlay */}
+          <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+          {/* Preview Icon Badge */}
+          <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
+            <Eye className="h-3 w-3 text-muted-foreground" />
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/30">
-          <span className="text-xs text-muted-foreground">
-            Criado em {formatDate(template.created_at)}
-          </span>
-          <button
-            onClick={() => onUse(template.id)}
-            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        <CardContent className="flex-1 p-4 md:p-6">
+          <div className="space-y-3">
+            {/* Title */}
+            <h2 className="text-lg md:text-xl font-bold line-clamp-1">{template.title}</h2>
+
+            {/* Stats */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">
+                  {sessionsCount} {sessionsCount === 1 ? 'sessão' : 'sessões'} • {blocksCount} {blocksCount === 1 ? 'bloco' : 'blocos'}
+                </p>
+              </div>
+              <Badge variant="secondary" className="shrink-0">
+                Modelo
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="p-4 pt-0 gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setShowPreview(true)}
           >
-            Usar Modelo →
-          </button>
-        </div>
-      </div>
-    </div>
+            <Eye className="h-4 w-4 mr-2" />
+            Visualizar
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => onUse(template.id)}
+          >
+            <CopyIcon className="h-4 w-4 mr-2" />
+            Copiar
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <PreviewModal
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        title={template.title}
+        sessions={template.sessions}
+      />
+    </>
   );
 };
 

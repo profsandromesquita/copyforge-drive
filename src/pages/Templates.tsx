@@ -27,7 +27,7 @@ const Templates = () => {
       <Sidebar />
       
       <main className="flex-1 pb-20 lg:pb-0 bg-[#EEEEEE]">
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -62,7 +62,7 @@ const Templates = () => {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {templates.map((template) => (
                 <TemplateCard
                   key={template.id}
