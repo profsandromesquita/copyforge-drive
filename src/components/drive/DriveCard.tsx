@@ -86,22 +86,21 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
             </div>
             
             {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h3 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                  {title}
-                </h3>
-                {type === 'copy' && status && (
-                  <Badge 
-                    variant={status === 'published' ? 'default' : 'secondary'}
-                    className="text-[10px] px-1.5 py-0 h-5"
-                  >
-                    {status === 'published' ? 'Publicado' : 'Rascunho'}
-                  </Badge>
-                )}
-              </div>
-              {type !== 'copy' && subtitle && (
-                <p className="text-xs text-muted-foreground line-clamp-1">{subtitle}</p>
+            <div className="flex-1 min-w-0 space-y-1">
+              <h3 className="font-semibold text-sm text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
+                {title}
+              </h3>
+              {type === 'copy' && status && (
+                <Badge 
+                  variant="outline"
+                  className={`text-[10px] px-1.5 py-0 h-5 font-medium ${
+                    status === 'published' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  {status === 'published' ? 'Publicado' : 'Rascunho'}
+                </Badge>
               )}
             </div>
             
@@ -138,26 +137,33 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
             </DropdownMenu>
           </div>
 
-          {/* Creator info - Full width at bottom for copy cards */}
-          {type === 'copy' && creatorName && (
-            <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={creatorAvatar || undefined} />
-                <AvatarFallback className="text-[10px]">
-                  {creatorName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0 flex-1">
-                <span className="truncate">{creatorName}</span>
-                {subtitle && (
-                  <>
-                    <span>•</span>
-                    <span className="whitespace-nowrap">{subtitle}</span>
-                  </>
-                )}
+          {/* Footer - Creator or subtitle */}
+          <div className="pt-2 border-t border-border/30">
+            {type === 'copy' && creatorName ? (
+              <div className="flex items-center gap-2">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={creatorAvatar || undefined} />
+                  <AvatarFallback className="text-[10px]">
+                    {creatorName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground truncate">
+                    {creatorName}
+                  </span>
+                  {subtitle && (
+                    <span className="text-[10px] text-muted-foreground/70 shrink-0">
+                      {subtitle}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <span className="text-xs text-muted-foreground block">
+                {subtitle || (type === 'folder' ? 'Pasta' : 'Copy')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
