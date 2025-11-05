@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
-import { MagnifyingGlass } from 'phosphor-react';
+import { MagnifyingGlass, Sparkle } from 'phosphor-react';
+import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
-import { Input } from '@/components/ui/input';
-import { DiscoverCard } from '@/components/discover/DiscoverCard';
-import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
 import { useDiscover } from '@/hooks/useDiscover';
+import { DiscoverCard } from '@/components/discover/DiscoverCard';
+import { useState, useEffect } from 'react';
+import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTheme } from 'next-themes';
+import { TypeFilter } from '@/components/filters/TypeFilter';
+import { SortFilter, SortType } from '@/components/filters/SortFilter';
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -21,6 +24,9 @@ const Discover = () => {
   const { activeProject } = useProject();
   const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedSort, setSelectedSort] = useState<SortType>('popular');
 
   // Força modo claro no Discover
   useEffect(() => {
@@ -50,11 +56,28 @@ const Discover = () => {
     setSelectedCopyId(null);
   };
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const filteredCopies = copies
+    .filter((copy: any) => {
+      // Search filter
+      if (searchQuery && !copy.title?.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
 
-  const filteredCopies = copies.filter(copy =>
-    copy.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      // Type filter
+      if (selectedType && copy.copy_type !== selectedType) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      if (selectedSort === 'popular') {
+        return (b.copy_count || 0) - (a.copy_count || 0);
+      } else {
+        // Sort by creation date for recents
+        return new Date(b.sessions?.[0]?.created_at || 0).getTime() - new Date(a.sessions?.[0]?.created_at || 0).getTime();
+      }
+    });
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -78,13 +101,11 @@ const Discover = () => {
         </header>
 
         <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
-          {/* Header da página */}
+          {/* Filters */}
           <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
-            <div className="px-6 py-4">
-              <h1 className="text-3xl font-bold mb-2">Descobrir</h1>
-              <p className="text-muted-foreground">
-                Explore e copie copies criadas por outros usuários
-              </p>
+            <div className="px-6 py-4 flex items-center gap-2 flex-wrap">
+              <TypeFilter selectedType={selectedType} onTypeChange={setSelectedType} />
+              <SortFilter selectedSort={selectedSort} onSortChange={setSelectedSort} />
             </div>
           </div>
 

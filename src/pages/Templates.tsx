@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, Sparkle, MagnifyingGlass } from 'phosphor-react';
+import { Sparkle, MagnifyingGlass } from 'phosphor-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -13,6 +13,10 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
+import { TypeFilter } from '@/components/filters/TypeFilter';
+import { CreatorFilter } from '@/components/filters/CreatorFilter';
+import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
+import { startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears, isWithinInterval } from 'date-fns';
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -23,6 +27,10 @@ const Templates = () => {
   const { activeProject } = useProject();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
 
   // Força modo claro no Templates
   useEffect(() => {
@@ -59,9 +67,67 @@ const Templates = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredTemplates = templates.filter(template =>
-    template.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleDateFilterChange = (type: DateFilterType, range?: { from?: Date; to?: Date }) => {
+    setSelectedDateFilter(type);
+    setDateRange(range);
+  };
+
+  const getDateRange = () => {
+    const now = new Date();
+    switch (selectedDateFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'last7days':
+        return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
+      case 'last30days':
+        return { from: startOfDay(subDays(now, 30)), to: endOfDay(now) };
+      case 'thisYear':
+        return { from: startOfYear(now), to: endOfYear(now) };
+      case 'lastYear':
+        const lastYear = subYears(now, 1);
+        return { from: startOfYear(lastYear), to: endOfYear(lastYear) };
+      case 'custom':
+        return dateRange;
+      default:
+        return null;
+    }
+  };
+
+  const filteredTemplates = templates.filter(template => {
+    // Search filter
+    if (searchQuery && !template.title?.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Type filter
+    if (selectedType && template.copy_type !== selectedType) {
+      return false;
+    }
+
+    // Creator filter
+    if (selectedCreator && template.created_by !== selectedCreator) {
+      return false;
+    }
+
+    // Date filter
+    if (selectedDateFilter) {
+      const range = getDateRange();
+      if (range) {
+        const updatedAt = new Date(template.updated_at);
+        if (range.from && range.to) {
+          if (!isWithinInterval(updatedAt, { start: range.from, end: range.to })) {
+            return false;
+          }
+        } else if (range.from && updatedAt < range.from) {
+          return false;
+        } else if (range.to && updatedAt > range.to) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -85,13 +151,16 @@ const Templates = () => {
         </header>
 
         <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
-          {/* Header da página */}
+          {/* Filters */}
           <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
-            <div className="px-6 py-4">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Modelos</h1>
-              <p className="text-muted-foreground">
-                Crie copies rapidamente usando modelos pré-definidos
-              </p>
+            <div className="px-6 py-4 flex items-center gap-2 flex-wrap">
+              <TypeFilter selectedType={selectedType} onTypeChange={setSelectedType} />
+              <CreatorFilter selectedCreator={selectedCreator} onCreatorChange={setSelectedCreator} />
+              <DateFilter 
+                selectedDateFilter={selectedDateFilter} 
+                dateRange={dateRange}
+                onDateFilterChange={handleDateFilterChange}
+              />
             </div>
           </div>
 

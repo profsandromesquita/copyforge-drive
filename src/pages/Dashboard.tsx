@@ -19,9 +19,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
+import { TypeFilter } from '@/components/filters/TypeFilter';
+import { CreatorFilter } from '@/components/filters/CreatorFilter';
+import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -31,6 +34,10 @@ const Dashboard = () => {
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
 
   // Força modo claro no Dashboard
   useEffect(() => {
@@ -53,13 +60,71 @@ const Dashboard = () => {
     }
   };
 
+  const handleDateFilterChange = (type: DateFilterType, range?: { from?: Date; to?: Date }) => {
+    setSelectedDateFilter(type);
+    setDateRange(range);
+  };
+
+  const getDateRange = () => {
+    const now = new Date();
+    switch (selectedDateFilter) {
+      case 'today':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'last7days':
+        return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
+      case 'last30days':
+        return { from: startOfDay(subDays(now, 30)), to: endOfDay(now) };
+      case 'thisYear':
+        return { from: startOfYear(now), to: endOfYear(now) };
+      case 'lastYear':
+        const lastYear = subYears(now, 1);
+        return { from: startOfYear(lastYear), to: endOfYear(lastYear) };
+      case 'custom':
+        return dateRange;
+      default:
+        return null;
+    }
+  };
+
   const filteredFolders = folders.filter(folder =>
     folder.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredCopies = copies.filter(copy =>
-    copy.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCopies = copies.filter((copy: any) => {
+    // Search filter
+    if (searchQuery && !copy.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Type filter
+    if (selectedType && copy.copy_type !== selectedType) {
+      return false;
+    }
+
+    // Creator filter
+    if (selectedCreator && copy.created_by !== selectedCreator) {
+      return false;
+    }
+
+    // Date filter
+    if (selectedDateFilter) {
+      const range = getDateRange();
+      if (range) {
+        const updatedAt = new Date(copy.updated_at);
+        if (range.from && range.to) {
+          if (!isWithinInterval(updatedAt, { start: range.from, end: range.to })) {
+            return false;
+          }
+        } else if (range.from && updatedAt < range.from) {
+          return false;
+        } else if (range.to && updatedAt > range.to) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
 
   const formatDate = (date: string) => {
     return formatDistanceToNow(new Date(date), { 
@@ -162,6 +227,16 @@ const Dashboard = () => {
           <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
             <div className="px-6 py-4">
               <Breadcrumbs />
+            </div>
+            {/* Filters */}
+            <div className="px-6 pb-4 flex items-center gap-2 flex-wrap">
+              <TypeFilter selectedType={selectedType} onTypeChange={setSelectedType} />
+              <CreatorFilter selectedCreator={selectedCreator} onCreatorChange={setSelectedCreator} />
+              <DateFilter 
+                selectedDateFilter={selectedDateFilter} 
+                dateRange={dateRange}
+                onDateFilterChange={handleDateFilterChange}
+              />
             </div>
           </div>
 
