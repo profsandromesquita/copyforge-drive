@@ -84,24 +84,14 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
           isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'
         }`}
       >
-        {/* Preview Section - Placeholder com texto */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center border-b">
-          <div className="text-center p-6 max-w-[90%]">
-            <FileText size={48} weight="duotone" className="text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-xs text-muted-foreground/60 line-clamp-3 leading-relaxed">
-              {title}
-            </p>
-          </div>
-        </div>
-
-        {/* Header Section */}
-        <div className="p-3 space-y-2">
-          <div className="flex items-start gap-2">
-            <div className="text-muted-foreground/60 shrink-0 mt-0.5">
-              <FileText size={16} weight="duotone" />
+        {/* Header Section - Icon, Title and Menu */}
+        <div className="p-3 pb-2 border-b bg-background/50">
+          <div className="flex items-center gap-2">
+            <div className="text-primary shrink-0">
+              <FileText size={20} weight="duotone" />
             </div>
             
-            <h3 className="flex-1 text-sm font-medium text-foreground line-clamp-2 leading-snug">
+            <h3 className="flex-1 text-sm font-medium text-foreground truncate">
               {title}
             </h3>
             
@@ -156,11 +146,21 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
 
+        {/* Preview Section */}
+        <div className="aspect-[4/3] bg-gradient-to-br from-background to-muted/5 flex items-center justify-center p-6 relative">
+          <div className="text-center max-w-[85%]">
+            <p className="text-xs text-muted-foreground/60 line-clamp-4 leading-relaxed">
+              {title}
+            </p>
+          </div>
+          
+          {/* Status Badge - positioned absolute */}
           {status && (
             <Badge 
               variant="outline"
-              className={`text-[10px] px-1.5 py-0 h-5 font-medium w-fit ${
+              className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium ${
                 status === 'published' 
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
                   : 'bg-muted text-muted-foreground border-border'
@@ -172,17 +172,17 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
 
         {/* Footer - Appears on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 pt-4 bg-gradient-to-t from-background via-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background via-background to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-t border-border/50">
           <div className="flex items-center justify-between gap-2">
             {creatorName ? (
               <div className="flex items-center gap-2">
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage src={creatorAvatar || undefined} />
-                  <AvatarFallback className="text-[10px]">
+                  <AvatarFallback className="text-[10px] bg-primary/10">
                     {creatorName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground font-medium">
                   {creatorName}
                 </span>
               </div>
