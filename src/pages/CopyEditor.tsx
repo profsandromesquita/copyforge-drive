@@ -14,6 +14,8 @@ const CopyEditorContent = () => {
   const { loadCopy, setCopyId, addBlock, moveBlock, sessions } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
+  const [showImageAI, setShowImageAI] = useState(false);
+  const [imageBlockId, setImageBlockId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -155,6 +157,16 @@ const CopyEditorContent = () => {
     }
   };
 
+  const handleShowImageAI = (blockId: string) => {
+    setImageBlockId(blockId);
+    setShowImageAI(true);
+  };
+
+  const handleCloseImageAI = () => {
+    setShowImageAI(false);
+    setImageBlockId(null);
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -166,8 +178,12 @@ const CopyEditorContent = () => {
         <EditorHeader />
         <BlockToolbar />
         <div className="flex flex-1 overflow-hidden">
-          <SessionCanvas />
-          <EditorSidebar />
+          <SessionCanvas onShowImageAI={handleShowImageAI} />
+          <EditorSidebar 
+            showImageAI={showImageAI} 
+            imageBlockId={imageBlockId || undefined} 
+            onCloseImageAI={handleCloseImageAI} 
+          />
         </div>
       </div>
       

@@ -1,12 +1,20 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ListBullets } from 'phosphor-react';
+import { X } from 'lucide-react';
 import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
+import { ImageAITab } from './ImageAITab';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useEffect, useState } from 'react';
 
-export const EditorSidebar = () => {
+interface EditorSidebarProps {
+  showImageAI?: boolean;
+  imageBlockId?: string;
+  onCloseImageAI?: () => void;
+}
+
+export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI }: EditorSidebarProps) => {
   const { sessions, selectedBlockId, selectBlock } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -29,7 +37,24 @@ export const EditorSidebar = () => {
         </div>
       </div>
 
-      {selectedBlock && (
+      {showImageAI && imageBlockId && (
+        <div className="absolute inset-0 bg-background z-20">
+          <div className="h-full p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onCloseImageAI}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <ImageAITab blockId={imageBlockId} onClose={onCloseImageAI || (() => {})} />
+          </div>
+        </div>
+      )}
+
+      {selectedBlock && !showImageAI && (
         <div className="absolute inset-0 bg-background z-10">
           <div className="h-full p-4 overflow-y-auto">
             <BlockSettings

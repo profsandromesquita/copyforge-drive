@@ -4,7 +4,11 @@ import { SessionBlock } from './SessionBlock';
 import { Button } from '@/components/ui/button';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 
-export const SessionCanvas = () => {
+interface SessionCanvasProps {
+  onShowImageAI?: (blockId: string) => void;
+}
+
+export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
   const { sessions, addSession } = useCopyEditor();
 
   return (
@@ -26,7 +30,7 @@ export const SessionCanvas = () => {
             strategy={verticalListSortingStrategy}
           >
             {sessions.map((session) => (
-              <SessionBlock key={session.id} session={session} />
+              <SessionBlock key={session.id} session={session} onShowImageAI={onShowImageAI} />
             ))}
           </SortableContext>
 

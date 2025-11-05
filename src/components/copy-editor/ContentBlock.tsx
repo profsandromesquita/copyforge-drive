@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
+import { Sparkles } from 'lucide-react';
 import { Block } from '@/types/copy-editor';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,9 +19,10 @@ import { FocusModeModal } from './FocusModeModal';
 interface ContentBlockProps {
   block: Block;
   sessionId: string;
+  onShowImageAI?: (blockId: string) => void;
 }
 
-export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
+export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
@@ -587,6 +589,12 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {block.type === 'image' && (
+              <DropdownMenuItem onClick={() => onShowImageAI?.(block.id)}>
+                <Sparkles size={16} className="mr-2" />
+                Gerar com IA
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => duplicateBlock(block.id)}>
               <CopyIcon size={16} className="mr-2" />
               Duplicar

@@ -16,6 +16,7 @@ import { useCopyEditor } from '@/hooks/useCopyEditor';
 
 interface SessionBlockProps {
   session: Session;
+  onShowImageAI?: (blockId: string) => void;
 }
 
 interface DropZoneProps {
@@ -41,7 +42,7 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
   );
 };
 
-export const SessionBlock = ({ session }: SessionBlockProps) => {
+export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
   const { updateSession, removeSession, duplicateSession, selectBlock } = useCopyEditor();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
@@ -126,7 +127,7 @@ export const SessionBlock = ({ session }: SessionBlockProps) => {
             {session.blocks.map((block, index) => (
               <div key={block.id}>
                 <DropZone sessionId={session.id} index={index} />
-                <ContentBlock block={block} sessionId={session.id} />
+                <ContentBlock block={block} sessionId={session.id} onShowImageAI={onShowImageAI} />
               </div>
             ))}
             <DropZone sessionId={session.id} index={session.blocks.length} />
