@@ -24,6 +24,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
+  const [focusModeContent, setFocusModeContent] = useState('');
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
   );
@@ -100,6 +101,9 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   };
 
   const handleFocusModeOpen = () => {
+    // Pegar o conteúdo atual do editableRef antes de abrir o modal
+    const currentContent = editableRef.current?.innerHTML || (typeof block.content === 'string' ? block.content : '');
+    setFocusModeContent(currentContent);
     setShowFocusMode(true);
   };
 
@@ -156,7 +160,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
             <FocusModeModal
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
-              content={typeof block.content === 'string' ? block.content : ''}
+              content={focusModeContent}
               blockType={block.type}
               config={block.config}
               onSave={handleFocusModeSave}
@@ -189,7 +193,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
             <FocusModeModal
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
-              content={typeof block.content === 'string' ? block.content : ''}
+              content={focusModeContent}
               blockType={block.type}
               config={block.config}
               onSave={handleFocusModeSave}
@@ -222,7 +226,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
             <FocusModeModal
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
-              content={typeof block.content === 'string' ? block.content : ''}
+              content={focusModeContent}
               blockType={block.type}
               config={block.config}
               onSave={handleFocusModeSave}

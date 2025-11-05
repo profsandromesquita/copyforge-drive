@@ -68,8 +68,21 @@ export const FocusModeModal = ({
 
   useEffect(() => {
     if (editorRef.current && open) {
-      editorRef.current.innerHTML = content;
-      editorRef.current.focus();
+      // Garantir que o conteúdo seja carregado, mesmo que seja vazio
+      const contentToLoad = content || '';
+      editorRef.current.innerHTML = contentToLoad;
+      
+      // Adicionar placeholder visual se estiver vazio
+      if (!contentToLoad.trim()) {
+        editorRef.current.classList.add('empty');
+      } else {
+        editorRef.current.classList.remove('empty');
+      }
+      
+      // Focar com um pequeno delay para garantir que o modal esteja montado
+      setTimeout(() => {
+        editorRef.current?.focus();
+      }, 100);
     }
   }, [content, open]);
 
@@ -344,11 +357,22 @@ export const FocusModeModal = ({
               <div
                 ref={editorRef}
                 contentEditable
-                className={`min-h-[60vh] focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()} ${
-                  blockType === 'headline' ? 'font-bold' : blockType === 'subheadline' ? 'font-semibold' : ''
-                }`}
+                className={`
+                  min-h-[60vh] focus:outline-none 
+                  ${getFontSizeClass()} ${getTextAlignClass()} 
+                  ${blockType === 'headline' ? 'font-bold' : blockType === 'subheadline' ? 'font-semibold' : ''}
+                  empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:opacity-50
+                `}
                 data-placeholder={getPlaceholder()}
                 suppressContentEditableWarning
+                onInput={(e) => {
+                  const target = e.currentTarget;
+                  if (target.textContent?.trim()) {
+                    target.classList.remove('empty');
+                  } else {
+                    target.classList.add('empty');
+                  }
+                }}
               />
             </div>
           </div>
