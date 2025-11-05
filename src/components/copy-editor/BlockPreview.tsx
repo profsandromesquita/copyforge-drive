@@ -169,7 +169,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
               }}
               className={`
                 ${getButtonSizeClass()}
-                ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
+                ${buttonRounded ? 'rounded-2xl' : 'rounded-none'}
                 font-medium transition-all hover:opacity-90
                 inline-flex flex-col items-center justify-center gap-1
               `}
