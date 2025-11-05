@@ -21,7 +21,7 @@ export interface BlockConfig {
   link?: string;
   buttonSubtitle?: string;
   buttonRounded?: boolean;
-  buttonIcon?: string;
+  buttonIcon?: 'none' | 'check' | 'arrow-right' | 'star' | 'heart' | 'download' | 'play' | 'shopping-cart' | 'plus';
 }
 
 export interface Block {

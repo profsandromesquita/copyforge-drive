@@ -1,4 +1,4 @@
-import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight } from 'phosphor-react';
+import { ArrowLeft, TextAlignLeft, TextAlignCenter, TextAlignRight, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -251,15 +251,15 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
               <div className="flex gap-2">
                 <Input
                   type="color"
-                  value={block.config?.backgroundColor || '#ff6b35'}
+                  value={block.config?.backgroundColor || '#22c55e'}
                   onChange={(e) => updateConfig('backgroundColor', e.target.value)}
                   className="w-20 h-10 cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={block.config?.backgroundColor || '#ff6b35'}
+                  value={block.config?.backgroundColor || '#22c55e'}
                   onChange={(e) => updateConfig('backgroundColor', e.target.value)}
-                  placeholder="#ff6b35"
+                  placeholder="#22c55e"
                   className="flex-1"
                 />
               </div>
@@ -293,12 +293,68 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label>Ícone (opcional)</Label>
-              <Input
-                value={block.config?.buttonIcon || ''}
-                onChange={(e) => updateConfig('buttonIcon', e.target.value)}
-                placeholder="Ex: ✓, →, ★"
-              />
+              <Label>Ícone</Label>
+              <Select
+                value={block.config?.buttonIcon || 'none'}
+                onValueChange={(value) => updateConfig('buttonIcon', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um ícone" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="none">
+                    <span>Sem ícone</span>
+                  </SelectItem>
+                  <SelectItem value="check">
+                    <div className="flex items-center gap-2">
+                      <Check size={16} />
+                      <span>Check</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="arrow-right">
+                    <div className="flex items-center gap-2">
+                      <ArrowRight size={16} />
+                      <span>Seta Direita</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="star">
+                    <div className="flex items-center gap-2">
+                      <Star size={16} />
+                      <span>Estrela</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="heart">
+                    <div className="flex items-center gap-2">
+                      <Heart size={16} />
+                      <span>Coração</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="download">
+                    <div className="flex items-center gap-2">
+                      <DownloadSimple size={16} />
+                      <span>Download</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="play">
+                    <div className="flex items-center gap-2">
+                      <Play size={16} />
+                      <span>Play</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="shopping-cart">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart size={16} />
+                      <span>Carrinho</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="plus">
+                    <div className="flex items-center gap-2">
+                      <Plus size={16} />
+                      <span>Mais</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

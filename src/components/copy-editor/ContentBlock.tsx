@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon } from 'phosphor-react';
+import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
 import { Block } from '@/types/copy-editor';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -349,7 +349,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
 
       case 'button':
         const buttonContent = typeof block.content === 'string' ? block.content : '';
-        const buttonBgColor = block.config?.backgroundColor || '#ff6b35';
+        const buttonBgColor = block.config?.backgroundColor || '#22c55e';
         const buttonTextColor = block.config?.textColor || '#ffffff';
         const buttonAlign = block.config?.textAlign || 'left';
         const buttonSubtitle = block.config?.buttonSubtitle;
@@ -378,6 +378,30 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
           }
         };
 
+        const renderButtonIcon = () => {
+          const iconSize = block.config?.buttonSize === 'sm' ? 16 : block.config?.buttonSize === 'lg' ? 24 : 20;
+          switch (buttonIcon) {
+            case 'check':
+              return <Check size={iconSize} weight="bold" />;
+            case 'arrow-right':
+              return <ArrowRight size={iconSize} weight="bold" />;
+            case 'star':
+              return <Star size={iconSize} weight="fill" />;
+            case 'heart':
+              return <Heart size={iconSize} weight="fill" />;
+            case 'download':
+              return <DownloadSimple size={iconSize} weight="bold" />;
+            case 'play':
+              return <Play size={iconSize} weight="fill" />;
+            case 'shopping-cart':
+              return <ShoppingCart size={iconSize} weight="bold" />;
+            case 'plus':
+              return <Plus size={iconSize} weight="bold" />;
+            default:
+              return null;
+          }
+        };
+
         return (
           <div className={`flex ${getButtonAlignClass()}`}>
             <button 
@@ -389,13 +413,13 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
                 ${getButtonSizeClass()}
                 ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
                 font-medium transition-all hover:opacity-90
-                inline-flex items-center gap-2 flex-col sm:flex-row
+                inline-flex flex-col items-center justify-center gap-1
               `}
               disabled
             >
               <span className="flex items-center gap-2">
-                {buttonIcon && <span>{buttonIcon}</span>}
-                {buttonContent || 'Botão'}
+                {renderButtonIcon()}
+                <span>{buttonContent || 'Botão'}</span>
               </span>
               {buttonSubtitle && (
                 <span className="text-xs opacity-80 font-normal">
