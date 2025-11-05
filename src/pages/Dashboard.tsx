@@ -150,9 +150,9 @@ const Dashboard = () => {
           </div>
         </header>
 
-        <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
+        <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
           {/* Breadcrumbs e botão Novo */}
-          <div className="bg-muted/30 sticky top-0 z-40 rounded-tl-3xl">
+          <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
             <div className="px-6 py-4">
               <div className="flex items-center justify-between gap-4">
                 <Breadcrumbs />
