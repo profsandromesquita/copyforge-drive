@@ -471,27 +471,6 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                     </Button>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">Tipo</Label>
-                    <Select
-                      value={field.type}
-                      onValueChange={(value) => {
-                        const currentFields = [...(block.config?.formFields || [])];
-                        currentFields[index] = { ...field, type: value as 'text' | 'email' | 'phone' };
-                        updateConfig('formFields', currentFields);
-                      }}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        <SelectItem value="text">Texto</SelectItem>
-                        <SelectItem value="email">E-mail</SelectItem>
-                        <SelectItem value="phone">Telefone</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="space-y-1">
                     <Label className="text-xs">Label</Label>
                     <Input
