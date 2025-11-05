@@ -1,7 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ListBullets, Sparkle } from 'phosphor-react';
-import { X } from 'lucide-react';
 import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
 import { ImageAITab } from './ImageAITab';
@@ -42,15 +41,6 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       {showImageAI && imageBlockId && (
         <div className="absolute inset-0 bg-background z-20">
           <div className="h-full p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onCloseImageAI}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
             <ImageAITab 
               block={sessions.flatMap(s => s.blocks).find(b => b.id === imageBlockId)!} 
               onClose={onCloseImageAI || (() => {})} 
