@@ -25,6 +25,7 @@ import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { TypeFilter } from '@/components/filters/TypeFilter';
 import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
+import { UserMenu } from '@/components/layout/UserMenu';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -208,18 +209,21 @@ const Dashboard = () => {
       
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
-        <header className="bg-background px-6 py-4 sticky top-0 z-40">
-          <div className="flex-1 max-w-md relative">
-            <MagnifyingGlass 
-              size={20} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              placeholder="Buscar..."
-              className="pl-10 bg-muted/30 rounded-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <header className="bg-background px-6 py-4 sticky top-0 z-40 border-b border-border">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-md relative">
+              <MagnifyingGlass 
+                size={20} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                placeholder="Buscar..."
+                className="pl-10 bg-muted/30 rounded-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <UserMenu />
           </div>
         </header>
 

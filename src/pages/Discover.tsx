@@ -15,6 +15,7 @@ import { useTheme } from 'next-themes';
 import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
+import { UserMenu } from '@/components/layout/UserMenu';
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -86,18 +87,21 @@ const Discover = () => {
       
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
-        <header className="bg-background px-6 py-4 sticky top-0 z-40">
-          <div className="flex-1 max-w-md relative">
-            <MagnifyingGlass 
-              size={20} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              placeholder="Buscar copies públicas..."
-              className="pl-10 bg-muted/30 rounded-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <header className="bg-background px-6 py-4 sticky top-0 z-40 border-b border-border">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-md relative">
+              <MagnifyingGlass 
+                size={20} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                placeholder="Buscar copies públicas..."
+                className="pl-10 bg-muted/30 rounded-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <UserMenu />
           </div>
         </header>
 
