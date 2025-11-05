@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
+import { BlockPreview } from '@/components/copy-editor/BlockPreview';
 import { Session } from '@/types/copy-editor';
 
 interface DiscoverCardProps {
@@ -24,58 +25,36 @@ interface DiscoverCardProps {
 export const DiscoverCard = ({ copy, onCopy }: DiscoverCardProps) => {
   const [showPreview, setShowPreview] = useState(false);
 
-  const getPreviewContent = () => {
-    if (!copy.sessions || copy.sessions.length === 0) return null;
+  const getFirstBlocks = () => {
+    if (!copy.sessions || copy.sessions.length === 0) return [];
     const firstSession = copy.sessions[0];
-    const firstBlocks = firstSession.blocks.slice(0, 6);
-
-    return firstBlocks.map((block, index) => {
-      if (block.type === 'headline') {
-        return (
-          <h3 key={block.id} className="text-base font-bold line-clamp-1 mb-2">
-            {block.content}
-          </h3>
-        );
-      }
-      if (block.type === 'subheadline') {
-        return (
-          <h4 key={block.id} className="text-sm font-semibold line-clamp-1 mb-1.5">
-            {block.content}
-          </h4>
-        );
-      }
-      if (block.type === 'text') {
-        return (
-          <p key={block.id} className="text-xs text-muted-foreground/80 line-clamp-2 mb-1.5">
-            {block.content}
-          </p>
-        );
-      }
-      if (block.type === 'list' && Array.isArray(block.content)) {
-        return (
-          <ul key={block.id} className="text-xs text-muted-foreground/80 space-y-0.5 mb-1.5">
-            {block.content.slice(0, 2).map((item, i) => (
-              <li key={i} className="line-clamp-1">• {item}</li>
-            ))}
-          </ul>
-        );
-      }
-      return null;
-    });
+    return firstSession.blocks.slice(0, 4); // Pegar os 4 primeiros blocos
   };
+
+  const firstBlocks = getFirstBlocks();
 
   return (
     <>
       <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
         {/* Visual Preview Section */}
-        <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
-          <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
-            <div className="space-y-1">
-              {getPreviewContent()}
+        <div className="relative h-48 md:h-56 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
+          <div className="absolute inset-0 p-4 md:p-6 overflow-hidden">
+            <div className="space-y-2 scale-75 origin-top-left transform-gpu pointer-events-none">
+              {firstBlocks.length > 0 ? (
+                firstBlocks.map((block) => (
+                  <div key={block.id} className="opacity-80">
+                    <BlockPreview block={block} />
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <p className="text-sm">Sem conteúdo para visualizar</p>
+                </div>
+              )}
             </div>
           </div>
           {/* Bottom Fade Overlay */}
-          <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-0 inset-x-0 h-16 md:h-20 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
           {/* Preview Icon Badge */}
           <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
             <Eye className="h-3 w-3 text-muted-foreground" />
