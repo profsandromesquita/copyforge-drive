@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Upload, ShareNetwork } from 'phosphor-react';
+import { ArrowLeft, Eye, Upload, ShareNetwork, Gear } from 'phosphor-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -117,14 +117,23 @@ export const EditorHeader = () => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => setShowPreview(true)}>
-          <Eye className="h-5 w-5" />
-        </Button>
-
-        <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">Importar</span>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Gear className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+            <DropdownMenuItem onClick={() => setShowPreview(true)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Pré-visualizar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setShowImport(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button variant="outline" size="sm" onClick={() => setShowShare(true)}>
           <ShareNetwork className="h-4 w-4 mr-2" />
@@ -135,12 +144,13 @@ export const EditorHeader = () => {
           <DropdownMenuTrigger asChild>
             <Button 
               variant={status === 'published' ? 'default' : 'secondary'}
+              size="sm"
               className="focus-visible:ring-0 focus-visible:ring-offset-0"
             >
               {status === 'published' ? 'Publicada' : 'Salva'}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="bg-popover border-border z-50">
             <DropdownMenuItem onClick={handlePublish}>
               Publicar
             </DropdownMenuItem>
