@@ -10,6 +10,7 @@ interface CopyEditorContextType {
   sessions: Session[];
   selectedBlockId: string | null;
   isSaving: boolean;
+  isLoading: boolean;
   status: 'draft' | 'published';
   
   setCopyId: (id: string) => void;
@@ -42,6 +43,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const { toast } = useToast();
 
@@ -57,6 +59,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [sessions, copyTitle, copyId]);
 
   const loadCopy = useCallback(async (id: string) => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('copies')
@@ -71,6 +74,9 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setCopyType(data.copy_type as CopyType);
       setSessions((data.sessions as any) || []);
       setStatus((data.status as 'draft' | 'published') || 'draft');
+      
+      // Pequeno delay para garantir renderização suave
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       console.error('Error loading copy:', error);
       toast({
@@ -78,6 +84,8 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         description: 'Não foi possível carregar a copy.',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   }, [toast]);
 
@@ -290,6 +298,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     sessions,
     selectedBlockId,
     isSaving,
+    isLoading,
     status,
     setCopyId,
     setCopyTitle,

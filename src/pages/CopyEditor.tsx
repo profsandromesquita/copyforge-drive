@@ -5,13 +5,14 @@ import { EditorHeader } from '@/components/copy-editor/EditorHeader';
 import { BlockToolbar } from '@/components/copy-editor/BlockToolbar';
 import { SessionCanvas } from '@/components/copy-editor/SessionCanvas';
 import { EditorSidebar } from '@/components/copy-editor/EditorSidebar';
+import { CopyEditorLoading } from '@/components/copy-editor/CopyEditorLoading';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Block } from '@/types/copy-editor';
 
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loadCopy, setCopyId, addBlock, moveBlock, sessions } = useCopyEditor();
+  const { loadCopy, setCopyId, addBlock, moveBlock, sessions, isLoading } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [showImageAI, setShowImageAI] = useState(false);
@@ -171,6 +172,11 @@ const CopyEditorContent = () => {
     setShowImageAI(false);
     setImageBlockId(null);
   };
+
+  // Mostrar loading enquanto carrega
+  if (isLoading) {
+    return <CopyEditorLoading />;
+  }
 
   return (
     <DndContext
