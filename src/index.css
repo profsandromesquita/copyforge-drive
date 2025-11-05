@@ -190,7 +190,10 @@ All colors MUST be HSL.
     @apply text-xs px-3 py-1.5 gap-1;
   }
 
-  .preview-scale img,
+  .preview-scale img {
+    @apply max-h-16;
+  }
+
   .preview-scale video,
   .preview-scale audio,
   .preview-scale iframe {
