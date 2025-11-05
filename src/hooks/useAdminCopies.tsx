@@ -49,7 +49,7 @@ export const useAdminCopies = (filters: CopyFilters = {}, page: number = 1, page
         .from("ai_generation_history")
         .select(`
           *,
-          profiles!created_by (
+          profiles (
             name,
             email,
             avatar_url
@@ -112,7 +112,7 @@ export const useAdminCopyDetails = (generationId: string) => {
         .from("ai_generation_history")
         .select(`
           *,
-          profiles!created_by (
+          profiles (
             name,
             email,
             avatar_url

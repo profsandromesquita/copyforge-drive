@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Eye } from "phosphor-react";
+import { Eye, ArrowsClockwise } from "phosphor-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAdminCopies } from "@/hooks/useAdminCopies";
@@ -27,14 +27,21 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminCopies() {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [selectedGeneration, setSelectedGeneration] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data, isLoading } = useAdminCopies(filters, page, 20);
+  const { data, isLoading, refetch } = useAdminCopies(filters, page, 20);
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-copies"] });
+    refetch();
+  };
 
   const getCategoryColor = (category: string) => {
     return category === "text" 
@@ -68,11 +75,22 @@ export default function AdminCopies() {
               Histórico completo de gerações de IA
             </p>
           </div>
-          {data && (
-            <Badge variant="outline" className="text-lg px-4 py-2">
-              {data.totalCount} gerações
-            </Badge>
-          )}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <ArrowsClockwise size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            {data && (
+              <Badge variant="outline" className="text-lg px-4 py-2">
+                {data.totalCount} gerações
+              </Badge>
+            )}
+          </div>
         </div>
 
         <Card>
