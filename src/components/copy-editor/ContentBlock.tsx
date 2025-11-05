@@ -77,13 +77,37 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
   };
 
   const getFontSizeClass = () => {
-    switch (block.config?.fontSize) {
-      case 'small':
-        return 'text-sm';
-      case 'large':
-        return 'text-lg';
+    const fontSize = block.config?.fontSize || 'medium';
+    
+    switch (block.type) {
+      case 'headline':
+        switch (fontSize) {
+          case 'small':
+            return 'text-xl';
+          case 'large':
+            return 'text-3xl';
+          default:
+            return 'text-2xl';
+        }
+      case 'subheadline':
+        switch (fontSize) {
+          case 'small':
+            return 'text-lg';
+          case 'large':
+            return 'text-2xl';
+          default:
+            return 'text-xl';
+        }
+      case 'text':
       default:
-        return 'text-base';
+        switch (fontSize) {
+          case 'small':
+            return 'text-sm';
+          case 'large':
+            return 'text-lg';
+          default:
+            return 'text-base';
+        }
     }
   };
 
@@ -153,7 +177,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`text-2xl font-bold border-none focus:outline-none ${getTextAlignClass()}`}
+              className={`font-bold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu título..."
               suppressContentEditableWarning
             />
@@ -186,7 +210,7 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
-              className={`text-xl font-semibold border-none focus:outline-none ${getTextAlignClass()}`}
+              className={`font-semibold border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu subtítulo..."
               suppressContentEditableWarning
             />
