@@ -17,6 +17,7 @@ const CopyEditorContent = () => {
   const [activeType, setActiveType] = useState<string | null>(null);
   const [showImageAI, setShowImageAI] = useState(false);
   const [imageBlockId, setImageBlockId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -188,12 +189,14 @@ const CopyEditorContent = () => {
       <div className="h-screen flex flex-col">
         <EditorHeader />
         <BlockToolbar />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
           <SessionCanvas onShowImageAI={handleShowImageAI} />
           <EditorSidebar 
             showImageAI={showImageAI} 
             imageBlockId={imageBlockId || undefined} 
-            onCloseImageAI={handleCloseImageAI} 
+            onCloseImageAI={handleCloseImageAI}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ListBullets } from 'phosphor-react';
+import { ListBullets, Sparkle } from 'phosphor-react';
 import { X } from 'lucide-react';
 import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
@@ -12,9 +12,11 @@ interface EditorSidebarProps {
   showImageAI?: boolean;
   imageBlockId?: string;
   onCloseImageAI?: () => void;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI }: EditorSidebarProps) => {
+export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpen = true, onToggle }: EditorSidebarProps) => {
   const { sessions, selectedBlockId, selectBlock } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -90,8 +92,26 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI }: Edi
   }
 
   return (
-    <aside className="w-[416px] border-l bg-background">
-      {sidebarContent}
-    </aside>
+    <>
+      {/* Floating toggle button - always visible */}
+      <Button
+        variant="default"
+        size="icon"
+        onClick={onToggle}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
+      >
+        <Sparkle size={24} weight="fill" />
+      </Button>
+
+      {/* Sidebar with slide animation */}
+      <aside 
+        className={`
+          w-[416px] border-l bg-background transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 };
