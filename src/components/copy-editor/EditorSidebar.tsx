@@ -54,7 +54,7 @@ export const EditorSidebar = () => {
             <ListBullets size={24} />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-full sm:max-w-md">
+        <SheetContent side="right" className="w-full sm:max-w-lg">
           {sidebarContent}
         </SheetContent>
       </Sheet>
@@ -62,7 +62,7 @@ export const EditorSidebar = () => {
   }
 
   return (
-    <aside className="w-80 border-l bg-background">
+    <aside className="w-[416px] border-l bg-background">
       {sidebarContent}
     </aside>
   );
