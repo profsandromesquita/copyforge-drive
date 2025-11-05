@@ -56,14 +56,14 @@ export function OptimizeComparisonModal({
 
         <div className="grid grid-cols-2 gap-6 h-[600px]">
           {/* Original Content */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-4 pb-2 border-b">
+          <div className="flex flex-col border rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b bg-muted/50">
               <h3 className="font-semibold text-lg">Conteúdo Original</h3>
             </div>
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1">
+              <div className="space-y-4 p-4">
                 {originalContent.map((session) => (
-                  <div key={session.id} className="border rounded-lg p-4 bg-muted/30">
+                  <div key={session.id} className="border rounded-lg p-4 bg-background">
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
                       {session.title}
                     </h4>
@@ -90,12 +90,12 @@ export function OptimizeComparisonModal({
           </div>
 
           {/* Generated Content */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-4 pb-2 border-b">
+          <div className="flex flex-col border rounded-lg overflow-hidden border-primary/20">
+            <div className="flex items-center gap-2 px-4 py-3 border-b bg-primary/10">
               <h3 className="font-semibold text-lg text-primary">Conteúdo Gerado</h3>
             </div>
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1">
+              <div className="space-y-4 p-4">
                 {generatedContent.map((session) => (
                   <div key={session.id} className="border rounded-lg p-4 bg-primary/5">
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
