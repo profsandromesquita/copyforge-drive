@@ -28,6 +28,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useQueryClient } from "@tanstack/react-query";
+import { calculateGenerationCost, formatCost } from "@/lib/ai-pricing";
 
 export default function AdminCopies() {
   const [filters, setFilters] = useState({});
@@ -115,6 +116,7 @@ export default function AdminCopies() {
                   <TableHead className="text-right">Tokens IN</TableHead>
                   <TableHead className="text-right">Tokens OUT</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Custo</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -122,7 +124,7 @@ export default function AdminCopies() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-6 w-full" />
                         </TableCell>
@@ -131,7 +133,7 @@ export default function AdminCopies() {
                   ))
                 ) : data?.generations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       Nenhuma geração encontrada
                     </TableCell>
                   </TableRow>
@@ -195,6 +197,17 @@ export default function AdminCopies() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm font-semibold">
                         {formatTokens(generation.total_tokens)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono text-sm text-green-600 dark:text-green-400 font-semibold">
+                          {formatCost(
+                            calculateGenerationCost(
+                              generation.model_used || 'google/gemini-2.5-flash',
+                              generation.input_tokens || 0,
+                              generation.output_tokens || 0
+                            )
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-center">
                         <Button

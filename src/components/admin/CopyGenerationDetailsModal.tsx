@@ -18,9 +18,11 @@ import {
   FileText, 
   ArrowsLeftRight,
   Hash,
-  Code
+  Code,
+  CurrencyDollar
 } from "phosphor-react";
 import { CopyGeneration } from "@/hooks/useAdminCopies";
+import { calculateGenerationCost, formatCost } from "@/lib/ai-pricing";
 
 interface CopyGenerationDetailsModalProps {
   generation: CopyGeneration & { copies?: { title: string } } | null;
@@ -130,13 +132,13 @@ export const CopyGenerationDetailsModal = ({
 
             <Separator />
 
-            {/* Tokens Usage */}
+            {/* Tokens Usage & Cost */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <Hash size={18} />
-                Uso de Tokens
+                Uso de Tokens & Custo
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="bg-muted/50 rounded-lg p-3 text-center">
                   <ArrowsLeftRight size={20} className="mx-auto mb-1 text-blue-500" />
                   <p className="text-xs text-muted-foreground mb-1">Input</p>
@@ -151,6 +153,19 @@ export const CopyGenerationDetailsModal = ({
                   <Hash size={20} className="mx-auto mb-1 text-primary" />
                   <p className="text-xs text-muted-foreground mb-1">Total</p>
                   <p className="text-lg font-bold text-primary">{formatTokens(generation.total_tokens)}</p>
+                </div>
+                <div className="bg-green-500/10 rounded-lg p-3 text-center">
+                  <CurrencyDollar size={20} className="mx-auto mb-1 text-green-600 dark:text-green-400" />
+                  <p className="text-xs text-muted-foreground mb-1">Custo</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                    {formatCost(
+                      calculateGenerationCost(
+                        generation.model_used || 'google/gemini-2.5-flash',
+                        generation.input_tokens || 0,
+                        generation.output_tokens || 0
+                      )
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
