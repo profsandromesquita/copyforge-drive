@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
 import { Plus, MagnifyingGlass, FolderPlus } from "phosphor-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +87,24 @@ const Dashboard = () => {
     }
   };
 
+  const getActiveItem = () => {
+    if (!activeId) return null;
+    
+    const folder = filteredFolders.find(f => f.id === activeId);
+    if (folder) {
+      return { type: 'folder' as const, data: folder };
+    }
+    
+    const copy = filteredCopies.find((c: any) => c.id === activeId);
+    if (copy) {
+      return { type: 'copy' as const, data: copy as any };
+    }
+    
+    return null;
+  };
+
+  const activeItem = getActiveItem();
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
@@ -146,6 +164,25 @@ const Dashboard = () => {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
+            <DragOverlay dropAnimation={{
+              duration: 200,
+              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+            }}>
+              {activeItem && (
+                <div className="rotate-3 scale-105 opacity-90">
+                  <DriveCard
+                    id={activeItem.data.id}
+                    type={activeItem.type}
+                    title={activeItem.type === 'folder' ? activeItem.data.name : activeItem.data.title}
+                    folderId={activeItem.type === 'folder' ? activeItem.data.parent_id : activeItem.data.folder_id}
+                    subtitle={formatDate(activeItem.data.updated_at)}
+                    creatorName={activeItem.type === 'copy' ? activeItem.data.creator?.name : undefined}
+                    creatorAvatar={activeItem.type === 'copy' ? activeItem.data.creator?.avatar_url : undefined}
+                    status={activeItem.type === 'copy' ? (activeItem.data.status || 'draft') : undefined}
+                  />
+                </div>
+              )}
+            </DragOverlay>
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
