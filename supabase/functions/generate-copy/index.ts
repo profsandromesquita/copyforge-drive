@@ -168,9 +168,26 @@ serve(async (req) => {
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
+        // Obter o auth header do request para pegar o usuário autenticado
+        const authHeader = req.headers.get('Authorization');
+        let userId = null;
+        
+        if (authHeader) {
+          try {
+            const token = authHeader.replace('Bearer ', '');
+            const { data: { user } } = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+              headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_SERVICE_ROLE_KEY }
+            }).then(r => r.json());
+            userId = user?.id;
+          } catch (e) {
+            console.error('Error getting user from token:', e);
+          }
+        }
+        
         const historyData = {
           copy_id: copyId,
           workspace_id: workspaceId,
+          created_by: userId,
           copy_type: copyType,
           prompt,
           parameters: {
