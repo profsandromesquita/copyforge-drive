@@ -46,6 +46,7 @@ interface DriveContextType {
   renameCopy: (copyId: string, newTitle: string) => Promise<void>;
   moveFolder: (folderId: string, targetFolderId: string | null) => Promise<void>;
   moveCopy: (copyId: string, targetFolderId: string | null) => Promise<void>;
+  duplicateCopy: (copyId: string) => Promise<void>;
   refreshDrive: () => Promise<void>;
 }
 
@@ -333,6 +334,47 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentFolder?.id, fetchDriveContent]);
 
+  const duplicateCopy = useCallback(async (copyId: string) => {
+    if (!user?.id) {
+      toast.error('Usuário não encontrado');
+      return;
+    }
+
+    try {
+      // Buscar a copy original
+      const { data: originalCopy, error: fetchError } = await supabase
+        .from('copies')
+        .select('*')
+        .eq('id', copyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!originalCopy) throw new Error('Copy não encontrada');
+
+      // Criar uma nova copy com os mesmos dados
+      const { error: insertError } = await supabase
+        .from('copies')
+        .insert({
+          workspace_id: originalCopy.workspace_id,
+          project_id: originalCopy.project_id,
+          folder_id: originalCopy.folder_id,
+          title: `${originalCopy.title} (cópia)`,
+          copy_type: originalCopy.copy_type,
+          sessions: originalCopy.sessions,
+          status: 'draft', // Sempre criar como rascunho
+          created_by: user.id,
+        });
+
+      if (insertError) throw insertError;
+
+      toast.success('Copy duplicada com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error duplicating copy:', error);
+      toast.error('Erro ao duplicar copy');
+    }
+  }, [user?.id, currentFolder?.id, fetchDriveContent]);
+
   const value: DriveContextType = {
     folders,
     copies,
@@ -348,6 +390,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     renameCopy,
     moveFolder,
     moveCopy,
+    duplicateCopy,
     refreshDrive: () => fetchDriveContent(currentFolder?.id || null),
   };
 

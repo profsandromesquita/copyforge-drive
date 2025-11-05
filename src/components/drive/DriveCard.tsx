@@ -1,4 +1,4 @@
-import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil, ArrowsDownUp } from "phosphor-react";
+import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil, ArrowsDownUp, Copy } from "phosphor-react";
 import { useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
@@ -45,7 +45,7 @@ const iconMap = {
 
 const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, folderId, onClick, onDrop }: DriveCardProps) => {
   const { icon: Icon, color } = iconMap[type];
-  const { deleteFolder, deleteCopy, renameFolder, renameCopy, moveFolder, moveCopy } = useDrive();
+  const { deleteFolder, deleteCopy, renameFolder, renameCopy, moveFolder, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
@@ -167,6 +167,18 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
                   <Pencil size={16} className="mr-2" />
                   Renomear
                 </DropdownMenuItem>
+                {type === 'copy' && (
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      duplicateCopy(id);
+                    }}
+                  >
+                    <Copy size={16} className="mr-2" />
+                    Duplicar
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   className="cursor-pointer"
                   onClick={(e) => {
