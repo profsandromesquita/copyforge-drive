@@ -658,55 +658,57 @@ export const CopyAITab = () => {
             </div>
           ) : !optimizeAction ? (
             <ScrollArea className="h-[calc(100vh-12rem)]">
-              <div className="space-y-6 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Conteúdo Selecionado</h3>
+              <div className="space-y-6 p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-base">Conteúdo Selecionado</h3>
                   <Button variant="outline" size="sm" onClick={() => setShowSelectModal(true)}>
-                    Alterar Seleção
+                    Alterar
                   </Button>
                 </div>
 
-                <div className="grid gap-3 mb-6">
+                <div className="space-y-2">
                   {selectedContent.sessions.map(session => (
-                    <Card key={session.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{session.title}</span>
-                          <Badge variant="secondary">{session.blocks.length} blocos</Badge>
+                    <Card key={session.id} className="border-muted/60 hover:border-muted transition-colors">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-medium text-sm truncate">{session.title}</span>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {session.blocks.length}
+                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Escolha uma ação:</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3 pt-2">
+                  <h3 className="font-semibold text-sm">Escolha uma ação:</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Card 
-                      className="cursor-pointer hover:border-primary transition-colors"
+                      className="cursor-pointer hover:border-primary/60 hover:shadow-sm transition-all duration-200 border-muted/60"
                       onClick={() => handleActionSelect('otimizar')}
                     >
-                      <CardContent className="p-6 text-center space-y-3">
-                        <Wand2 className="h-8 w-8 mx-auto text-primary" />
-                        <div>
-                          <h4 className="font-semibold mb-1">Otimizar</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Melhore o conteúdo mantendo a estrutura
+                      <CardContent className="p-4 text-center space-y-2">
+                        <Wand2 className="h-7 w-7 mx-auto text-primary" />
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-sm">Otimizar</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Melhore mantendo a estrutura
                           </p>
                         </div>
                       </CardContent>
                     </Card>
 
                     <Card 
-                      className="cursor-pointer hover:border-primary transition-colors"
+                      className="cursor-pointer hover:border-primary/60 hover:shadow-sm transition-all duration-200 border-muted/60"
                       onClick={() => handleActionSelect('variacao')}
                     >
-                      <CardContent className="p-6 text-center space-y-3">
-                        <CopyIcon className="h-8 w-8 mx-auto text-primary" />
-                        <div>
-                          <h4 className="font-semibold mb-1">Criar Variação</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Crie uma versão alternativa completa
+                      <CardContent className="p-4 text-center space-y-2">
+                        <CopyIcon className="h-7 w-7 mx-auto text-primary" />
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-sm">Criar Variação</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Versão alternativa completa
                           </p>
                         </div>
                       </CardContent>
