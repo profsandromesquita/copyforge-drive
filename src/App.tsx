@@ -42,6 +42,10 @@ import ProjectConfig from "./pages/ProjectConfig";
 import SignupInvite from "./pages/SignupInvite";
 import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
+import { AdminRoute } from "./components/auth/AdminRoute";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminClientes from "./pages/admin/AdminClientes";
+import AdminClienteDetalhes from "./pages/admin/AdminClienteDetalhes";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +72,9 @@ const App = () => (
                   <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
                   <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
+                  <Route path="/painel/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                  <Route path="/painel/admin/clientes" element={<AdminRoute><AdminClientes /></AdminRoute>} />
+                  <Route path="/painel/admin/clientes/:id" element={<AdminRoute><AdminClienteDetalhes /></AdminRoute>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
