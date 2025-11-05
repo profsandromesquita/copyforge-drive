@@ -379,52 +379,30 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         };
 
         return (
-          <div className="space-y-3">
-            {isSelected && (
-              <>
-                <Input
-                  value={buttonContent}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  placeholder="Texto do botão..."
-                  className="border-none focus-visible:ring-0"
-                />
-                {block.config?.buttonSubtitle !== undefined && (
-                  <Input
-                    value={block.config.buttonSubtitle}
-                    onChange={(e) => updateBlock(block.id, { 
-                      config: { ...block.config, buttonSubtitle: e.target.value } 
-                    })}
-                    placeholder="Subtítulo (opcional)..."
-                    className="border-none focus-visible:ring-0 text-sm"
-                  />
-                )}
-              </>
-            )}
-            <div className={`flex ${getButtonAlignClass()}`}>
-              <button 
-                style={{
-                  backgroundColor: buttonBgColor,
-                  color: buttonTextColor,
-                }}
-                className={`
-                  ${getButtonSizeClass()}
-                  ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
-                  font-medium transition-all hover:opacity-90
-                  inline-flex items-center gap-2 flex-col sm:flex-row
-                `}
-                disabled
-              >
-                <span className="flex items-center gap-2">
-                  {buttonIcon && <span>{buttonIcon}</span>}
-                  {buttonContent || 'Botão'}
+          <div className={`flex ${getButtonAlignClass()}`}>
+            <button 
+              style={{
+                backgroundColor: buttonBgColor,
+                color: buttonTextColor,
+              }}
+              className={`
+                ${getButtonSizeClass()}
+                ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
+                font-medium transition-all hover:opacity-90
+                inline-flex items-center gap-2 flex-col sm:flex-row
+              `}
+              disabled
+            >
+              <span className="flex items-center gap-2">
+                {buttonIcon && <span>{buttonIcon}</span>}
+                {buttonContent || 'Botão'}
+              </span>
+              {buttonSubtitle && (
+                <span className="text-xs opacity-80 font-normal">
+                  {buttonSubtitle}
                 </span>
-                {buttonSubtitle && (
-                  <span className="text-xs opacity-80 font-normal">
-                    {buttonSubtitle}
-                  </span>
-                )}
-              </button>
-            </div>
+              )}
+            </button>
           </div>
         );
 
