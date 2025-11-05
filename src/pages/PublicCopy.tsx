@@ -185,7 +185,7 @@ const PublicCopy = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-[#EEEEEE] backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Structure Menu */}
@@ -316,7 +316,7 @@ const PublicCopy = () => {
       </header>
 
       {/* Copy Title and Creator Section */}
-      <div className="border-b bg-background">
+      <div className="border-b bg-[#EEEEEE]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             {copy.title}
@@ -345,8 +345,8 @@ const PublicCopy = () => {
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="space-y-6">
           {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
-            <section key={session.id} className="space-y-4">
-              <div className="border-b pb-2">
+            <section key={session.id} className="space-y-4 bg-card border border-border rounded-tl-2xl rounded-tr-2xl p-6 shadow-sm">
+              <div className="border-b pb-3 mb-4">
                 <h2 className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
                   {session.title}
                 </h2>
