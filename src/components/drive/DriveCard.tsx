@@ -1,4 +1,4 @@
-import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil } from "phosphor-react";
+import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil, ArrowsDownUp } from "phosphor-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useDrive } from "@/hooks/useDrive";
+import MoveModal from "./MoveModal";
 
 type CardType = "folder" | "copy" | "funnel";
 
@@ -30,6 +31,7 @@ interface DriveCardProps {
   creatorName?: string;
   creatorAvatar?: string | null;
   status?: 'draft' | 'published';
+  folderId?: string | null;
   onClick?: () => void;
 }
 
@@ -39,10 +41,11 @@ const iconMap = {
   funnel: { icon: FunnelSimple, color: "text-foreground" },
 };
 
-const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, onClick }: DriveCardProps) => {
+const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, folderId, onClick }: DriveCardProps) => {
   const { icon: Icon, color } = iconMap[type];
-  const { deleteFolder, deleteCopy, renameFolder, renameCopy } = useDrive();
+  const { deleteFolder, deleteCopy, renameFolder, renameCopy, moveFolder, moveCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -66,6 +69,14 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
       await deleteFolder(id);
     } else if (type === 'copy') {
       await deleteCopy(id);
+    }
+  };
+
+  const handleMove = async (targetFolderId: string | null) => {
+    if (type === 'folder') {
+      await moveFolder(id, targetFolderId);
+    } else if (type === 'copy') {
+      await moveCopy(id, targetFolderId);
     }
   };
 
@@ -116,6 +127,16 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
                 >
                   <Pencil size={16} className="mr-2" />
                   Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMoveModalOpen(true);
+                  }}
+                >
+                  <ArrowsDownUp size={16} className="mr-2" />
+                  Mover
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="cursor-pointer text-destructive"
@@ -206,6 +227,15 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <MoveModal
+        open={moveModalOpen}
+        onOpenChange={setMoveModalOpen}
+        itemId={id}
+        itemType={type === 'funnel' ? 'copy' : type}
+        currentFolderId={folderId || null}
+        onMove={handleMove}
+      />
     </>
   );
 };

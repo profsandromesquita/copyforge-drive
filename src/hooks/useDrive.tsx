@@ -44,6 +44,8 @@ interface DriveContextType {
   deleteCopy: (copyId: string) => Promise<void>;
   renameFolder: (folderId: string, newName: string) => Promise<void>;
   renameCopy: (copyId: string, newTitle: string) => Promise<void>;
+  moveFolder: (folderId: string, targetFolderId: string | null) => Promise<void>;
+  moveCopy: (copyId: string, targetFolderId: string | null) => Promise<void>;
   refreshDrive: () => Promise<void>;
 }
 
@@ -297,6 +299,40 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentFolder?.id, fetchDriveContent]);
 
+  const moveFolder = useCallback(async (folderId: string, targetFolderId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('folders')
+        .update({ parent_id: targetFolderId })
+        .eq('id', folderId);
+
+      if (error) throw error;
+
+      toast.success('Pasta movida com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error moving folder:', error);
+      toast.error('Erro ao mover pasta');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  const moveCopy = useCallback(async (copyId: string, targetFolderId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({ folder_id: targetFolderId })
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      toast.success('Copy movida com sucesso!');
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error moving copy:', error);
+      toast.error('Erro ao mover copy');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
   const value: DriveContextType = {
     folders,
     copies,
@@ -310,6 +346,8 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     deleteCopy,
     renameFolder,
     renameCopy,
+    moveFolder,
+    moveCopy,
     refreshDrive: () => fetchDriveContent(currentFolder?.id || null),
   };
 

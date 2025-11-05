@@ -132,6 +132,7 @@ const Dashboard = () => {
                       id={folder.id}
                       type="folder"
                       title={folder.name}
+                      folderId={folder.parent_id}
                       subtitle={`Criada ${formatDistanceToNow(new Date(folder.created_at), { 
                         addSuffix: true, 
                         locale: ptBR 
@@ -145,6 +146,7 @@ const Dashboard = () => {
                       id={copy.id}
                       type="copy"
                       title={copy.title}
+                      folderId={copy.folder_id}
                       creatorName={copy.creator?.name}
                       creatorAvatar={copy.creator?.avatar_url}
                       status={copy.status || 'draft'}
