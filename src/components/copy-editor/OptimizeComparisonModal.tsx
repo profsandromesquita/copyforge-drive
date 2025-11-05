@@ -67,7 +67,7 @@ export function OptimizeComparisonModal({
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
                       {session.title}
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-2 pointer-events-none opacity-90">
                       {session.blocks.map((block) => (
                         <ContentBlock
                           key={block.id}
@@ -101,7 +101,7 @@ export function OptimizeComparisonModal({
                     <h4 className="font-medium mb-3 text-sm text-muted-foreground">
                       {session.title}
                     </h4>
-                    <div className="space-y-2">
+                    <div className="space-y-2 pointer-events-none opacity-90">
                       {session.blocks.map((block) => (
                         <ContentBlock
                           key={block.id}
