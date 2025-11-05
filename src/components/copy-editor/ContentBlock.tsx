@@ -348,15 +348,83 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         );
 
       case 'button':
+        const buttonContent = typeof block.content === 'string' ? block.content : '';
+        const buttonBgColor = block.config?.backgroundColor || '#ff6b35';
+        const buttonTextColor = block.config?.textColor || '#ffffff';
+        const buttonAlign = block.config?.textAlign || 'left';
+        const buttonSubtitle = block.config?.buttonSubtitle;
+        const buttonRounded = block.config?.buttonRounded !== false;
+        const buttonIcon = block.config?.buttonIcon;
+        
+        const getButtonAlignClass = () => {
+          switch (buttonAlign) {
+            case 'center':
+              return 'justify-center';
+            case 'right':
+              return 'justify-end';
+            default:
+              return 'justify-start';
+          }
+        };
+
+        const getButtonSizeClass = () => {
+          switch (block.config?.buttonSize) {
+            case 'sm':
+              return 'text-sm px-4 py-2';
+            case 'lg':
+              return 'text-lg px-8 py-4';
+            default:
+              return 'text-base px-6 py-3';
+          }
+        };
+
         return (
           <div className="space-y-3">
-            <Input
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Texto do botão..."
-              className="border-none focus-visible:ring-0"
-            />
-            <Button className="w-full">{content || 'Botão'}</Button>
+            {isSelected && (
+              <>
+                <Input
+                  value={buttonContent}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  placeholder="Texto do botão..."
+                  className="border-none focus-visible:ring-0"
+                />
+                {block.config?.buttonSubtitle !== undefined && (
+                  <Input
+                    value={block.config.buttonSubtitle}
+                    onChange={(e) => updateBlock(block.id, { 
+                      config: { ...block.config, buttonSubtitle: e.target.value } 
+                    })}
+                    placeholder="Subtítulo (opcional)..."
+                    className="border-none focus-visible:ring-0 text-sm"
+                  />
+                )}
+              </>
+            )}
+            <div className={`flex ${getButtonAlignClass()}`}>
+              <button 
+                style={{
+                  backgroundColor: buttonBgColor,
+                  color: buttonTextColor,
+                }}
+                className={`
+                  ${getButtonSizeClass()}
+                  ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
+                  font-medium transition-all hover:opacity-90
+                  inline-flex items-center gap-2 flex-col sm:flex-row
+                `}
+                disabled
+              >
+                <span className="flex items-center gap-2">
+                  {buttonIcon && <span>{buttonIcon}</span>}
+                  {buttonContent || 'Botão'}
+                </span>
+                {buttonSubtitle && (
+                  <span className="text-xs opacity-80 font-normal">
+                    {buttonSubtitle}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         );
 

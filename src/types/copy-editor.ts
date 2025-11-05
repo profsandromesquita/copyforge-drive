@@ -19,6 +19,9 @@ export interface BlockConfig {
   textColor?: string;
   buttonSize?: 'sm' | 'md' | 'lg';
   link?: string;
+  buttonSubtitle?: string;
+  buttonRounded?: boolean;
+  buttonIcon?: string;
 }
 
 export interface Block {

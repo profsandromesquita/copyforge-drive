@@ -106,17 +106,59 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
         );
 
       case 'button':
+        const buttonBgColor = block.config?.backgroundColor || '#ff6b35';
+        const buttonTextColor = block.config?.textColor || '#ffffff';
+        const buttonAlign = block.config?.textAlign || 'left';
+        const buttonSubtitle = block.config?.buttonSubtitle;
+        const buttonRounded = block.config?.buttonRounded !== false;
+        const buttonIcon = block.config?.buttonIcon;
+        
+        const getButtonAlignClass = () => {
+          switch (buttonAlign) {
+            case 'center':
+              return 'text-center';
+            case 'right':
+              return 'text-right';
+            default:
+              return 'text-left';
+          }
+        };
+
+        const getButtonSizeClass = () => {
+          switch (block.config?.buttonSize) {
+            case 'sm':
+              return 'text-sm px-4 py-2';
+            case 'lg':
+              return 'text-lg px-8 py-4';
+            default:
+              return 'text-base px-6 py-3';
+          }
+        };
+
         return (
-          <div className={getTextAlignClass()}>
+          <div className={getButtonAlignClass()}>
             <button 
+              style={{
+                backgroundColor: buttonBgColor,
+                color: buttonTextColor,
+              }}
               className={`
-                px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium
-                ${block.config?.buttonSize === 'sm' ? 'text-sm px-4 py-1.5' : ''}
-                ${block.config?.buttonSize === 'lg' ? 'text-lg px-8 py-3' : ''}
+                ${getButtonSizeClass()}
+                ${buttonRounded ? 'rounded-lg' : 'rounded-none'}
+                font-medium transition-all hover:opacity-90
+                inline-flex items-center gap-2 flex-col sm:flex-row
               `}
               disabled
             >
-              {typeof block.content === 'string' ? block.content : ''}
+              <span className="flex items-center gap-2">
+                {buttonIcon && <span>{buttonIcon}</span>}
+                {typeof block.content === 'string' ? block.content : 'Botão'}
+              </span>
+              {buttonSubtitle && (
+                <span className="text-xs opacity-80 font-normal">
+                  {buttonSubtitle}
+                </span>
+              )}
             </button>
           </div>
         );
