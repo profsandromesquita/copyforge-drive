@@ -80,14 +80,34 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Resposta da API recebida');
+    console.log('Resposta da API recebida:', JSON.stringify(data, null, 2));
 
-    // Extrair a imagem base64 da resposta
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // Extrair a imagem base64 da resposta - tentar diferentes estruturas
+    let generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    // Tentar estrutura alternativa para imagens geradas/editadas
+    if (!generatedImageUrl && data.choices?.[0]?.message?.content) {
+      // Às vezes a imagem vem no content
+      const content = data.choices[0].message.content;
+      if (Array.isArray(content)) {
+        const imageContent = content.find(c => c.type === 'image_url');
+        if (imageContent) {
+          generatedImageUrl = imageContent.image_url?.url;
+        }
+      }
+    }
+    
+    // Tentar outra estrutura alternativa
+    if (!generatedImageUrl && data.data?.[0]?.url) {
+      generatedImageUrl = data.data[0].url;
+    }
     
     if (!generatedImageUrl) {
-      throw new Error('Nenhuma imagem foi gerada');
+      console.error('Estrutura de resposta inesperada:', data);
+      throw new Error('Nenhuma imagem foi gerada - estrutura de resposta inesperada');
     }
+    
+    console.log('Imagem extraída com sucesso');
 
     return new Response(
       JSON.stringify({ imageUrl: generatedImageUrl }),
