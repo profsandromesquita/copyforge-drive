@@ -58,9 +58,12 @@ const Sidebar = () => {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
                     isActive
-                      ? "bg-primary text-primary-foreground"
+                      ? "text-primary"
                       : "text-foreground hover:bg-accent"
                   }`
+                }
+                style={({ isActive }) => 
+                  isActive ? { backgroundColor: '#F8E9E7' } : undefined
                 }
               >
                 <item.icon size={24} weight="bold" />

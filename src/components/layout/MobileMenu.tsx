@@ -44,6 +44,9 @@ const MobileMenu = () => {
                     : "text-muted-foreground"
                 }`
               }
+              style={({ isActive }) => 
+                isActive ? { backgroundColor: '#F8E9E7' } : undefined
+              }
             >
               <item.icon size={24} weight="bold" />
               <span className="text-xs font-medium">{item.label}</span>
