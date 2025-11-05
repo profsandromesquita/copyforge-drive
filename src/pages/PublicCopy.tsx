@@ -6,6 +6,7 @@ import { Session } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { BlockPreview } from '@/components/copy-editor/BlockPreview';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -158,11 +159,11 @@ const PublicCopy = () => {
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between gap-4">
-            {/* Left: Copy Title */}
+            {/* Left: Logo or Simple Text */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-base sm:text-lg font-semibold truncate">
-                {copy.title}
-              </h1>
+              <span className="text-sm font-medium text-muted-foreground">
+                Visualização Pública
+              </span>
             </div>
 
             {/* Right: Actions */}
@@ -237,12 +238,39 @@ const PublicCopy = () => {
         </div>
       </header>
 
+      {/* Copy Title and Creator Section */}
+      <div className="border-b bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">
+            {copy.title}
+          </h1>
+          {copy.profiles && (
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={copy.profiles.avatar_url || undefined} />
+                <AvatarFallback>
+                  {copy.profiles.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium">
+                  {copy.profiles.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Autor
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="space-y-6">
           {copy.sessions && Array.isArray(copy.sessions) && copy.sessions.map((session: Session) => (
             <section key={session.id} className="space-y-4">
               <div className="border-b pb-2">
-                <h2 className="text-lg font-semibold text-primary">
+                <h2 className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
                   {session.title}
                 </h2>
               </div>
