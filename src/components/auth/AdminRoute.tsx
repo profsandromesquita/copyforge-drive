@@ -9,16 +9,22 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      console.log('Checking admin status for user:', user?.id);
+      
       if (!user) {
+        console.log('No user found, setting isAdmin to false');
         setIsAdmin(false);
         return;
       }
 
+      console.log('Calling has_system_role RPC...');
       const { data, error } = await supabase
         .rpc('has_system_role', {
           _user_id: user.id,
           _role: 'super_admin'
         });
+
+      console.log('RPC response:', { data, error });
 
       if (error) {
         console.error('Error checking admin status:', error);
@@ -26,6 +32,7 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      console.log('Setting isAdmin to:', data);
       setIsAdmin(data);
     };
 
