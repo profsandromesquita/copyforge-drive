@@ -45,6 +45,69 @@ export const GeneralSettings = () => {
     }
   };
 
+  const uploadImage = async (file: File, path: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${path}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Delete old file if exists
+      const oldUrl = path === 'logo-light' ? settings?.logo_light_url :
+                     path === 'logo-dark' ? settings?.logo_dark_url :
+                     settings?.favicon_url;
+      
+      if (oldUrl) {
+        const oldPath = oldUrl.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('system-assets')
+            .remove([oldPath]);
+        }
+      }
+
+      // Upload new file
+      const { error: uploadError } = await supabase.storage
+        .from('system-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('system-assets')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload da imagem');
+      return null;
+    }
+  };
+
+  const handleImageUpload = async (file: File, type: 'logo-light' | 'logo-dark' | 'favicon') => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione um arquivo de imagem');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB');
+      return;
+    }
+
+    const url = await uploadImage(file, type);
+    if (url && settings) {
+      setSettings({
+        ...settings,
+        [type === 'logo-light' ? 'logo_light_url' : 
+         type === 'logo-dark' ? 'logo_dark_url' : 
+         'favicon_url']: url
+      });
+      toast.success('Imagem carregada com sucesso!');
+    }
+  };
+
   const handleSave = async () => {
     if (!settings) return;
 
@@ -122,67 +185,142 @@ export const GeneralSettings = () => {
             Configure os logotipos e ícones do sistema
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="logo_light">Logo Modo Claro (URL)</Label>
+        <CardContent className="space-y-6">
+          {/* Logo Modo Claro */}
+          <div className="space-y-3">
+            <Label>Logo Modo Claro</Label>
+            {settings.logo_light_url && (
+              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                <img 
+                  src={settings.logo_light_url} 
+                  alt="Logo Claro" 
+                  className="h-16 w-auto object-contain"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSettings({ ...settings, logo_light_url: null })}
+                >
+                  Remover
+                </Button>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
-                id="logo_light"
-                placeholder="https://exemplo.com/logo-light.png"
-                value={settings.logo_light_url || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, logo_light_url: e.target.value })
-                }
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, 'logo-light');
+                }}
+                className="cursor-pointer"
               />
-              {settings.logo_light_url && (
-                <Button variant="outline" size="icon" asChild>
-                  <a href={settings.logo_light_url} target="_blank" rel="noopener noreferrer">
-                    <ImageIcon size={20} />
-                  </a>
-                </Button>
-              )}
+              <Button variant="outline" size="icon" asChild>
+                <label className="cursor-pointer">
+                  <Upload size={20} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'logo-light');
+                    }}
+                  />
+                </label>
+              </Button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="logo_dark">Logo Modo Escuro (URL)</Label>
+          {/* Logo Modo Escuro */}
+          <div className="space-y-3">
+            <Label>Logo Modo Escuro</Label>
+            {settings.logo_dark_url && (
+              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                <img 
+                  src={settings.logo_dark_url} 
+                  alt="Logo Escuro" 
+                  className="h-16 w-auto object-contain"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSettings({ ...settings, logo_dark_url: null })}
+                >
+                  Remover
+                </Button>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
-                id="logo_dark"
-                placeholder="https://exemplo.com/logo-dark.png"
-                value={settings.logo_dark_url || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, logo_dark_url: e.target.value })
-                }
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, 'logo-dark');
+                }}
+                className="cursor-pointer"
               />
-              {settings.logo_dark_url && (
-                <Button variant="outline" size="icon" asChild>
-                  <a href={settings.logo_dark_url} target="_blank" rel="noopener noreferrer">
-                    <ImageIcon size={20} />
-                  </a>
-                </Button>
-              )}
+              <Button variant="outline" size="icon" asChild>
+                <label className="cursor-pointer">
+                  <Upload size={20} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'logo-dark');
+                    }}
+                  />
+                </label>
+              </Button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="favicon">Favicon (URL)</Label>
+          {/* Favicon */}
+          <div className="space-y-3">
+            <Label>Favicon</Label>
+            {settings.favicon_url && (
+              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                <img 
+                  src={settings.favicon_url} 
+                  alt="Favicon" 
+                  className="h-8 w-8 object-contain"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSettings({ ...settings, favicon_url: null })}
+                >
+                  Remover
+                </Button>
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
-                id="favicon"
-                placeholder="https://exemplo.com/favicon.ico"
-                value={settings.favicon_url || ""}
-                onChange={(e) =>
-                  setSettings({ ...settings, favicon_url: e.target.value })
-                }
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file, 'favicon');
+                }}
+                className="cursor-pointer"
               />
-              {settings.favicon_url && (
-                <Button variant="outline" size="icon" asChild>
-                  <a href={settings.favicon_url} target="_blank" rel="noopener noreferrer">
-                    <ImageIcon size={20} />
-                  </a>
-                </Button>
-              )}
+              <Button variant="outline" size="icon" asChild>
+                <label className="cursor-pointer">
+                  <Upload size={20} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file, 'favicon');
+                    }}
+                  />
+                </label>
+              </Button>
             </div>
           </div>
         </CardContent>
