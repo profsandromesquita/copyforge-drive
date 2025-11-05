@@ -1,5 +1,7 @@
 import { Folder, FileText, FunnelSimple, DotsThree, Trash, Pencil, ArrowsDownUp } from "phosphor-react";
-import { useState } from "react";
+import { useState, forwardRef } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +35,7 @@ interface DriveCardProps {
   status?: 'draft' | 'published';
   folderId?: string | null;
   onClick?: () => void;
+  onDrop?: (draggedId: string, draggedType: CardType) => void;
 }
 
 const iconMap = {
@@ -41,13 +44,35 @@ const iconMap = {
   funnel: { icon: FunnelSimple, color: "text-foreground" },
 };
 
-const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, folderId, onClick }: DriveCardProps) => {
+const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, status, folderId, onClick, onDrop }: DriveCardProps) => {
   const { icon: Icon, color } = iconMap[type];
   const { deleteFolder, deleteCopy, renameFolder, renameCopy, moveFolder, moveCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isOver, setIsOver] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: id,
+    data: {
+      type: type,
+      folderId: folderId,
+    }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleRename = async () => {
     if (!newName.trim()) return;
@@ -80,15 +105,39 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (type === 'folder') {
+      setIsOver(true);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setIsOver(false);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Não executar onClick se estiver arrastando
+    if (!isDragging && onClick) {
+      onClick();
+    }
+  };
+
   return (
     <>
       <div
-        onClick={onClick}
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        onClick={handleCardClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         className={`group relative border rounded-xl p-3 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[100px] flex flex-col ${
           type === 'folder' 
-            ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700' 
+            ? `bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700 ${isOver ? 'ring-2 ring-primary shadow-xl scale-105' : ''}` 
             : 'bg-card border-border/50 hover:border-primary/30'
-        }`}
+        } ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
       >
         {/* Subtle gradient overlay on hover */}
         <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
