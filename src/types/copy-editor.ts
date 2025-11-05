@@ -10,7 +10,9 @@ export interface BlockConfig {
   fontWeight?: string;
   
   // List
-  listStyle?: 'bullets' | 'numbers';
+  listStyle?: 'bullets' | 'numbers' | 'check' | 'arrow' | 'star' | 'heart';
+  showListIcons?: boolean;
+  listIconColor?: string;
   
   // Button
   backgroundColor?: string;

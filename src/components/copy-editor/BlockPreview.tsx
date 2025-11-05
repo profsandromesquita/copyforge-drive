@@ -70,11 +70,35 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
 
       case 'list':
         const items = Array.isArray(block.content) ? block.content : [];
+        const listIconColor = block.config?.listIconColor || '#ff6b35';
+        const showIcons = block.config?.showListIcons !== false;
+        
+        const getListIcon = (index: number) => {
+          if (!showIcons) return null;
+          
+          const iconStyle = { color: listIconColor };
+          
+          switch (block.config?.listStyle) {
+            case 'numbers':
+              return <span style={iconStyle} className="font-medium">{index + 1}.</span>;
+            case 'check':
+              return <span style={iconStyle} className="text-lg">✓</span>;
+            case 'arrow':
+              return <span style={iconStyle} className="text-lg">→</span>;
+            case 'star':
+              return <span style={iconStyle} className="text-lg">★</span>;
+            case 'heart':
+              return <span style={iconStyle} className="text-lg">♥</span>;
+            default:
+              return <span style={iconStyle}>•</span>;
+          }
+        };
+
         return (
-          <ul className="space-y-1 pl-4">
+          <ul className={`space-y-1 ${showIcons ? 'pl-4' : ''} ${getTextAlignClass()}`}>
             {items.map((item, index) => (
               <li key={index} className="flex gap-2">
-                <span className="text-primary">•</span>
+                {getListIcon(index)}
                 <span>{item}</span>
               </li>
             ))}

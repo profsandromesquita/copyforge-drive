@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 
 interface BlockSettingsProps {
@@ -104,21 +105,73 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
       case 'list':
         return (
-          <div className="space-y-2">
-            <Label>Estilo da Lista</Label>
-            <Select
-              value={block.config?.listStyle || 'bullets'}
-              onValueChange={(value) => updateConfig('listStyle', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bullets">Bullets (•)</SelectItem>
-                <SelectItem value="numbers">Números (1, 2, 3)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <>
+            <div className="space-y-2">
+              <Label>Estilo da Lista</Label>
+              <Select
+                value={block.config?.listStyle || 'bullets'}
+                onValueChange={(value) => updateConfig('listStyle', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="bullets">Bullets (•)</SelectItem>
+                  <SelectItem value="numbers">Números (1, 2, 3)</SelectItem>
+                  <SelectItem value="check">Check (✓)</SelectItem>
+                  <SelectItem value="arrow">Seta (→)</SelectItem>
+                  <SelectItem value="star">Estrela (★)</SelectItem>
+                  <SelectItem value="heart">Coração (♥)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Alinhamento</Label>
+              <Select
+                value={block.config?.textAlign || 'left'}
+                onValueChange={(value) => updateConfig('textAlign', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="left">Esquerda</SelectItem>
+                  <SelectItem value="center">Centro</SelectItem>
+                  <SelectItem value="right">Direita</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label>Mostrar Ícones</Label>
+              <Switch
+                checked={block.config?.showListIcons !== false}
+                onCheckedChange={(checked) => updateConfig('showListIcons', checked)}
+              />
+            </div>
+
+            {block.config?.showListIcons !== false && (
+              <div className="space-y-2">
+                <Label>Cor do Ícone</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={block.config?.listIconColor || '#ff6b35'}
+                    onChange={(e) => updateConfig('listIconColor', e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={block.config?.listIconColor || '#ff6b35'}
+                    onChange={(e) => updateConfig('listIconColor', e.target.value)}
+                    placeholder="#ff6b35"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </>
         );
 
       case 'button':

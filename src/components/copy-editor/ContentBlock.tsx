@@ -259,11 +259,42 @@ export const ContentBlock = ({ block, sessionId }: ContentBlockProps) => {
         );
 
       case 'list':
+        const getListIcon = () => {
+          if (block.config?.showListIcons === false) return null;
+          
+          const iconColor = block.config?.listIconColor || '#ff6b35';
+          const iconStyle = { color: iconColor };
+          
+          switch (block.config?.listStyle) {
+            case 'numbers':
+              return null; // Numbers will be handled differently
+            case 'check':
+              return <span style={iconStyle} className="mt-2 text-lg">✓</span>;
+            case 'arrow':
+              return <span style={iconStyle} className="mt-2 text-lg">→</span>;
+            case 'star':
+              return <span style={iconStyle} className="mt-2 text-lg">★</span>;
+            case 'heart':
+              return <span style={iconStyle} className="mt-2 text-lg">♥</span>;
+            default:
+              return <span style={iconStyle} className="mt-2">•</span>;
+          }
+        };
+
         return (
-          <div className="space-y-2">
+          <div className={`space-y-2 ${getTextAlignClass()}`}>
             {listItems.map((item, index) => (
               <div key={index} className="flex gap-2">
-                <span className="text-primary mt-2">•</span>
+                {block.config?.listStyle === 'numbers' && block.config?.showListIcons !== false ? (
+                  <span 
+                    style={{ color: block.config?.listIconColor || '#ff6b35' }}
+                    className="mt-2 font-medium"
+                  >
+                    {index + 1}.
+                  </span>
+                ) : (
+                  getListIcon()
+                )}
                 <Input
                   value={item}
                   onChange={(e) => handleListChange(index, e.target.value)}
