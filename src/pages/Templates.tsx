@@ -20,6 +20,7 @@ import { startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears, isWith
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
 import { CreateCopyDialog, CopyType } from '@/components/drive/CreateCopyDialog';
+import { CreateFolderDialog } from '@/components/drive/CreateFolderDialog';
 import { useDrive } from '@/hooks/useDrive';
 
 const Templates = () => {
@@ -29,10 +30,11 @@ const Templates = () => {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
-  const { createCopy } = useDrive();
+  const { createCopy, createFolder } = useDrive();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
@@ -77,6 +79,12 @@ const Templates = () => {
       setCreateCopyOpen(false);
       navigate(`/copy/${copy.id}`);
     }
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    await createFolder(name);
+    setCreateFolderOpen(false);
+    navigate('/dashboard');
   };
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +153,10 @@ const Templates = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar onCreateCopy={() => setCreateCopyOpen(true)} />
+      <Sidebar 
+        onCreateCopy={() => setCreateCopyOpen(true)}
+        onCreateFolder={() => setCreateFolderOpen(true)}
+      />
       
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
@@ -250,6 +261,11 @@ const Templates = () => {
         open={createCopyOpen}
         onOpenChange={setCreateCopyOpen}
         onCreateCopy={handleCreateCopy}
+      />
+      
+      <CreateFolderDialog 
+        open={createFolderOpen} 
+        onOpenChange={setCreateFolderOpen}
       />
     </div>
   );

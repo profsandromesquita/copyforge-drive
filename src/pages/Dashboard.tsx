@@ -205,7 +205,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar />
+      <Sidebar 
+        onCreateCopy={() => setCreateCopyOpen(true)}
+        onCreateFolder={() => setCreateFolderOpen(true)}
+      />
       
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
