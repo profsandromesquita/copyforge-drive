@@ -21,29 +21,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('=== useAuth initializing ===');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN') {
           // Only redirect to dashboard if not on a public page
           const currentPath = window.location.pathname;
+          console.log('Signed in, current path:', currentPath);
           if (!currentPath.startsWith('/view/')) {
             navigate('/dashboard');
           }
         } else if (event === 'SIGNED_OUT') {
+          console.log('Signed out, redirecting to auth');
           navigate('/auth');
         }
       }
     );
 
     // Check for existing session
+    console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Existing session found:', !!session);
+      console.log('User:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      console.log('Auth loading complete');
     });
 
     return () => subscription.unsubscribe();
