@@ -70,7 +70,6 @@ export const ShareModal = ({ open, onOpenChange, copyId }: ShareModalProps) => {
 
       if (error) throw error;
 
-      toast.success('Configurações salvas com sucesso!');
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving settings:', error);
