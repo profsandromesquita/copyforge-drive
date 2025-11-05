@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Plus, Sparkle } from 'phosphor-react';
+import { Plus, Sparkle, MagnifyingGlass } from 'phosphor-react';
+import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { Button } from '@/components/ui/button';
@@ -56,15 +57,37 @@ const Templates = () => {
     navigate(`/copy/${templateId}`);
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredTemplates = templates.filter(template =>
+    template.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
       
-      <main className="flex-1 pb-20 lg:pb-0 bg-muted/30 rounded-tl-3xl overflow-hidden">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
+      <div className="flex-1 flex flex-col">
+        {/* Header com barra de pesquisa */}
+        <header className="bg-background px-6 py-4 sticky top-0 z-40">
+          <div className="flex-1 max-w-md relative">
+            <MagnifyingGlass 
+              size={20} 
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              placeholder="Buscar modelos..."
+              className="pl-10 bg-muted/30 rounded-full"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </header>
+
+        <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
+          {/* Header da página */}
+          <div className="sticky top-0 z-40 rounded-tl-3xl" style={{ backgroundColor: '#f5f5f5' }}>
+            <div className="px-6 py-4">
               <h1 className="text-3xl font-bold text-foreground mb-2">Modelos</h1>
               <p className="text-muted-foreground">
                 Crie copies rapidamente usando modelos pré-definidos
@@ -73,44 +96,50 @@ const Templates = () => {
           </div>
 
           {/* Content */}
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-48 rounded-xl" />
-              ))}
-            </div>
-          ) : templates.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                <Sparkle size={32} className="text-primary" weight="duotone" />
+          <div className="p-6 space-y-6">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Skeleton key={i} className="h-48 rounded-xl" />
+                ))}
               </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">
-                Nenhum modelo ainda
-              </h2>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Crie seu primeiro modelo salvando uma copy como modelo no editor.
-                Modelos ajudam a agilizar a criação de novas copies.
-              </p>
-              <Button onClick={() => navigate('/dashboard')}>
-                Ir para Dashboard
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={template}
-                  onUse={handleUseTemplate}
-                  onEdit={handleEditTemplate}
-                  onDuplicate={duplicateTemplate}
-                  onDelete={deleteTemplate}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
+            ) : filteredTemplates.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                  <Sparkle size={32} className="text-primary" weight="duotone" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  {searchQuery ? 'Nenhum modelo encontrado' : 'Nenhum modelo ainda'}
+                </h2>
+                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  {searchQuery 
+                    ? 'Tente usar outros termos de busca.'
+                    : 'Crie seu primeiro modelo salvando uma copy como modelo no editor. Modelos ajudam a agilizar a criação de novas copies.'
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => navigate('/dashboard')}>
+                    Ir para Dashboard
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTemplates.map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    onUse={handleUseTemplate}
+                    onEdit={handleEditTemplate}
+                    onDuplicate={duplicateTemplate}
+                    onDelete={deleteTemplate}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
 
       <MobileMenu />
 
