@@ -153,4 +153,35 @@ All colors MUST be HSL.
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   }
+
+  /* Toast animations */
+  [data-sonner-toast] {
+    animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-sonner-toast][data-removed="true"] {
+    animation: slideOut 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(calc(100% + 1rem));
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(calc(100% + 1rem));
+      opacity: 0;
+    }
+  }
 }
