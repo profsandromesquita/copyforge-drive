@@ -73,35 +73,29 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
     <>
       <div
         onClick={onClick}
-        className="group relative bg-card border border-border/50 rounded-xl p-4 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[140px] flex flex-col"
+        className={`group relative border rounded-xl p-4 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden h-[120px] flex flex-col ${
+          type === 'folder' 
+            ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/40 hover:border-blue-300 dark:hover:border-blue-700' 
+            : 'bg-card border-border/50 hover:border-primary/30'
+        }`}
       >
         {/* Subtle gradient overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+          type === 'folder' ? 'from-blue-100/30 to-transparent dark:from-blue-900/20' : 'from-primary/5 to-transparent'
+        }`} />
         
         <div className="relative flex-1 flex flex-col">
           <div className="flex items-start gap-3">
             {/* Icon */}
-            <div className={`${color} shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-              <Icon size={28} weight="duotone" />
+            <div className="text-muted-foreground/60 shrink-0 transition-transform duration-300 group-hover:scale-110">
+              <Icon size={26} weight="duotone" />
             </div>
             
             {/* Content */}
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-xs text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-tight">
                 {title}
               </h3>
-              {type === 'copy' && status && (
-                <Badge 
-                  variant="outline"
-                  className={`text-[10px] px-1.5 py-0 h-5 font-medium ${
-                    status === 'published' 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
-                      : 'bg-muted text-muted-foreground border-border'
-                  }`}
-                >
-                  {status === 'published' ? 'Publicado' : 'Rascunho'}
-                </Badge>
-              )}
             </div>
             
             {/* Menu */}
@@ -137,32 +131,41 @@ const DriveCard = ({ id, type, title, subtitle, creatorName, creatorAvatar, stat
             </DropdownMenu>
           </div>
 
-          {/* Footer - Creator or subtitle */}
-          <div className="pt-3 mt-auto border-t border-border/30">
-            {type === 'copy' && creatorName ? (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-5 w-5">
+          {/* Footer - Avatar and status badge in same line */}
+          <div className="pt-2.5 mt-auto border-t border-border/30">
+            <div className="flex items-center justify-between gap-2">
+              {type === 'copy' && creatorName ? (
+                <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage src={creatorAvatar || undefined} />
                   <AvatarFallback className="text-[10px]">
                     {creatorName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
-                  <span className="text-xs text-muted-foreground truncate">
-                    {creatorName}
-                  </span>
-                  {subtitle && (
-                    <span className="text-[10px] text-muted-foreground/70 shrink-0">
-                      {subtitle}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground block">
-                {subtitle || (type === 'folder' ? 'Pasta' : 'Copy')}
-              </span>
-            )}
+              ) : (
+                <span className="text-[10px] text-muted-foreground">
+                  {subtitle || (type === 'folder' ? 'Pasta' : 'Copy')}
+                </span>
+              )}
+              
+              {type === 'copy' && status && (
+                <Badge 
+                  variant="outline"
+                  className={`text-[10px] px-1.5 py-0 h-5 font-medium shrink-0 ${
+                    status === 'published' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
+                      : 'bg-muted text-muted-foreground border-border'
+                  }`}
+                >
+                  {status === 'published' ? 'Publicado' : 'Rascunho'}
+                </Badge>
+              )}
+              
+              {subtitle && type === 'copy' && (
+                <span className="text-[10px] text-muted-foreground/70 ml-auto shrink-0">
+                  {subtitle}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
