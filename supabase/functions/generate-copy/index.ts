@@ -289,7 +289,7 @@ REGRA CRÍTICA SOBRE LISTAS:
 QUANDO NÃO USAR:
 - Não use subheadline se o headline for auto-explicativo
 - Não use button em conteúdos informativos ou educativos que não exigem ação imediata
-- Não crie listas genéricas se o usuário não forneceu uma
+- Não crie listas genéricas se o usuário não forneceu uma`;
 
   const typeSpecificPrompts: Record<string, string> = {
     anuncio: `${basePrompt}
