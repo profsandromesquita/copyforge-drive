@@ -16,6 +16,7 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
+import { CreditBadge } from '@/components/credits/CreditBadge';
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -103,6 +104,7 @@ const Discover = () => {
                 />
               </div>
             </div>
+            <CreditBadge />
             <UserMenu />
           </div>
         </header>

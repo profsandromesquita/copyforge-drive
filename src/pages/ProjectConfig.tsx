@@ -9,6 +9,7 @@ import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreditBadge } from '@/components/credits/CreditBadge';
 
 const ProjectConfig = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,6 +62,11 @@ const ProjectConfig = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-50 bg-background border-b">
+        <div className="flex items-center justify-end px-6 py-2 gap-2">
+          <CreditBadge />
+        </div>
+      </div>
       <ProjectConfigHeader isNew={isNew} />
       
       <div className="max-w-5xl mx-auto p-6 space-y-6">

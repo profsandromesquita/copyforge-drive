@@ -4,12 +4,20 @@ import { Users, FolderOpen, FileText, CreditCard } from "phosphor-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreditTransactionCard } from "@/components/credits/CreditTransactionCard";
 
 interface Stats {
   clientes: number;
   workspaces: number;
   copies: number;
   creditos: number;
+}
+
+interface LastTransaction {
+  debited: number;
+  tokens: number;
+  tpc: number;
+  timestamp: string;
 }
 
 export default function AdminDashboard() {
@@ -20,22 +28,46 @@ export default function AdminDashboard() {
     creditos: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [lastTransaction, setLastTransaction] = useState<LastTransaction | null>(null);
+  const [totalCreditsBalance, setTotalCreditsBalance] = useState<number>(0);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [clientesRes, workspacesRes, copiesRes] = await Promise.all([
+        const [clientesRes, workspacesRes, copiesRes, creditsRes, lastTransactionRes] = await Promise.all([
           supabase.from('profiles').select('id', { count: 'exact', head: true }),
           supabase.from('workspaces').select('id', { count: 'exact', head: true }),
           supabase.from('copies').select('id', { count: 'exact', head: true }),
+          supabase.from('workspace_credits').select('balance, total_used'),
+          supabase
+            .from('ai_generation_history')
+            .select('credits_debited, total_tokens, tpc_snapshot, created_at')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
         ]);
+
+        // Calcular total de créditos em todas as workspaces
+        const totalBalance = creditsRes.data?.reduce((sum, item) => sum + item.balance, 0) || 0;
+        const totalUsed = creditsRes.data?.reduce((sum, item) => sum + item.total_used, 0) || 0;
+        
+        setTotalCreditsBalance(totalBalance);
 
         setStats({
           clientes: clientesRes.count || 0,
           workspaces: workspacesRes.count || 0,
           copies: copiesRes.count || 0,
-          creditos: 0, // TODO: Implementar sistema de créditos
+          creditos: totalUsed,
         });
+
+        if (lastTransactionRes.data) {
+          setLastTransaction({
+            debited: lastTransactionRes.data.credits_debited || 0,
+            tokens: lastTransactionRes.data.total_tokens || 0,
+            tpc: lastTransactionRes.data.tpc_snapshot || 10000,
+            timestamp: lastTransactionRes.data.created_at || new Date().toISOString()
+          });
+        }
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -66,8 +98,8 @@ export default function AdminDashboard() {
       color: "text-green-600",
     },
     {
-      title: "Créditos Usados",
-      value: stats.creditos,
+      title: "Créditos Usados (Total)",
+      value: stats.creditos.toFixed(2),
       icon: CreditCard,
       color: "text-orange-600",
     },
@@ -81,7 +113,7 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">Visão geral do sistema</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {cards.map((card) => (
             <Card key={card.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -99,7 +131,34 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           ))}
+          
+          {/* Card de Saldo Total */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Saldo Total de Créditos
+              </CardTitle>
+              <CreditCard size={20} className="text-green-600" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <div className="text-3xl font-bold">{totalCreditsBalance.toFixed(2)}</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Última Transação */}
+        {lastTransaction && !loading && (
+          <CreditTransactionCard
+            debited={lastTransaction.debited}
+            tokens={lastTransaction.tokens}
+            tpc={lastTransaction.tpc}
+            timestamp={lastTransaction.timestamp}
+          />
+        )}
 
         <Card>
           <CardHeader>

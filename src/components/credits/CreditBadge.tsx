@@ -24,11 +24,15 @@ export const CreditBadge = () => {
             <span className="font-semibold">{balance.toFixed(1)}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent side="bottom" sideOffset={8} align="end">
           <div className="space-y-1 text-sm">
             <p><strong>Saldo:</strong> {balance.toFixed(2)} créditos</p>
             <p><strong>Total usado:</strong> {credits.total_used.toFixed(2)}</p>
             <p><strong>Total adicionado:</strong> {credits.total_added.toFixed(2)}</p>
+            <div className="border-t pt-1 mt-2 text-xs text-muted-foreground">
+              <p>Créditos são debitados proporcionalmente</p>
+              <p>baseados nos tokens usados (TPC)</p>
+            </div>
           </div>
         </TooltipContent>
       </Tooltip>

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreditTransactionCard } from "@/components/credits/CreditTransactionCard";
 
 interface CreditConfig {
   id: string;
@@ -35,6 +36,13 @@ interface ConfigHistory {
   created_at: string;
 }
 
+interface LastTransaction {
+  debited: number;
+  tokens: number;
+  tpc: number;
+  timestamp: string;
+}
+
 export const CreditSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +51,7 @@ export const CreditSettings = () => {
   const [originalConfig, setOriginalConfig] = useState<CreditConfig>({ id: '', cost_limit_pct: 25, base_tpc_gemini: 10000 });
   const [models, setModels] = useState<ModelMultiplier[]>([]);
   const [history, setHistory] = useState<ConfigHistory[]>([]);
+  const [lastTransaction, setLastTransaction] = useState<LastTransaction | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -83,6 +92,23 @@ export const CreditSettings = () => {
 
       if (historyError) throw historyError;
       setHistory(historyData || []);
+
+      // Buscar última transação
+      const { data: lastTransactionData, error: lastTransactionError } = await supabase
+        .from('ai_generation_history')
+        .select('credits_debited, total_tokens, tpc_snapshot, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!lastTransactionError && lastTransactionData) {
+        setLastTransaction({
+          debited: lastTransactionData.credits_debited || 0,
+          tokens: lastTransactionData.total_tokens || 0,
+          tpc: lastTransactionData.tpc_snapshot || 10000,
+          timestamp: lastTransactionData.created_at || new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Erro ao carregar configurações');
@@ -165,6 +191,16 @@ export const CreditSettings = () => {
           Configure como os tokens são convertidos em créditos e gerencie os multiplicadores por modelo
         </p>
       </div>
+
+      {/* Última Transação */}
+      {lastTransaction && (
+        <CreditTransactionCard
+          debited={lastTransaction.debited}
+          tokens={lastTransaction.tokens}
+          tpc={lastTransaction.tpc}
+          timestamp={lastTransaction.timestamp}
+        />
+      )}
 
       {/* Seção de Margem de Lucro */}
       <Card>
