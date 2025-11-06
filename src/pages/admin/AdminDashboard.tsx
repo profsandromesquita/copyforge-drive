@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditTransactionCard } from "@/components/credits/CreditTransactionCard";
+import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
 
 interface Stats {
   clientes: number;
@@ -29,7 +30,7 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [lastTransaction, setLastTransaction] = useState<LastTransaction | null>(null);
-  const [totalCreditsBalance, setTotalCreditsBalance] = useState<number>(0);
+  const { data: workspaceCredits, isLoading: creditsLoading } = useWorkspaceCredits();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -47,11 +48,8 @@ export default function AdminDashboard() {
             .single()
         ]);
 
-        // Calcular total de créditos em todas as workspaces
-        const totalBalance = creditsRes.data?.reduce((sum, item) => sum + item.balance, 0) || 0;
+        // Calcular total de créditos usados em todas as workspaces
         const totalUsed = creditsRes.data?.reduce((sum, item) => sum + item.total_used, 0) || 0;
-        
-        setTotalCreditsBalance(totalBalance);
 
         setStats({
           clientes: clientesRes.count || 0,
@@ -132,19 +130,19 @@ export default function AdminDashboard() {
             </Card>
           ))}
           
-          {/* Card de Saldo Total */}
+          {/* Card de Saldo da Workspace Ativa */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Saldo Total de Créditos
+                Saldo de Créditos
               </CardTitle>
               <CreditCard size={20} className="text-green-600" />
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {loading || creditsLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-3xl font-bold">{totalCreditsBalance.toFixed(2)}</div>
+                <div className="text-3xl font-bold">{workspaceCredits?.balance.toFixed(2) || '0.00'}</div>
               )}
             </CardContent>
           </Card>
