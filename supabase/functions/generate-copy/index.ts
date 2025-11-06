@@ -278,14 +278,18 @@ DIRETRIZES DE USO DE BLOCOS:
 - headline: Use para títulos principais impactantes e chamadas de atenção (obrigatório na maioria das copies)
 - subheadline: Use APENAS quando o headline precisar de complementação ou expansão do conceito
 - text: Use para desenvolvimento de ideias, explicações, storytelling e argumentação
-- list: Use APENAS quando houver benefícios, features, passos ou pontos que realmente precisem ser listados
+- list: Use SEMPRE que o usuário fornecer uma lista explícita no prompt (usando -, •, números, etc.) ou quando houver benefícios, features, passos ou pontos que precisem ser listados
 - button: Use APENAS quando houver uma ação clara e específica que você quer que o usuário tome
+
+REGRA CRÍTICA SOBRE LISTAS:
+- Se o prompt do usuário contém uma lista formatada (com -, •, 1., 2., etc.), você DEVE converter para um bloco "list"
+- Exemplo: Se o usuário escreve "- Benefício 1\n- Benefício 2\n- Benefício 3", crie um bloco list com array ["Benefício 1", "Benefício 2", "Benefício 3"]
+- NUNCA ignore listas explícitas fornecidas pelo usuário
 
 QUANDO NÃO USAR:
 - Não use subheadline se o headline for auto-explicativo
-- Não use list se o conteúdo fluir melhor em texto corrido
 - Não use button em conteúdos informativos ou educativos que não exigem ação imediata
-- Não crie listas genéricas ou desnecessárias apenas para preencher blocos`;
+- Não crie listas genéricas se o usuário não forneceu uma
 
   const typeSpecificPrompts: Record<string, string> = {
     anuncio: `${basePrompt}
@@ -422,12 +426,24 @@ INSTRUÇÕES IMPORTANTES:
 - Use "headline" para títulos principais (texto curto e impactante)
 - Use "subheadline" SOMENTE se o headline precisar de complementação importante
 - Use "text" para parágrafos de desenvolvimento (pode ter vários parágrafos)
-- Use "list" SOMENTE quando houver itens que realmente precisem ser listados (content DEVE ser array de strings)
+- Use "list" SEMPRE que o prompt contiver listas formatadas (-, •, 1., etc.) e o content DEVE ser array de strings
 - Use "button" SOMENTE quando houver uma ação clara e específica (incluir link no config.link)
 - Cada sessão deve ter um título descritivo e APENAS os blocos relevantes
 - NÃO force o uso de todos os tipos de blocos - qualidade > quantidade
 - O conteúdo deve ser persuasivo, claro e orientado para ação quando apropriado
 - Adapte o tom, estrutura e blocos de acordo com o tipo de copy e preferências fornecidas
+
+IMPORTANTE SOBRE USO DO CONTEXTO DO PROJETO:
+- Para seções de PROVA/AUTORIDADE/CREDIBILIDADE/DIFERENCIAL:
+  * Use os dados de "Prova" (${offer?.proof || 'não fornecido'}) se disponível
+  * Use os "Diferenciais" (${offer?.differentials?.join(', ') || 'não fornecido'}) se disponível
+  * Incorpore informações de "Garantia" (${offer?.guarantee || 'não fornecido'}) se relevante
+  * Use "Mecanismo Único" (${offer?.unique_mechanism || 'não fornecido'}) para mostrar diferenciais
+- Para seções sobre RESULTADOS/TRANSFORMAÇÃO/BENEFÍCIOS:
+  * Use "Resultado Desejado" (${audienceSegment?.desired_result || 'não fornecido'}) do público-alvo
+  * Use "Benefício Principal" (${offer?.main_benefit || 'não fornecido'}) da oferta
+  * Conecte com a "Situação Atual" (${audienceSegment?.current_situation || 'não fornecido'}) do público
+- SEMPRE que o prompt mencionar essas seções, preencha com os dados fornecidos no contexto do projeto
 
 EXEMPLOS DE USO CORRETO:
 - Anúncio simples: headline + text + button (3 blocos)

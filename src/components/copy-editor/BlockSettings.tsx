@@ -3,6 +3,7 @@ import { Block } from '@/types/copy-editor';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -1004,21 +1005,23 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
 
                     <div className="space-y-1">
                       <Label className="text-xs">Pergunta</Label>
-                      <Input
+                      <Textarea
                         value={item.question}
                         onChange={(e) => updateFaqItem(item.id, 'question', e.target.value)}
                         placeholder="Digite a pergunta..."
-                        className="h-8"
+                        className="min-h-[60px] resize-y"
+                        rows={2}
                       />
                     </div>
 
                     <div className="space-y-1">
                       <Label className="text-xs">Resposta</Label>
-                      <Input
+                      <Textarea
                         value={item.answer}
                         onChange={(e) => updateFaqItem(item.id, 'answer', e.target.value)}
                         placeholder="Digite a resposta..."
-                        className="h-8"
+                        className="min-h-[100px] resize-y"
+                        rows={4}
                       />
                     </div>
                   </div>
