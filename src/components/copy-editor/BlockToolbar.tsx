@@ -90,12 +90,12 @@ export const BlockToolbar = () => {
   }, [blocks, isExpanded]);
 
   return (
-    <div className="border-b bg-background sticky top-16 z-40">
-      <div className="relative">
+    <div className="border-b bg-background sticky top-16 z-40 overflow-visible">
+      <div className={`relative transition-all duration-300 ${isExpanded ? 'pb-0' : ''}`}>
         <div 
           ref={containerRef}
           className={`flex flex-wrap gap-3 px-4 py-3 transition-all duration-300 ${
-            isExpanded ? 'max-h-none overflow-visible' : 'max-h-[60px] overflow-hidden'
+            isExpanded ? '' : 'max-h-[60px] overflow-hidden'
           }`}
         >
           {blocks.map((block) => (
@@ -104,7 +104,7 @@ export const BlockToolbar = () => {
         </div>
 
         {hasOverflow && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className={`absolute right-4 ${isExpanded ? 'top-4' : 'top-1/2 -translate-y-1/2'} transition-all duration-300`}>
             <Button
               variant="ghost"
               size="icon"
