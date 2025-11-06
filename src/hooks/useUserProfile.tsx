@@ -7,6 +7,7 @@ interface UserProfile {
   email: string;
   avatar_url: string | null;
   cpf: string | null;
+  phone: string | null;
   cep: string | null;
   street: string | null;
   number: string | null;
@@ -36,7 +37,7 @@ export const useUserProfile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('name, email, avatar_url, cpf, cep, street, number, complement, neighborhood, city, state')
+        .select('name, email, avatar_url, cpf, phone, cep, street, number, complement, neighborhood, city, state')
         .eq('id', user.id)
         .single();
 
@@ -51,6 +52,7 @@ export const useUserProfile = () => {
         email: user.email || '',
         avatar_url: user.user_metadata?.avatar_url || null,
         cpf: null,
+        phone: null,
         cep: null,
         street: null,
         number: null,

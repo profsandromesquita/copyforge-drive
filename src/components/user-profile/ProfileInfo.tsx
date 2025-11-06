@@ -19,6 +19,7 @@ export const ProfileInfo = () => {
     name: "",
     email: "",
     cpf: "",
+    phone: "",
     cep: "",
     street: "",
     number: "",
@@ -44,6 +45,7 @@ export const ProfileInfo = () => {
         name: profile.name || "",
         email: profile.email || "",
         cpf: profile.cpf || "",
+        phone: profile.phone || "",
         cep: profile.cep || "",
         street: profile.street || "",
         number: profile.number || "",
@@ -54,6 +56,36 @@ export const ProfileInfo = () => {
       });
     }
   }, [profile]);
+
+  // Máscaras de formatação
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    }
+    return value;
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 11) {
+      return numbers
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2");
+    }
+    return value;
+  };
+
+  const formatCEP = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 8) {
+      return numbers.replace(/(\d{5})(\d)/, "$1-$2");
+    }
+    return value;
+  };
 
   const handleAvatarUpload = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -136,6 +168,7 @@ export const ProfileInfo = () => {
         .update({
           name: formData.name,
           cpf: formData.cpf,
+          phone: formData.phone,
           cep: formData.cep,
           street: formData.street,
           number: formData.number,
@@ -255,14 +288,27 @@ export const ProfileInfo = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cpf">CPF</Label>
-            <Input
-              id="cpf"
-              value={formData.cpf}
-              onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
-              placeholder="000.000.000-00"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                value={formData.cpf}
+                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                placeholder="000.000.000-00"
+                maxLength={14}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -279,9 +325,10 @@ export const ProfileInfo = () => {
               <Input
                 id="cep"
                 value={formData.cep}
-                onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, cep: formatCEP(e.target.value) })}
                 onBlur={handleCepBlur}
                 placeholder="00000-000"
+                maxLength={9}
               />
             </div>
             <div className="space-y-2 col-span-2">
