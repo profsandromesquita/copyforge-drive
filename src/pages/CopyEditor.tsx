@@ -8,6 +8,8 @@ import { EditorSidebar } from '@/components/copy-editor/EditorSidebar';
 import { CopyEditorLoading } from '@/components/copy-editor/CopyEditorLoading';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Block } from '@/types/copy-editor';
+import { InsufficientCreditsModal } from '@/components/credits/InsufficientCreditsModal';
+import { useCopyGeneration } from '@/hooks/useCopyGeneration';
 
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +21,7 @@ const CopyEditorContent = () => {
   const [imageBlockId, setImageBlockId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const prevSelectedBlockId = useRef<string | null>(null);
+  const { insufficientCredits, creditInfo, closeInsufficientCreditsModal } = useCopyGeneration();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -228,6 +231,13 @@ const CopyEditorContent = () => {
           </div>
         ) : null}
       </DragOverlay>
+      
+      <InsufficientCreditsModal
+        open={insufficientCredits}
+        onOpenChange={closeInsufficientCreditsModal}
+        currentBalance={creditInfo?.current_balance || 0}
+        estimatedCost={creditInfo?.estimated_debit || 0}
+      />
     </DndContext>
   );
 };

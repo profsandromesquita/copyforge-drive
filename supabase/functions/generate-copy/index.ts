@@ -278,12 +278,21 @@ serve(async (req) => {
           .single();
 
         if (historyError) {
-          console.error("Erro ao salvar histórico:", historyError);
+          console.error("❌ Erro ao salvar histórico:", historyError);
         } else {
           generationId = historyRecord.id;
           console.log("✓ Histórico salvo com sucesso! ID:", generationId);
           
-          // Agora debitar os créditos
+          // === FASE 2: DÉBITO DE CRÉDITOS COM LOGGING DETALHADO ===
+          console.log('\n=== INICIANDO DÉBITO DE CRÉDITOS ===');
+          console.log('Generation ID:', generationId);
+          console.log('Workspace ID:', workspaceId);
+          console.log('Model:', 'google/gemini-2.5-flash');
+          console.log('Total tokens:', totalTokens);
+          console.log('Input tokens:', inputTokens);
+          console.log('Output tokens:', outputTokens);
+          console.log('User ID:', userId);
+          
           const { data: debitResult, error: debitError } = await supabaseAdmin
             .rpc('debit_workspace_credits', {
               p_workspace_id: workspaceId,
@@ -295,18 +304,28 @@ serve(async (req) => {
               p_user_id: userId
             });
 
-          console.log('Credit debit result:', debitResult);
+          console.log('\n=== RESULTADO DO DÉBITO ===');
+          console.log('Data:', JSON.stringify(debitResult, null, 2));
+          console.log('Error:', JSON.stringify(debitError, null, 2));
 
           if (debitError) {
-            console.error('Error debiting credits:', debitError);
+            console.error('❌ ERRO AO DEBITAR CRÉDITOS:', debitError);
+            console.error('Detalhes do erro:', JSON.stringify(debitError, null, 2));
+            // Não falhar a geração, mas logar o erro
           } else if (debitResult && !debitResult.success) {
-            console.error('Failed to debit credits:', debitResult.error);
+            console.error('❌ DÉBITO FALHOU:', debitResult.error);
+            console.error('Saldo atual:', debitResult.current_balance || 'desconhecido');
+            console.error('Valor necessário:', debitResult.required || 'desconhecido');
             // Mesmo se falhar ao debitar, continuar (já foi gerado)
           } else if (debitResult && debitResult.success) {
-            console.log(`✓ Créditos debitados: ${debitResult.debited}, novo saldo: ${debitResult.balance}`);
+            console.log('\n✓✓✓ CRÉDITOS DEBITADOS COM SUCESSO ✓✓✓');
+            console.log(`  → Debitado: ${debitResult.debited} créditos`);
+            console.log(`  → Novo saldo: ${debitResult.balance} créditos`);
+            console.log(`  → TPC: ${debitResult.tpc_snapshot}`);
+            console.log(`  → Multiplicador: ${debitResult.multiplier_snapshot}`);
             
             // Atualizar o histórico com informações de crédito
-            await supabaseAdmin
+            const { error: updateError } = await supabaseAdmin
               .from('ai_generation_history')
               .update({
                 credits_debited: debitResult.debited,
@@ -314,6 +333,12 @@ serve(async (req) => {
                 multiplier_snapshot: debitResult.multiplier_snapshot
               })
               .eq('id', generationId);
+
+            if (updateError) {
+              console.error('❌ Erro ao atualizar histórico com créditos:', updateError);
+            } else {
+              console.log('✓ Histórico atualizado com informações de crédito');
+            }
           }
         }
       } else {

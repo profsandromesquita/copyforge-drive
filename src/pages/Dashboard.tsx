@@ -26,6 +26,7 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { UserMenu } from '@/components/layout/UserMenu';
+import { CreditBadge } from '@/components/credits/CreditBadge';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -228,7 +229,10 @@ const Dashboard = () => {
                 />
               </div>
             </div>
-            <UserMenu />
+            <div className="flex items-center gap-4">
+              <CreditBadge />
+              <UserMenu />
+            </div>
           </div>
         </header>
 
