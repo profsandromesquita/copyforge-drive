@@ -95,7 +95,7 @@ export const BlockToolbar = () => {
         <div 
           ref={containerRef}
           className={`flex flex-wrap gap-3 px-4 py-3 transition-all duration-300 ${
-            isExpanded ? 'max-h-none' : 'max-h-[60px] overflow-hidden'
+            isExpanded ? 'max-h-none overflow-visible' : 'max-h-[60px] overflow-hidden'
           }`}
         >
           {blocks.map((block) => (
