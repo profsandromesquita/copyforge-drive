@@ -3,6 +3,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MagnifyingGlass, Funnel } from "phosphor-react";
 import { useWorkspacesList } from "@/hooks/useAdminCopies";
 import { Button } from "@/components/ui/button";
+import { DateFilter, DateFilterType } from "@/components/filters/DateFilter";
+import { useState } from "react";
+import { startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears } from "date-fns";
 
 interface CopyGenerationFiltersProps {
   filters: {
@@ -10,12 +13,16 @@ interface CopyGenerationFiltersProps {
     workspaceId?: string;
     category?: string;
     model?: string;
+    startDate?: string;
+    endDate?: string;
   };
   onFiltersChange: (filters: any) => void;
 }
 
 export const CopyGenerationFilters = ({ filters, onFiltersChange }: CopyGenerationFiltersProps) => {
   const { data: workspaces } = useWorkspacesList();
+  const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
 
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
@@ -33,11 +40,62 @@ export const CopyGenerationFilters = ({ filters, onFiltersChange }: CopyGenerati
     onFiltersChange({ ...filters, model: value === "all" ? undefined : value });
   };
 
+  const handleDateFilterChange = (type: DateFilterType, range?: { from?: Date; to?: Date }) => {
+    setSelectedDateFilter(type);
+    
+    if (!type) {
+      const { startDate, endDate, ...rest } = filters;
+      onFiltersChange(rest);
+      return;
+    }
+    
+    let from: Date | undefined;
+    let to: Date | undefined;
+    
+    switch (type) {
+      case 'today':
+        from = startOfDay(new Date());
+        to = endOfDay(new Date());
+        break;
+      case 'last7days':
+        from = startOfDay(subDays(new Date(), 7));
+        to = endOfDay(new Date());
+        break;
+      case 'last30days':
+        from = startOfDay(subDays(new Date(), 30));
+        to = endOfDay(new Date());
+        break;
+      case 'thisYear':
+        from = startOfYear(new Date());
+        to = endOfYear(new Date());
+        break;
+      case 'lastYear':
+        from = startOfYear(subYears(new Date(), 1));
+        to = endOfYear(subYears(new Date(), 1));
+        break;
+      case 'custom':
+        if (range) {
+          from = range.from;
+          to = range.to;
+          setDateRange(range);
+        }
+        break;
+    }
+    
+    onFiltersChange({
+      ...filters,
+      startDate: from?.toISOString(),
+      endDate: to?.toISOString(),
+    });
+  };
+
   const handleClearFilters = () => {
+    setSelectedDateFilter(null);
+    setDateRange(undefined);
     onFiltersChange({});
   };
 
-  const hasActiveFilters = filters.search || filters.workspaceId || filters.category || filters.model;
+  const hasActiveFilters = filters.search || filters.workspaceId || filters.category || filters.model || filters.startDate || filters.endDate;
 
   return (
     <div className="space-y-4">
@@ -61,6 +119,12 @@ export const CopyGenerationFilters = ({ filters, onFiltersChange }: CopyGenerati
       <div className="flex items-center gap-3">
         <Funnel className="text-muted-foreground" size={20} />
         <div className="flex flex-wrap gap-3 flex-1">
+          <DateFilter
+            selectedDateFilter={selectedDateFilter}
+            dateRange={dateRange}
+            onDateFilterChange={handleDateFilterChange}
+          />
+          
           <Select value={filters.workspaceId || "all"} onValueChange={handleWorkspaceChange}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Workspace" />

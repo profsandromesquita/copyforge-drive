@@ -94,6 +94,29 @@ export default function AdminCopies() {
     return new Intl.NumberFormat("pt-BR").format(tokens);
   };
 
+  const calculateTotals = () => {
+    if (!data?.generations) return { totalCostUSD: 0, totalCostBRL: 0, totalTokens: 0 };
+    
+    let totalCostUSD = 0;
+    let totalTokens = 0;
+    
+    data.generations.forEach(generation => {
+      const cost = calculateGenerationCost(
+        generation.model_used || 'google/gemini-2.5-flash',
+        generation.input_tokens || 0,
+        generation.output_tokens || 0
+      );
+      totalCostUSD += cost;
+      totalTokens += (generation.total_tokens || 0);
+    });
+    
+    const totalCostBRL = convertToBRL(totalCostUSD);
+    
+    return { totalCostUSD, totalCostBRL, totalTokens };
+  };
+
+  const totals = calculateTotals();
+
   const handleViewDetails = (generation: any) => {
     setSelectedGeneration(generation);
     setDetailsOpen(true);
@@ -125,6 +148,67 @@ export default function AdminCopies() {
               </Badge>
             )}
           </div>
+        </div>
+
+        {/* Cards de Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Custo Total (USD)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {formatCost(totals.totalCostUSD)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Custo Total (BRL)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : exchangeRate ? (
+                <>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {formatCurrency(totals.totalCostBRL, "BRL")}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cotação: {formatCurrency(exchangeRate, "BRL")}/USD
+                  </p>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">Carregando...</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Total de Tokens
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="text-2xl font-bold">
+                  {formatTokens(totals.totalTokens)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
