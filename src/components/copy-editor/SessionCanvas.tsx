@@ -3,16 +3,163 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { SessionBlock } from './SessionBlock';
 import { Button } from '@/components/ui/button';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { getImageFromDrop, getImageFromPaste, isValidImage, uploadImage } from '@/lib/image-upload';
 
 interface SessionCanvasProps {
   onShowImageAI?: (blockId: string) => void;
 }
 
 export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
-  const { sessions, addSession } = useCopyEditor();
+  const { sessions, addSession, addBlock } = useCopyEditor();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Handler para drag over
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  // Handler para drag leave
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  // Handler para drop
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = getImageFromDrop(e);
+    if (!file) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Por favor, arraste uma imagem válida.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isValidImage(file)) {
+      toast({
+        title: 'Imagem inválida',
+        description: 'A imagem deve ser JPG, PNG, GIF ou WEBP e ter no máximo 10MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await handleImageUpload(file);
+  };
+
+  // Handler para paste
+  const handlePasteImage = async (e: ClipboardEvent) => {
+    const file = getImageFromPaste(e);
+    if (!file) return;
+
+    if (!isValidImage(file)) {
+      toast({
+        title: 'Imagem inválida',
+        description: 'A imagem deve ser JPG, PNG, GIF ou WEBP e ter no máximo 10MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await handleImageUpload(file);
+  };
+
+  // Função para fazer upload e criar bloco
+  const handleImageUpload = async (file: File) => {
+    if (!user) return;
+
+    setIsUploading(true);
+    try {
+      const imageUrl = await uploadImage(file, user.id);
+
+      // Criar bloco de imagem na primeira sessão ou criar uma se não houver
+      const targetSessionId = sessions.length > 0 ? sessions[0].id : null;
+      
+      if (!targetSessionId) {
+        toast({
+          title: 'Erro',
+          description: 'Crie uma sessão antes de adicionar imagens.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      addBlock(targetSessionId, {
+        type: 'image',
+        content: '',
+        config: {
+          imageUrl,
+          imageDescription: file.name,
+          aspectRatio: '16/9',
+          imageSize: 'md',
+          roundedBorders: true,
+        },
+      });
+
+      toast({
+        title: 'Imagem adicionada!',
+        description: 'A imagem foi carregada com sucesso.',
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Erro ao fazer upload',
+        description: 'Não foi possível fazer upload da imagem. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Adicionar listener de paste
+  useEffect(() => {
+    const pasteListener = (e: ClipboardEvent) => {
+      handlePasteImage(e);
+    };
+
+    document.addEventListener('paste', pasteListener);
+    return () => document.removeEventListener('paste', pasteListener);
+  }, [sessions, user]);
 
   return (
-    <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[hsl(var(--canvas-background))] custom-scrollbar">
+    <div 
+      className={`flex-1 p-6 space-y-6 overflow-y-auto bg-[hsl(var(--canvas-background))] custom-scrollbar relative ${
+        isDragging ? 'ring-2 ring-primary ring-offset-2' : ''
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-background p-8 rounded-lg shadow-lg border-2 border-dashed border-primary">
+            <p className="text-lg font-semibold">Solte a imagem aqui</p>
+          </div>
+        </div>
+      )}
+      
+      {isUploading && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-50">
+          <div className="bg-background p-8 rounded-lg shadow-lg border">
+            <p className="text-lg font-semibold">Fazendo upload da imagem...</p>
+          </div>
+        </div>
+      )}
       {sessions.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-muted-foreground mb-4">
