@@ -1,11 +1,15 @@
 /**
  * Limpa a formatação de HTML colado, mantendo apenas formatações básicas
  * permitidas: negrito, itálico, sublinhado e links
+ * Remove estilos inline, classes, fontes e outras formatações
  */
 export const cleanPastedHTML = (html: string): string => {
   // Criar um elemento temporário para processar o HTML
   const temp = document.createElement('div');
   temp.innerHTML = html;
+
+  // Remover todos os elementos style e script
+  temp.querySelectorAll('style, script').forEach(el => el.remove());
 
   // Função recursiva para processar os nós
   const processNode = (node: Node): string => {
@@ -16,11 +20,19 @@ export const cleanPastedHTML = (html: string): string => {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
+      
+      // Ignorar elementos de fonte específicos
+      if (tagName === 'font' || tagName === 'style' || tagName === 'script') {
+        return Array.from(element.childNodes)
+          .map(child => processNode(child))
+          .join('');
+      }
+
       const children = Array.from(element.childNodes)
         .map(child => processNode(child))
         .join('');
 
-      // Manter apenas tags permitidas
+      // Manter apenas tags permitidas (sem atributos de estilo/classe/fonte)
       switch (tagName) {
         case 'b':
         case 'strong':
