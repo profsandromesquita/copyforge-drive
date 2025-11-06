@@ -109,12 +109,12 @@ export const BlockToolbar = () => {
               variant="ghost"
               size="icon"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="bg-background/95 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all border"
+              className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm opacity-50 hover:opacity-100 transition-all"
             >
               {isExpanded ? (
-                <CaretUp size={20} weight="bold" className="text-primary" />
+                <CaretUp size={16} weight="bold" className="text-muted-foreground" />
               ) : (
-                <CaretDown size={20} weight="bold" className="text-primary" />
+                <CaretDown size={16} weight="bold" className="text-muted-foreground" />
               )}
             </Button>
           </div>
