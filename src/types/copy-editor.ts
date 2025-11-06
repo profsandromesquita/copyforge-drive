@@ -111,6 +111,8 @@ export type CopyType = 'landing_page' | 'anuncio' | 'vsl' | 'email' | 'webinar' 
 export interface Copy {
   id: string;
   workspace_id: string;
+  project_id?: string | null;
+  folder_id?: string | null;
   title: string;
   copy_type?: CopyType;
   sessions: Session[];

@@ -22,6 +22,8 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { CreateCopyDialog, CopyType } from '@/components/drive/CreateCopyDialog';
 import { CreateFolderDialog } from '@/components/drive/CreateFolderDialog';
 import { useDrive } from '@/hooks/useDrive';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -85,6 +87,23 @@ const Templates = () => {
     await createFolder(name);
     setCreateFolderOpen(false);
     navigate('/dashboard');
+  };
+
+  const handleMoveTemplate = async (templateId: string, targetFolderId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({ folder_id: targetFolderId })
+        .eq('id', templateId);
+      
+      if (error) throw error;
+      toast.success('Modelo movido com sucesso!');
+      // Recarrega templates para atualizar a lista
+      window.location.reload();
+    } catch (error) {
+      console.error('Error moving template:', error);
+      toast.error('Erro ao mover modelo');
+    }
   };
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,6 +256,7 @@ const Templates = () => {
                     onEdit={handleEditTemplate}
                     onDuplicate={duplicateTemplate}
                     onDelete={deleteTemplate}
+                    onMove={handleMoveTemplate}
                   />
                 ))}
               </div>

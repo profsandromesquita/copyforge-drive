@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Copy as CopyIcon } from 'lucide-react';
+import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,6 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Copy } from '@/types/copy-editor';
 import copyDriveLogo from '@/assets/copydrive-logo.png';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import MoveModal from '@/components/drive/MoveModal';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TemplateCardProps {
   template: Copy;
@@ -14,6 +22,7 @@ interface TemplateCardProps {
   onEdit: (templateId: string) => void;
   onDuplicate: (templateId: string) => void;
   onDelete: (templateId: string) => void;
+  onMove: (templateId: string, targetFolderId: string | null) => Promise<void> | void;
 }
 
 const COPY_TYPE_LABELS: Record<string, string> = {
@@ -27,8 +36,13 @@ const COPY_TYPE_LABELS: Record<string, string> = {
   'outro': 'Outro',
 };
 
-const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: TemplateCardProps) => {
+const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }: TemplateCardProps) => {
+  const { user } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
+  
+  // Verificar se o usuário é o dono
+  const isOwner = user?.id === template.created_by;
 
   const getFirstImage = () => {
     if (!template.sessions || template.sessions.length === 0) return null;
@@ -115,9 +129,45 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: Templa
               <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
             </>
           )}
-          {/* Preview Icon Badge */}
-          <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
-            <Eye className="h-3 w-3 text-muted-foreground" />
+          {/* Preview Icon Badge e Menu */}
+          <div className="absolute top-2 right-2 flex items-center gap-2">
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger 
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-background/80 backdrop-blur-sm p-1.5 rounded-md hover:bg-background transition-colors"
+                >
+                  <MoreVertical size={16} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMoveModalOpen(true);
+                    }}
+                  >
+                    <FolderInput size={16} className="mr-2" />
+                    Mover
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Deseja realmente excluir o modelo "${template.title}"?`)) {
+                        onDelete(template.id);
+                      }
+                    }}
+                  >
+                    <Trash size={16} className="mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <div className="bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
+              <Eye className="h-3 w-3 text-muted-foreground" />
+            </div>
           </div>
         </div>
 
@@ -171,6 +221,17 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: Templa
         onOpenChange={setShowPreview}
         title={template.title}
         sessions={template.sessions}
+      />
+
+      <MoveModal
+        open={moveModalOpen}
+        onOpenChange={setMoveModalOpen}
+        itemId={template.id}
+        itemType="copy"
+        currentFolderId={template.folder_id || null}
+        onMove={async (targetFolderId) => {
+          await onMove(template.id, targetFolderId);
+        }}
       />
     </>
   );

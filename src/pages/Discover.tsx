@@ -20,7 +20,7 @@ import { UserMenu } from '@/components/layout/UserMenu';
 const Discover = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
-  const { copies, loading, copyCopy } = useDiscover();
+  const { copies, loading, copyCopy, deleteCopy, moveCopy } = useDiscover();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
@@ -145,6 +145,8 @@ const Discover = () => {
                     key={copy.id}
                     copy={copy}
                     onCopy={handleCopy}
+                    onDelete={deleteCopy}
+                    onMove={moveCopy}
                   />
                 ))}
               </div>

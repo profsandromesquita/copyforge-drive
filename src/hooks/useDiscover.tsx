@@ -131,10 +131,46 @@ export const useDiscover = () => {
     }
   };
 
+  const deleteCopy = async (copyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .delete()
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      toast.success('Copy excluída com sucesso!');
+      await fetchDiscoverCopies();
+    } catch (error) {
+      console.error('Error deleting copy:', error);
+      toast.error('Erro ao excluir copy');
+    }
+  };
+
+  const moveCopy = async (copyId: string, targetFolderId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('copies')
+        .update({ folder_id: targetFolderId })
+        .eq('id', copyId);
+
+      if (error) throw error;
+
+      toast.success('Copy movida com sucesso!');
+      await fetchDiscoverCopies();
+    } catch (error) {
+      console.error('Error moving copy:', error);
+      toast.error('Erro ao mover copy');
+    }
+  };
+
   return {
     copies,
     loading,
     fetchDiscoverCopies,
     copyCopy,
+    deleteCopy,
+    moveCopy,
   };
 };
