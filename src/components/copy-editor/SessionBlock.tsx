@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { DotsThree, Copy as CopyIcon, Trash, PencilSimple, ChatCircle } from 'phosphor-react';
+import { DotsThree, Copy as CopyIcon, Trash, PencilSimple, ChatCircle, CaretUp, CaretDown } from 'phosphor-react';
 import { Session } from '@/types/copy-editor';
 import { ContentBlock } from './ContentBlock';
 import { CommentsButton } from './CommentsButton';
@@ -18,6 +18,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface SessionBlockProps {
   session: Session;
+  sessionIndex: number;
+  totalSessions: number;
   onShowImageAI?: (blockId: string) => void;
 }
 
@@ -44,8 +46,8 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
   );
 };
 
-export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
-  const { updateSession, removeSession, duplicateSession, selectBlock } = useCopyEditor();
+export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImageAI }: SessionBlockProps) => {
+  const { updateSession, removeSession, duplicateSession, selectBlock, reorderSessions } = useCopyEditor();
   const { user } = useAuth();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
@@ -119,6 +121,30 @@ export const SessionBlock = ({ session, onShowImageAI }: SessionBlockProps) => {
         )}
 
         <div className="flex items-center gap-2">
+          {sessionIndex > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => reorderSessions(sessionIndex, sessionIndex - 1)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Mover sessão para cima"
+            >
+              <CaretUp size={20} />
+            </Button>
+          )}
+          
+          {sessionIndex < totalSessions - 1 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => reorderSessions(sessionIndex, sessionIndex + 1)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Mover sessão para baixo"
+            >
+              <CaretDown size={20} />
+            </Button>
+          )}
+
           <CommentsButton 
             comments={session.comments}
             onAddComment={handleAddComment}

@@ -29,8 +29,14 @@ export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
             items={sessions.map(s => s.id)}
             strategy={verticalListSortingStrategy}
           >
-            {sessions.map((session) => (
-              <SessionBlock key={session.id} session={session} onShowImageAI={onShowImageAI} />
+            {sessions.map((session, index) => (
+              <SessionBlock 
+                key={session.id} 
+                session={session} 
+                sessionIndex={index}
+                totalSessions={sessions.length}
+                onShowImageAI={onShowImageAI} 
+              />
             ))}
           </SortableContext>
 
