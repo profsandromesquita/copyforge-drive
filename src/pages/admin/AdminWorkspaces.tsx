@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdminWorkspaces } from "@/hooks/useAdminWorkspaces";
 import {
@@ -16,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const AdminWorkspaces = () => {
+  const navigate = useNavigate();
   const { data: workspaces, isLoading } = useAdminWorkspaces();
 
   return (
@@ -148,7 +150,11 @@ const AdminWorkspaces = () => {
                       </p>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => navigate(`/painel/admin/workspaces/${workspace.id}`)}
+                      >
                         <Eye size={16} className="mr-2" />
                         Ver
                       </Button>

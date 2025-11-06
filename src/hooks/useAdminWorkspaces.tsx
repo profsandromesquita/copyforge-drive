@@ -33,13 +33,13 @@ export const useAdminWorkspaces = () => {
       // For each workspace, fetch owner, member count, and project count
       const workspacesData = await Promise.all(
         workspaces.map(async (workspace) => {
-          // Get owner
+          // Get owner using foreign key
           const { data: ownerMember } = await supabase
             .from('workspace_members')
-            .select('user_id, profiles(name, email, avatar_url)')
+            .select('user_id, profiles!workspace_members_user_id_fkey(name, email, avatar_url)')
             .eq('workspace_id', workspace.id)
             .eq('role', 'owner')
-            .single();
+            .maybeSingle();
 
           // Count members
           const { count: membersCount } = await supabase
