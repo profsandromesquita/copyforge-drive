@@ -282,26 +282,50 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf: string | null
           created_at: string
           email: string
           id: string
           name: string
+          neighborhood: string | null
+          number: string | null
+          state: string | null
+          street: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
           created_at?: string
           email: string
           id: string
           name: string
+          neighborhood?: string | null
+          number?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string
           id?: string
           name?: string
+          neighborhood?: string | null
+          number?: string | null
+          state?: string | null
+          street?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -6,6 +6,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
+import { UserProfileModal } from "@/components/user-profile/UserProfileModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ export const UserMenu = () => {
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
@@ -31,6 +33,7 @@ export const UserMenu = () => {
     <>
       <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CreateWorkspaceModal open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen} />
+      <UserProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
       
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
@@ -73,7 +76,7 @@ export const UserMenu = () => {
           
           <DropdownMenuItem 
             className="cursor-pointer"
-            onClick={() => navigate('/profile')}
+            onClick={() => setProfileOpen(true)}
           >
             <User size={18} className="mr-2" />
             Minha Conta
