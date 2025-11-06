@@ -17,6 +17,7 @@ interface SystemSettings {
   logo_dark_url: string | null;
   favicon_url: string | null;
   maintenance_mode: boolean;
+  disable_signup: boolean;
 }
 
 export const GeneralSettings = () => {
@@ -122,6 +123,7 @@ export const GeneralSettings = () => {
           logo_dark_url: settings.logo_dark_url,
           favicon_url: settings.favicon_url,
           maintenance_mode: settings.maintenance_mode,
+          disable_signup: settings.disable_signup,
         })
         .eq("id", settings.id);
 
@@ -328,12 +330,12 @@ export const GeneralSettings = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Modo Manutenção</CardTitle>
+          <CardTitle>Controle de Acesso</CardTitle>
           <CardDescription>
-            Ative para colocar o sistema em modo de manutenção
+            Configure as permissões de acesso ao sistema
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Modo Manutenção</p>
@@ -345,6 +347,21 @@ export const GeneralSettings = () => {
               checked={settings.maintenance_mode}
               onCheckedChange={(checked) =>
                 setSettings({ ...settings, maintenance_mode: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div>
+              <p className="font-medium">Desabilitar Cadastro</p>
+              <p className="text-sm text-muted-foreground">
+                Quando ativado, novos usuários não poderão criar contas no sistema
+              </p>
+            </div>
+            <Switch
+              checked={settings.disable_signup}
+              onCheckedChange={(checked) =>
+                setSettings({ ...settings, disable_signup: checked })
               }
             />
           </div>

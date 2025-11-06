@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import copyDriveLogo from "@/assets/copydrive-logo.png";
 
 const Auth = () => {
@@ -15,12 +16,28 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signupDisabled, setSignupDisabled] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Force light mode on login page
     document.documentElement.classList.remove('dark');
+    
+    // Check if signup is disabled
+    const checkSignupStatus = async () => {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('disable_signup')
+        .single();
+      
+      if (data?.disable_signup) {
+        setSignupDisabled(true);
+        setIsLogin(true); // Force login mode if signup is disabled
+      }
+    };
+    
+    checkSignupStatus();
     
     return () => {
       // Restore theme preference on unmount
@@ -40,6 +57,12 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isLogin && signupDisabled) {
+      toast.error("Cadastro de novos usuários está desabilitado");
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -127,17 +150,19 @@ const Auth = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isLogin ? "Não tem conta? " : "Já tem conta? "}
-              <span className="text-primary font-medium">
-                {isLogin ? "Criar conta" : "Fazer login"}
-              </span>
-            </button>
-          </div>
+          {!signupDisabled && (
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isLogin ? "Não tem conta? " : "Já tem conta? "}
+                <span className="text-primary font-medium">
+                  {isLogin ? "Criar conta" : "Fazer login"}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

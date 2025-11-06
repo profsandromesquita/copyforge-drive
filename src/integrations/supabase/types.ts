@@ -375,6 +375,7 @@ export type Database = {
       system_settings: {
         Row: {
           created_at: string | null
+          disable_signup: boolean
           favicon_url: string | null
           id: string
           logo_dark_url: string | null
@@ -386,6 +387,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          disable_signup?: boolean
           favicon_url?: string | null
           id?: string
           logo_dark_url?: string | null
@@ -397,6 +399,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          disable_signup?: boolean
           favicon_url?: string | null
           id?: string
           logo_dark_url?: string | null
