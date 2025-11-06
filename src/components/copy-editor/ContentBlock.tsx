@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, ChatCircle } from 'phosphor-react';
@@ -69,6 +69,16 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   };
 
   const isSelected = selectedBlockId === block.id;
+
+  // Calculate word count for text blocks
+  const wordCount = useMemo(() => {
+    if (block.type === 'text' || block.type === 'headline' || block.type === 'subheadline') {
+      const content = typeof block.content === 'string' ? block.content : '';
+      const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return textContent.length > 0 ? textContent.split(' ').length : 0;
+    }
+    return 0;
+  }, [block.content, block.type]);
 
   const handleContentChange = (value: string | string[]) => {
     updateBlock(block.id, { content: value });
@@ -946,6 +956,13 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
         </DropdownMenu>
         </div>
       </div>
+
+      {/* Word Count Badge */}
+      {isSelected && (block.type === 'text' || block.type === 'headline' || block.type === 'subheadline') && (
+        <div className="absolute bottom-2 right-2 text-xs text-muted-foreground/60 font-mono animate-fade-in">
+          {wordCount} {wordCount === 1 ? 'palavra' : 'palavras'}
+        </div>
+      )}
 
       {/* Text Details Modal */}
       {(block.type === 'text' || block.type === 'headline' || block.type === 'subheadline') && (
