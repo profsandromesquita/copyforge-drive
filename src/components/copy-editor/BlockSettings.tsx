@@ -695,7 +695,7 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
                 placeholder="Cole a URL do YouTube ou Vimeo..."
               />
               <p className="text-xs text-muted-foreground">
-                Suporta vídeos do YouTube e Vimeo
+                Suporta vídeos do YouTube, Vimeo ou vídeos enviados
               </p>
             </div>
 
