@@ -36,8 +36,10 @@ export const TextDetailsModal = ({ isOpen, onClose, content }: TextDetailsModalP
   // Calculate reading time based on speed
   const readingTime = useMemo(() => {
     const wpm = READING_SPEEDS[readingSpeed].wpm;
-    const minutes = Math.ceil(wordCount / wpm);
-    return minutes;
+    const totalMinutes = wordCount / wpm;
+    const minutes = Math.floor(totalMinutes);
+    const seconds = Math.round((totalMinutes - minutes) * 60);
+    return { minutes, seconds };
   }, [wordCount, readingSpeed]);
 
   return (
@@ -88,7 +90,8 @@ export const TextDetailsModal = ({ isOpen, onClose, content }: TextDetailsModalP
                 <div>
                   <p className="text-sm text-muted-foreground">Tempo médio de leitura</p>
                   <p className="text-2xl font-bold text-primary">
-                    {readingTime} {readingTime === 1 ? 'minuto' : 'minutos'}
+                    {readingTime.minutes > 0 && `${readingTime.minutes}m `}
+                    {readingTime.seconds}s
                   </p>
                 </div>
               </div>
