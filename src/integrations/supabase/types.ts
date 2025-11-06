@@ -21,11 +21,13 @@ export type Database = {
           copy_type: string | null
           created_at: string
           created_by: string
+          credits_debited: number | null
           generation_category: string | null
           generation_type: string | null
           id: string
           input_tokens: number | null
           model_used: string | null
+          multiplier_snapshot: number | null
           offer: Json | null
           original_content: Json | null
           output_tokens: number | null
@@ -34,6 +36,7 @@ export type Database = {
           prompt: string
           sessions: Json
           total_tokens: number | null
+          tpc_snapshot: number | null
           workspace_id: string
         }
         Insert: {
@@ -42,11 +45,13 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by: string
+          credits_debited?: number | null
           generation_category?: string | null
           generation_type?: string | null
           id?: string
           input_tokens?: number | null
           model_used?: string | null
+          multiplier_snapshot?: number | null
           offer?: Json | null
           original_content?: Json | null
           output_tokens?: number | null
@@ -55,6 +60,7 @@ export type Database = {
           prompt: string
           sessions: Json
           total_tokens?: number | null
+          tpc_snapshot?: number | null
           workspace_id: string
         }
         Update: {
@@ -63,11 +69,13 @@ export type Database = {
           copy_type?: string | null
           created_at?: string
           created_by?: string
+          credits_debited?: number | null
           generation_category?: string | null
           generation_type?: string | null
           id?: string
           input_tokens?: number | null
           model_used?: string | null
+          multiplier_snapshot?: number | null
           offer?: Json | null
           original_content?: Json | null
           output_tokens?: number | null
@@ -76,6 +84,7 @@ export type Database = {
           prompt?: string
           sessions?: Json
           total_tokens?: number | null
+          tpc_snapshot?: number | null
           workspace_id?: string
         }
         Relationships: [
@@ -188,6 +197,152 @@ export type Database = {
           },
         ]
       }
+      credit_config: {
+        Row: {
+          base_tpc_gemini: number
+          cost_limit_pct: number
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          base_tpc_gemini?: number
+          cost_limit_pct?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          base_tpc_gemini?: number
+          cost_limit_pct?: number
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_config_history: {
+        Row: {
+          changed_by: string
+          cost_limit_pct_new: number
+          cost_limit_pct_old: number
+          created_at: string
+          id: string
+        }
+        Insert: {
+          changed_by: string
+          cost_limit_pct_new: number
+          cost_limit_pct_old: number
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          changed_by?: string
+          cost_limit_pct_new?: number
+          cost_limit_pct_old?: number
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_config_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          cost_limit_snapshot: number | null
+          created_at: string
+          description: string | null
+          generation_id: string | null
+          id: string
+          input_tokens: number | null
+          model_used: string | null
+          multiplier_snapshot: number | null
+          output_tokens: number | null
+          tokens_used: number | null
+          tpc_snapshot: number | null
+          transaction_type: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          cost_limit_snapshot?: number | null
+          created_at?: string
+          description?: string | null
+          generation_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_used?: string | null
+          multiplier_snapshot?: number | null
+          output_tokens?: number | null
+          tokens_used?: number | null
+          tpc_snapshot?: number | null
+          transaction_type: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          cost_limit_snapshot?: number | null
+          created_at?: string
+          description?: string | null
+          generation_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_used?: string | null
+          multiplier_snapshot?: number | null
+          output_tokens?: number | null
+          tokens_used?: number | null
+          tpc_snapshot?: number | null
+          transaction_type?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_generation_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folders: {
         Row: {
           created_at: string | null
@@ -276,6 +431,33 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      model_multipliers: {
+        Row: {
+          display_name: string
+          id: string
+          is_baseline: boolean
+          model_name: string
+          multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          display_name: string
+          id?: string
+          is_baseline?: boolean
+          model_name: string
+          multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          display_name?: string
+          id?: string
+          is_baseline?: boolean
+          model_name?: string
+          multiplier?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -460,6 +642,44 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_added: number
+          total_used: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_added?: number
+          total_used?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_added?: number
+          total_used?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_credits_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
