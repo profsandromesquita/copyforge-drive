@@ -138,8 +138,8 @@ export const ProfileGeneral = () => {
         newAvatarUrl = await uploadAvatar();
       }
 
-      // Update profile
-      const { error } = await supabase
+      // 1. Update profile table
+      const { error: profileError } = await supabase
         .from("profiles")
         .update({
           name: name.trim(),
@@ -147,7 +147,17 @@ export const ProfileGeneral = () => {
         })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // 2. Update auth user metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          name: name.trim(),
+          avatar_url: newAvatarUrl,
+        }
+      });
+
+      if (authError) throw authError;
 
       setAvatarUrl(newAvatarUrl);
       setAvatarFile(null);

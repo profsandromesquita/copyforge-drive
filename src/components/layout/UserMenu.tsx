@@ -2,6 +2,7 @@ import { User, SignOut, Gear, Plus } from "phosphor-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
@@ -18,11 +19,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export const UserMenu = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { profile } = useUserProfile();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
-  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
 
   return (
     <>
@@ -32,7 +35,7 @@ export const UserMenu = () => {
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.user_metadata?.avatar_url} />
+            <AvatarImage src={avatarUrl || undefined} />
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               {userName.charAt(0).toUpperCase()}
             </AvatarFallback>
