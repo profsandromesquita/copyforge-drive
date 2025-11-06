@@ -25,6 +25,44 @@ serve(async (req) => {
       workspaceId 
     } = body;
 
+    console.log('=== Generate Copy Request ===');
+    console.log('Workspace ID:', workspaceId);
+    console.log('Copy Type:', copyType);
+
+    // Verificar créditos antes de gerar (apenas se tiver workspaceId)
+    if (workspaceId) {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: creditCheck, error: creditCheckError } = await supabaseAdmin
+          .rpc('check_workspace_credits', {
+            p_workspace_id: workspaceId,
+            estimated_tokens: 5000,
+            p_model_name: 'google/gemini-2.5-flash'
+          });
+
+        console.log('Credit check result:', creditCheck);
+
+        if (creditCheckError) {
+          console.error('Error checking credits:', creditCheckError);
+        } else if (creditCheck && !creditCheck.has_sufficient_credits) {
+          console.log('Insufficient credits');
+          return new Response(
+            JSON.stringify({ 
+              error: 'insufficient_credits',
+              message: 'Créditos insuficientes para gerar copy',
+              current_balance: creditCheck.current_balance,
+              estimated_debit: creditCheck.estimated_debit
+            }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    }
+
     // Mapear parâmetros do inglês para português e garantir que sejam arrays
     const objetivos = Array.isArray(objectives) ? objectives : [];
     const estilos = Array.isArray(styles) ? styles : [];
@@ -163,7 +201,8 @@ serve(async (req) => {
 
     console.log(`Copy gerada com sucesso: ${sessionsWithIds.length} sessões`);
 
-    // Salvar no histórico
+    // Salvar no histórico e debitar créditos
+    let generationId = null;
     try {
       const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -177,7 +216,7 @@ serve(async (req) => {
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
         console.log("Iniciando salvamento do histórico...");
         
-        // Criar client Supabase Admin para obter o usuário do token
+        // Criar client Supabase Admin
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         
         // Obter o auth header do request para pegar o usuário autenticado
@@ -204,6 +243,7 @@ serve(async (req) => {
           console.error('⚠️ Não foi possível obter o userId do token');
         }
         
+        // Primeiro, salvar o histórico para obter o ID
         const historyData = {
           copy_id: copyId,
           workspace_id: workspaceId,
@@ -231,22 +271,50 @@ serve(async (req) => {
           total_tokens: totalTokens,
         };
 
-        const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_generation_history`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": SUPABASE_SERVICE_ROLE_KEY,
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            "Prefer": "return=minimal",
-          },
-          body: JSON.stringify(historyData),
-        });
+        const { data: historyRecord, error: historyError } = await supabaseAdmin
+          .from('ai_generation_history')
+          .insert(historyData)
+          .select('id')
+          .single();
 
-        if (!historyResponse.ok) {
-          const errorText = await historyResponse.text();
-          console.error("Erro ao salvar histórico:", errorText);
+        if (historyError) {
+          console.error("Erro ao salvar histórico:", historyError);
         } else {
-          console.log("✓ Histórico salvo com sucesso!");
+          generationId = historyRecord.id;
+          console.log("✓ Histórico salvo com sucesso! ID:", generationId);
+          
+          // Agora debitar os créditos
+          const { data: debitResult, error: debitError } = await supabaseAdmin
+            .rpc('debit_workspace_credits', {
+              p_workspace_id: workspaceId,
+              p_model_name: 'google/gemini-2.5-flash',
+              tokens_used: totalTokens,
+              p_input_tokens: inputTokens,
+              p_output_tokens: outputTokens,
+              generation_id: generationId,
+              p_user_id: userId
+            });
+
+          console.log('Credit debit result:', debitResult);
+
+          if (debitError) {
+            console.error('Error debiting credits:', debitError);
+          } else if (debitResult && !debitResult.success) {
+            console.error('Failed to debit credits:', debitResult.error);
+            // Mesmo se falhar ao debitar, continuar (já foi gerado)
+          } else if (debitResult && debitResult.success) {
+            console.log(`✓ Créditos debitados: ${debitResult.debited}, novo saldo: ${debitResult.balance}`);
+            
+            // Atualizar o histórico com informações de crédito
+            await supabaseAdmin
+              .from('ai_generation_history')
+              .update({
+                credits_debited: debitResult.debited,
+                tpc_snapshot: debitResult.tpc_snapshot,
+                multiplier_snapshot: debitResult.multiplier_snapshot
+              })
+              .eq('id', generationId);
+          }
         }
       } else {
         console.log("⚠️ Não foi possível salvar histórico - parâmetros faltando");

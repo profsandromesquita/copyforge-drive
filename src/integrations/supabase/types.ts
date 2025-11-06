@@ -824,7 +824,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_workspace_credits: {
+        Args: { amount: number; description?: string; p_workspace_id: string }
+        Returns: Json
+      }
+      calculate_credit_debit: {
+        Args: { p_model_name: string; tokens_used: number }
+        Returns: number
+      }
+      calculate_tpc_gemini: {
+        Args: { cost_limit_pct: number }
+        Returns: number
+      }
+      calculate_tpc_model: {
+        Args: { cost_limit_pct: number; p_model_name: string }
+        Returns: number
+      }
+      check_workspace_credits: {
+        Args: {
+          estimated_tokens?: number
+          p_model_name?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       create_super_admin: { Args: { user_email: string }; Returns: Json }
+      debit_workspace_credits: {
+        Args: {
+          generation_id: string
+          p_input_tokens: number
+          p_model_name: string
+          p_output_tokens: number
+          p_user_id?: string
+          p_workspace_id: string
+          tokens_used: number
+        }
+        Returns: Json
+      }
       get_workspace_role: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
