@@ -20,11 +20,13 @@ export const ProjectConfigHeader = ({ isNew }: ProjectConfigHeaderProps) => {
 
   useEffect(() => {
     if (activeProject && !isNew) {
-      setName(activeProject.name);
+      // Usa brand_name se disponível, senão usa name
+      setName(activeProject.brand_name || activeProject.name);
+      setIsEditingName(false);
     } else if (isNew) {
       setName('Novo Projeto');
     }
-  }, [activeProject, isNew]);
+  }, [activeProject?.id, activeProject?.name, activeProject?.brand_name, isNew]);
 
   const handleSave = async () => {
     if (!name.trim()) {
