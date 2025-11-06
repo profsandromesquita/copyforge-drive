@@ -99,7 +99,16 @@ export function SelectContentModal({ open, onOpenChange, sessions, onConfirm }: 
   };
 
   const truncateContent = (content: string | string[], maxLength = 80) => {
-    const text = Array.isArray(content) ? content.join(', ') : content;
+    // Se for array, juntar os itens
+    if (Array.isArray(content)) {
+      return content.join(', ').substring(0, maxLength) + (content.join(', ').length > maxLength ? '...' : '');
+    }
+    
+    // Remover tags HTML e extrair apenas o texto
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
