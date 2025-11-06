@@ -41,6 +41,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import ProjectConfig from "./pages/ProjectConfig";
 import SignupInvite from "./pages/SignupInvite";
 import AcceptInvite from "./pages/AcceptInvite";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -74,6 +75,7 @@ const App = () => (
                   <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
                   <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
                   <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
                   <Route path="/painel/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
                   <Route path="/painel/admin/clientes" element={<AdminRoute><AdminClientes /></AdminRoute>} />
                   <Route path="/painel/admin/clientes/:id" element={<AdminRoute><AdminClienteDetalhes /></AdminRoute>} />

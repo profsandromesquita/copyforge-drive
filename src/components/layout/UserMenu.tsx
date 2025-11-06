@@ -1,5 +1,6 @@
 import { User, SignOut, Gear, Plus } from "phosphor-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
@@ -15,6 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const UserMenu = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -66,7 +68,10 @@ export const UserMenu = () => {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem className="cursor-pointer">
+          <DropdownMenuItem 
+            className="cursor-pointer"
+            onClick={() => navigate('/profile')}
+          >
             <User size={18} className="mr-2" />
             Minha Conta
           </DropdownMenuItem>
