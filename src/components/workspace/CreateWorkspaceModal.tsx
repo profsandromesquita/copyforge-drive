@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,9 +77,6 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Criar Novo Workspace</DialogTitle>
-          <DialogDescription>
-            Crie um novo workspace para organizar seus projetos e colaborar com sua equipe.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
