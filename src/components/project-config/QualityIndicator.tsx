@@ -15,8 +15,8 @@ export const QualityIndicator = () => {
     let totalFields = 0;
     let filledFields = 0;
 
-    // Identity fields (8 fields)
-    totalFields += 8;
+    // Identity fields (6 fields: brand_name, sector, central_purpose, voice_tones, brand_personality, keywords)
+    totalFields += 6;
     if (activeProject.brand_name) filledFields++;
     if (activeProject.sector) filledFields++;
     if (activeProject.central_purpose) filledFields++;

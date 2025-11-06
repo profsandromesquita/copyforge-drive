@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { X, Plus } from 'phosphor-react';
 import { VoiceInput } from './VoiceInput';
+import { IdentityCard } from './IdentityCard';
 import { SECTORS, VOICE_TONES, BRAND_PERSONALITIES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -39,6 +40,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [newKeyword, setNewKeyword] = useState('');
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(identitySchema),
@@ -48,6 +50,13 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
       central_purpose: '',
     },
   });
+
+  // Iniciar em modo de edição se for novo projeto ou se não houver dados essenciais
+  useEffect(() => {
+    if (isNew || !activeProject?.brand_name || !activeProject?.sector) {
+      setIsEditing(true);
+    }
+  }, [isNew, activeProject]);
 
   useEffect(() => {
     if (activeProject && !isNew) {
@@ -127,6 +136,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         toast.success('Projeto criado com sucesso!');
         await refreshProjects();
         setActiveProject(projectData as any);
+        setIsEditing(false);
         navigate(`/project/${projectData.id}`);
       } else if (activeProject) {
         // Update existing project
@@ -138,6 +148,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         if (error) throw error;
         toast.success('Alterações salvas!');
         await refreshProjects();
+        setIsEditing(false);
       }
     } catch (error) {
       console.error('Error saving identity:', error);
@@ -149,6 +160,17 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
 
   const sector = watch('sector');
 
+  // Modo de visualização
+  if (!isEditing && activeProject && activeProject.brand_name && activeProject.sector) {
+    return (
+      <IdentityCard 
+        project={activeProject} 
+        onEdit={() => setIsEditing(true)} 
+      />
+    );
+  }
+
+  // Modo de edição
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="bg-card border border-border rounded-lg p-6 space-y-6">
@@ -288,9 +310,16 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
           )}
         </div>
 
-        <Button type="submit" disabled={saving}>
-          {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
+          </Button>
+          {!isNew && (
+            <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+              Cancelar
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   );
