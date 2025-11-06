@@ -297,7 +297,7 @@ const PublicCopy = () => {
 
               {/* CopyDrive Link */}
               <a
-                href="https://copydrive.ai"
+                href="https://app.copydrive.ai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-shrink-0"
