@@ -1,6 +1,7 @@
 import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon } from "phosphor-react";
 import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
+import copyDriveLogo from '@/assets/copydrive-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +55,21 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
+
+  const getFirstImage = () => {
+    if (!sessions || sessions.length === 0) return null;
+    
+    for (const session of sessions) {
+      for (const block of session.blocks) {
+        if (block.type === 'image' && block.config?.imageUrl) {
+          return block.config.imageUrl;
+        }
+      }
+    }
+    return null;
+  };
+
+  const firstImage = getFirstImage();
 
   const getFirstBlocks = () => {
     if (!sessions || sessions.length === 0) return [];
@@ -180,31 +196,47 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
 
         {/* Preview Section */}
         <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden px-4">
-          <div className="absolute inset-x-4 top-0 bottom-0 p-2 overflow-hidden">
-            <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
-              {firstBlocks.length > 0 ? (
-                firstBlocks.map((block) => (
-                  <div key={block.id} className="opacity-90">
-                    <BlockPreview block={block} />
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <FileText size={48} weight="duotone" className="text-muted-foreground/40 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/60">Sem conteúdo</p>
+          {firstImage ? (
+            // Thumbnail de imagem
+            <>
+              <img 
+                src={firstImage} 
+                alt={title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-40" />
+            </>
+          ) : firstBlocks.length > 0 ? (
+            // Preview de blocos
+            <>
+              <div className="absolute inset-x-4 top-0 bottom-0 p-2 overflow-hidden">
+                <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
+                  {firstBlocks.map((block) => (
+                    <div key={block.id} className="opacity-90">
+                      <BlockPreview block={block} />
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+              {/* Bottom Fade Overlay */}
+              <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+            </>
+          ) : (
+            // Fallback: Logo CopyDrive
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img 
+                src={copyDriveLogo} 
+                alt="CopyDrive"
+                className="w-24 h-24 object-contain opacity-30"
+              />
             </div>
-          </div>
-          
-          {/* Bottom Fade Overlay */}
-          <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+          )}
           
           {/* Status Badge - positioned absolute */}
           {status && (
             <Badge 
               variant="outline"
-              className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium ${
+              className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium z-10 ${
                 status === 'published' 
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
                   : 'bg-muted text-muted-foreground border-border'

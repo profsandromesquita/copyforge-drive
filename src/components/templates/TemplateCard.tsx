@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Copy } from '@/types/copy-editor';
+import copyDriveLogo from '@/assets/copydrive-logo.png';
 
 interface TemplateCardProps {
   template: Copy;
@@ -28,6 +29,21 @@ const COPY_TYPE_LABELS: Record<string, string> = {
 
 const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: TemplateCardProps) => {
   const [showPreview, setShowPreview] = useState(false);
+
+  const getFirstImage = () => {
+    if (!template.sessions || template.sessions.length === 0) return null;
+    
+    for (const session of template.sessions) {
+      for (const block of session.blocks) {
+        if (block.type === 'image' && block.config?.imageUrl) {
+          return block.config.imageUrl;
+        }
+      }
+    }
+    return null;
+  };
+
+  const firstImage = getFirstImage();
 
   const getPreviewContent = () => {
     if (!template.sessions || template.sessions.length === 0) return null;
@@ -77,13 +93,28 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete }: Templa
       <Card className="h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
         {/* Visual Preview Section */}
         <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
-          <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
-            <div className="space-y-1">
-              {getPreviewContent()}
-            </div>
-          </div>
-          {/* Bottom Fade Overlay */}
-          <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+          {firstImage ? (
+            // Thumbnail de imagem
+            <>
+              <img 
+                src={firstImage} 
+                alt={template.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
+            </>
+          ) : (
+            // Fallback: Preview de texto ou logo
+            <>
+              <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
+                <div className="space-y-1">
+                  {getPreviewContent()}
+                </div>
+              </div>
+              {/* Bottom Fade Overlay */}
+              <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+            </>
+          )}
           {/* Preview Icon Badge */}
           <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
             <Eye className="h-3 w-3 text-muted-foreground" />

@@ -358,24 +358,64 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
           }
         };
 
-        const getEmbedUrl = (url: string) => {
+        const getVideoType = (url: string): 'youtube' | 'vimeo' | 'direct' | null => {
           if (!url) return null;
+          
+          // YouTube
           const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-          const youtubeMatch = url.match(youtubeRegex);
-          if (youtubeMatch) return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+          if (youtubeRegex.test(url)) return 'youtube';
+          
+          // Vimeo
           const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
-          const vimeoMatch = url.match(vimeoRegex);
-          if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-          if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com/video/')) return url;
+          if (vimeoRegex.test(url)) return 'vimeo';
+          
+          // Vídeo direto (Supabase Storage, URLs diretas de arquivo)
+          const directVideoRegex = /\.(mp4|webm|ogg|mov)(\?.*)?$/i;
+          const supabaseStorageRegex = /supabase\.co\/storage/;
+          if (directVideoRegex.test(url) || supabaseStorageRegex.test(url)) {
+            return 'direct';
+          }
+          
           return null;
         };
 
-        const embedUrl = getEmbedUrl(videoUrl);
+        const getEmbedUrl = (url: string, type: 'youtube' | 'vimeo' | null) => {
+          if (!url || !type) return null;
+          
+          if (type === 'youtube') {
+            const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+          }
+          
+          if (type === 'vimeo') {
+            const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+            return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+          }
+          
+          return null;
+        };
+
+        const videoType = getVideoType(videoUrl);
+        const embedUrl = videoType && videoType !== 'direct' ? getEmbedUrl(videoUrl, videoType) : null;
 
         return (
           <div className="space-y-2">
             <div className={`${getVideoSizeClass()} w-full mx-auto`}>
-              {embedUrl ? (
+              {videoType === 'direct' ? (
+                // Vídeo hospedado diretamente (Supabase Storage)
+                <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+                  <video
+                    src={videoUrl}
+                    className="w-full h-full"
+                    controls
+                    controlsList="nodownload"
+                    preload="metadata"
+                  >
+                    Seu navegador não suporta reprodução de vídeo.
+                  </video>
+                </div>
+              ) : embedUrl ? (
+                // YouTube / Vimeo
                 <div className="relative w-full aspect-video rounded-lg overflow-hidden">
                   <iframe
                     src={embedUrl}
@@ -385,6 +425,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
                   />
                 </div>
               ) : (
+                // Erro ou vazio
                 <div className="w-full aspect-video bg-muted flex items-center justify-center rounded-lg">
                   <span className="text-muted-foreground text-sm">
                     {videoUrl ? 'URL de vídeo inválida' : 'Sem vídeo'}
