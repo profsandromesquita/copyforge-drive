@@ -550,7 +550,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
         return (
           <div className="space-y-2">
-            <div className={`${getImageSizeClass()} w-full mx-auto`}>
+            <div className={`${getImageSizeClass()} w-full mx-auto relative group`}>
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -567,6 +567,18 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                 >
                   <span className="text-muted-foreground">Sem imagem</span>
                 </div>
+              )}
+              
+              {/* Botão de gerar com IA */}
+              {isSelected && onShowImageAI && (
+                <Button
+                  onClick={() => onShowImageAI(block.id)}
+                  size="icon"
+                  className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-primary shadow-lg hover:bg-primary/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Gerar com IA"
+                >
+                  <Sparkles className="h-5 w-5" />
+                </Button>
               )}
             </div>
             {imageDescription && (
