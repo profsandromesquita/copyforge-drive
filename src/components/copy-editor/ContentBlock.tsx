@@ -570,7 +570,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               )}
               
               {/* Botão de gerar com IA */}
-              {isSelected && onShowImageAI && (
+              {onShowImageAI && (
                 <Button
                   onClick={() => onShowImageAI(block.id)}
                   size="icon"
