@@ -24,6 +24,7 @@ import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { FormattingToolbar } from './FormattingToolbar';
 import { FocusModeModal } from './FocusModeModal';
+import { handlePaste } from '@/lib/paste-utils';
 
 interface ContentBlockProps {
   block: Block;
@@ -224,6 +225,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
+              onPaste={handlePaste}
               className={`border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
               data-placeholder="Digite seu título..."
               suppressContentEditableWarning
@@ -257,6 +259,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
+              onPaste={handlePaste}
               className={`border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
               data-placeholder="Digite seu subtítulo..."
               suppressContentEditableWarning
@@ -290,6 +293,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               contentEditable
               onInput={handleEditableChange}
               onBlur={handleEditableChange}
+              onPaste={handlePaste}
               className={`min-h-[24px] border-none focus:outline-none ${getFontSizeClass()} ${getTextAlignClass()}`}
               data-placeholder="Digite seu texto..."
               suppressContentEditableWarning

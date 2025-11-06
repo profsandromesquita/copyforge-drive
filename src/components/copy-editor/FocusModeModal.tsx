@@ -29,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BlockType, BlockConfig } from '@/types/copy-editor';
+import { handlePaste } from '@/lib/paste-utils';
 
 const COLOR_PALETTE = [
   '#000000', '#2C3E50', '#34495E', '#7F8C8D',
@@ -357,6 +358,7 @@ export const FocusModeModal = ({
               <div
                 ref={editorRef}
                 contentEditable
+                onPaste={handlePaste}
                 className={`
                   min-h-[60vh] focus:outline-none 
                   ${getFontSizeClass()} ${getTextAlignClass()} 
