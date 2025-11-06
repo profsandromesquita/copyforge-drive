@@ -27,7 +27,8 @@ const ProjectConfig = () => {
     const init = async () => {
       if (id === 'new') {
         setIsNew(true);
-        // Will create project on first save
+        // Limpa o activeProject para novo projeto
+        setActiveProject(null);
         setLoading(false);
       } else if (id) {
         // Load existing project
