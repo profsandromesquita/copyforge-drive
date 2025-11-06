@@ -58,19 +58,20 @@ export const BlockToolbar = () => {
       if (containerRef.current) {
         const container = containerRef.current;
         
-        // Temporariamente expandir para medir a altura total
-        const wasExpanded = isExpanded;
-        if (!isExpanded) {
-          container.style.maxHeight = 'none';
-        }
+        // Salvar o estilo atual
+        const originalMaxHeight = container.style.maxHeight;
+        const originalOverflow = container.style.overflow;
+        
+        // Temporariamente remover restrições para medir
+        container.style.maxHeight = 'none';
+        container.style.overflow = 'visible';
         
         const scrollHeight = container.scrollHeight;
         const singleLineHeight = 60;
         
-        // Restaurar estado anterior
-        if (!wasExpanded) {
-          container.style.maxHeight = `${singleLineHeight}px`;
-        }
+        // Restaurar estilo original
+        container.style.maxHeight = originalMaxHeight;
+        container.style.overflow = originalOverflow;
         
         // Verifica se há conteúdo que ultrapassa uma linha
         setHasOverflow(scrollHeight > singleLineHeight + 5);
