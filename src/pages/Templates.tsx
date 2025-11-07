@@ -196,8 +196,10 @@ const Templates = () => {
                 />
               </div>
             </div>
-            <CreditBadge />
-            <UserMenu />
+            <div className="flex items-center gap-4">
+              <CreditBadge />
+              <UserMenu />
+            </div>
           </div>
         </header>
 
