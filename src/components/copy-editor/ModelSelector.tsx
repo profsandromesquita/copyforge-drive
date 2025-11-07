@@ -3,8 +3,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Sparkles, Zap, Info } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, Zap, Info, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { AIModel, CopyType, getAutoRoutedModel, MODEL_CONFIG } from '@/lib/ai-models';
 
 interface ModelSelectorProps {
@@ -20,6 +20,11 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
   
   // Modelo efetivo: se manual, usa o selecionado; se auto, usa o roteado
   const effectiveModel = selectedModel || autoRoutedModel;
+  
+  // Sincronizar isManualMode com selectedModel vindo das props
+  useEffect(() => {
+    setIsManualMode(selectedModel !== null);
+  }, [selectedModel]);
   
   const handleModeChange = (manual: boolean) => {
     setIsManualMode(manual);
@@ -145,6 +150,16 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
               </label>
             </RadioGroup>
           </div>
+          
+          {/* Feedback visual de que o modelo foi aplicado */}
+          {isManualMode && selectedModel && (
+            <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-900 text-xs mb-2">
+              <Check className="h-4 w-4 text-green-600 dark:text-green-500 flex-shrink-0" />
+              <span className="text-green-800 dark:text-green-300 font-medium">
+                ✓ Modelo {MODEL_CONFIG[selectedModel].displayName} será usado na próxima geração
+              </span>
+            </div>
+          )}
           
           {/* Alerta se escolheu diferente do recomendado */}
           {isDifferentFromRecommended && (
