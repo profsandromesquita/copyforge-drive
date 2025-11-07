@@ -171,47 +171,49 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
           </div>
         </div>
 
-        <CardContent className="flex-1 p-4 md:p-6">
+        <CardContent className="flex-1 p-3 md:p-6">
           <div className="space-y-3">
             {/* Title */}
             <div>
-              <h2 className="text-lg md:text-xl font-bold line-clamp-1">{template.title}</h2>
+              <h2 className="text-lg md:text-xl font-bold truncate">{template.title}</h2>
               {template.copy_type && (
-                <p className="text-xs text-muted-foreground/60 mt-1">
+                <p className="text-xs text-muted-foreground/60 mt-1 truncate">
                   {COPY_TYPE_LABELS[template.copy_type] || template.copy_type}
                 </p>
               )}
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <p className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm text-muted-foreground truncate">
                   {sessionsCount} {sessionsCount === 1 ? 'sessão' : 'sessões'} • {blocksCount} {blocksCount === 1 ? 'bloco' : 'blocos'}
                 </p>
               </div>
-              <Badge variant="secondary" className="shrink-0">
+              <Badge variant="secondary" className="shrink-0 text-xs">
                 Modelo
               </Badge>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0 gap-2">
+        <CardFooter className="p-3 md:p-4 pt-0 gap-1.5 md:gap-2">
           <Button
             variant="outline"
-            className="flex-1"
+            size="sm"
+            className="flex-1 min-w-0"
             onClick={() => setShowPreview(true)}
           >
-            <Eye className="h-4 w-4 mr-2" />
-            Visualizar
+            <Eye className="h-4 w-4 md:mr-2" />
+            <span className="hidden sm:inline truncate">Visualizar</span>
           </Button>
           <Button
-            className="flex-1"
+            size="sm"
+            className="flex-1 min-w-0"
             onClick={() => onUse(template.id)}
           >
-            <CopyIcon className="h-4 w-4 mr-2" />
-            Copiar
+            <CopyIcon className="h-4 w-4 md:mr-2" />
+            <span className="hidden sm:inline truncate">Copiar</span>
           </Button>
         </CardFooter>
       </Card>
