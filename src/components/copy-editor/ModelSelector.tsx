@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -21,14 +21,31 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
   const autoRoutedModel = getAutoRoutedModel(copyType);
   const activeModel = selectedModel || autoRoutedModel;
 
-  const handleModeChange = (manual: boolean) => {
-    setIsManual(manual);
-    if (!manual) {
-      // Switched to auto mode
+  // FASE 1: Garantir inicialização correta - notificar null ao montar em modo auto
+  useEffect(() => {
+    if (!isManual && selectedModel !== null) {
+      console.log('ModelSelector: Corrigindo inicialização - enviando null para modo auto');
       onModelChange(null);
+    }
+  }, []); // Executar apenas na montagem
+
+  // FASE 6: Forçar nullificação ao voltar para auto
+  const handleModeChange = (manual: boolean) => {
+    console.log('ModelSelector: Mudando modo:', { de: isManual, para: manual });
+    setIsManual(manual);
+    
+    if (!manual) {
+      // Voltando para auto - GARANTIR que seja null
+      console.log('ModelSelector: Voltando para modo automático - enviando NULL');
+      onModelChange(null);
+      
+      // Forçar re-render para garantir
+      setTimeout(() => onModelChange(null), 0);
     } else {
-      // Switched to manual mode - select current auto-routed model
-      onModelChange(autoRoutedModel);
+      // Indo para manual - selecionar o modelo auto-routed atual
+      const modelToSelect = autoRoutedModel;
+      console.log('ModelSelector: Indo para modo manual - selecionando:', modelToSelect);
+      onModelChange(modelToSelect);
     }
   };
 
@@ -163,6 +180,13 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
             </div>
           </div>
         </RadioGroup>
+      )}
+
+      {/* FASE 5: Indicador visual de debug (apenas em desenvolvimento) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs font-mono p-2 bg-yellow-50 dark:bg-yellow-950 rounded border border-yellow-200 mt-3">
+          <strong>DEBUG:</strong> selectedModel = {selectedModel === null ? 'NULL (auto)' : selectedModel}
+        </div>
       )}
     </Card>
   );

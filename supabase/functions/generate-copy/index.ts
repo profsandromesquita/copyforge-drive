@@ -34,19 +34,25 @@ serve(async (req) => {
       return 'google/gemini-2.5-flash';
     };
 
-    const modelToUse = selectedModel || getAutoRoutedModel(copyType);
-    const wasAutoRouted = !selectedModel;
+    // FASE 2: Validação defensiva com lógica robusta
+    const modelToUse = (selectedModel === null || selectedModel === undefined) 
+      ? getAutoRoutedModel(copyType) 
+      : selectedModel;
+    const wasAutoRouted = (selectedModel === null || selectedModel === undefined);
 
     console.log('=== Generate Copy Request ===');
     console.log('Workspace ID:', workspaceId);
     console.log('Copy Type:', copyType);
     console.log('Model:', modelToUse, wasAutoRouted ? '(auto-routed)' : '(manually selected)');
     
-    console.log('\n=== DEBUG ROUTING ===');
-    console.log('Copy Type recebido:', copyType);
-    console.log('Selected Model recebido:', selectedModel);
-    console.log('Modelo determinado:', modelToUse);
-    console.log('Foi auto-routed?', wasAutoRouted);
+    console.log('\n=== VALIDAÇÃO DE ROTEAMENTO ===');
+    console.log('selectedModel recebido:', selectedModel);
+    console.log('selectedModel é null?', selectedModel === null);
+    console.log('selectedModel é undefined?', selectedModel === undefined);
+    console.log('copyType:', copyType);
+    console.log('autoRoutedModel seria:', getAutoRoutedModel(copyType));
+    console.log('modelToUse final:', modelToUse);
+    console.log('wasAutoRouted:', wasAutoRouted);
     console.log('Tipos aceitos para GPT-5:', ['vsl', 'landing_page']);
     console.log('Tipo corresponde?', copyType === 'vsl' || copyType === 'landing_page');
 

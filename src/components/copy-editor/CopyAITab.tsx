@@ -104,6 +104,14 @@ export const CopyAITab = () => {
     }
   }, [activeTab, copyId]);
 
+  // FASE 3: Garantir que quando mudamos de aba, resetamos o modelo
+  useEffect(() => {
+    if (activeTab === 'criar') {
+      console.log('CopyAITab: Voltando para aba criar - resetando selectedModel para null');
+      setSelectedModel(null);
+    }
+  }, [activeTab]);
+
   const loadHistory = async () => {
     if (!copyId) return;
     
@@ -190,6 +198,16 @@ export const CopyAITab = () => {
           offer = offers.find(o => o.id === offerId);
         }
       }
+
+      // FASE 4: Logging detalhado para debugging
+      console.log('\n=== DEBUG FRONTEND - ANTES DE ENVIAR ===');
+      console.log('copyType:', copyType);
+      console.log('selectedModel:', selectedModel);
+      console.log('selectedModel === null:', selectedModel === null);
+      console.log('selectedModel === undefined:', selectedModel === undefined);
+      console.log('typeof selectedModel:', typeof selectedModel);
+      console.log('Estado esperado: auto-routing?', selectedModel === null);
+      console.log('Modelo que deveria ser usado:', getAutoRoutedModel((copyType || 'outro') as CopyType));
 
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
