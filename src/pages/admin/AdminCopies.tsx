@@ -291,12 +291,20 @@ export default function AdminCopies() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={`font-mono text-xs ${getModelBadgeColor(generation.model_used)}`}
-                        >
-                          {generation.model_used?.split("/")[1] || generation.model_used}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge 
+                            variant="outline" 
+                            className={`font-mono text-xs ${getModelBadgeColor(generation.model_used)}`}
+                          >
+                            {generation.model_used?.split("/")[1] || generation.model_used}
+                          </Badge>
+                          <Badge 
+                            variant={generation.was_auto_routed ? "secondary" : "outline"}
+                            className="text-xs w-fit"
+                          >
+                            {generation.was_auto_routed ? "Auto" : "Manual"}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge 

@@ -10,31 +10,46 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json();
-    const { 
-      copyType, 
-      objectives, 
-      styles, 
-      size, 
-      preferences, 
-      prompt, 
-      projectIdentity, 
-      audienceSegment, 
-      offer,
-      copyId,
-      workspaceId
-    } = body;
+  const body = await req.json();
+  const { 
+    copyType, 
+    objectives, 
+    styles, 
+    size, 
+    preferences, 
+    prompt, 
+    projectIdentity, 
+    audienceSegment, 
+    offer,
+    copyId,
+    workspaceId,
+    selectedModel
+  } = body;
 
-    // ROTEAMENTO SIMPLIFICADO - 100% BASEADO EM copyType
-    const modelToUse = (copyType === 'vsl' || copyType === 'landing_page') 
+  // Determinar modelo: manual (se fornecido) ou automático (baseado em copyType)
+  const modelToUse = selectedModel || (
+    (copyType === 'vsl' || copyType === 'landing_page') 
       ? 'openai/gpt-5-mini' 
-      : 'google/gemini-2.5-flash';
-    const wasAutoRouted = true;
+      : 'google/gemini-2.5-flash'
+  );
 
-    console.log('=== ROTEAMENTO AUTOMÁTICO SIMPLIFICADO ===');
-    console.log('Copy Type:', copyType);
-    console.log('Modelo determinado:', modelToUse);
-    console.log('Razão:', copyType === 'vsl' || copyType === 'landing_page' ? 'VSL/LP = Premium (GPT-5 Mini)' : 'Outros = Econômico (Gemini Flash)');
+  const wasAutoRouted = selectedModel === null || selectedModel === undefined;
+
+  console.log('=== ROTEAMENTO DE MODELO ===');
+  console.log('Copy Type:', copyType);
+  console.log('Selected Model (manual):', selectedModel);
+  console.log('Modelo que será usado:', modelToUse);
+  console.log('Foi auto-routed?', wasAutoRouted);
+
+  if (wasAutoRouted) {
+    console.log('Razão do roteamento automático:', 
+      copyType === 'vsl' || copyType === 'landing_page' 
+        ? 'VSL/LP = Premium (GPT-5 Mini)' 
+        : 'Outros = Econômico (Gemini Flash)'
+    );
+  } else {
+    console.log('Razão: Usuário escolheu manualmente o modelo');
+  }
 
     // Verificar créditos antes de gerar (apenas se tiver workspaceId)
     if (workspaceId) {

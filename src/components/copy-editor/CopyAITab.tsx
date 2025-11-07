@@ -76,6 +76,8 @@ export const CopyAITab = () => {
   const [prompt, setPrompt] = useState('');
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -86,7 +88,6 @@ export const CopyAITab = () => {
   const [optimizeInstructions, setOptimizeInstructions] = useState('');
   const [optimizedSessions, setOptimizedSessions] = useState<Session[]>([]);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
 
   // Histórico
   const [history, setHistory] = useState<any[]>([]);
@@ -138,6 +139,7 @@ export const CopyAITab = () => {
     setTamanho('');
     setPreferencias([]);
     setPrompt('');
+    setSelectedModel(null);
   };
 
   const resetOptimizeForm = () => {
@@ -203,7 +205,7 @@ export const CopyAITab = () => {
           offer,
           copyId,
           workspaceId: activeWorkspace.id,
-          // Modelo será determinado automaticamente pelo backend baseado no copyType
+          selectedModel,
         }
       });
 
@@ -631,7 +633,12 @@ export const CopyAITab = () => {
 
           {/* Model Selector - Somente Leitura */}
           {copyType ? (
-            <ModelSelector copyType={copyType as CopyType} />
+            <ModelSelector 
+              copyType={copyType as CopyType}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              disabled={isGenerating}
+            />
           ) : (
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground">

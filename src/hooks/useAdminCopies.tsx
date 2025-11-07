@@ -17,6 +17,7 @@ export interface CopyGeneration {
   audience_segment: any;
   offer: any;
   model_used: string;
+  was_auto_routed: boolean;
   generation_category: 'text' | 'image';
   input_tokens: number;
   output_tokens: number;
