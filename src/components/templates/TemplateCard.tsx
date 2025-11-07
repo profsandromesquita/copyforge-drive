@@ -204,16 +204,16 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
             className="flex-1 min-w-0"
             onClick={() => setShowPreview(true)}
           >
-            <Eye className="h-4 w-4 md:mr-2" />
-            <span className="hidden sm:inline truncate">Visualizar</span>
+            <Eye className="h-4 w-4 xl:mr-2" />
+            <span className="hidden xl:inline truncate">Visualizar</span>
           </Button>
           <Button
             size="sm"
             className="flex-1 min-w-0"
             onClick={() => onUse(template.id)}
           >
-            <CopyIcon className="h-4 w-4 md:mr-2" />
-            <span className="hidden sm:inline truncate">Copiar</span>
+            <CopyIcon className="h-4 w-4 xl:mr-2" />
+            <span className="hidden xl:inline truncate">Copiar</span>
           </Button>
         </CardFooter>
       </Card>
