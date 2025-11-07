@@ -22,69 +22,19 @@ serve(async (req) => {
       audienceSegment, 
       offer,
       copyId,
-      workspaceId,
-      selectedModel  // NEW: Model chosen by user (null = auto-routing)
+      workspaceId
     } = body;
 
-    // Determine which model to use (auto-routing or manual selection)
-    const getAutoRoutedModel = (type: string) => {
-      if (type === 'vsl' || type === 'landing_page') {
-        return 'openai/gpt-5-mini';
-      }
-      return 'google/gemini-2.5-flash';
-    };
+    // ROTEAMENTO SIMPLIFICADO - 100% BASEADO EM copyType
+    const modelToUse = (copyType === 'vsl' || copyType === 'landing_page') 
+      ? 'openai/gpt-5-mini' 
+      : 'google/gemini-2.5-flash';
+    const wasAutoRouted = true;
 
-    // FASE 2: Validação defensiva com lógica robusta
-    const modelToUse = (selectedModel === null || selectedModel === undefined) 
-      ? getAutoRoutedModel(copyType) 
-      : selectedModel;
-    const wasAutoRouted = (selectedModel === null || selectedModel === undefined);
-
-    console.log('=== Generate Copy Request ===');
-    console.log('Workspace ID:', workspaceId);
+    console.log('=== ROTEAMENTO AUTOMÁTICO SIMPLIFICADO ===');
     console.log('Copy Type:', copyType);
-    console.log('Model:', modelToUse, wasAutoRouted ? '(auto-routed)' : '(manually selected)');
-    
-    console.log('\n=== VALIDAÇÃO DE ROTEAMENTO ===');
-    console.log('selectedModel recebido:', selectedModel);
-    console.log('selectedModel é null?', selectedModel === null);
-    console.log('selectedModel é undefined?', selectedModel === undefined);
-    console.log('copyType:', copyType);
-    console.log('autoRoutedModel seria:', getAutoRoutedModel(copyType));
-    console.log('modelToUse final:', modelToUse);
-    console.log('wasAutoRouted:', wasAutoRouted);
-    console.log('Tipos aceitos para GPT-5:', ['vsl', 'landing_page']);
-    console.log('Tipo corresponde?', copyType === 'vsl' || copyType === 'landing_page');
-
-    // FASE 3: VALIDAÇÃO DEFENSIVA - Corrigir inconsistências no servidor
-    let finalModelToUse = modelToUse;
-    let finalWasAutoRouted = wasAutoRouted;
-    
-    if (selectedModel && wasAutoRouted === false) {
-      const expectedModel = getAutoRoutedModel(copyType);
-      
-      // Se modelo manual está incorreto para o tipo, FORÇAR auto-routing
-      if ((copyType === 'vsl' || copyType === 'landing_page') && selectedModel !== 'openai/gpt-5-mini') {
-        console.log('\n⚠️⚠️⚠️ INCONSISTÊNCIA DETECTADA! ⚠️⚠️⚠️');
-        console.log(`copyType "${copyType}" deveria usar GPT-5 Mini, mas selectedModel é "${selectedModel}"`);
-        console.log('FORÇANDO auto-routing para corrigir...');
-        
-        // Sobrescrever
-        finalModelToUse = expectedModel;
-        finalWasAutoRouted = true;  // Marcar como auto para rastreamento
-        
-        console.log('✓ Modelo corrigido para:', finalModelToUse);
-        console.log('✓ wasAutoRouted definido como:', finalWasAutoRouted);
-      } else if (copyType !== 'vsl' && copyType !== 'landing_page' && selectedModel === 'openai/gpt-5-mini') {
-        console.log('\n⚠️⚠️⚠️ POSSÍVEL INCONSISTÊNCIA DETECTADA! ⚠️⚠️⚠️');
-        console.log(`copyType "${copyType}" normalmente usa Gemini, mas selectedModel é GPT-5 Mini`);
-        console.log('Permitindo (pode ser escolha intencional do usuário)');
-      }
-    }
-
-    console.log('\n=== MODELO FINAL APÓS VALIDAÇÃO ===');
-    console.log('modelToUse final:', finalModelToUse);
-    console.log('wasAutoRouted final:', finalWasAutoRouted);
+    console.log('Modelo determinado:', modelToUse);
+    console.log('Razão:', copyType === 'vsl' || copyType === 'landing_page' ? 'VSL/LP = Premium (GPT-5 Mini)' : 'Outros = Econômico (Gemini Flash)');
 
     // Verificar créditos antes de gerar (apenas se tiver workspaceId)
     if (workspaceId) {
@@ -101,7 +51,7 @@ serve(async (req) => {
           .rpc('check_workspace_credits', {
             p_workspace_id: workspaceId,
             estimated_tokens: estimatedTokens,
-            p_model_name: finalModelToUse
+            p_model_name: modelToUse
           });
 
         console.log('Credit check result:', creditCheck);
@@ -147,7 +97,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: finalModelToUse,
+        model: modelToUse,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -324,8 +274,8 @@ serve(async (req) => {
           offer: offer || null,
           sessions: sessionsWithIds,
           generation_type: 'create',
-          model_used: finalModelToUse,
-          was_auto_routed: finalWasAutoRouted,
+          model_used: modelToUse,
+          was_auto_routed: wasAutoRouted,
           generation_category: 'text',
           input_tokens: inputTokens,
           output_tokens: outputTokens,
@@ -358,7 +308,7 @@ serve(async (req) => {
           const { data: debitResult, error: debitError } = await supabaseAdmin
             .rpc('debit_workspace_credits', {
               p_workspace_id: workspaceId,
-              p_model_name: finalModelToUse,
+              p_model_name: modelToUse,
               tokens_used: totalTokens,
               p_input_tokens: inputTokens,
               p_output_tokens: outputTokens,
@@ -414,8 +364,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         sessions: sessionsWithIds,
-        model_used: finalModelToUse,
-        was_auto_routed: finalWasAutoRouted
+        modelUsed: modelToUse,
+        wasAutoRouted: wasAutoRouted
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

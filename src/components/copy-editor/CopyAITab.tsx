@@ -78,7 +78,6 @@ export const CopyAITab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
 
   // Estado para otimização
   const [showSelectModal, setShowSelectModal] = useState(false);
@@ -104,13 +103,6 @@ export const CopyAITab = () => {
     }
   }, [activeTab, copyId]);
 
-  // FASE 3: Garantir que quando mudamos de aba, resetamos o modelo
-  useEffect(() => {
-    if (activeTab === 'criar') {
-      console.log('CopyAITab: Voltando para aba criar - resetando selectedModel para null');
-      setSelectedModel(null);
-    }
-  }, [activeTab]);
 
   const loadHistory = async () => {
     if (!copyId) return;
@@ -146,7 +138,6 @@ export const CopyAITab = () => {
     setTamanho('');
     setPreferencias([]);
     setPrompt('');
-    setSelectedModel(null);
   };
 
   const resetOptimizeForm = () => {
@@ -199,16 +190,6 @@ export const CopyAITab = () => {
         }
       }
 
-      // FASE 4: Logging detalhado para debugging
-      console.log('\n=== DEBUG FRONTEND - ANTES DE ENVIAR ===');
-      console.log('copyType:', copyType);
-      console.log('selectedModel:', selectedModel);
-      console.log('selectedModel === null:', selectedModel === null);
-      console.log('selectedModel === undefined:', selectedModel === undefined);
-      console.log('typeof selectedModel:', typeof selectedModel);
-      console.log('Estado esperado: auto-routing?', selectedModel === null);
-      console.log('Modelo que deveria ser usado:', getAutoRoutedModel((copyType || 'outro') as CopyType));
-
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
           copyType: copyType || 'outro',
@@ -222,7 +203,7 @@ export const CopyAITab = () => {
           offer,
           copyId,
           workspaceId: activeWorkspace.id,
-          selectedModel,
+          // Modelo será determinado automaticamente pelo backend baseado no copyType
         }
       });
 
@@ -648,14 +629,9 @@ export const CopyAITab = () => {
             </div>
           </Card>
 
-          {/* FASE 1: NÃO renderizar ModelSelector se copyType não estiver carregado */}
+          {/* Model Selector - Somente Leitura */}
           {copyType ? (
-            <ModelSelector
-              copyType={copyType as CopyType}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              disabled={isGenerating}
-            />
+            <ModelSelector copyType={copyType as CopyType} />
           ) : (
             <Card className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground">
