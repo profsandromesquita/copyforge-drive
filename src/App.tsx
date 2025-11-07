@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { useCreditAlert } from "@/hooks/useCreditAlert";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProjectProvider } from "@/hooks/useProject";
@@ -54,6 +55,37 @@ import AdminWorkspaceDetalhes from "./pages/admin/AdminWorkspaceDetalhes";
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  // Inicializa o sistema de alertas de créditos
+  useCreditAlert();
+  
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/auth" replace />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/signup-invite" element={<SignupInvite />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
+      <Route path="/super-admin" element={<SuperAdmin />} />
+      <Route path="/view/:id" element={<PublicCopy />} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+      <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
+      <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
+      <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+      <Route path="/painel/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/painel/admin/clientes" element={<AdminRoute><AdminClientes /></AdminRoute>} />
+      <Route path="/painel/admin/clientes/:id" element={<AdminRoute><AdminClienteDetalhes /></AdminRoute>} />
+      <Route path="/painel/admin/copies" element={<AdminRoute><AdminCopies /></AdminRoute>} />
+      <Route path="/painel/admin/workspaces" element={<AdminRoute><AdminWorkspaces /></AdminRoute>} />
+      <Route path="/painel/admin/workspaces/:id" element={<AdminRoute><AdminWorkspaceDetalhes /></AdminRoute>} />
+      <Route path="/painel/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
@@ -65,29 +97,7 @@ const App = () => (
             <WorkspaceProvider>
               <ProjectProvider>
                 <DriveProvider>
-                  <Routes>
-                  <Route path="/" element={<Navigate to="/auth" replace />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/signup-invite" element={<SignupInvite />} />
-                  <Route path="/accept-invite" element={<AcceptInvite />} />
-                  <Route path="/super-admin" element={<SuperAdmin />} />
-                  <Route path="/view/:id" element={<PublicCopy />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-                  <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
-                  <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
-                  <Route path="/project/:id" element={<ProtectedRoute><ProjectConfig /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-                  <Route path="/painel/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-                  <Route path="/painel/admin/clientes" element={<AdminRoute><AdminClientes /></AdminRoute>} />
-                  <Route path="/painel/admin/clientes/:id" element={<AdminRoute><AdminClienteDetalhes /></AdminRoute>} />
-                  <Route path="/painel/admin/copies" element={<AdminRoute><AdminCopies /></AdminRoute>} />
-                  <Route path="/painel/admin/workspaces" element={<AdminRoute><AdminWorkspaces /></AdminRoute>} />
-                  <Route path="/painel/admin/workspaces/:id" element={<AdminRoute><AdminWorkspaceDetalhes /></AdminRoute>} />
-                  <Route path="/painel/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                  <AppContent />
                 </DriveProvider>
               </ProjectProvider>
             </WorkspaceProvider>

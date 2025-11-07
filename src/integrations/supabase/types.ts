@@ -651,6 +651,8 @@ export type Database = {
           balance: number
           created_at: string
           id: string
+          low_credit_alert_shown: boolean | null
+          low_credit_threshold: number | null
           total_added: number
           total_used: number
           updated_at: string
@@ -660,6 +662,8 @@ export type Database = {
           balance?: number
           created_at?: string
           id?: string
+          low_credit_alert_shown?: boolean | null
+          low_credit_threshold?: number | null
           total_added?: number
           total_used?: number
           updated_at?: string
@@ -669,6 +673,8 @@ export type Database = {
           balance?: number
           created_at?: string
           id?: string
+          low_credit_alert_shown?: boolean | null
+          low_credit_threshold?: number | null
           total_added?: number
           total_used?: number
           updated_at?: string

@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X } from "phosphor-react";
+import { WorkspaceCredits } from "./WorkspaceCredits";
 
 export const WorkspaceGeneral = () => {
   const { activeWorkspace, refreshWorkspaces } = useWorkspace();
@@ -116,10 +118,16 @@ export const WorkspaceGeneral = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-        {/* Avatar Upload */}
-        <div className="space-y-3">
+    <Tabs defaultValue="general" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="general">Geral</TabsTrigger>
+        <TabsTrigger value="credits">Créditos</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="general">
+        <div className="space-y-6">
+          {/* Avatar Upload */}
+          <div className="space-y-3">
           <Label>Avatar do Workspace</Label>
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
@@ -182,6 +190,11 @@ export const WorkspaceGeneral = () => {
           {saving || uploading ? "Salvando..." : "Salvar Alterações"}
         </Button>
       </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="credits">
+        <WorkspaceCredits />
+      </TabsContent>
+    </Tabs>
   );
 };
