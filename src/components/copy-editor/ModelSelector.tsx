@@ -36,9 +36,6 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
     onModelChange(model);
   };
 
-  const geminiCost = estimateGenerationCost('google/gemini-2.5-flash');
-  const gptCost = estimateGenerationCost('openai/gpt-5-mini');
-
   return (
     <Card className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -74,21 +71,32 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
       </div>
 
       {!isManual ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-          <Badge variant={MODEL_CONFIG[autoRoutedModel].badgeColor === 'green' ? 'secondary' : 'default'}>
-            {MODEL_CONFIG[autoRoutedModel].badge}
-          </Badge>
-          <div className="flex-1">
-            <p className="text-sm font-medium">{MODEL_CONFIG[autoRoutedModel].displayName}</p>
-            <p className="text-xs text-muted-foreground">
-              Selecionado automaticamente para {copyType === 'vsl' ? 'VSL' : copyType === 'landing_page' ? 'Landing Page' : 'este tipo de copy'}
-            </p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+            <Badge variant={MODEL_CONFIG[autoRoutedModel].badgeColor === 'green' ? 'secondary' : 'default'}>
+              {MODEL_CONFIG[autoRoutedModel].badge}
+            </Badge>
+            <div className="flex-1">
+              <p className="text-sm font-medium">{MODEL_CONFIG[autoRoutedModel].displayName}</p>
+              <p className="text-xs text-muted-foreground">
+                Selecionado automaticamente para {copyType === 'vsl' ? 'VSL' : copyType === 'landing_page' ? 'Landing Page' : 'este tipo de copy'}
+              </p>
+            </div>
+            {autoRoutedModel === 'openai/gpt-5-mini' ? (
+              <Sparkles className="h-5 w-5 text-purple-500" />
+            ) : (
+              <Zap className="h-5 w-5 text-green-500" />
+            )}
           </div>
-          {autoRoutedModel === 'openai/gpt-5-mini' ? (
-            <Sparkles className="h-5 w-5 text-purple-500" />
-          ) : (
-            <Zap className="h-5 w-5 text-green-500" />
-          )}
+          
+          {/* Mensagem explicativa do modelo escolhido */}
+          <div className="text-xs text-muted-foreground p-2 bg-background rounded border">
+            {autoRoutedModel === 'openai/gpt-5-mini' ? (
+              <p>🧠 Usando modelo mais inteligente para otimizar a qualidade da entrega, logo o consumo de créditos será maior</p>
+            ) : (
+              <p>⚡ Usando o modelo mais econômico e rápido para otimizar seu tempo e consumo dos créditos</p>
+            )}
+          </div>
         </div>
       ) : (
         <RadioGroup
@@ -120,11 +128,9 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
               <p className="text-xs text-muted-foreground mt-2">
                 {MODEL_CONFIG['google/gemini-2.5-flash'].recommended}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs font-medium text-green-600">
-                  ~{geminiCost.toFixed(2)} créditos estimados
-                </span>
-              </div>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Usando o modelo mais econômico e rápido para otimizar seu tempo e consumo dos créditos
+              </p>
             </div>
           </div>
 
@@ -151,14 +157,9 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
               <p className="text-xs text-muted-foreground mt-2">
                 {MODEL_CONFIG['openai/gpt-5-mini'].recommended}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs font-medium text-purple-600">
-                  ~{gptCost.toFixed(2)} créditos estimados
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  ({MODEL_CONFIG['openai/gpt-5-mini'].estimatedCostMultiplier}x mais que Gemini)
-                </span>
-              </div>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Usando modelo mais inteligente para otimizar a qualidade da entrega, logo o consumo de créditos será maior
+              </p>
             </div>
           </div>
         </RadioGroup>

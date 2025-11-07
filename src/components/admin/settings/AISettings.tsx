@@ -128,6 +128,17 @@ export const AISettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-4">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">
+              ⚠️ IMPORTANTE
+            </p>
+            <p className="text-xs text-muted-foreground">
+              O roteamento automático depende do <strong>tipo da copy</strong> configurado ao criar a copy no Drive. 
+              Para VSL e Landing Pages usarem GPT-5 Mini automaticamente, certifique-se de que o tipo está 
+              corretamente definido como "VSL" ou "Landing Page" na criação.
+            </p>
+          </div>
+          
           <div className="space-y-3">
             <div>
               <h4 className="font-semibold text-sm mb-2">Roteamento Automático (Padrão)</h4>

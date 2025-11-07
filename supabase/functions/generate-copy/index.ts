@@ -41,6 +41,14 @@ serve(async (req) => {
     console.log('Workspace ID:', workspaceId);
     console.log('Copy Type:', copyType);
     console.log('Model:', modelToUse, wasAutoRouted ? '(auto-routed)' : '(manually selected)');
+    
+    console.log('\n=== DEBUG ROUTING ===');
+    console.log('Copy Type recebido:', copyType);
+    console.log('Selected Model recebido:', selectedModel);
+    console.log('Modelo determinado:', modelToUse);
+    console.log('Foi auto-routed?', wasAutoRouted);
+    console.log('Tipos aceitos para GPT-5:', ['vsl', 'landing_page']);
+    console.log('Tipo corresponde?', copyType === 'vsl' || copyType === 'landing_page');
 
     // Verificar créditos antes de gerar (apenas se tiver workspaceId)
     if (workspaceId) {

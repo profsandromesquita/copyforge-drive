@@ -24,8 +24,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AIModel, CopyType, getModelDisplayName } from '@/lib/ai-models';
+import { AIModel, CopyType, getModelDisplayName, getAutoRoutedModel } from '@/lib/ai-models';
 import { useModelSwitchNotification } from '@/hooks/useModelSwitchNotification';
+import { Zap } from 'lucide-react';
 
 type Etapa = 1 | 2 | 3;
 
@@ -597,6 +598,37 @@ export const CopyAITab = () => {
           <Button variant="ghost" onClick={() => setEtapa(2)} className="w-full justify-start">
             ← Voltar
           </Button>
+
+          {/* Indicador do Tipo de Copy */}
+          <Card className="p-4 bg-muted/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-sm">
+                  Tipo: {copyType === 'vsl' ? 'VSL' : 
+                         copyType === 'landing_page' ? 'Landing Page' : 
+                         copyType === 'anuncio' ? 'Anúncio' :
+                         copyType === 'email' ? 'E-mail' :
+                         copyType === 'webinar' ? 'Webinar' :
+                         copyType === 'conteudo' ? 'Conteúdo' :
+                         copyType === 'mensagem' ? 'Mensagem' :
+                         copyType || 'Outro'}
+                </Badge>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {(copyType === 'vsl' || copyType === 'landing_page') ? (
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                    Modelo Premium será usado
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-4 w-4 text-green-500" />
+                    Modelo Econômico será usado
+                  </span>
+                )}
+              </div>
+            </div>
+          </Card>
 
           <ModelSelector
             copyType={(copyType || 'outro') as CopyType}

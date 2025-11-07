@@ -19,6 +19,7 @@ import {
   ChatCircleText,
   DotsThree
 } from "phosphor-react";
+import { Sparkles, Zap } from "lucide-react";
 
 export type CopyType = 'landing_page' | 'anuncio' | 'vsl' | 'email' | 'webinar' | 'conteudo' | 'mensagem' | 'outro';
 
@@ -129,6 +130,19 @@ export function CreateCopyDialog({ open, onOpenChange, onCreateCopy }: CreateCop
                 </button>
               ))}
             </div>
+            
+            {/* Model Indicator */}
+            {selectedType === 'vsl' || selectedType === 'landing_page' ? (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/20 text-sm mt-3">
+                <Sparkles className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                <span className="text-xs text-muted-foreground">Esta copy usará o modelo premium automaticamente</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/20 text-sm mt-3">
+                <Zap className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span className="text-xs text-muted-foreground">Esta copy usará o modelo econômico automaticamente</span>
+              </div>
+            )}
           </div>
 
           {/* Copy Name Input */}
