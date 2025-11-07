@@ -42,7 +42,11 @@ const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
       <div className="px-4 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="lg" className="w-full gap-2">
+            <Button 
+              size="lg" 
+              className="w-full gap-2"
+              disabled={!onCreateCopy && !onCreateFolder}
+            >
               <Plus size={20} weight="bold" />
               <span>Novo</span>
             </Button>
