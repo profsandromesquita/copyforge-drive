@@ -37,6 +37,7 @@ export type Database = {
           sessions: Json
           total_tokens: number | null
           tpc_snapshot: number | null
+          was_auto_routed: boolean | null
           workspace_id: string
         }
         Insert: {
@@ -61,6 +62,7 @@ export type Database = {
           sessions: Json
           total_tokens?: number | null
           tpc_snapshot?: number | null
+          was_auto_routed?: boolean | null
           workspace_id: string
         }
         Update: {
@@ -85,6 +87,7 @@ export type Database = {
           sessions?: Json
           total_tokens?: number | null
           tpc_snapshot?: number | null
+          was_auto_routed?: boolean | null
           workspace_id?: string
         }
         Relationships: [

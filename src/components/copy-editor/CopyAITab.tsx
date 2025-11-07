@@ -18,11 +18,14 @@ import { Session, Block } from '@/types/copy-editor';
 import { AIGeneratedPreviewModal } from './AIGeneratedPreviewModal';
 import { SelectContentModal } from './SelectContentModal';
 import { OptimizeComparisonModal } from './OptimizeComparisonModal';
+import { ModelSelector } from './ModelSelector';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { AIModel, CopyType, getModelDisplayName } from '@/lib/ai-models';
+import { useModelSwitchNotification } from '@/hooks/useModelSwitchNotification';
 
 type Etapa = 1 | 2 | 3;
 
@@ -57,6 +60,7 @@ export const CopyAITab = () => {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { notifyModelSwitch } = useModelSwitchNotification();
 
   // Controle de abas
   const [activeTab, setActiveTab] = useState('criar');
@@ -73,6 +77,7 @@ export const CopyAITab = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSessions, setGeneratedSessions] = useState<Session[]>([]);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
 
   // Estado para otimização
   const [showSelectModal, setShowSelectModal] = useState(false);
@@ -132,6 +137,7 @@ export const CopyAITab = () => {
     setTamanho('');
     setPreferencias([]);
     setPrompt('');
+    setSelectedModel(null);
   };
 
   const resetOptimizeForm = () => {
@@ -197,6 +203,7 @@ export const CopyAITab = () => {
           offer,
           copyId,
           workspaceId: activeWorkspace.id,
+          selectedModel,
         }
       });
 
@@ -217,6 +224,11 @@ export const CopyAITab = () => {
           throw error;
         }
         return;
+      }
+
+      // Notify about model switch if applicable
+      if (data.model_used) {
+        notifyModelSwitch(data.model_used, data.was_auto_routed);
       }
 
       setGeneratedSessions(data.sessions);
@@ -586,6 +598,13 @@ export const CopyAITab = () => {
             ← Voltar
           </Button>
 
+          <ModelSelector
+            copyType={(copyType || 'outro') as CopyType}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            disabled={isGenerating}
+          />
+
           <div className="space-y-2">
             <Label className="font-semibold">Detalhes da Copy</Label>
             <Textarea
@@ -851,7 +870,7 @@ export const CopyAITab = () => {
 
                       {/* Footer com informações adicionais */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                           <span className="px-2 py-1 bg-muted rounded">
                             {item.sessions?.length || 0} sessão(ões)
                           </span>
@@ -859,6 +878,19 @@ export const CopyAITab = () => {
                             <span className="px-2 py-1 bg-muted rounded capitalize">
                               {item.copy_type.replace('_', ' ')}
                             </span>
+                          )}
+                          {item.model_used && (
+                            <Badge 
+                              variant={item.model_used === 'openai/gpt-5-mini' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {getModelDisplayName(item.model_used)}
+                            </Badge>
+                          )}
+                          {item.was_auto_routed && (
+                            <Badge variant="outline" className="text-xs">
+                              Auto
+                            </Badge>
                           )}
                         </div>
                         <Button

@@ -22,12 +22,25 @@ serve(async (req) => {
       audienceSegment, 
       offer,
       copyId,
-      workspaceId 
+      workspaceId,
+      selectedModel  // NEW: Model chosen by user (null = auto-routing)
     } = body;
+
+    // Determine which model to use (auto-routing or manual selection)
+    const getAutoRoutedModel = (type: string) => {
+      if (type === 'vsl' || type === 'landing_page') {
+        return 'openai/gpt-5-mini';
+      }
+      return 'google/gemini-2.5-flash';
+    };
+
+    const modelToUse = selectedModel || getAutoRoutedModel(copyType);
+    const wasAutoRouted = !selectedModel;
 
     console.log('=== Generate Copy Request ===');
     console.log('Workspace ID:', workspaceId);
     console.log('Copy Type:', copyType);
+    console.log('Model:', modelToUse, wasAutoRouted ? '(auto-routed)' : '(manually selected)');
 
     // Verificar créditos antes de gerar (apenas se tiver workspaceId)
     if (workspaceId) {
@@ -37,11 +50,14 @@ serve(async (req) => {
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         
+        // Use model-specific estimated tokens
+        const estimatedTokens = modelToUse === 'openai/gpt-5-mini' ? 7000 : 5000;
+        
         const { data: creditCheck, error: creditCheckError } = await supabaseAdmin
           .rpc('check_workspace_credits', {
             p_workspace_id: workspaceId,
-            estimated_tokens: 5000,
-            p_model_name: 'google/gemini-2.5-flash'
+            estimated_tokens: estimatedTokens,
+            p_model_name: modelToUse
           });
 
         console.log('Credit check result:', creditCheck);
@@ -87,7 +103,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: modelToUse,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -264,7 +280,8 @@ serve(async (req) => {
           offer: offer || null,
           sessions: sessionsWithIds,
           generation_type: 'create',
-          model_used: 'google/gemini-2.5-flash',
+          model_used: modelToUse,
+          was_auto_routed: wasAutoRouted,
           generation_category: 'text',
           input_tokens: inputTokens,
           output_tokens: outputTokens,
@@ -287,7 +304,8 @@ serve(async (req) => {
           console.log('\n=== INICIANDO DÉBITO DE CRÉDITOS ===');
           console.log('Generation ID:', generationId);
           console.log('Workspace ID:', workspaceId);
-          console.log('Model:', 'google/gemini-2.5-flash');
+          console.log('Model:', modelToUse);
+          console.log('Was Auto Routed:', wasAutoRouted);
           console.log('Total tokens:', totalTokens);
           console.log('Input tokens:', inputTokens);
           console.log('Output tokens:', outputTokens);
@@ -296,7 +314,7 @@ serve(async (req) => {
           const { data: debitResult, error: debitError } = await supabaseAdmin
             .rpc('debit_workspace_credits', {
               p_workspace_id: workspaceId,
-              p_model_name: 'google/gemini-2.5-flash',
+              p_model_name: modelToUse,
               tokens_used: totalTokens,
               p_input_tokens: inputTokens,
               p_output_tokens: outputTokens,
@@ -350,7 +368,11 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ sessions: sessionsWithIds }),
+      JSON.stringify({ 
+        sessions: sessionsWithIds,
+        model_used: modelToUse,
+        was_auto_routed: wasAutoRouted
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

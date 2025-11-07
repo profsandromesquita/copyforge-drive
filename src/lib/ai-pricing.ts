@@ -39,6 +39,12 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 };
 
+// Estimated tokens for different models (used for credit checks)
+export const MODEL_ESTIMATED_TOKENS: Record<string, number> = {
+  'google/gemini-2.5-flash': 5000,
+  'openai/gpt-5-mini': 7000, // Premium models tend to generate more detailed output
+};
+
 export function calculateGenerationCost(
   model: string,
   inputTokens: number,

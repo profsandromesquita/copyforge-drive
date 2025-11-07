@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { CurrencyDollar, ArrowClockwise } from "phosphor-react";
+import { Sparkles } from "lucide-react";
 
 interface ExchangeRate {
   code: string;
@@ -33,6 +34,13 @@ const AI_MODELS: AIModel[] = [
     id: "google/gemini-2.5-flash",
     inputCostUSD: 0.075,
     outputCostUSD: 0.30,
+    category: "text"
+  },
+  {
+    name: "GPT-5 Mini",
+    id: "openai/gpt-5-mini",
+    inputCostUSD: 1.00,
+    outputCostUSD: 4.00,
     category: "text"
   },
   {
@@ -107,6 +115,54 @@ export const AISettings = () => {
           Informações sobre modelos de IA e custos
         </p>
       </div>
+
+      {/* Model Routing Info */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Sistema de Roteamento de Modelos
+          </CardTitle>
+          <CardDescription>
+            Seleção automática e manual de modelos de IA
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div>
+              <h4 className="font-semibold text-sm mb-2">Roteamento Automático (Padrão)</h4>
+              <ul className="text-sm text-muted-foreground space-y-1.5 ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span><strong>Gemini 2.5 Flash:</strong> Usado para anúncios, emails e conteúdo geral (econômico e rápido)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-500 mt-0.5">•</span>
+                  <span><strong>GPT-5 Mini:</strong> Usado automaticamente para VSL e Landing Pages (maior qualidade)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span><strong>Nano Banana:</strong> Usado automaticamente para geração de imagens (não selecionável)</span>
+                </li>
+              </ul>
+            </div>
+            
+            <div className="pt-2 border-t">
+              <h4 className="font-semibold text-sm mb-2">Seleção Manual</h4>
+              <p className="text-sm text-muted-foreground">
+                Usuários podem alternar para seleção manual e escolher entre Gemini 2.5 Flash ou GPT-5 Mini antes de gerar a copy, independentemente do tipo.
+              </p>
+            </div>
+
+            <div className="pt-2 border-t">
+              <h4 className="font-semibold text-sm mb-2">Notificações de Mudança</h4>
+              <p className="text-sm text-muted-foreground">
+                O sistema notifica discretamente quando há mudança de modelo, informando sobre o impacto no custo e qualidade.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Exchange Rate Card */}
       <Card>
