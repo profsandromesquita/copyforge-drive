@@ -29,6 +29,27 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
     }
   }, []); // Executar apenas na montagem
 
+  // FASE 2: Sincronizar com mudanças de copyType
+  useEffect(() => {
+    if (isManual && selectedModel) {
+      // Se estamos em modo manual e copyType mudou, verificar se o modelo selecionado ainda faz sentido
+      const currentAutoRouted = getAutoRoutedModel(copyType);
+      console.log('ModelSelector: copyType mudou para:', copyType);
+      console.log('ModelSelector: autoRoutedModel agora seria:', currentAutoRouted);
+      console.log('ModelSelector: selectedModel atual:', selectedModel);
+      
+      // Se o modelo selecionado for o que seria o auto-routed do TIPO ANTERIOR,
+      // atualizar para o auto-routed do NOVO tipo
+      if (selectedModel === 'google/gemini-2.5-flash' && currentAutoRouted === 'openai/gpt-5-mini') {
+        console.log('ModelSelector: Corrigindo modelo para o tipo correto (VSL/LP detectado)');
+        onModelChange(currentAutoRouted);
+      } else if (selectedModel === 'openai/gpt-5-mini' && currentAutoRouted === 'google/gemini-2.5-flash') {
+        console.log('ModelSelector: Corrigindo modelo para o tipo correto (Outro tipo detectado)');
+        onModelChange(currentAutoRouted);
+      }
+    }
+  }, [copyType]); // Executar quando copyType mudar
+
   // FASE 6: Forçar nullificação ao voltar para auto
   const handleModeChange = (manual: boolean) => {
     console.log('ModelSelector: Mudando modo:', { de: isManual, para: manual });
@@ -180,6 +201,22 @@ export const ModelSelector = ({ copyType, selectedModel, onModelChange, disabled
             </div>
           </div>
         </RadioGroup>
+      )}
+
+      {/* FASE 4: Alerta de inconsistência (se modelo manual não é o recomendado) */}
+      {isManual && selectedModel && selectedModel !== autoRoutedModel && (
+        <div className="text-xs p-3 bg-yellow-50 dark:bg-yellow-950 rounded border border-yellow-200 flex items-start gap-2">
+          <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
+          <div>
+            <p className="font-medium text-yellow-800 dark:text-yellow-200">
+              Atenção: Modelo não recomendado
+            </p>
+            <p className="text-yellow-700 dark:text-yellow-300 mt-1">
+              O modelo selecionado ({MODEL_CONFIG[selectedModel].displayName}) não é o recomendado para {copyType === 'vsl' ? 'VSL' : copyType === 'landing_page' ? 'Landing Page' : 'este tipo de copy'}. 
+              Recomendado: {MODEL_CONFIG[autoRoutedModel].displayName}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* FASE 5: Indicador visual de debug (apenas em desenvolvimento) */}

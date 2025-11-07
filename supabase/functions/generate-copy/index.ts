@@ -56,6 +56,36 @@ serve(async (req) => {
     console.log('Tipos aceitos para GPT-5:', ['vsl', 'landing_page']);
     console.log('Tipo corresponde?', copyType === 'vsl' || copyType === 'landing_page');
 
+    // FASE 3: VALIDAÇÃO DEFENSIVA - Corrigir inconsistências no servidor
+    let finalModelToUse = modelToUse;
+    let finalWasAutoRouted = wasAutoRouted;
+    
+    if (selectedModel && wasAutoRouted === false) {
+      const expectedModel = getAutoRoutedModel(copyType);
+      
+      // Se modelo manual está incorreto para o tipo, FORÇAR auto-routing
+      if ((copyType === 'vsl' || copyType === 'landing_page') && selectedModel !== 'openai/gpt-5-mini') {
+        console.log('\n⚠️⚠️⚠️ INCONSISTÊNCIA DETECTADA! ⚠️⚠️⚠️');
+        console.log(`copyType "${copyType}" deveria usar GPT-5 Mini, mas selectedModel é "${selectedModel}"`);
+        console.log('FORÇANDO auto-routing para corrigir...');
+        
+        // Sobrescrever
+        finalModelToUse = expectedModel;
+        finalWasAutoRouted = true;  // Marcar como auto para rastreamento
+        
+        console.log('✓ Modelo corrigido para:', finalModelToUse);
+        console.log('✓ wasAutoRouted definido como:', finalWasAutoRouted);
+      } else if (copyType !== 'vsl' && copyType !== 'landing_page' && selectedModel === 'openai/gpt-5-mini') {
+        console.log('\n⚠️⚠️⚠️ POSSÍVEL INCONSISTÊNCIA DETECTADA! ⚠️⚠️⚠️');
+        console.log(`copyType "${copyType}" normalmente usa Gemini, mas selectedModel é GPT-5 Mini`);
+        console.log('Permitindo (pode ser escolha intencional do usuário)');
+      }
+    }
+
+    console.log('\n=== MODELO FINAL APÓS VALIDAÇÃO ===');
+    console.log('modelToUse final:', finalModelToUse);
+    console.log('wasAutoRouted final:', finalWasAutoRouted);
+
     // Verificar créditos antes de gerar (apenas se tiver workspaceId)
     if (workspaceId) {
       const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -71,7 +101,7 @@ serve(async (req) => {
           .rpc('check_workspace_credits', {
             p_workspace_id: workspaceId,
             estimated_tokens: estimatedTokens,
-            p_model_name: modelToUse
+            p_model_name: finalModelToUse
           });
 
         console.log('Credit check result:', creditCheck);
@@ -117,7 +147,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: modelToUse,
+        model: finalModelToUse,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -294,8 +324,8 @@ serve(async (req) => {
           offer: offer || null,
           sessions: sessionsWithIds,
           generation_type: 'create',
-          model_used: modelToUse,
-          was_auto_routed: wasAutoRouted,
+          model_used: finalModelToUse,
+          was_auto_routed: finalWasAutoRouted,
           generation_category: 'text',
           input_tokens: inputTokens,
           output_tokens: outputTokens,
@@ -328,7 +358,7 @@ serve(async (req) => {
           const { data: debitResult, error: debitError } = await supabaseAdmin
             .rpc('debit_workspace_credits', {
               p_workspace_id: workspaceId,
-              p_model_name: modelToUse,
+              p_model_name: finalModelToUse,
               tokens_used: totalTokens,
               p_input_tokens: inputTokens,
               p_output_tokens: outputTokens,
@@ -384,8 +414,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         sessions: sessionsWithIds,
-        model_used: modelToUse,
-        was_auto_routed: wasAutoRouted
+        model_used: finalModelToUse,
+        was_auto_routed: finalWasAutoRouted
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -648,12 +648,22 @@ export const CopyAITab = () => {
             </div>
           </Card>
 
-          <ModelSelector
-            copyType={(copyType || 'outro') as CopyType}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            disabled={isGenerating}
-          />
+          {/* FASE 1: NÃO renderizar ModelSelector se copyType não estiver carregado */}
+          {copyType ? (
+            <ModelSelector
+              copyType={copyType as CopyType}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              disabled={isGenerating}
+            />
+          ) : (
+            <Card className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Carregando configurações...</span>
+              </div>
+            </Card>
+          )}
 
           <div className="space-y-2">
             <Label className="font-semibold">Detalhes da Copy</Label>
