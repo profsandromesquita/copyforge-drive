@@ -359,14 +359,9 @@ export const AudienceSegmentForm = ({
               const isValid = charCount >= MIN_CHARS;
               return (
                 <div key={question.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor={question.id} className="text-sm font-medium">
-                      {question.label}
-                    </Label>
-                    <span className={`text-xs ${isValid ? 'text-muted-foreground' : 'text-destructive'}`}>
-                      {charCount}/{MIN_CHARS} caracteres
-                    </span>
-                  </div>
+                  <Label htmlFor={question.id} className="text-sm font-medium">
+                    {question.label}
+                  </Label>
                   <div className="relative">
                     <Textarea
                       id={question.id}
@@ -384,6 +379,9 @@ export const AudienceSegmentForm = ({
                       }))}
                     />
                   </div>
+                  <span className={`text-xs ${isValid ? 'text-muted-foreground' : 'text-destructive'}`}>
+                    {charCount}/{MIN_CHARS} caracteres mínimos
+                  </span>
                 </div>
               );
             })}
