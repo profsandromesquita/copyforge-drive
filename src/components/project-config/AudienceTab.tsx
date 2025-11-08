@@ -52,10 +52,12 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
                 Defina os diferentes segmentos de público que você deseja atingir
               </p>
             </div>
-            <Button onClick={handleAddSegment}>
-              <Plus size={20} className="mr-2" />
-              Adicionar Segmento
-            </Button>
+            {segments.length > 0 && (
+              <Button onClick={handleAddSegment}>
+                <Plus size={20} className="mr-2" />
+                Adicionar Segmento
+              </Button>
+            )}
           </div>
 
           {segments.length === 0 ? (
