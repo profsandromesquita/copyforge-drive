@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, Trash, Sparkles } from 'lucide-react';
+import { Pencil, Trash, Sparkles, Loader2 } from 'lucide-react';
 import { AudienceSegment } from '@/types/project-config';
 
 interface AudienceSegmentCardProps {
@@ -9,13 +9,15 @@ interface AudienceSegmentCardProps {
   onEdit: (segment: AudienceSegment) => void;
   onDelete: (segmentId: string) => void;
   onViewAnalysis?: (segment: AudienceSegment) => void;
+  isGenerating?: boolean;
 }
 
 export const AudienceSegmentCard = ({ 
   segment, 
   onEdit, 
   onDelete,
-  onViewAnalysis 
+  onViewAnalysis,
+  isGenerating 
 }: AudienceSegmentCardProps) => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
@@ -49,10 +51,19 @@ export const AudienceSegmentCard = ({
                   size="sm"
                   className="w-full"
                   onClick={() => onViewAnalysis(segment)}
-                  disabled={!segment.is_completed}
+                  disabled={!segment.is_completed || isGenerating}
                 >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {segment.advanced_analysis ? 'Ver Análise Avançada IA' : 'Gerar Análise Avançada IA'}
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {segment.advanced_analysis ? 'Ver Análise Avançada' : 'Gerar Análise Avançada'}
+                    </>
+                  )}
                 </Button>
               </div>
             </TooltipTrigger>

@@ -34,6 +34,8 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const [analysisModalSegment, setAnalysisModalSegment] = useState<AudienceSegment | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [segmentToDelete, setSegmentToDelete] = useState<string | null>(null);
+  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
+  const [generatingSegmentId, setGeneratingSegmentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeProject?.audience_segments) {
@@ -116,7 +118,8 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
     // Se não tem análise, gera antes de abrir o modal
     if (!activeWorkspace) return;
 
-    toast.info('Gerando análise avançada...');
+    setIsGeneratingAnalysis(true);
+    setGeneratingSegmentId(segment.id);
     
     try {
       const { data, error } = await supabase.functions.invoke('analyze-audience', {
@@ -154,6 +157,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       } else {
         toast.error('Erro ao gerar análise');
       }
+    } finally {
+      setIsGeneratingAnalysis(false);
+      setGeneratingSegmentId(null);
     }
   };
 
@@ -237,6 +243,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
                   onEdit={handleEditSegment}
                   onDelete={handleDeleteSegment}
                   onViewAnalysis={handleViewOrGenerateAnalysis}
+                  isGenerating={isGeneratingAnalysis && generatingSegmentId === s.id}
                 />
               ))}
             </div>

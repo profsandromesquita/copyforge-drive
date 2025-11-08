@@ -21,9 +21,34 @@ serve(async (req) => {
       );
     }
 
+    // Extrair user_id do JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Token de autenticação ausente' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
+
+    // Criar cliente com o token do usuário para pegar o user_id
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Erro ao obter usuário:', userError);
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -163,6 +188,7 @@ Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE
         p_input_tokens: inputTokens,
         p_output_tokens: outputTokens,
         generation_id: crypto.randomUUID(),
+        p_user_id: user.id,
       }
     );
 
