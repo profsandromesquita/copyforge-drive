@@ -216,7 +216,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
             id="brand_name"
             {...register('brand_name')}
             placeholder="Ex: Método EmagreceVida"
-            className="transition-all focus:ring-2 focus:ring-primary/20 placeholder:text-xs"
+            className="placeholder:text-xs"
           />
           {errors.brand_name && (
             <p className="text-sm text-destructive animate-fade-in">{errors.brand_name.message}</p>
@@ -230,7 +230,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
             <span className="text-destructive">*</span>
           </Label>
           <Select value={sector} onValueChange={(value) => setValue('sector', value)}>
-            <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
+            <SelectTrigger>
               <SelectValue placeholder="Selecione um setor" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
@@ -258,7 +258,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
               {...register('central_purpose')}
               placeholder="Ex: Ajudar pessoas acima do peso a emagrecer de forma saudável e definitiva"
               rows={2}
-              className="pr-12 resize-none transition-all focus:ring-2 focus:ring-primary/20 placeholder:text-xs"
+              className="pr-12 resize-none placeholder:text-xs"
             />
             <VoiceInput
               onTranscript={(text) => {
