@@ -55,14 +55,14 @@ export const AudienceSegmentCard = ({
         </div>
       </div>
 
-      {segment.advanced_analysis && onViewAnalysis && (
+      {onViewAnalysis && (
         <Button 
-          variant="outline" 
+          variant={segment.advanced_analysis ? "outline" : "default"}
           className="w-full mt-4"
           onClick={() => onViewAnalysis(segment)}
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          Ver Análise Avançada
+          {segment.advanced_analysis ? 'Ver Análise Avançada' : 'Gerar Análise IA'}
         </Button>
       )}
     </div>

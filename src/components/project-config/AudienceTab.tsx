@@ -70,6 +70,57 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
     }
   };
 
+  const handleViewOrGenerateAnalysis = async (segment: AudienceSegment) => {
+    // Se já tem análise, apenas visualiza
+    if (segment.advanced_analysis) {
+      setAnalysisModalSegment(segment);
+      return;
+    }
+
+    // Se não tem análise, gera antes de abrir o modal
+    if (!activeWorkspace) return;
+
+    toast.info('Gerando análise avançada...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-audience', {
+        body: { 
+          segment,
+          workspace_id: activeWorkspace.id 
+        }
+      });
+
+      if (error) throw error;
+
+      const updatedSegment = {
+        ...segment,
+        advanced_analysis: data.analysis,
+        analysis_generated_at: new Date().toISOString()
+      };
+
+      const updatedSegments = segments.map(s =>
+        s.id === segment.id ? updatedSegment : s
+      );
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject?.id);
+
+      await refreshProjects();
+      setSegments(updatedSegments);
+      setAnalysisModalSegment(updatedSegment);
+      toast.success('Análise gerada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao gerar análise:', error);
+      if (error.message?.includes('insufficient_credits')) {
+        toast.error('Créditos insuficientes');
+      } else {
+        toast.error('Erro ao gerar análise');
+      }
+    }
+  };
+
   const handleRegenerateAnalysis = async (segment: AudienceSegment) => {
     if (!activeWorkspace) return;
 
@@ -149,7 +200,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
                   segment={s}
                   onEdit={handleEditSegment}
                   onDelete={handleDeleteSegment}
-                  onViewAnalysis={(seg) => setAnalysisModalSegment(seg)}
+                  onViewAnalysis={handleViewOrGenerateAnalysis}
                 />
               ))}
             </div>

@@ -7,9 +7,7 @@ import { VoiceInput } from './VoiceInput';
 import { AudienceSegment } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/hooks/useProject';
-import { useWorkspace } from '@/hooks/useWorkspace';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
 
 interface AudienceSegmentFormProps {
   segment: AudienceSegment | null;
@@ -27,7 +25,6 @@ export const AudienceSegmentForm = ({
   onAutoSavingChange 
 }: AudienceSegmentFormProps) => {
   const { activeProject, refreshProjects } = useProject();
-  const { activeWorkspace } = useWorkspace();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
     id: '',
     who_is: '',
@@ -41,7 +38,6 @@ export const AudienceSegmentForm = ({
   });
   const [identification, setIdentification] = useState(segment?.id || '');
   const [autoSaving, setAutoSaving] = useState(false);
-  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
 
   const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
 
@@ -69,12 +65,12 @@ export const AudienceSegmentForm = ({
   }, [formData, segment, STORAGE_KEY]);
 
   const autoSaveToDatabase = useCallback(async () => {
-    if (!formData.who_is || !activeProject) return;
+    if (!identification || !activeProject) return;
 
     setAutoSaving(true);
     onAutoSavingChange?.(true);
     try {
-      const segmentId = segment?.id || `segment-${Date.now()}`;
+      const segmentId = identification || segment?.id || `segment-${Date.now()}`;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
 
       const updatedSegments = segment
@@ -93,90 +89,32 @@ export const AudienceSegmentForm = ({
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange]);
+  }, [identification, formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (formData.who_is) {
+      if (identification) {
         autoSaveToDatabase();
       }
-    }, 3000);
+    }, 2000);
     return () => clearTimeout(timer);
-  }, [formData, autoSaveToDatabase]);
+  }, [identification, formData, autoSaveToDatabase]);
 
-  const handleFinish = async () => {
-    if (!isFormValid) {
-      toast.error('Preencha todos os campos obrigatórios');
-      return;
+  const handleClose = () => {
+    // Salvar antes de fechar se houver dados
+    if (identification && Object.values(formData).some(v => v)) {
+      autoSaveToDatabase();
     }
-
-    if (!activeProject || !activeWorkspace) {
-      toast.error('Projeto ou workspace não encontrado');
-      return;
-    }
-
-    setIsGeneratingAnalysis(true);
-    try {
-      const segmentId = identification || segment?.id || `segment-${Date.now()}`;
-      const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
-
-      // Gerar análise avançada via IA
-      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-audience', {
-        body: { 
-          segment: newSegment,
-          workspace_id: activeWorkspace.id 
-        }
-      });
-
-      if (analysisError) throw analysisError;
-
-      // Adicionar análise ao segmento
-      newSegment.advanced_analysis = analysisData.analysis;
-      newSegment.analysis_generated_at = new Date().toISOString();
-
-      const updatedSegments = segment
-        ? allSegments.map(s => s.id === segment.id ? newSegment : s)
-        : [...allSegments, newSegment];
-
-      await supabase
-        .from('projects')
-        .update({ audience_segments: updatedSegments as any })
-        .eq('id', activeProject.id);
-
-      await refreshProjects();
-      localStorage.removeItem(STORAGE_KEY);
-      
-      onSave(updatedSegments);
-      toast.success('Segmento criado e análise gerada com sucesso!');
-    } catch (error: any) {
-      console.error('Erro ao finalizar segmento:', error);
-      if (error.message?.includes('insufficient_credits')) {
-        toast.error('Créditos insuficientes para gerar análise');
-      } else {
-        toast.error('Erro ao gerar análise avançada');
-      }
-    } finally {
-      setIsGeneratingAnalysis(false);
-    }
-  };
-
-  const handleCancel = () => {
+    
     if (!segment) {
       localStorage.removeItem(STORAGE_KEY);
     }
-    onCancel();
+    
+    // Aguardar um pouco para garantir que o save foi concluído
+    setTimeout(() => {
+      onCancel();
+    }, 500);
   };
-
-  const isFormValid = !!(
-    identification &&
-    formData.who_is &&
-    formData.biggest_desire &&
-    formData.biggest_pain &&
-    formData.failed_attempts &&
-    formData.beliefs &&
-    formData.behavior &&
-    formData.journey
-  );
 
   const questions = [
     {
@@ -261,23 +199,9 @@ export const AudienceSegmentForm = ({
         ))}
       </div>
 
-      <div className="flex gap-3 justify-end">
-        <Button variant="outline" onClick={handleCancel} disabled={isGeneratingAnalysis}>
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleFinish} 
-          disabled={!isFormValid || isGeneratingAnalysis}
-          className="min-w-[200px]"
-        >
-          {isGeneratingAnalysis ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Gerando Análise IA...
-            </>
-          ) : (
-            'Concluir Segmento'
-          )}
+      <div className="flex gap-3 justify-end pt-4 border-t border-border">
+        <Button variant="outline" onClick={handleClose}>
+          Fechar
         </Button>
       </div>
     </div>
