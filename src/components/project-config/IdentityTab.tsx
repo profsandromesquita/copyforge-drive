@@ -142,7 +142,10 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         // Update existing project
         const { error } = await supabase
           .from('projects')
-          .update(updates)
+          .update({
+            ...updates,
+            name: data.brand_name, // Atualiza o name com o brand_name
+          })
           .eq('id', activeProject.id);
 
         if (error) throw error;
