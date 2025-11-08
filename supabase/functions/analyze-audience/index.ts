@@ -52,10 +52,13 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Construir prompt otimizado para análise avançada focada em copywriting
+    // Construir prompt otimizado para análise profunda de PÚBLICO (sem foco em vendas)
     const prompt = `
-Você é um especialista em copywriting direto, psicologia do consumidor e análise de público-alvo. 
-Sua missão é gerar uma análise ULTRA-ACIONÁVEL para criação de copies de vendas.
+Você é um especialista em psicologia do consumidor, antropologia cultural e análise comportamental.
+Sua missão é criar um PERFIL PSICOGRÁFICO PROFUNDO deste segmento de público.
+
+**IMPORTANTE:** NÃO sugira estratégias de vendas, copy ou conversão. Apenas ENTENDA profundamente quem é essa pessoa.
+Analise como um pesquisador: observe padrões, motivações intrínsecas, barreiras emocionais, linguagem natural e influências culturais.
 
 **DADOS DO PÚBLICO:**
 
@@ -69,8 +72,8 @@ Sua missão é gerar uma análise ULTRA-ACIONÁVEL para criação de copies de v
 
 ---
 
-Analise profundamente esse público e retorne insights ULTRA-ESPECÍFICOS e ACIONÁVEIS para copywriting.
-Seja objetivo, direto e focado no que REALMENTE move vendas.
+Analise profundamente esse público do ponto de vista antropológico e psicológico.
+Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pessoa.
 `;
 
     // Chamar Lovable AI com estrutura de campos
@@ -84,7 +87,7 @@ Seja objetivo, direto e focado no que REALMENTE move vendas.
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'Você é um especialista em análise de público-alvo e copywriting estratégico.' },
+          { role: 'system', content: 'Você é um especialista em psicologia do consumidor, antropologia cultural e análise comportamental. Foque apenas em entender o público profundamente, sem sugerir estratégias de vendas.' },
           { role: 'user', content: prompt }
         ],
         tools: [
@@ -92,57 +95,57 @@ Seja objetivo, direto e focado no que REALMENTE move vendas.
             type: "function",
             function: {
               name: "generate_audience_analysis",
-              description: "Gera análise estruturada de público-alvo para copywriting",
+              description: "Gera análise psicográfica profunda de público-alvo",
               parameters: {
                 type: "object",
                 properties: {
                   consciousness_level: {
                     type: "string",
-                    description: "Identifique em qual dos 5 níveis de Eugene Schwartz esse público está (Inconsciente, Consciente do Problema, Consciente da Solução, Consciente do Produto, Mais Consciente) e explique as implicações para a copy"
+                    description: "Nível de consciência (Eugene Schwartz): em qual dos 5 estágios o público está? Explique o mindset atual e barreiras para avançar. Seja específico sobre o que essa pessoa já sabe, o que ainda não percebeu e quais são os bloqueios mentais que a impedem de evoluir para o próximo nível."
                   },
-                  vocabulary: {
+                  psychographic_profile: {
                     type: "string",
-                    description: "Liste 10-15 palavras/frases exatas que essa pessoa usa, o tom ideal (formal, informal, técnico, motivacional) e o que NUNCA dizer"
+                    description: "Perfil psicográfico completo: valores centrais que guiam decisões, estilo de vida (rotina, prioridades, contexto de vida), traços de personalidade relevantes (considere Big Five se aplicável), identidade social (a quais grupos pertence ou quer pertencer), autoimagem (como se vê e como quer ser vista pelos outros)."
                   },
-                  objections: {
+                  pains_frustrations: {
                     type: "string",
-                    description: "Liste as 5 principais objeções ranqueadas por prioridade com respostas específicas para neutralizar cada uma"
+                    description: "Mapeamento completo de dores: dores principais (as mais intensas e urgentes), dores secundárias (consequências das principais), frustrações diárias específicas, sentimentos negativos recorrentes, impactos emocionais e práticos na vida pessoal/profissional. Seja concreto e específico."
                   },
-                  copy_angles: {
+                  desires_aspirations: {
                     type: "string",
-                    description: "Sugira 3-5 formas diferentes de 'fisgar' esse público com ângulos de entrada variados"
+                    description: "Desejos verdadeiros: o que REALMENTE quer alcançar (vá além do óbvio, busque a motivação profunda), aspirações de longo prazo, versão ideal de si mesmo (quem quer se tornar), mudanças desejadas na vida, sonhos e objetivos (mesmo os que parecem inalcançáveis)."
                   },
-                  mental_triggers: {
+                  behaviors_habits: {
                     type: "string",
-                    description: "Liste os TOP 3 gatilhos mentais que funcionam melhor e explique por quê. Liste também gatilhos a evitar"
+                    description: "Comportamentos observáveis: rotina diária típica, hábitos de consumo de conteúdo (o que lê, assiste, ouve), onde passa o tempo (online: redes sociais, fóruns, sites / offline: lugares físicos), rituais e padrões repetitivos, como toma decisões (impulsivo, analítico, emocional), triggers comportamentais."
                   },
-                  copy_structure: {
+                  language_communication: {
                     type: "string",
-                    description: "Recomende o melhor framework (PAS, AIDA, BAB, etc), explique por que funciona para esse público e sugira um esqueleto básico"
+                    description: "Como se comunica naturalmente: vocabulário específico (liste 10-15 termos/frases que essa pessoa realmente usa), tom natural predominante (formal/informal/técnico/coloquial), gírias, expressões regionais ou de nicho, metáforas e analogias que usa, como descreve seus problemas (quais palavras usa para expressar dores)."
                   },
-                  timing_context: {
+                  influences_references: {
                     type: "string",
-                    description: "Indique o melhor momento para impactar (horário, dia, situação) e gatilhos de urgência específicos que funcionam"
+                    description: "Influências e referências: autoridades que segue e confia, criadores de conteúdo (YouTubers, podcasters, influenciadores), marcas favoritas e por que as admira, comunidades/grupos dos quais faz parte (online e offline), fontes de informação que considera confiáveis, quem são seus modelos de referência."
+                  },
+                  internal_barriers: {
+                    type: "string",
+                    description: "Barreiras e bloqueios internos: crenças limitantes profundas (o que acredita que é verdade mas a limita), medos específicos e irracionais, padrões de auto-sabotagem, resistências emocionais (o que evita sentir), experiências passadas traumáticas que bloqueiam ação, contradições internas (quer X mas faz Y)."
                   },
                   anti_persona: {
                     type: "string",
-                    description: "Descreva quem NÃO deveria comprar e por que isso importa. Características de clientes problemáticos"
-                  },
-                  example_copy: {
-                    type: "string",
-                    description: "Crie um parágrafo de copy exemplo usando todos os insights acima (2-4 linhas)"
+                    description: "Anti-persona detalhada: características demográficas e psicográficas de quem definitivamente NÃO é esse público, perfil oposto, valores e crenças conflitantes, comportamentos excludentes, red flags que indicam que não é esse público, por que essas pessoas não se identificariam com este segmento."
                   }
                 },
                 required: [
                   "consciousness_level",
-                  "vocabulary",
-                  "objections",
-                  "copy_angles",
-                  "mental_triggers",
-                  "copy_structure",
-                  "timing_context",
-                  "anti_persona",
-                  "example_copy"
+                  "psychographic_profile",
+                  "pains_frustrations",
+                  "desires_aspirations",
+                  "behaviors_habits",
+                  "language_communication",
+                  "influences_references",
+                  "internal_barriers",
+                  "anti_persona"
                 ],
                 additionalProperties: false
               }

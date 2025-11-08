@@ -10,17 +10,17 @@ export interface AudienceSegment {
   journey: string; // Onde ela está e onde quer chegar?
   is_completed?: boolean; // Se o usuário concluiu o preenchimento
   
-  // FASE 2 - Análise gerada por IA (estruturada)
+  // FASE 2 - Análise gerada por IA (estruturada) - FOCO EM PÚBLICO
   advanced_analysis?: {
-    consciousness_level: string; // Nível de Consciência (Eugene Schwartz)
-    vocabulary: string; // Vocabulário e expressões específicas
-    objections: string; // Top 5 objeções priorizadas
-    copy_angles: string; // 3-5 ângulos de entrada
-    mental_triggers: string; // Gatilhos mentais que funcionam
-    copy_structure: string; // Estrutura de copy recomendada
-    timing_context: string; // Melhor momento e contexto
-    anti_persona: string; // Perfil anti-persona
-    example_copy: string; // Exemplo prático de copy
+    consciousness_level: string; // Nível de consciência do problema/solução
+    psychographic_profile: string; // Valores, estilo de vida, personalidade
+    pains_frustrations: string; // Dores e frustrações específicas
+    desires_aspirations: string; // Desejos, aspirações e objetivos verdadeiros
+    behaviors_habits: string; // Comportamentos observáveis, hábitos, rotinas
+    language_communication: string; // Como se comunica naturalmente
+    influences_references: string; // Influenciadores, referências, fontes de informação
+    internal_barriers: string; // Barreiras psicológicas e bloqueios internos
+    anti_persona: string; // Quem definitivamente NÃO é esse público
   };
   analysis_generated_at?: string;
 }
