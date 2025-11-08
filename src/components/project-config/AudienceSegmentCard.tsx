@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pencil, Trash, Sparkles } from 'lucide-react';
 import { AudienceSegment } from '@/types/project-config';
 
@@ -39,15 +40,29 @@ export const AudienceSegmentCard = ({
       </div>
 
       {onViewAnalysis && (
-        <Button 
-          variant={segment.advanced_analysis ? "outline" : "default"}
-          size="sm"
-          className="w-full"
-          onClick={() => onViewAnalysis(segment)}
-        >
-          <Sparkles className="h-4 w-4 mr-2" />
-          {segment.advanced_analysis ? 'Ver Análise Avançada IA' : 'Gerar Análise Avançada IA'}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full">
+                <Button 
+                  variant={segment.advanced_analysis ? "outline" : "default"}
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onViewAnalysis(segment)}
+                  disabled={!segment.is_completed}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {segment.advanced_analysis ? 'Ver Análise Avançada IA' : 'Gerar Análise Avançada IA'}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {!segment.is_completed && (
+              <TooltipContent>
+                <p>Conclua o preenchimento das 7 perguntas para habilitar</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       )}
     </div>
   );

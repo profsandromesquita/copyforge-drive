@@ -34,6 +34,7 @@ export const AudienceSegmentForm = ({
     beliefs: '',
     behavior: '',
     journey: '',
+    is_completed: false,
     ...segment
   });
   const [identification, setIdentification] = useState(segment?.id || '');
@@ -42,6 +43,7 @@ export const AudienceSegmentForm = ({
   const [originalId, setOriginalId] = useState(segment?.id || '');
 
   const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
+  const MIN_CHARS = 50;
 
   useEffect(() => {
     if (!segment) {
@@ -142,6 +144,7 @@ export const AudienceSegmentForm = ({
         beliefs: '',
         behavior: '',
         journey: '',
+        is_completed: false,
       };
 
       const updatedSegments = [...allSegments, newSegment];
@@ -202,6 +205,44 @@ export const AudienceSegmentForm = ({
     }
   };
 
+  const isAllFieldsFilled = () => {
+    return (
+      (formData.who_is?.length || 0) >= MIN_CHARS &&
+      (formData.biggest_desire?.length || 0) >= MIN_CHARS &&
+      (formData.biggest_pain?.length || 0) >= MIN_CHARS &&
+      (formData.failed_attempts?.length || 0) >= MIN_CHARS &&
+      (formData.beliefs?.length || 0) >= MIN_CHARS &&
+      (formData.behavior?.length || 0) >= MIN_CHARS &&
+      (formData.journey?.length || 0) >= MIN_CHARS
+    );
+  };
+
+  const handleComplete = async () => {
+    if (!identification || !activeProject) return;
+
+    try {
+      const updatedFormData = { ...formData, is_completed: true };
+      const segmentId = identification;
+      const newSegment: AudienceSegment = { ...updatedFormData, id: segmentId } as AudienceSegment;
+
+      const updatedSegments = allSegments.map(s => 
+        s.id === segmentId ? newSegment : s
+      );
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setFormData(updatedFormData);
+      toast.success('Segmento concluído! Agora você pode gerar a análise avançada IA.');
+    } catch (error) {
+      console.error('Erro ao concluir segmento:', error);
+      toast.error('Erro ao concluir segmento');
+    }
+  };
+
   const handleClose = () => {
     // Salvar antes de fechar se houver dados
     if (identification && segmentCreated && Object.values(formData).some(v => v)) {
@@ -216,6 +257,11 @@ export const AudienceSegmentForm = ({
     setTimeout(() => {
       onCancel();
     }, 500);
+  };
+
+  const getCharCount = (fieldId: string) => {
+    const value = formData[fieldId as keyof typeof formData] as string || '';
+    return value.length;
   };
 
   const questions = [
@@ -308,30 +354,65 @@ export const AudienceSegmentForm = ({
 
         {segmentCreated && (
           <>
-            {questions.map((question) => (
-          <div key={question.id} className="space-y-2">
-            <Label htmlFor={question.id} className="text-sm font-medium">
-              {question.label}
-            </Label>
-            <div className="relative">
-              <Textarea
-                id={question.id}
-                value={formData[question.id as keyof typeof formData] as string || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
-                placeholder={question.placeholder}
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  [question.id]: prev[question.id as keyof typeof prev] 
-                    ? `${prev[question.id as keyof typeof prev]} ${text}` 
-                    : text
-                }))}
-              />
+            {questions.map((question) => {
+              const charCount = getCharCount(question.id);
+              const isValid = charCount >= MIN_CHARS;
+              return (
+                <div key={question.id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={question.id} className="text-sm font-medium">
+                      {question.label}
+                    </Label>
+                    <span className={`text-xs ${isValid ? 'text-muted-foreground' : 'text-destructive'}`}>
+                      {charCount}/{MIN_CHARS} caracteres
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Textarea
+                      id={question.id}
+                      value={formData[question.id as keyof typeof formData] as string || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
+                      placeholder={question.placeholder}
+                      className="min-h-[100px] resize-none pr-12"
+                    />
+                    <VoiceInput
+                      onTranscript={(text) => setFormData(prev => ({
+                        ...prev,
+                        [question.id]: prev[question.id as keyof typeof prev] 
+                          ? `${prev[question.id as keyof typeof prev]} ${text}` 
+                          : text
+                      }))}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {!formData.is_completed && (
+              <div className="pt-4 border-t border-border">
+                <Button 
+                  onClick={handleComplete}
+                  disabled={!isAllFieldsFilled()}
+                  className="w-full"
+                  size="lg"
+                >
+                  Concluir Preenchimento
+                </Button>
+                {!isAllFieldsFilled() && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Preencha todos os campos com no mínimo {MIN_CHARS} caracteres para concluir
+                  </p>
+                )}
               </div>
-            </div>
-          ))}
+            )}
+
+            {formData.is_completed && (
+              <div className="pt-4 border-t border-border bg-primary/5 rounded-lg p-4">
+                <p className="text-sm text-center font-medium text-primary">
+                  ✓ Preenchimento concluído! Agora você pode gerar a análise avançada IA.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -8,6 +8,7 @@ export interface AudienceSegment {
   beliefs: string; // O que ela acredita (ou repete)?
   behavior: string; // Como ela fala / se comporta?
   journey: string; // Onde ela está e onde quer chegar?
+  is_completed?: boolean; // Se o usuário concluiu o preenchimento
   
   // FASE 2 - Análise gerada por IA
   advanced_analysis?: string; // Análise detalhada gerada pela IA
