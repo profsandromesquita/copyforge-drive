@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Plus, X } from 'phosphor-react';
 import { AudienceSegment } from '@/types/project-config';
 import { AudienceSegmentForm } from './AudienceSegmentForm';
@@ -22,6 +32,8 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const [editingSegment, setEditingSegment] = useState<AudienceSegment | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [analysisModalSegment, setAnalysisModalSegment] = useState<AudienceSegment | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [segmentToDelete, setSegmentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeProject?.audience_segments) {
@@ -40,7 +52,31 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   };
 
   const handleDeleteSegment = (segmentId: string) => {
-    setSegments(segments.filter(s => s.id !== segmentId));
+    setSegmentToDelete(segmentId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteSegment = async () => {
+    if (!segmentToDelete || !activeProject) return;
+
+    try {
+      const updatedSegments = segments.filter(s => s.id !== segmentToDelete);
+      
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setSegments(updatedSegments);
+      toast.success('Segmento excluído com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir segmento:', error);
+      toast.error('Erro ao excluir segmento');
+    } finally {
+      setDeleteDialogOpen(false);
+      setSegmentToDelete(null);
+    }
   };
 
   const handleCancelForm = () => {
@@ -253,6 +289,27 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
           onRegenerate={() => handleRegenerateAnalysis(analysisModalSegment)}
         />
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Segmento de Público</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este segmento de público? 
+              Esta ação não pode ser desfeita e todos os dados serão perdidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteSegment}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
