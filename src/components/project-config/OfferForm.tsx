@@ -21,14 +21,14 @@ interface OfferFormProps {
 
 export const OfferForm = ({ open, onOpenChange, offer, allOffers, onSave }: OfferFormProps) => {
   const { activeProject, refreshProjects } = useProject();
-  const [formData, setFormData] = useState<Partial<Offer>>({ name: '', type: 'product', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
+  const [formData, setFormData] = useState<Partial<Offer>>({ name: '', type: 'other', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (offer) {
       setFormData(offer);
     } else {
-      setFormData({ name: '', type: 'product', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
+      setFormData({ name: '', type: 'other', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
     }
   }, [offer, open]);
 

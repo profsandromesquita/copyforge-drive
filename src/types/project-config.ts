@@ -28,7 +28,7 @@ export interface AudienceSegment {
 export interface Offer {
   id: string;
   name: string;
-  type: 'product' | 'service' | 'course' | 'consulting' | 'subscription' | 'other';
+  type: 'subscription' | 'course' | 'ebook' | 'event' | 'physical' | 'other' | 'software' | 'consulting' | 'mentoring' | 'ai';
   short_description: string;
   main_benefit: string; // promessa central
   unique_mechanism: string; // motivo pelo qual funciona
@@ -131,10 +131,14 @@ export const AWARENESS_LEVELS = [
 ];
 
 export const OFFER_TYPES = [
-  { value: 'product', label: 'Produto' },
-  { value: 'service', label: 'Serviço' },
-  { value: 'course', label: 'Curso' },
-  { value: 'consulting', label: 'Consultoria' },
   { value: 'subscription', label: 'Assinatura' },
-  { value: 'other', label: 'Outro' }
+  { value: 'course', label: 'Curso' },
+  { value: 'ebook', label: 'E-book' },
+  { value: 'event', label: 'Evento' },
+  { value: 'physical', label: 'Físico' },
+  { value: 'other', label: 'Outro' },
+  { value: 'software', label: 'Software' },
+  { value: 'consulting', label: 'Consultoria' },
+  { value: 'mentoring', label: 'Mentoria' },
+  { value: 'ai', label: 'Inteligência Artificial' }
 ];
