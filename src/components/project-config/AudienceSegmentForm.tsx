@@ -71,12 +71,23 @@ export const AudienceSegmentForm = ({
     setAutoSaving(true);
     onAutoSavingChange?.(true);
     try {
-      const segmentId = identification || segment?.id || `segment-${Date.now()}`;
+      const segmentId = identification;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
 
-      const updatedSegments = segment
-        ? allSegments.map(s => s.id === segment.id ? newSegment : s)
-        : [...allSegments, newSegment];
+      // Verificar se o segmento já existe no array usando o identification como ID
+      const existingSegmentIndex = allSegments.findIndex(s => s.id === segmentId);
+      
+      let updatedSegments: AudienceSegment[];
+      if (existingSegmentIndex >= 0) {
+        // Atualizar segmento existente
+        updatedSegments = allSegments.map(s => 
+          s.id === segmentId ? newSegment : s
+        );
+      } else {
+        // Isso não deveria acontecer porque handleCreateSegment já adiciona
+        // mas mantemos como fallback
+        updatedSegments = [...allSegments, newSegment];
+      }
 
       await supabase
         .from('projects')
@@ -90,7 +101,7 @@ export const AudienceSegmentForm = ({
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [identification, formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange, segmentCreated]);
+  }, [identification, formData, activeProject, allSegments, refreshProjects, onAutoSavingChange, segmentCreated]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -112,12 +123,25 @@ export const AudienceSegmentForm = ({
       return;
     }
 
+    // Verificar se já existe um segmento com este ID
+    const segmentExists = allSegments.some(s => s.id === identification);
+    if (segmentExists) {
+      toast.error('Já existe um segmento com esta identificação');
+      return;
+    }
+
     try {
       const segmentId = identification;
       const newSegment: AudienceSegment = { 
-        ...formData, 
-        id: segmentId 
-      } as AudienceSegment;
+        id: segmentId,
+        who_is: '',
+        biggest_desire: '',
+        biggest_pain: '',
+        failed_attempts: '',
+        beliefs: '',
+        behavior: '',
+        journey: '',
+      };
 
       const updatedSegments = [...allSegments, newSegment];
 
