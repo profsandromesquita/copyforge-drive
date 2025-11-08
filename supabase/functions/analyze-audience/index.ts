@@ -27,11 +27,12 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Construir prompt para análise avançada
+    // Construir prompt otimizado para análise avançada focada em copywriting
     const prompt = `
-Você é um especialista em marketing e psicologia do consumidor. Analise profundamente este público-alvo e gere uma análise estratégica completa.
+Você é um especialista em copywriting direto, psicologia do consumidor e análise de público-alvo. 
+Sua missão é gerar uma análise ULTRA-ACIONÁVEL para criação de copies de vendas.
 
-**PÚBLICO-ALVO:**
+**DADOS DO PÚBLICO:**
 
 1. **Quem é:** ${segment.who_is}
 2. **Maior desejo:** ${segment.biggest_desire}
@@ -43,30 +44,61 @@ Você é um especialista em marketing e psicologia do consumidor. Analise profun
 
 ---
 
-Gere uma análise detalhada em markdown, estruturada nos seguintes tópicos:
+Gere uma análise em markdown focada em AÇÃO IMEDIATA para criar copies. Use esta estrutura:
 
-## 🎯 Perfil Psicológico Profundo
-(Análise dos aspectos emocionais, medos ocultos, motivações verdadeiras)
+## 🎯 1. NÍVEL DE CONSCIÊNCIA
+Identifique em qual dos 5 níveis de Eugene Schwartz esse público está:
+- [ ] Inconsciente (não sabe que tem problema)
+- [ ] Consciente do Problema
+- [ ] Consciente da Solução
+- [ ] Consciente do Produto
+- [ ] Mais Consciente
 
-## 🧠 Padrões de Pensamento e Comportamento
-(Como essa pessoa toma decisões, o que a paralisa, o que a move)
+**Implicação:** O que isso significa para a copy (como iniciar, que informações dar)
 
-## 💡 Gatilhos Mentais Mais Efetivos
-(Quais gatilhos funcionam melhor e por quê)
+## 💬 2. VOCABULÁRIO E LINGUAGEM
+- **Palavras/Frases que essa pessoa USA:** [liste 10-15 expressões EXATAS]
+- **Tom ideal:** [formal, informal, técnico, motivacional, etc.]
+- **O QUE NUNCA DIZER:** [palavras/abordagens que afastam]
 
-## 🗣️ Estratégia de Comunicação
-(Como falar com essa pessoa, palavras e frases que ressoam)
+## 🚧 3. OBJEÇÕES (EM ORDEM DE IMPORTÂNCIA)
+Liste as 5 principais objeções ranqueadas por prioridade:
+1. **[Objeção]** → Como neutralizar: [resposta específica]
+2. **[Objeção]** → Como neutralizar: [resposta específica]
+3. **[Objeção]** → Como neutralizar: [resposta específica]
+4. **[Objeção]** → Como neutralizar: [resposta específica]
+5. **[Objeção]** → Como neutralizar: [resposta específica]
 
-## 🚧 Objeções Previstas e Como Contorná-las
-(Principais resistências e respostas estratégicas)
+## 🎣 4. ÂNGULOS DE ENTRADA (COPY ANGLES)
+Sugira 3-5 formas diferentes de "fisgar" esse público:
+1. **[Nome do Ângulo]:** [como aplicar]
+2. **[Nome do Ângulo]:** [como aplicar]
+3. **[Nome do Ângulo]:** [como aplicar]
 
-## 🎨 Tom de Voz e Linguagem Recomendados
-(Estilo de comunicação ideal para esse público)
+## 🧠 5. GATILHOS MENTAIS PRIORITÁRIOS
+- **TOP 3 que FUNCIONAM:** [Liste e explique POR QUE funcionam com esse público]
+- **Gatilhos a EVITAR:** [Liste e explique por que podem repelir]
 
-## 📈 Jornada de Conversão Recomendada
-(Etapas ideais para levar do interesse à compra)
+## 📝 6. ESTRUTURA DE COPY RECOMENDADA
+- **Melhor framework:** [PAS, AIDA, BAB, etc.]
+- **Por quê funciona:** [razão específica para esse público]
+- **Esqueleto sugerido:** [outline básico]
 
-Seja específico, estratégico e baseado em psicologia do consumidor. Foque em insights acionáveis para copywriting.
+## ⏰ 7. TIMING E CONTEXTO
+- **Melhor momento para impactar:** [horário, dia, situação]
+- **Gatilhos de urgência específicos:** [o que cria senso de urgência para esse público]
+
+## ⚠️ 8. PERFIL ANTI-PERSONA
+Quem NÃO deveria comprar (e por quê isso importa):
+- [Características de clientes problemáticos]
+
+## 🎨 9. EXEMPLO DE COPY
+Crie um parágrafo de copy exemplo usando tudo acima (2-3 linhas):
+"[copy exemplo]"
+
+---
+
+Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE move vendas.
 `;
 
     // Chamar Lovable AI
