@@ -2,14 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectConfigHeader } from '@/components/project-config/ProjectConfigHeader';
-import { QualityIndicator } from '@/components/project-config/QualityIndicator';
 import { IdentityTab } from '@/components/project-config/IdentityTab';
 import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CreditBadge } from '@/components/credits/CreditBadge';
 import { Lock } from 'phosphor-react';
 import { toast } from 'sonner';
 
@@ -104,8 +101,6 @@ const ProjectConfig = () => {
           <div className={`h-2 w-2 rounded-full transition-all ${hasAudienceSegments ? 'bg-primary w-8' : 'bg-muted'}`} />
           <div className={`h-2 w-2 rounded-full transition-all ${activeTab === 'offers' ? 'bg-primary w-8' : 'bg-muted'}`} />
         </div>
-
-        <QualityIndicator />
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid grid-cols-3 w-full h-auto p-1 bg-muted/50">
