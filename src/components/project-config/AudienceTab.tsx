@@ -247,17 +247,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       {isFormOpen && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold">
-                {editingSegment ? 'Editar' : 'Novo'} Segmento de Público
-              </h2>
-              {isAutoSaving && (
-                <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                  Salvando...
-                </span>
-              )}
-            </div>
+            <h2 className="text-xl font-bold">
+              {editingSegment ? 'Editar' : 'Novo'} Segmento de Público
+            </h2>
             <Button variant="ghost" size="icon" onClick={handleCancelForm}>
               <X size={20} />
             </Button>
