@@ -1,5 +1,6 @@
 export interface AudienceSegment {
   id: string;
+  identifier?: string; // Identificador curto do público (ex: "Profissionais TI", "Mães Empreendedoras")
   // FASE 1 - Preenchimento manual
   who_is: string; // Quem é essa pessoa?
   biggest_desire: string; // O que essa pessoa mais quer?

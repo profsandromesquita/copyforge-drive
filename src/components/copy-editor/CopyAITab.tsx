@@ -500,7 +500,7 @@ export const CopyAITab = () => {
                 <SelectContent>
                   {audienceSegments.map((segment: AudienceSegment) => (
                     <SelectItem key={segment.id} value={segment.id}>
-                      {segment.who_is}
+                      {segment.identifier || segment.who_is}
                     </SelectItem>
                   ))}
                 </SelectContent>
