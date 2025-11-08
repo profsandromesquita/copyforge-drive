@@ -17,6 +17,8 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const identitySchema = z.object({
   brand_name: z.string().min(1, 'Nome da marca é obrigatório'),
@@ -34,6 +36,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const { activeProject, createProject, refreshProjects, setActiveProject } = useProject();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [voiceTones, setVoiceTones] = useState<string[]>([]);
   const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -148,6 +151,10 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   };
 
   const sector = watch('sector');
+  const brandName = watch('brand_name');
+  
+  // Verificar se os campos obrigatórios estão preenchidos
+  const isFormValid = brandName && brandName.trim() !== '' && sector && sector.trim() !== '';
 
   // Modo de visualização
   if (!isEditing && activeProject && activeProject.brand_name && activeProject.sector) {
@@ -262,8 +269,11 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
+        <div className={cn(
+          "flex gap-2",
+          isMobile && "hidden"
+        )}>
+          <Button type="submit" disabled={saving || !isFormValid}>
             {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
           </Button>
           {!isNew && (
@@ -273,6 +283,19 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           )}
         </div>
       </div>
+      
+      {/* Botão fixo no rodapé mobile */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-lg">
+          <Button 
+            type="submit" 
+            disabled={saving || !isFormValid}
+            className="w-full"
+          >
+            {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 };
