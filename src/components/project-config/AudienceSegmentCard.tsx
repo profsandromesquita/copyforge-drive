@@ -17,52 +17,36 @@ export const AudienceSegmentCard = ({
   onViewAnalysis 
 }: AudienceSegmentCardProps) => {
   return (
-    <div className="bg-card border border-border rounded-lg p-6 space-y-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="font-bold text-lg">{segment.who_is}</h3>
+    <div className="bg-card border border-border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-base mb-1 truncate">{segment.id}</h3>
           {segment.analysis_generated_at && (
-            <Badge variant="secondary" className="mt-2">
+            <Badge variant="secondary" className="text-xs">
               <Sparkles className="h-3 w-3 mr-1" />
               Análise IA gerada
             </Badge>
           )}
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => onEdit(segment)}>
-            <Pencil size={18} />
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(segment)}>
+            <Pencil size={16} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(segment.id)}>
-            <Trash size={18} className="text-destructive" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(segment.id)}>
+            <Trash size={16} className="text-destructive" />
           </Button>
-        </div>
-      </div>
-
-      <div className="space-y-3 text-sm">
-        <div>
-          <p className="font-medium text-muted-foreground">O que mais quer:</p>
-          <p className="line-clamp-2">{segment.biggest_desire}</p>
-        </div>
-
-        <div>
-          <p className="font-medium text-muted-foreground">Maior dor:</p>
-          <p className="line-clamp-2">{segment.biggest_pain}</p>
-        </div>
-
-        <div>
-          <p className="font-medium text-muted-foreground">Jornada:</p>
-          <p className="line-clamp-2">{segment.journey}</p>
         </div>
       </div>
 
       {onViewAnalysis && (
         <Button 
           variant={segment.advanced_analysis ? "outline" : "default"}
-          className="w-full mt-4"
+          size="sm"
+          className="w-full"
           onClick={() => onViewAnalysis(segment)}
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          {segment.advanced_analysis ? 'Ver Análise Avançada' : 'Gerar Análise IA'}
+          {segment.advanced_analysis ? 'Ver Análise Avançada IA' : 'Gerar Análise Avançada IA'}
         </Button>
       )}
     </div>
