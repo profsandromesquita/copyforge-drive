@@ -27,10 +27,12 @@ import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { CreditBadge } from '@/components/credits/CreditBadge';
+import { useProject } from '@/hooks/useProject';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
+  const { activeProject } = useProject();
   const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy } = useDrive();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
@@ -207,8 +209,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar 
-        onCreateCopy={() => setCreateCopyOpen(true)}
-        onCreateFolder={() => setCreateFolderOpen(true)}
+        onCreateCopy={activeProject ? () => setCreateCopyOpen(true) : undefined}
+        onCreateFolder={activeProject ? () => setCreateFolderOpen(true) : undefined}
       />
       
       <div className="flex-1 flex flex-col">
@@ -285,7 +287,27 @@ const Dashboard = () => {
               </div>
             ) : (
               <>
-                {filteredFolders.length === 0 && filteredCopies.length === 0 ? (
+                {!activeProject ? (
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="text-center max-w-md">
+                      <div className="mb-6">
+                        <img 
+                          src={copyDriveIcon} 
+                          alt="CopyDrive" 
+                          className="h-16 mx-auto mb-4 opacity-50"
+                        />
+                        <h2 className="text-xl font-semibold mb-2">Nenhum projeto selecionado</h2>
+                        <p className="text-muted-foreground mb-6">
+                          Para começar a criar pastas e copies, você precisa primeiro criar ou selecionar um projeto.
+                        </p>
+                      </div>
+                      <Button onClick={() => navigate('/project/new')} size="lg">
+                        <Plus size={20} className="mr-2" />
+                        Criar Primeiro Projeto
+                      </Button>
+                    </div>
+                  </div>
+                ) : filteredFolders.length === 0 && filteredCopies.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground mb-4">
                       {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum item nesta pasta'}

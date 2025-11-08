@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProjectSelector } from "./ProjectSelector";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const menuItems = [
   { icon: Folder, label: "Drive", path: "/dashboard" },
@@ -22,6 +23,8 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
+  const isDisabled = !onCreateCopy && !onCreateFolder;
+
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-background h-screen sticky top-0">
       {/* Logo */}
@@ -40,34 +43,47 @@ const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
 
       {/* Botão Novo */}
       <div className="px-4 py-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              size="lg" 
-              className="w-full gap-2"
-              disabled={!onCreateCopy && !onCreateFolder}
-            >
-              <Plus size={20} weight="bold" />
-              <span>Novo</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="bg-popover border-border z-50 w-56">
-            <DropdownMenuItem 
-              className="cursor-pointer"
-              onClick={onCreateCopy}
-            >
-              <Plus size={18} className="mr-2" />
-              Nova Copy
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="cursor-pointer"
-              onClick={onCreateFolder}
-            >
-              <FolderPlus size={18} className="mr-2" />
-              Nova Pasta
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      size="lg" 
+                      className="w-full gap-2"
+                      disabled={isDisabled}
+                    >
+                      <Plus size={20} weight="bold" />
+                      <span>Novo</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-popover border-border z-50 w-56">
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={onCreateCopy}
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Nova Copy
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={onCreateFolder}
+                    >
+                      <FolderPlus size={18} className="mr-2" />
+                      Nova Pasta
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </TooltipTrigger>
+            {isDisabled && (
+              <TooltipContent>
+                <p>Selecione um projeto para criar pastas e copies</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Menu */}

@@ -179,12 +179,17 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    if (!activeProject?.id) {
+      toast.error('Selecione um projeto antes de criar uma pasta');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('folders')
         .insert({
           workspace_id: activeWorkspace.id,
-          project_id: activeProject?.id || null,
+          project_id: activeProject.id,
           parent_id: currentFolder?.id || null,
           name,
           created_by: user.id,
@@ -206,12 +211,17 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
+    if (!activeProject?.id) {
+      toast.error('Selecione um projeto antes de criar uma copy');
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('copies')
         .insert({
           workspace_id: activeWorkspace.id,
-          project_id: activeProject?.id || null,
+          project_id: activeProject.id,
           folder_id: currentFolder?.id || null,
           title,
           copy_type: copyType,
