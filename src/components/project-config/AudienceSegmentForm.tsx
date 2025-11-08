@@ -222,37 +222,37 @@ export const AudienceSegmentForm = ({
     {
       id: 'who_is',
       label: '1. Quem é essa pessoa?',
-      placeholder: 'Ex: Maria, 45 anos, empresária no digital, mãe de 2 filhos, mora em SP'
+      placeholder: 'Ex: Carla, 32 anos, CLT em empresa de TI, casada, sem filhos, mora em apartamento alugado na zona sul de SP. Ganha R$ 4.500/mês mas sente que não sobra nada no fim do mês. Sonha em ter sua própria casa e viajar mais.'
     },
     {
       id: 'biggest_desire',
       label: '2. O que essa pessoa mais quer?',
-      placeholder: 'Ex: Ter mais tempo livre sem perder a renda, viajar com a família 3x por ano'
+      placeholder: 'Ex: Ter uma renda extra de R$ 2.000 a R$ 3.000 por mês trabalhando de casa, nas horas vagas, para finalmente conseguir juntar dinheiro para a entrada do apartamento próprio e realizar pequenas viagens sem pesar no orçamento.'
     },
     {
       id: 'biggest_pain',
       label: '3. O que mais dói pra ela hoje?',
-      placeholder: 'Ex: Trabalha 12h por dia, não vê os filhos crescerem, está exausta e sem energia'
+      placeholder: 'Ex: Vê o dinheiro do salário sumir entre contas, aluguel e pequenos gastos. Sente frustração por trabalhar tanto e não conseguir realizar sonhos básicos. Tem medo de depender só do emprego CLT e não ter segurança financeira. Vê amigas progredindo enquanto ela está estagnada.'
     },
     {
       id: 'failed_attempts',
       label: '4. O que ela já tentou e não deu certo?',
-      placeholder: 'Ex: Contratar assistente virtual, fazer cursos de gestão de tempo, tentar delegar mas nada funcionou'
+      placeholder: 'Ex: Tentou revender produtos por catálogo mas não conseguiu vender. Fez curso de manicure mas não teve coragem de atender clientes. Começou a vender doces mas desistiu pela correria. Investiu em marketing digital mas abandonou porque era muito técnico e confuso.'
     },
     {
       id: 'beliefs',
       label: '5. O que ela acredita (ou repete)?',
-      placeholder: 'Ex: "Só eu sei fazer direito", "Se eu parar, tudo desmorona", "Não posso confiar em ninguém"'
+      placeholder: 'Ex: "Preciso de algo que realmente funcione", "Não tenho tempo para aprender coisas complicadas", "Já tentei de tudo e nada dá certo", "Quem ganha dinheiro extra ou tem sorte ou já tinha dinheiro para investir", "Meu salário nunca vai ser suficiente"'
     },
     {
       id: 'behavior',
       label: '6. Como ela fala / se comporta?',
-      placeholder: 'Ex: Fala rápido, sempre apressada, usa muito "eu preciso", está sempre no celular'
+      placeholder: 'Ex: Está sempre pesquisando "como ganhar dinheiro extra" no Google. Entra em grupos do Facebook sobre renda extra. Salva vários posts no Instagram sobre oportunidades mas nunca toma ação. Fala muito "eu queria fazer isso, mas..." e encontra desculpas. Reclama da situação financeira mas tem medo de arriscar.'
     },
     {
       id: 'journey',
       label: '7. Onde ela está e onde quer chegar?',
-      placeholder: 'Ex: Está presa na operação → Quer ser estrategista e ter um negócio que funciona sem ela'
+      placeholder: 'Ex: HOJE: Presa no ciclo de salário que mal cobre as contas, sem conseguir poupar, frustrada vendo oportunidades passarem. → QUER CHEGAR: Tendo uma renda extra consistente que permita juntar R$ 30 mil em 12 meses para a entrada do apartamento, com método simples que encaixe na rotina e sem precisar aparecer ou vender para conhecidos.'
     }
   ];
 
