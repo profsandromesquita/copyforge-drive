@@ -28,7 +28,7 @@ export const QualityIndicator = () => {
       totalFields += 2;
       filledFields++;
       const allSegmentsFilled = activeProject.audience_segments.every(seg => 
-        seg.avatar && seg.segment && seg.current_situation && seg.desired_result
+        seg.who_is && seg.biggest_desire && seg.biggest_pain && seg.journey
       );
       if (allSegmentsFilled) filledFields++;
     } else {

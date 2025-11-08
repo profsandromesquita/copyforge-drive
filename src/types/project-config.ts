@@ -1,13 +1,17 @@
 export interface AudienceSegment {
   id: string;
-  name: string; // nome do público
-  avatar: string; // persona principal
-  segment: string; // segmento/nicho
-  current_situation: string; // dor principal
-  desired_result: string; // desejo/resultado
-  awareness_level: 'unaware' | 'problem-aware' | 'solution-aware' | 'product-aware' | 'most-aware';
-  objections: string[];
-  voice_tones: string[];
+  // FASE 1 - Preenchimento manual
+  who_is: string; // Quem é essa pessoa?
+  biggest_desire: string; // O que essa pessoa mais quer?
+  biggest_pain: string; // O que mais dói pra ela hoje?
+  failed_attempts: string; // O que ela já tentou e não deu certo?
+  beliefs: string; // O que ela acredita (ou repete)?
+  behavior: string; // Como ela fala / se comporta?
+  journey: string; // Onde ela está e onde quer chegar?
+  
+  // FASE 2 - Análise gerada por IA
+  advanced_analysis?: string; // Análise detalhada gerada pela IA
+  analysis_generated_at?: string;
 }
 
 export interface Offer {

@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, X } from 'phosphor-react';
+import { Textarea } from '@/components/ui/textarea';
 import { VoiceInput } from './VoiceInput';
-import { AudienceSegment, AWARENESS_LEVELS, VOICE_TONES } from '@/types/project-config';
-import { useProject } from '@/hooks/useProject';
+import { AudienceSegment } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
+import { useProject } from '@/hooks/useProject';
+import { useWorkspace } from '@/hooks/useWorkspace';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Loader2 } from 'lucide-react';
 
 interface AudienceSegmentFormProps {
   segment: AudienceSegment | null;
@@ -23,75 +18,72 @@ interface AudienceSegmentFormProps {
   onAutoSavingChange?: (isSaving: boolean) => void;
 }
 
-export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel, onAutoSavingChange }: AudienceSegmentFormProps) => {
+export const AudienceSegmentForm = ({ 
+  segment, 
+  allSegments, 
+  onSave, 
+  onCancel, 
+  onAutoSavingChange 
+}: AudienceSegmentFormProps) => {
   const { activeProject, refreshProjects } = useProject();
-  const isMobile = useIsMobile();
+  const { activeWorkspace } = useWorkspace();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
-    name: '', avatar: '', segment: '', current_situation: '', desired_result: '',
-    awareness_level: 'unaware', objections: [], voice_tones: []
+    who_is: '',
+    biggest_desire: '',
+    biggest_pain: '',
+    failed_attempts: '',
+    beliefs: '',
+    behavior: '',
+    journey: '',
+    ...segment
   });
-  const [newObjection, setNewObjection] = useState('');
-  const [saving, setSaving] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
+  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
 
-  // Carregar dados do localStorage ao montar
+  const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
+
   useEffect(() => {
-    const storageKey = segment ? `audience-segment-edit-${segment.id}` : 'audience-segment-new';
-    const savedData = localStorage.getItem(storageKey);
-    
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFormData(parsed);
-      } catch (e) {
-        console.error('Erro ao carregar dados salvos:', e);
+    if (!segment) {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setFormData(prev => ({ ...prev, ...parsed }));
+        } catch (e) {
+          console.error('Erro ao carregar rascunho:', e);
+        }
       }
-    } else if (segment) {
-      setFormData(segment);
     }
-  }, [segment]);
+  }, [STORAGE_KEY, segment]);
 
-  // Auto-save no localStorage com debounce
   useEffect(() => {
-    const storageKey = segment ? `audience-segment-edit-${segment.id}` : 'audience-segment-new';
-    const timeoutId = setTimeout(() => {
-      localStorage.setItem(storageKey, JSON.stringify(formData));
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData, segment]);
-
-  // Auto-save no banco após 3 segundos de inatividade
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      autoSaveToDatabase();
-    }, 3000);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData]);
+    if (!segment && Object.values(formData).some(v => v)) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData, segment, STORAGE_KEY]);
 
   const autoSaveToDatabase = useCallback(async () => {
-    // Só faz auto-save se tiver pelo menos o nome preenchido
-    if (!formData.name || !activeProject) return;
+    if (!formData.who_is || !activeProject) return;
 
     setAutoSaving(true);
     onAutoSavingChange?.(true);
     try {
       const segmentId = segment?.id || `segment-${Date.now()}`;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
-      const updatedSegments = segment 
-        ? allSegments.map(s => s.id === segment.id ? newSegment : s) 
+
+      const updatedSegments = segment
+        ? allSegments.map(s => s.id === segment.id ? newSegment : s)
         : [...allSegments, newSegment];
 
-      const { error } = await supabase
+      await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      if (error) throw error;
-      
       await refreshProjects();
-      // Não chama onSave aqui para não fechar o formulário
     } catch (error) {
       console.error('Erro no auto-save:', error);
     } finally {
@@ -100,307 +92,174 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel, on
     }
   }, [formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange]);
 
-  const toggleVoiceTone = (tone: string) => {
-    setFormData(prev => ({
-      ...prev,
-      voice_tones: prev.voice_tones?.includes(tone)
-        ? prev.voice_tones.filter(t => t !== tone)
-        : [...(prev.voice_tones || []), tone]
-    }));
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.who_is) {
+        autoSaveToDatabase();
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [formData, autoSaveToDatabase]);
 
   const handleFinish = async () => {
-    if (!formData.name || !formData.avatar || !formData.segment || !formData.current_situation || !formData.desired_result) {
+    if (!isFormValid) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    setSaving(true);
+    if (!activeProject || !activeWorkspace) {
+      toast.error('Projeto ou workspace não encontrado');
+      return;
+    }
+
+    setIsGeneratingAnalysis(true);
     try {
       const segmentId = segment?.id || `segment-${Date.now()}`;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
-      const updatedSegments = segment 
-        ? allSegments.map(s => s.id === segment.id ? newSegment : s) 
+
+      // Gerar análise avançada via IA
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('analyze-audience', {
+        body: { 
+          segment: newSegment,
+          workspace_id: activeWorkspace.id 
+        }
+      });
+
+      if (analysisError) throw analysisError;
+
+      // Adicionar análise ao segmento
+      newSegment.advanced_analysis = analysisData.analysis;
+      newSegment.analysis_generated_at = new Date().toISOString();
+
+      const updatedSegments = segment
+        ? allSegments.map(s => s.id === segment.id ? newSegment : s)
         : [...allSegments, newSegment];
 
-      if (activeProject) {
-        const { error } = await supabase
-          .from('projects')
-          .update({ audience_segments: updatedSegments as any })
-          .eq('id', activeProject.id);
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
 
-        if (error) throw error;
-        
-        await refreshProjects();
-        onSave(updatedSegments);
-        
-        // Limpar localStorage
-        const storageKey = segment ? `audience-segment-edit-${segment.id}` : 'audience-segment-new';
-        localStorage.removeItem(storageKey);
-        
-        toast.success('Segmento salvo com sucesso!');
+      await refreshProjects();
+      localStorage.removeItem(STORAGE_KEY);
+      
+      onSave(updatedSegments);
+      toast.success('Segmento criado e análise gerada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao finalizar segmento:', error);
+      if (error.message?.includes('insufficient_credits')) {
+        toast.error('Créditos insuficientes para gerar análise');
+      } else {
+        toast.error('Erro ao gerar análise avançada');
       }
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao salvar');
     } finally {
-      setSaving(false);
+      setIsGeneratingAnalysis(false);
     }
   };
 
   const handleCancel = () => {
-    const storageKey = segment ? `audience-segment-edit-${segment.id}` : 'audience-segment-new';
-    localStorage.removeItem(storageKey);
+    if (!segment) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
     onCancel();
   };
 
-  const isFormValid = formData.name && formData.avatar && formData.segment && 
-                      formData.current_situation && formData.desired_result;
+  const isFormValid = !!(
+    formData.who_is &&
+    formData.biggest_desire &&
+    formData.biggest_pain &&
+    formData.failed_attempts &&
+    formData.beliefs &&
+    formData.behavior &&
+    formData.journey
+  );
+
+  const questions = [
+    {
+      id: 'who_is',
+      label: '1. Quem é essa pessoa?',
+      placeholder: 'Ex: Maria, 45 anos, empresária no digital, mãe de 2 filhos, mora em SP'
+    },
+    {
+      id: 'biggest_desire',
+      label: '2. O que essa pessoa mais quer?',
+      placeholder: 'Ex: Ter mais tempo livre sem perder a renda, viajar com a família 3x por ano'
+    },
+    {
+      id: 'biggest_pain',
+      label: '3. O que mais dói pra ela hoje?',
+      placeholder: 'Ex: Trabalha 12h por dia, não vê os filhos crescerem, está exausta e sem energia'
+    },
+    {
+      id: 'failed_attempts',
+      label: '4. O que ela já tentou e não deu certo?',
+      placeholder: 'Ex: Contratar assistente virtual, fazer cursos de gestão de tempo, tentar delegar mas nada funcionou'
+    },
+    {
+      id: 'beliefs',
+      label: '5. O que ela acredita (ou repete)?',
+      placeholder: 'Ex: "Só eu sei fazer direito", "Se eu parar, tudo desmorona", "Não posso confiar em ninguém"'
+    },
+    {
+      id: 'behavior',
+      label: '6. Como ela fala / se comporta?',
+      placeholder: 'Ex: Fala rápido, sempre apressada, usa muito "eu preciso", está sempre no celular'
+    },
+    {
+      id: 'journey',
+      label: '7. Onde ela está e onde quer chegar?',
+      placeholder: 'Ex: Está presa na operação → Quer ser estrategista e ter um negócio que funciona sem ela'
+    }
+  ];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="name" className="text-sm font-medium flex items-center gap-1">
-              Identificação do público <span className="text-destructive">*</span>
-            </Label>
-            <Input 
-              id="name"
-              value={formData.name} 
-              onChange={e => setFormData({...formData, name: e.target.value})} 
-              placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer" 
-              className="placeholder:text-xs" 
+        {questions.map((question) => (
+          <div key={question.id} className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <Label htmlFor={question.id} className="text-sm font-medium">
+                {question.label}
+              </Label>
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  [question.id]: prev[question.id as keyof typeof prev] 
+                    ? `${prev[question.id as keyof typeof prev]} ${text}` 
+                    : text
+                }))}
+              />
+            </div>
+            <Textarea
+              id={question.id}
+              value={formData[question.id as keyof typeof formData] as string || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
+              placeholder={question.placeholder}
+              className="min-h-[100px] resize-none"
             />
           </div>
-
-          <div>
-            <Label htmlFor="avatar" className="text-sm font-medium flex items-center gap-1">
-              Avatar/Persona <span className="text-destructive">*</span>
-            </Label>
-            <Input 
-              id="avatar"
-              value={formData.avatar} 
-              onChange={e => setFormData({...formData, avatar: e.target.value})} 
-              placeholder="Ex: Maria, 45 anos, empresária, casada, 1 filho" 
-              className="placeholder:text-xs" 
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="segment" className="text-sm font-medium flex items-center gap-1">
-              Segmento/Nicho <span className="text-destructive">*</span>
-            </Label>
-            <Input 
-              id="segment"
-              value={formData.segment} 
-              onChange={e => setFormData({...formData, segment: e.target.value})} 
-              placeholder="Ex: Mulheres na menopausa com dificuldade para emagrecer" 
-              className="placeholder:text-xs" 
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="current_situation" className="text-sm font-medium flex items-center gap-1">
-              Situação atual <span className="text-destructive">*</span>
-            </Label>
-            <div className="relative">
-              <Textarea 
-                id="current_situation"
-                value={formData.current_situation} 
-                onChange={e => setFormData({...formData, current_situation: e.target.value})} 
-                placeholder="Ex: Está 15kg acima do peso, já tentou 5 dietas diferentes mas sempre volta a engordar" 
-                rows={2} 
-                className="pr-12 resize-none placeholder:text-xs" 
-              />
-              <VoiceInput 
-                onTranscript={(text) => setFormData({
-                  ...formData, 
-                  current_situation: formData.current_situation ? `${formData.current_situation} ${text}` : text
-                })} 
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="desired_result" className="text-sm font-medium flex items-center gap-1">
-              Resultado desejado <span className="text-destructive">*</span>
-            </Label>
-            <div className="relative">
-              <Textarea 
-                id="desired_result"
-                value={formData.desired_result} 
-                onChange={e => setFormData({...formData, desired_result: e.target.value})} 
-                placeholder="Ex: Perder 15kg de forma definitiva, ter mais energia e disposição" 
-                rows={2} 
-                className="pr-12 resize-none placeholder:text-xs" 
-              />
-              <VoiceInput 
-                onTranscript={(text) => setFormData({
-                  ...formData, 
-                  desired_result: formData.desired_result ? `${formData.desired_result} ${text}` : text
-                })} 
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="awareness_level" className="text-sm font-medium">
-              Nível de consciência
-              <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
-            </Label>
-            <Select 
-              value={formData.awareness_level} 
-              onValueChange={v => setFormData({...formData, awareness_level: v as any})}
-            >
-              <SelectTrigger id="awareness_level">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {AWARENESS_LEVELS.map(l => (
-                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium">
-              Objeções
-              <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
-            </Label>
-            <div className="flex gap-2">
-              <Input 
-                value={newObjection} 
-                onChange={e => setNewObjection(e.target.value)} 
-                placeholder="Ex: Não tenho força de vontade" 
-                className="placeholder:text-xs" 
-                onKeyDown={e => { 
-                  if (e.key === 'Enter') { 
-                    e.preventDefault(); 
-                    if (newObjection.trim()) { 
-                      setFormData({...formData, objections: [...(formData.objections || []), newObjection.trim()]}); 
-                      setNewObjection(''); 
-                    } 
-                  } 
-                }} 
-              />
-              <Button 
-                type="button" 
-                size="icon" 
-                onClick={() => { 
-                  if (newObjection.trim()) { 
-                    setFormData({...formData, objections: [...(formData.objections || []), newObjection.trim()]}); 
-                    setNewObjection(''); 
-                  } 
-                }}
-              >
-                <Plus size={20} />
-              </Button>
-            </div>
-            {formData.objections && formData.objections.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.objections.map((obj, i) => (
-                  <Badge key={i} variant="secondary">
-                    {obj}
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({
-                        ...formData, 
-                        objections: formData.objections?.filter((_, idx) => idx !== i)
-                      })} 
-                      className="ml-2"
-                    >
-                      <X size={14} />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium">
-              Tom de voz da comunicação
-              <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
-            </Label>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
-              {VOICE_TONES.map((tone) => (
-                <label
-                  key={tone}
-                  htmlFor={`segment-tone-${tone}`}
-                  className={cn(
-                    "flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
-                    formData.voice_tones?.includes(tone)
-                      ? "border-primary bg-primary/5 shadow-sm"
-                      : "border-border bg-background"
-                  )}
-                >
-                  <Checkbox
-                    id={`segment-tone-${tone}`}
-                    checked={formData.voice_tones?.includes(tone)}
-                    onCheckedChange={() => toggleVoiceTone(tone)}
-                    className="pointer-events-none flex-shrink-0"
-                  />
-                  <span className="text-xs md:text-sm font-medium leading-tight">{tone}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(
-          "flex gap-2 pt-4",
-          isMobile && "hidden"
-        )}>
-          <Button 
-            type="button"
-            onClick={handleFinish} 
-            disabled={saving || !isFormValid}
-            className="min-w-[140px] shadow-sm"
-          >
-            {saving ? 'Salvando...' : 'Concluir Segmento'}
-          </Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleCancel}
-          >
-            Cancelar
-          </Button>
-        </div>
+        ))}
       </div>
 
-      {/* Botão fixo no rodapé mobile */}
-      {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg animate-slide-in-bottom z-50">
-          <div className="flex gap-2">
-            <Button 
-              type="button"
-              onClick={handleFinish} 
-              disabled={saving || !isFormValid}
-              className="flex-1 h-12 text-base font-medium shadow-md"
-            >
-              {saving ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  Salvando...
-                </span>
-              ) : (
-                'Concluir Segmento'
-              )}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleCancel}
-              className="h-12"
-            >
-              Cancelar
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="flex gap-3 justify-end">
+        <Button variant="outline" onClick={handleCancel} disabled={isGeneratingAnalysis}>
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleFinish} 
+          disabled={!isFormValid || isGeneratingAnalysis}
+          className="min-w-[200px]"
+        >
+          {isGeneratingAnalysis ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Gerando Análise IA...
+            </>
+          ) : (
+            'Concluir Segmento'
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

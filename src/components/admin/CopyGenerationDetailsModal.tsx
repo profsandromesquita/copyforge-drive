@@ -224,7 +224,7 @@ export const CopyGenerationDetailsModal = ({
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Segmento de Audiência</p>
                       <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                        <p><span className="font-medium">Nome:</span> {generation.audience_segment.name}</p>
+                        <p><span className="font-medium">Quem é:</span> {generation.audience_segment.who_is}</p>
                       </div>
                     </div>
                   )}

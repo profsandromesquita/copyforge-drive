@@ -1,21 +1,27 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'phosphor-react';
 import { AudienceSegment } from '@/types/project-config';
-import { AudienceSegmentCard } from './AudienceSegmentCard';
 import { AudienceSegmentForm } from './AudienceSegmentForm';
+import { AudienceSegmentCard } from './AudienceSegmentCard';
+import { AdvancedAnalysisModal } from './AdvancedAnalysisModal';
 import { useProject } from '@/hooks/useProject';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AudienceTabProps {
   onSaveSuccess?: () => void;
 }
 
 export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
-  const { activeProject } = useProject();
+  const { activeProject, refreshProjects } = useProject();
+  const { activeWorkspace } = useWorkspace();
   const [segments, setSegments] = useState<AudienceSegment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSegment, setEditingSegment] = useState<AudienceSegment | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [analysisModalSegment, setAnalysisModalSegment] = useState<AudienceSegment | null>(null);
 
   useEffect(() => {
     if (activeProject?.audience_segments) {
@@ -40,6 +46,70 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const handleCancelForm = () => {
     setIsFormOpen(false);
     setEditingSegment(null);
+  };
+
+  const handleSaveAnalysis = async (segmentId: string, updatedAnalysis: string) => {
+    if (!activeProject) return;
+
+    try {
+      const updatedSegments = segments.map(s =>
+        s.id === segmentId ? { ...s, advanced_analysis: updatedAnalysis } : s
+      );
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setSegments(updatedSegments);
+      toast.success('Análise atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar análise:', error);
+      toast.error('Erro ao salvar análise');
+    }
+  };
+
+  const handleRegenerateAnalysis = async (segment: AudienceSegment) => {
+    if (!activeWorkspace) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-audience', {
+        body: { 
+          segment,
+          workspace_id: activeWorkspace.id 
+        }
+      });
+
+      if (error) throw error;
+
+      const updatedSegment = {
+        ...segment,
+        advanced_analysis: data.analysis,
+        analysis_generated_at: new Date().toISOString()
+      };
+
+      const updatedSegments = segments.map(s =>
+        s.id === segment.id ? updatedSegment : s
+      );
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject?.id);
+
+      await refreshProjects();
+      setSegments(updatedSegments);
+      setAnalysisModalSegment(updatedSegment);
+      toast.success('Análise regenerada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao regenerar análise:', error);
+      if (error.message?.includes('insufficient_credits')) {
+        toast.error('Créditos insuficientes');
+      } else {
+        toast.error('Erro ao regenerar análise');
+      }
+    }
   };
 
   return (
@@ -73,12 +143,13 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
             </div>
           ) : (
             <div className="grid gap-4">
-              {segments.map((segment) => (
+              {segments.map((s) => (
                 <AudienceSegmentCard
-                  key={segment.id}
-                  segment={segment}
+                  key={s.id}
+                  segment={s}
                   onEdit={handleEditSegment}
                   onDelete={handleDeleteSegment}
+                  onViewAnalysis={(seg) => setAnalysisModalSegment(seg)}
                 />
               ))}
             </div>
@@ -112,7 +183,6 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
               setSegments(newSegments);
               setIsFormOpen(false);
               setEditingSegment(null);
-              // Se é um novo segmento, chama o callback
               if (!editingSegment) {
                 onSaveSuccess?.();
               }
@@ -121,6 +191,16 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
             onAutoSavingChange={setIsAutoSaving}
           />
         </div>
+      )}
+
+      {analysisModalSegment && (
+        <AdvancedAnalysisModal
+          segment={analysisModalSegment}
+          open={!!analysisModalSegment}
+          onClose={() => setAnalysisModalSegment(null)}
+          onSave={(analysis) => handleSaveAnalysis(analysisModalSegment.id, analysis)}
+          onRegenerate={() => handleRegenerateAnalysis(analysisModalSegment)}
+        />
       )}
     </div>
   );
