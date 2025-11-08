@@ -38,6 +38,7 @@ export const AudienceSegmentForm = ({
   });
   const [identification, setIdentification] = useState(segment?.id || '');
   const [autoSaving, setAutoSaving] = useState(false);
+  const [segmentCreated, setSegmentCreated] = useState(!!segment);
 
   const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
 
@@ -65,7 +66,7 @@ export const AudienceSegmentForm = ({
   }, [formData, segment, STORAGE_KEY]);
 
   const autoSaveToDatabase = useCallback(async () => {
-    if (!identification || !activeProject) return;
+    if (!identification || !activeProject || !segmentCreated) return;
 
     setAutoSaving(true);
     onAutoSavingChange?.(true);
@@ -89,20 +90,54 @@ export const AudienceSegmentForm = ({
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [identification, formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange]);
+  }, [identification, formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange, segmentCreated]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (identification) {
+      if (identification && segmentCreated) {
         autoSaveToDatabase();
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [identification, formData, autoSaveToDatabase]);
+  }, [identification, formData, autoSaveToDatabase, segmentCreated]);
+
+  const handleCreateSegment = async () => {
+    if (!identification) {
+      toast.error('Digite uma identificação para o público');
+      return;
+    }
+
+    if (!activeProject) {
+      toast.error('Projeto não encontrado');
+      return;
+    }
+
+    try {
+      const segmentId = identification;
+      const newSegment: AudienceSegment = { 
+        ...formData, 
+        id: segmentId 
+      } as AudienceSegment;
+
+      const updatedSegments = [...allSegments, newSegment];
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setSegmentCreated(true);
+      toast.success('Segmento criado! Agora preencha os campos abaixo.');
+    } catch (error) {
+      console.error('Erro ao criar segmento:', error);
+      toast.error('Erro ao criar segmento');
+    }
+  };
 
   const handleClose = () => {
     // Salvar antes de fechar se houver dados
-    if (identification && Object.values(formData).some(v => v)) {
+    if (identification && segmentCreated && Object.values(formData).some(v => v)) {
       autoSaveToDatabase();
     }
     
@@ -161,19 +196,41 @@ export const AudienceSegmentForm = ({
           <Label htmlFor="identification" className="text-sm font-medium flex items-center gap-1">
             Identificação do Público <span className="text-destructive">*</span>
           </Label>
-          <Input
-            id="identification"
-            value={identification}
-            onChange={(e) => setIdentification(e.target.value)}
-            placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer"
-            className="text-base font-medium"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="identification"
+              value={identification}
+              onChange={(e) => setIdentification(e.target.value)}
+              placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer"
+              className="text-base font-medium"
+              disabled={segmentCreated}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !segmentCreated) {
+                  handleCreateSegment();
+                }
+              }}
+            />
+            {!segmentCreated && (
+              <Button 
+                onClick={handleCreateSegment}
+                disabled={!identification}
+                className="shrink-0"
+              >
+                Criar Segmento
+              </Button>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Nome para identificar este segmento de público
+            {segmentCreated 
+              ? '✓ Segmento criado! Os campos abaixo salvam automaticamente.'
+              : 'Digite um nome e clique em "Criar Segmento" para começar'
+            }
           </p>
         </div>
 
-        {questions.map((question) => (
+        {segmentCreated && (
+          <>
+            {questions.map((question) => (
           <div key={question.id} className="space-y-2">
             <Label htmlFor={question.id} className="text-sm font-medium">
               {question.label}
@@ -194,9 +251,11 @@ export const AudienceSegmentForm = ({
                     : text
                 }))}
               />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+          </>
+        )}
       </div>
 
       <div className="flex gap-3 justify-end pt-4 border-t border-border">
