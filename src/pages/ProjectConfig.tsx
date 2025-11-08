@@ -96,40 +96,49 @@ const ProjectConfig = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-50 bg-background border-b">
-        <div className="flex items-center justify-end px-6 py-2 gap-2">
-          <CreditBadge />
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-6">
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className={`h-2 w-2 rounded-full transition-all ${isIdentityComplete ? 'bg-primary w-8' : 'bg-muted'}`} />
+          <div className={`h-2 w-2 rounded-full transition-all ${hasAudienceSegments ? 'bg-primary w-8' : 'bg-muted'}`} />
+          <div className={`h-2 w-2 rounded-full transition-all ${activeTab === 'offers' ? 'bg-primary w-8' : 'bg-muted'}`} />
         </div>
-      </div>
-      <ProjectConfigHeader isNew={isNew} />
-      
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+
         <QualityIndicator />
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="identity">
-              Identidade
+          <TabsList className="grid grid-cols-3 w-full h-auto p-1 bg-muted/50">
+            <TabsTrigger 
+              value="identity"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
+            >
+              <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
+                <span className="hidden md:inline">Identidade</span>
+                <span className="md:hidden">Identidade</span>
+              </span>
             </TabsTrigger>
             <TabsTrigger 
               value="audience" 
               disabled={!isAudienceUnlocked}
-              className="disabled:opacity-50 disabled:cursor-not-allowed"
+              className="disabled:opacity-40 disabled:cursor-not-allowed data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
             >
-              <span className="flex items-center gap-2">
-                {!isAudienceUnlocked && <Lock size={16} />}
-                Segmentos de Público
+              <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
+                {!isAudienceUnlocked && <Lock size={14} className="md:hidden" />}
+                {!isAudienceUnlocked && <Lock size={16} className="hidden md:block" />}
+                <span className="hidden md:inline">Segmentos de Público</span>
+                <span className="md:hidden">Público</span>
               </span>
             </TabsTrigger>
             <TabsTrigger 
               value="offers" 
               disabled={!isOffersUnlocked}
-              className="disabled:opacity-50 disabled:cursor-not-allowed"
+              className="disabled:opacity-40 disabled:cursor-not-allowed data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
             >
-              <span className="flex items-center gap-2">
-                {!isOffersUnlocked && <Lock size={16} />}
-                Ofertas
+              <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
+                {!isOffersUnlocked && <Lock size={14} className="md:hidden" />}
+                {!isOffersUnlocked && <Lock size={16} className="hidden md:block" />}
+                <span>Ofertas</span>
               </span>
             </TabsTrigger>
           </TabsList>

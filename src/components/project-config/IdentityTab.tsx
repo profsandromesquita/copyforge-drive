@@ -168,53 +168,70 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
 
   // Modo de edição
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="bg-card border border-border rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-bold">Identidade do Projeto</h2>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-fade-in">
+      <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
+        <div className="space-y-2">
+          <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Identidade do Projeto
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Preencha as informações básicas do seu projeto
+          </p>
+        </div>
 
         {/* Nome da Marca */}
-        <div className="space-y-2">
-          <Label htmlFor="brand_name">Nome da marca/projeto *</Label>
+        <div className="space-y-2 group">
+          <Label htmlFor="brand_name" className="text-sm font-medium flex items-center gap-1">
+            Nome da marca/projeto 
+            <span className="text-destructive">*</span>
+          </Label>
           <Input
             id="brand_name"
             {...register('brand_name')}
             placeholder="Projeto Digital"
+            className="transition-all focus:ring-2 focus:ring-primary/20"
           />
           {errors.brand_name && (
-            <p className="text-sm text-destructive">{errors.brand_name.message}</p>
+            <p className="text-sm text-destructive animate-fade-in">{errors.brand_name.message}</p>
           )}
         </div>
 
         {/* Setor */}
         <div className="space-y-2">
-          <Label htmlFor="sector">Setor de atuação *</Label>
+          <Label htmlFor="sector" className="text-sm font-medium flex items-center gap-1">
+            Setor de atuação 
+            <span className="text-destructive">*</span>
+          </Label>
           <Select value={sector} onValueChange={(value) => setValue('sector', value)}>
-            <SelectTrigger>
+            <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
               <SelectValue placeholder="Selecione um setor" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px]">
               {SECTORS.map((sector) => (
-                <SelectItem key={sector} value={sector}>
+                <SelectItem key={sector} value={sector} className="cursor-pointer">
                   {sector}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {errors.sector && (
-            <p className="text-sm text-destructive">{errors.sector.message}</p>
+            <p className="text-sm text-destructive animate-fade-in">{errors.sector.message}</p>
           )}
         </div>
 
         {/* Propósito Central */}
         <div className="space-y-2">
-          <Label htmlFor="central_purpose">Propósito central</Label>
+          <Label htmlFor="central_purpose" className="text-sm font-medium">
+            Propósito central
+            <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
+          </Label>
           <div className="relative">
             <Textarea
               id="central_purpose"
               {...register('central_purpose')}
               placeholder="Qual é o propósito da sua marca?"
               rows={3}
-              className="pr-12"
+              className="pr-12 resize-none transition-all focus:ring-2 focus:ring-primary/20"
             />
             <VoiceInput
               onTranscript={(text) => {
@@ -227,53 +244,73 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
 
         {/* Tom de Voz */}
         <div className="space-y-3">
-          <Label>Tom de voz da comunicação</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Label className="text-sm font-medium">
+            Tom de voz da comunicação
+            <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
+          </Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {VOICE_TONES.map((tone) => (
-              <div key={tone} className="flex items-center space-x-2">
+              <label
+                key={tone}
+                htmlFor={`tone-${tone}`}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
+                  voiceTones.includes(tone) 
+                    ? "border-primary bg-primary/5 shadow-sm" 
+                    : "border-border bg-background"
+                )}
+              >
                 <Checkbox
                   id={`tone-${tone}`}
                   checked={voiceTones.includes(tone)}
                   onCheckedChange={() => toggleVoiceTone(tone)}
+                  className="pointer-events-none"
                 />
-                <label
-                  htmlFor={`tone-${tone}`}
-                  className="text-sm cursor-pointer"
-                >
-                  {tone}
-                </label>
-              </div>
+                <span className="text-sm font-medium">{tone}</span>
+              </label>
             ))}
           </div>
         </div>
 
         {/* Personalidade da Marca */}
         <div className="space-y-3">
-          <Label>Personalidade da marca</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Label className="text-sm font-medium">
+            Personalidade da marca
+            <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
+          </Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {BRAND_PERSONALITIES.map((personality) => (
-              <div key={personality} className="flex items-center space-x-2">
+              <label
+                key={personality}
+                htmlFor={`personality-${personality}`}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
+                  brandPersonality.includes(personality)
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border bg-background"
+                )}
+              >
                 <Checkbox
                   id={`personality-${personality}`}
                   checked={brandPersonality.includes(personality)}
                   onCheckedChange={() => togglePersonality(personality)}
+                  className="pointer-events-none"
                 />
-                <label
-                  htmlFor={`personality-${personality}`}
-                  className="text-sm cursor-pointer"
-                >
-                  {personality}
-                </label>
-              </div>
+                <span className="text-sm font-medium">{personality}</span>
+              </label>
             ))}
           </div>
         </div>
 
         <div className={cn(
-          "flex gap-2",
+          "flex gap-2 pt-4",
           isMobile && "hidden"
         )}>
-          <Button type="submit" disabled={saving || !isFormValid}>
+          <Button 
+            type="submit" 
+            disabled={saving || !isFormValid}
+            className="min-w-[140px] shadow-sm"
+          >
             {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
           </Button>
           {!isNew && (
@@ -286,13 +323,20 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
       
       {/* Botão fixo no rodapé mobile */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg animate-slide-in-bottom z-50">
           <Button 
             type="submit" 
             disabled={saving || !isFormValid}
-            className="w-full"
+            className="w-full h-12 text-base font-medium shadow-md"
           >
-            {saving ? 'Salvando...' : isNew ? 'Criar Projeto' : 'Salvar Identidade'}
+            {saving ? (
+              <span className="flex items-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Salvando...
+              </span>
+            ) : (
+              isNew ? 'Criar Projeto' : 'Salvar Identidade'
+            )}
           </Button>
         </div>
       )}

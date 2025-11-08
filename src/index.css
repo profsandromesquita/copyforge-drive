@@ -207,4 +207,20 @@ All colors MUST be HSL.
   .preview-scale form button {
     @apply text-xs py-1 px-3;
   }
+
+  /* Slide-in bottom animation for mobile fixed buttons */
+  @keyframes slideInBottom {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-bottom {
+    animation: slideInBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
