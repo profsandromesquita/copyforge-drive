@@ -10,8 +10,18 @@ export interface AudienceSegment {
   journey: string; // Onde ela está e onde quer chegar?
   is_completed?: boolean; // Se o usuário concluiu o preenchimento
   
-  // FASE 2 - Análise gerada por IA
-  advanced_analysis?: string; // Análise detalhada gerada pela IA
+  // FASE 2 - Análise gerada por IA (estruturada)
+  advanced_analysis?: {
+    consciousness_level: string; // Nível de Consciência (Eugene Schwartz)
+    vocabulary: string; // Vocabulário e expressões específicas
+    objections: string; // Top 5 objeções priorizadas
+    copy_angles: string; // 3-5 ângulos de entrada
+    mental_triggers: string; // Gatilhos mentais que funcionam
+    copy_structure: string; // Estrutura de copy recomendada
+    timing_context: string; // Melhor momento e contexto
+    anti_persona: string; // Perfil anti-persona
+    example_copy: string; // Exemplo prático de copy
+  };
   analysis_generated_at?: string;
 }
 

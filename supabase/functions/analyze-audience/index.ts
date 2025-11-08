@@ -69,64 +69,11 @@ Sua missão é gerar uma análise ULTRA-ACIONÁVEL para criação de copies de v
 
 ---
 
-Gere uma análise em markdown focada em AÇÃO IMEDIATA para criar copies. Use esta estrutura:
-
-## 🎯 1. NÍVEL DE CONSCIÊNCIA
-Identifique em qual dos 5 níveis de Eugene Schwartz esse público está:
-- [ ] Inconsciente (não sabe que tem problema)
-- [ ] Consciente do Problema
-- [ ] Consciente da Solução
-- [ ] Consciente do Produto
-- [ ] Mais Consciente
-
-**Implicação:** O que isso significa para a copy (como iniciar, que informações dar)
-
-## 💬 2. VOCABULÁRIO E LINGUAGEM
-- **Palavras/Frases que essa pessoa USA:** [liste 10-15 expressões EXATAS]
-- **Tom ideal:** [formal, informal, técnico, motivacional, etc.]
-- **O QUE NUNCA DIZER:** [palavras/abordagens que afastam]
-
-## 🚧 3. OBJEÇÕES (EM ORDEM DE IMPORTÂNCIA)
-Liste as 5 principais objeções ranqueadas por prioridade:
-1. **[Objeção]** → Como neutralizar: [resposta específica]
-2. **[Objeção]** → Como neutralizar: [resposta específica]
-3. **[Objeção]** → Como neutralizar: [resposta específica]
-4. **[Objeção]** → Como neutralizar: [resposta específica]
-5. **[Objeção]** → Como neutralizar: [resposta específica]
-
-## 🎣 4. ÂNGULOS DE ENTRADA (COPY ANGLES)
-Sugira 3-5 formas diferentes de "fisgar" esse público:
-1. **[Nome do Ângulo]:** [como aplicar]
-2. **[Nome do Ângulo]:** [como aplicar]
-3. **[Nome do Ângulo]:** [como aplicar]
-
-## 🧠 5. GATILHOS MENTAIS PRIORITÁRIOS
-- **TOP 3 que FUNCIONAM:** [Liste e explique POR QUE funcionam com esse público]
-- **Gatilhos a EVITAR:** [Liste e explique por que podem repelir]
-
-## 📝 6. ESTRUTURA DE COPY RECOMENDADA
-- **Melhor framework:** [PAS, AIDA, BAB, etc.]
-- **Por quê funciona:** [razão específica para esse público]
-- **Esqueleto sugerido:** [outline básico]
-
-## ⏰ 7. TIMING E CONTEXTO
-- **Melhor momento para impactar:** [horário, dia, situação]
-- **Gatilhos de urgência específicos:** [o que cria senso de urgência para esse público]
-
-## ⚠️ 8. PERFIL ANTI-PERSONA
-Quem NÃO deveria comprar (e por quê isso importa):
-- [Características de clientes problemáticos]
-
-## 🎨 9. EXEMPLO DE COPY
-Crie um parágrafo de copy exemplo usando tudo acima (2-3 linhas):
-"[copy exemplo]"
-
----
-
-Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE move vendas.
+Analise profundamente esse público e retorne insights ULTRA-ESPECÍFICOS e ACIONÁVEIS para copywriting.
+Seja objetivo, direto e focado no que REALMENTE move vendas.
 `;
 
-    // Chamar Lovable AI
+    // Chamar Lovable AI com estrutura de campos
     console.log('Gerando análise com IA...');
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -140,6 +87,69 @@ Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE
           { role: 'system', content: 'Você é um especialista em análise de público-alvo e copywriting estratégico.' },
           { role: 'user', content: prompt }
         ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "generate_audience_analysis",
+              description: "Gera análise estruturada de público-alvo para copywriting",
+              parameters: {
+                type: "object",
+                properties: {
+                  consciousness_level: {
+                    type: "string",
+                    description: "Identifique em qual dos 5 níveis de Eugene Schwartz esse público está (Inconsciente, Consciente do Problema, Consciente da Solução, Consciente do Produto, Mais Consciente) e explique as implicações para a copy"
+                  },
+                  vocabulary: {
+                    type: "string",
+                    description: "Liste 10-15 palavras/frases exatas que essa pessoa usa, o tom ideal (formal, informal, técnico, motivacional) e o que NUNCA dizer"
+                  },
+                  objections: {
+                    type: "string",
+                    description: "Liste as 5 principais objeções ranqueadas por prioridade com respostas específicas para neutralizar cada uma"
+                  },
+                  copy_angles: {
+                    type: "string",
+                    description: "Sugira 3-5 formas diferentes de 'fisgar' esse público com ângulos de entrada variados"
+                  },
+                  mental_triggers: {
+                    type: "string",
+                    description: "Liste os TOP 3 gatilhos mentais que funcionam melhor e explique por quê. Liste também gatilhos a evitar"
+                  },
+                  copy_structure: {
+                    type: "string",
+                    description: "Recomende o melhor framework (PAS, AIDA, BAB, etc), explique por que funciona para esse público e sugira um esqueleto básico"
+                  },
+                  timing_context: {
+                    type: "string",
+                    description: "Indique o melhor momento para impactar (horário, dia, situação) e gatilhos de urgência específicos que funcionam"
+                  },
+                  anti_persona: {
+                    type: "string",
+                    description: "Descreva quem NÃO deveria comprar e por que isso importa. Características de clientes problemáticos"
+                  },
+                  example_copy: {
+                    type: "string",
+                    description: "Crie um parágrafo de copy exemplo usando todos os insights acima (2-4 linhas)"
+                  }
+                },
+                required: [
+                  "consciousness_level",
+                  "vocabulary",
+                  "objections",
+                  "copy_angles",
+                  "mental_triggers",
+                  "copy_structure",
+                  "timing_context",
+                  "anti_persona",
+                  "example_copy"
+                ],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "generate_audience_analysis" } }
       }),
     });
 
@@ -165,11 +175,13 @@ Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE
     }
 
     const aiData = await aiResponse.json();
-    const analysis = aiData.choices?.[0]?.message?.content;
-
-    if (!analysis) {
-      throw new Error('Resposta da IA vazia');
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (!toolCall || !toolCall.function?.arguments) {
+      throw new Error('Resposta da IA vazia ou inválida');
     }
+
+    const analysis = JSON.parse(toolCall.function.arguments);
 
     // Registrar uso de tokens (estimado)
     const totalTokens = (aiData.usage?.total_tokens || 5000);

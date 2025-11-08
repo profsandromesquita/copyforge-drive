@@ -86,7 +86,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
     setEditingSegment(null);
   };
 
-  const handleSaveAnalysis = async (segmentId: string, updatedAnalysis: string) => {
+  const handleSaveAnalysis = async (segmentId: string, updatedAnalysis: any) => {
     if (!activeProject) return;
 
     try {
@@ -131,9 +131,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
 
       if (error) throw error;
 
-      const updatedSegment = {
+      const updatedSegment: AudienceSegment = {
         ...segment,
-        advanced_analysis: data.analysis,
+        advanced_analysis: data.analysis, // Já é um objeto estruturado
         analysis_generated_at: new Date().toISOString()
       };
 
@@ -176,7 +176,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
 
       if (error) throw error;
 
-      const updatedSegment = {
+      const updatedSegment: AudienceSegment = {
         ...segment,
         advanced_analysis: data.analysis,
         analysis_generated_at: new Date().toISOString()
