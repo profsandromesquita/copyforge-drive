@@ -39,6 +39,7 @@ export const AudienceSegmentForm = ({
   const [identification, setIdentification] = useState(segment?.id || '');
   const [autoSaving, setAutoSaving] = useState(false);
   const [segmentCreated, setSegmentCreated] = useState(!!segment);
+  const [originalId, setOriginalId] = useState(segment?.id || '');
 
   const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
 
@@ -152,10 +153,52 @@ export const AudienceSegmentForm = ({
 
       await refreshProjects();
       setSegmentCreated(true);
+      setOriginalId(identification);
       toast.success('Segmento criado! Agora preencha os campos abaixo.');
     } catch (error) {
       console.error('Erro ao criar segmento:', error);
       toast.error('Erro ao criar segmento');
+    }
+  };
+
+  const handleUpdateIdentification = async () => {
+    if (!identification) {
+      toast.error('Digite uma identificação para o público');
+      return;
+    }
+
+    if (!activeProject) {
+      toast.error('Projeto não encontrado');
+      return;
+    }
+
+    // Verificar se já existe outro segmento com este ID
+    const segmentExists = allSegments.some(s => s.id === identification && s.id !== originalId);
+    if (segmentExists) {
+      toast.error('Já existe um segmento com esta identificação');
+      return;
+    }
+
+    try {
+      // Remover segmento antigo e adicionar com novo ID
+      const updatedSegments = allSegments.map(s => 
+        s.id === originalId 
+          ? { ...s, ...formData, id: identification }
+          : s
+      );
+
+      await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setOriginalId(identification);
+      setFormData(prev => ({ ...prev, id: identification }));
+      toast.success('Identificação atualizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar identificação:', error);
+      toast.error('Erro ao atualizar identificação');
     }
   };
 
@@ -227,20 +270,31 @@ export const AudienceSegmentForm = ({
               onChange={(e) => setIdentification(e.target.value)}
               placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer"
               className="text-base font-medium placeholder:text-sm"
-              disabled={segmentCreated}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !segmentCreated) {
-                  handleCreateSegment();
+                if (e.key === 'Enter') {
+                  if (!segmentCreated) {
+                    handleCreateSegment();
+                  } else if (identification !== originalId) {
+                    handleUpdateIdentification();
+                  }
                 }
               }}
             />
-            {!segmentCreated && (
+            {!segmentCreated ? (
               <Button 
                 onClick={handleCreateSegment}
                 disabled={!identification}
                 className="shrink-0"
               >
                 Criar Segmento
+              </Button>
+            ) : identification !== originalId && (
+              <Button 
+                onClick={handleUpdateIdentification}
+                disabled={!identification}
+                className="shrink-0"
+              >
+                Atualizar
               </Button>
             )}
           </div>
