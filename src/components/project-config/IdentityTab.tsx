@@ -174,9 +174,6 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             Identidade do Projeto
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Preencha as informações básicas do seu projeto
-          </p>
         </div>
 
         {/* Nome da Marca */}
