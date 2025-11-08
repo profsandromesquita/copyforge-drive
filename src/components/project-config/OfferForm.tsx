@@ -64,47 +64,47 @@ export const OfferForm = ({ open, onOpenChange, offer, allOffers, onSave }: Offe
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{offer ? 'Editar' : 'Adicionar'} Oferta</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
-          <div><Label>Nome da oferta *</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
+          <div><Label>Nome da oferta *</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Programa FitLife 90 Dias - Transformação Completa" /></div>
           <div><Label>Tipo *</Label><Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{OFFER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
           
           <div><Label>Descrição curta *</Label>
             <div className="relative">
-              <Textarea value={formData.short_description} onChange={e => setFormData({...formData, short_description: e.target.value})} rows={2} className="pr-12" />
+              <Textarea value={formData.short_description} onChange={e => setFormData({...formData, short_description: e.target.value})} placeholder="Ex: Programa de treinamento funcional personalizado de 90 dias com acompanhamento nutricional, treinos flexíveis de 30 minutos e grupo de apoio exclusivo para mulheres executivas." rows={2} className="pr-12" />
               <VoiceInput onTranscript={(text) => setFormData({...formData, short_description: formData.short_description ? `${formData.short_description} ${text}` : text})} />
             </div>
           </div>
           
           <div><Label>Benefício principal *</Label>
             <div className="relative">
-              <Textarea value={formData.main_benefit} onChange={e => setFormData({...formData, main_benefit: e.target.value})} rows={2} className="pr-12" />
+              <Textarea value={formData.main_benefit} onChange={e => setFormData({...formData, main_benefit: e.target.value})} placeholder="Ex: Recupere sua energia e autoconfiança em apenas 90 dias, eliminando dores nas costas e perdendo até 8kg, mesmo com uma rotina agitada - tudo isso treinando apenas 30 minutos, 3x por semana." rows={2} className="pr-12" />
               <VoiceInput onTranscript={(text) => setFormData({...formData, main_benefit: formData.main_benefit ? `${formData.main_benefit} ${text}` : text})} />
             </div>
           </div>
           
           <div><Label>Mecanismo único *</Label>
             <div className="relative">
-              <Textarea value={formData.unique_mechanism} onChange={e => setFormData({...formData, unique_mechanism: e.target.value})} rows={2} className="pr-12" />
+              <Textarea value={formData.unique_mechanism} onChange={e => setFormData({...formData, unique_mechanism: e.target.value})} placeholder="Ex: Método FitLife Progressive: combina treinos funcionais curtos e intensos com ajustes nutricionais graduais e sessões de mindfulness, adaptado especificamente para quem passa horas sentada no escritório." rows={2} className="pr-12" />
               <VoiceInput onTranscript={(text) => setFormData({...formData, unique_mechanism: formData.unique_mechanism ? `${formData.unique_mechanism} ${text}` : text})} />
             </div>
           </div>
           
-          <div><Label>Diferenciais (3)</Label>{[0, 1, 2].map(i => <Input key={i} className="mt-2" placeholder={`Diferencial ${i + 1}`} value={formData.differentials?.[i] || ''} onChange={e => { const diffs = [...(formData.differentials || ['', '', ''])]; diffs[i] = e.target.value; setFormData({...formData, differentials: diffs}); }} />)}</div>
+          <div><Label>Diferenciais (3)</Label>{[0, 1, 2].map(i => <Input key={i} className="mt-2" placeholder={i === 0 ? "Ex: Treinos de 30 min que cabem na sua agenda" : i === 1 ? "Ex: Acompanhamento nutricional sem dietas radicais" : "Ex: Grupo exclusivo de mulheres executivas"} value={formData.differentials?.[i] || ''} onChange={e => { const diffs = [...(formData.differentials || ['', '', ''])]; diffs[i] = e.target.value; setFormData({...formData, differentials: diffs}); }} />)}</div>
           
           <div><Label>Prova/Autoridade</Label>
             <div className="relative">
-              <Textarea value={formData.proof} onChange={e => setFormData({...formData, proof: e.target.value})} rows={2} className="pr-12" />
+              <Textarea value={formData.proof} onChange={e => setFormData({...formData, proof: e.target.value})} placeholder="Ex: Mais de 300 mulheres executivas já transformaram suas vidas com o Programa FitLife. Taxa de 94% de conclusão dos 90 dias. Profissionais certificados CREF com 15+ anos de experiência." rows={2} className="pr-12" />
               <VoiceInput onTranscript={(text) => setFormData({...formData, proof: formData.proof ? `${formData.proof} ${text}` : text})} />
             </div>
           </div>
           
           <div><Label>Garantia (opcional)</Label>
             <div className="relative">
-              <Textarea value={formData.guarantee} onChange={e => setFormData({...formData, guarantee: e.target.value})} rows={2} className="pr-12" />
+              <Textarea value={formData.guarantee} onChange={e => setFormData({...formData, guarantee: e.target.value})} placeholder="Ex: Garantia de 30 dias. Se nos primeiros 30 dias você não sentir melhora nas dores nas costas e mais disposição, devolvemos 100% do investimento." rows={2} className="pr-12" />
               <VoiceInput onTranscript={(text) => setFormData({...formData, guarantee: formData.guarantee ? `${formData.guarantee} ${text}` : text})} />
             </div>
           </div>
           
-          <div><Label>CTA *</Label><Input value={formData.cta} onChange={e => setFormData({...formData, cta: e.target.value})} /></div>
+          <div><Label>CTA *</Label><Input value={formData.cta} onChange={e => setFormData({...formData, cta: e.target.value})} placeholder="Ex: Comece sua transformação hoje - Agende sua avaliação gratuita" /></div>
         </div>
         <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button><Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button></DialogFooter>
       </DialogContent>

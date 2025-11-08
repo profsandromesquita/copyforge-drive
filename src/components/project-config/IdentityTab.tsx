@@ -185,7 +185,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           <Input
             id="brand_name"
             {...register('brand_name')}
-            placeholder="Projeto Digital"
+            placeholder="Ex: FitLife Academia - Centro de Treinamento Funcional"
             className="transition-all focus:ring-2 focus:ring-primary/20"
           />
           {errors.brand_name && (
@@ -226,7 +226,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
             <Textarea
               id="central_purpose"
               {...register('central_purpose')}
-              placeholder="Qual é o propósito da sua marca?"
+              placeholder="Ex: Transformar a vida de pessoas sedentárias através do treinamento funcional, promovendo saúde, bem-estar e autoconfiança em um ambiente acolhedor e motivador, onde cada aluno é tratado de forma personalizada."
               rows={3}
               className="pr-12 resize-none transition-all focus:ring-2 focus:ring-primary/20"
             />
