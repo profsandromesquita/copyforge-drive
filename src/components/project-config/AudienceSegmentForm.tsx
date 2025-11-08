@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { VoiceInput } from './VoiceInput';
 import { AudienceSegment } from '@/types/project-config';
@@ -28,6 +29,7 @@ export const AudienceSegmentForm = ({
   const { activeProject, refreshProjects } = useProject();
   const { activeWorkspace } = useWorkspace();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
+    id: '',
     who_is: '',
     biggest_desire: '',
     biggest_pain: '',
@@ -37,6 +39,7 @@ export const AudienceSegmentForm = ({
     journey: '',
     ...segment
   });
+  const [identification, setIdentification] = useState(segment?.id || '');
   const [autoSaving, setAutoSaving] = useState(false);
   const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState(false);
 
@@ -114,7 +117,7 @@ export const AudienceSegmentForm = ({
 
     setIsGeneratingAnalysis(true);
     try {
-      const segmentId = segment?.id || `segment-${Date.now()}`;
+      const segmentId = identification || segment?.id || `segment-${Date.now()}`;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
 
       // Gerar análise avançada via IA
@@ -165,6 +168,7 @@ export const AudienceSegmentForm = ({
   };
 
   const isFormValid = !!(
+    identification &&
     formData.who_is &&
     formData.biggest_desire &&
     formData.biggest_pain &&
@@ -215,6 +219,22 @@ export const AudienceSegmentForm = ({
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
+        <div className="space-y-2 pb-4 border-b border-border">
+          <Label htmlFor="identification" className="text-sm font-medium flex items-center gap-1">
+            Identificação do Público <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="identification"
+            value={identification}
+            onChange={(e) => setIdentification(e.target.value)}
+            placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer"
+            className="text-base font-medium"
+          />
+          <p className="text-xs text-muted-foreground">
+            Nome para identificar este segmento de público
+          </p>
+        </div>
+
         {questions.map((question) => (
           <div key={question.id} className="space-y-2">
             <div className="flex items-start justify-between gap-2">
