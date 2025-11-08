@@ -32,12 +32,12 @@ export const VoiceInput = ({ onTranscript }: VoiceInputProps) => {
       recognitionInstance.lang = 'pt-BR';
 
       recognitionInstance.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result: any) => result.transcript)
-          .join('');
+        // Pegar apenas o último resultado (mais recente)
+        const lastResultIndex = event.results.length - 1;
+        const lastResult = event.results[lastResultIndex];
         
-        if (event.results[event.results.length - 1].isFinal) {
+        if (lastResult.isFinal) {
+          const transcript = lastResult[0].transcript;
           onTranscript(transcript);
         }
       };
