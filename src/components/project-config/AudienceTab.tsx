@@ -15,6 +15,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const [segments, setSegments] = useState<AudienceSegment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSegment, setEditingSegment] = useState<AudienceSegment | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   useEffect(() => {
     if (activeProject?.audience_segments) {
@@ -88,9 +89,17 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       {isFormOpen && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">
-              {editingSegment ? 'Editar' : 'Novo'} Segmento de Público
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold">
+                {editingSegment ? 'Editar' : 'Novo'} Segmento de Público
+              </h2>
+              {isAutoSaving && (
+                <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                  Salvando...
+                </span>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={handleCancelForm}>
               <X size={20} />
             </Button>
@@ -109,6 +118,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
               }
             }}
             onCancel={handleCancelForm}
+            onAutoSavingChange={setIsAutoSaving}
           />
         </div>
       )}

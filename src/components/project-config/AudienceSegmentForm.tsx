@@ -20,9 +20,10 @@ interface AudienceSegmentFormProps {
   allSegments: AudienceSegment[];
   onSave: (segments: AudienceSegment[]) => void;
   onCancel: () => void;
+  onAutoSavingChange?: (isSaving: boolean) => void;
 }
 
-export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: AudienceSegmentFormProps) => {
+export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel, onAutoSavingChange }: AudienceSegmentFormProps) => {
   const { activeProject, refreshProjects } = useProject();
   const isMobile = useIsMobile();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
@@ -74,6 +75,7 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: 
     if (!formData.name || !activeProject) return;
 
     setAutoSaving(true);
+    onAutoSavingChange?.(true);
     try {
       const segmentId = segment?.id || `segment-${Date.now()}`;
       const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
@@ -94,8 +96,9 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: 
       console.error('Erro no auto-save:', error);
     } finally {
       setAutoSaving(false);
+      onAutoSavingChange?.(false);
     }
-  }, [formData, activeProject, segment, allSegments, refreshProjects]);
+  }, [formData, activeProject, segment, allSegments, refreshProjects, onAutoSavingChange]);
 
   const toggleVoiceTone = (tone: string) => {
     setFormData(prev => ({
@@ -156,14 +159,6 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: 
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {autoSaving && (
-        <div className="bg-muted/50 border border-border rounded-lg p-2 text-center">
-          <p className="text-xs text-muted-foreground">
-            Salvando automaticamente...
-          </p>
-        </div>
-      )}
-
       <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
         <div className="space-y-4">
           <div>
