@@ -54,8 +54,11 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   useEffect(() => {
     if (isNew || !activeProject?.brand_name || !activeProject?.sector) {
       setIsEditing(true);
+    } else {
+      // Se tem projeto completo, mostrar o card
+      setIsEditing(false);
     }
-  }, [isNew, activeProject]);
+  }, [isNew, activeProject?.brand_name, activeProject?.sector]);
 
   useEffect(() => {
     if (activeProject && !isNew) {
