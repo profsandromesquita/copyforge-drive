@@ -94,6 +94,24 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
 
         const projectName = data.brand_name || 'Novo Projeto';
         
+        // Verificar se já existe projeto com mesmo nome no workspace
+        const { data: existingProjects, error: checkError } = await supabase
+          .from('projects')
+          .select('id, name')
+          .eq('workspace_id', activeWorkspace.id)
+          .eq('name', projectName);
+
+        if (checkError) {
+          console.error('Error checking existing projects:', checkError);
+          throw checkError;
+        }
+
+        if (existingProjects && existingProjects.length > 0) {
+          toast.error('Já existe um projeto com este nome neste workspace');
+          setSaving(false);
+          return;
+        }
+        
         const { data: projectData, error: createError } = await supabase
           .from('projects')
           .insert({
@@ -106,12 +124,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           .single();
 
         if (createError) {
-          if (createError.code === '23505') {
-            toast.error('Já existe um projeto com este nome neste workspace');
-          } else {
-            throw createError;
-          }
-          return;
+          throw createError;
         }
 
         toast.success('Projeto criado com sucesso!');
@@ -125,6 +138,26 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
         }, 100);
       } else if (activeProject) {
         // Update existing project
+        
+        // Verificar se está tentando usar um nome que já existe em outro projeto do mesmo workspace
+        const { data: existingProjects, error: checkError } = await supabase
+          .from('projects')
+          .select('id, name')
+          .eq('workspace_id', activeProject.workspace_id)
+          .eq('name', data.brand_name)
+          .neq('id', activeProject.id);
+
+        if (checkError) {
+          console.error('Error checking existing projects:', checkError);
+          throw checkError;
+        }
+
+        if (existingProjects && existingProjects.length > 0) {
+          toast.error('Já existe outro projeto com este nome neste workspace');
+          setSaving(false);
+          return;
+        }
+
         const { error } = await supabase
           .from('projects')
           .update({
