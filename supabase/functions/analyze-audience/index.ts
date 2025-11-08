@@ -178,6 +178,27 @@ Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE
 
     console.log(`Tokens utilizados: ${totalTokens} (input: ${inputTokens}, output: ${outputTokens})`);
 
+    // Criar registro no histórico de gerações
+    const generationId = crypto.randomUUID();
+    const { error: historyError } = await supabase
+      .from('ai_generation_history')
+      .insert({
+        id: generationId,
+        workspace_id: workspace_id,
+        user_id: user.id,
+        model_name: 'google/gemini-2.5-flash',
+        tokens_used: totalTokens,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        generation_type: 'audience_analysis',
+        created_at: new Date().toISOString(),
+      });
+
+    if (historyError) {
+      console.error('Erro ao criar histórico:', historyError);
+      throw new Error('Erro ao registrar geração');
+    }
+
     // Debitar créditos do workspace
     const { data: debitResult, error: debitError } = await supabase.rpc(
       'debit_workspace_credits',
@@ -187,7 +208,7 @@ Seja ULTRA-ESPECÍFICO. Cada insight deve ser acionável. Foque no que REALMENTE
         tokens_used: totalTokens,
         p_input_tokens: inputTokens,
         p_output_tokens: outputTokens,
-        generation_id: crypto.randomUUID(),
+        generation_id: generationId,
         p_user_id: user.id,
       }
     );
