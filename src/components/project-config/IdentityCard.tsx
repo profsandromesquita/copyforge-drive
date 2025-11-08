@@ -34,18 +34,6 @@ export const IdentityCard = ({ project, onEdit }: IdentityCardProps) => {
         </div>
       )}
 
-      {/* Tom de Voz */}
-      {project.voice_tones && project.voice_tones.length > 0 && (
-        <div>
-          <p className="font-medium text-sm text-muted-foreground mb-2">Tom de voz</p>
-          <div className="flex flex-wrap gap-2">
-            {project.voice_tones.map(tone => (
-              <Badge key={tone} variant="secondary">{tone}</Badge>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Personalidade */}
       {project.brand_personality && project.brand_personality.length > 0 && (
         <div>

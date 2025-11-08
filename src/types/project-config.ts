@@ -7,7 +7,7 @@ export interface AudienceSegment {
   desired_result: string; // desejo/resultado
   awareness_level: 'unaware' | 'problem-aware' | 'solution-aware' | 'product-aware' | 'most-aware';
   objections: string[];
-  communication_tone: string;
+  voice_tones: string[];
 }
 
 export interface Offer {
@@ -35,7 +35,6 @@ export interface Project {
   brand_name?: string;
   sector?: string;
   central_purpose?: string;
-  voice_tones?: string[];
   brand_personality?: string[];
   keywords?: string[];
   

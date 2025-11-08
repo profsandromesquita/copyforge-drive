@@ -179,7 +179,6 @@ export const CopyAITab = () => {
           brand_name: activeProject.brand_name,
           sector: activeProject.sector,
           central_purpose: activeProject.central_purpose,
-          voice_tones: activeProject.voice_tones,
           brand_personality: activeProject.brand_personality,
         };
 

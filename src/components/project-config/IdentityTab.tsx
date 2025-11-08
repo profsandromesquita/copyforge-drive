@@ -37,7 +37,6 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [voiceTones, setVoiceTones] = useState<string[]>([]);
   const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -63,16 +62,9 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
       setValue('brand_name', activeProject.brand_name || '');
       setValue('sector', activeProject.sector || '');
       setValue('central_purpose', activeProject.central_purpose || '');
-      setVoiceTones(activeProject.voice_tones || []);
       setBrandPersonality(activeProject.brand_personality || []);
     }
   }, [activeProject, isNew, setValue]);
-
-  const toggleVoiceTone = (tone: string) => {
-    setVoiceTones(prev =>
-      prev.includes(tone) ? prev.filter(t => t !== tone) : [...prev, tone]
-    );
-  };
 
   const togglePersonality = (personality: string) => {
     setBrandPersonality(prev =>
@@ -87,7 +79,6 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
         brand_name: data.brand_name,
         sector: data.sector,
         central_purpose: data.central_purpose || null,
-        voice_tones: voiceTones,
         brand_personality: brandPersonality,
       };
 
@@ -236,36 +227,6 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
                 setValue('central_purpose', currentValue ? `${currentValue} ${text}` : text);
               }}
             />
-          </div>
-        </div>
-
-        {/* Tom de Voz */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            Tom de voz da comunicação
-            <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
-          </Label>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-            {VOICE_TONES.map((tone) => (
-              <label
-                key={tone}
-                htmlFor={`tone-${tone}`}
-                className={cn(
-                  "flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
-                  voiceTones.includes(tone) 
-                    ? "border-primary bg-primary/5 shadow-sm" 
-                    : "border-border bg-background"
-                )}
-              >
-                <Checkbox
-                  id={`tone-${tone}`}
-                  checked={voiceTones.includes(tone)}
-                  onCheckedChange={() => toggleVoiceTone(tone)}
-                  className="pointer-events-none flex-shrink-0"
-                />
-                <span className="text-xs md:text-sm font-medium leading-tight">{tone}</span>
-              </label>
-            ))}
           </div>
         </div>
 

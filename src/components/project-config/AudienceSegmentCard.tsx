@@ -59,10 +59,18 @@ export const AudienceSegmentCard = ({ segment, onEdit, onDelete }: AudienceSegme
           </div>
         )}
 
-        <div>
-          <p className="font-medium">Tom de comunicação:</p>
-          <p className="text-muted-foreground">{segment.communication_tone}</p>
-        </div>
+        {segment.voice_tones && segment.voice_tones.length > 0 && (
+          <div>
+            <p className="font-medium mb-2">Tom de voz:</p>
+            <div className="flex flex-wrap gap-2">
+              {segment.voice_tones.map((tone, idx) => (
+                <Badge key={idx} variant="secondary">
+                  {tone}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
