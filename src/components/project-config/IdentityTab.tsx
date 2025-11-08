@@ -168,7 +168,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
           <Input
             id="brand_name"
             {...register('brand_name')}
-            placeholder="Ex: Acme Corp"
+            placeholder="Projeto Digital"
           />
           {errors.brand_name && (
             <p className="text-sm text-destructive">{errors.brand_name.message}</p>
