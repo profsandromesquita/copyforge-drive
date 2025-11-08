@@ -177,7 +177,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="bg-card border border-border rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-bold">Identidade da Marca</h2>
+        <h2 className="text-xl font-bold">Identidade do Projeto</h2>
 
         {/* Nome da Marca */}
         <div className="space-y-2">
