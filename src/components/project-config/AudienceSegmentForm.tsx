@@ -89,13 +89,13 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: 
       if (error) throw error;
       
       await refreshProjects();
-      onSave(updatedSegments);
+      // Não chama onSave aqui para não fechar o formulário
     } catch (error) {
       console.error('Erro no auto-save:', error);
     } finally {
       setAutoSaving(false);
     }
-  }, [formData, activeProject, segment, allSegments, refreshProjects, onSave]);
+  }, [formData, activeProject, segment, allSegments, refreshProjects]);
 
   const toggleVoiceTone = (tone: string) => {
     setFormData(prev => ({
@@ -168,13 +168,13 @@ export const AudienceSegmentForm = ({ segment, allSegments, onSave, onCancel }: 
         <div className="space-y-4">
           <div>
             <Label htmlFor="name" className="text-sm font-medium flex items-center gap-1">
-              Nome do Público <span className="text-destructive">*</span>
+              Identificação do público <span className="text-destructive">*</span>
             </Label>
             <Input 
               id="name"
               value={formData.name} 
               onChange={e => setFormData({...formData, name: e.target.value})} 
-              placeholder="Ex: Mulheres de 40-55 anos" 
+              placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer" 
               className="placeholder:text-xs" 
             />
           </div>
