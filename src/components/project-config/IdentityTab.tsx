@@ -248,13 +248,13 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
             Tom de voz da comunicação
             <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
           </Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
             {VOICE_TONES.map((tone) => (
               <label
                 key={tone}
                 htmlFor={`tone-${tone}`}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
+                  "flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
                   voiceTones.includes(tone) 
                     ? "border-primary bg-primary/5 shadow-sm" 
                     : "border-border bg-background"
@@ -264,9 +264,9 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
                   id={`tone-${tone}`}
                   checked={voiceTones.includes(tone)}
                   onCheckedChange={() => toggleVoiceTone(tone)}
-                  className="pointer-events-none"
+                  className="pointer-events-none flex-shrink-0"
                 />
-                <span className="text-sm font-medium">{tone}</span>
+                <span className="text-xs md:text-sm font-medium leading-tight">{tone}</span>
               </label>
             ))}
           </div>
@@ -278,13 +278,13 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
             Personalidade da marca
             <span className="text-muted-foreground ml-1 text-xs">(opcional)</span>
           </Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
             {BRAND_PERSONALITIES.map((personality) => (
               <label
                 key={personality}
                 htmlFor={`personality-${personality}`}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
+                  "flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 hover:bg-accent/50",
                   brandPersonality.includes(personality)
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border bg-background"
@@ -294,9 +294,9 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
                   id={`personality-${personality}`}
                   checked={brandPersonality.includes(personality)}
                   onCheckedChange={() => togglePersonality(personality)}
-                  className="pointer-events-none"
+                  className="pointer-events-none flex-shrink-0"
                 />
-                <span className="text-sm font-medium">{personality}</span>
+                <span className="text-xs md:text-sm font-medium leading-tight">{personality}</span>
               </label>
             ))}
           </div>
