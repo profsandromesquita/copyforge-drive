@@ -2,6 +2,7 @@ import { AudienceSegment } from "@/types/project-config";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import ReactMarkdown from "react-markdown";
 
 interface AdvancedAnalysisViewProps {
   segment: AudienceSegment;
@@ -99,12 +100,14 @@ export function AdvancedAnalysisView({
               <Textarea
                 value={analysis[field.key] || ''}
                 onChange={(e) => onFieldChange(field.key, e.target.value)}
-                className="min-h-[120px] resize-none"
+                className="min-h-[120px] resize-none font-mono text-sm"
                 placeholder={`Digite ${field.label.toLowerCase()}...`}
               />
             ) : (
-              <div className="bg-muted/30 rounded-md p-4 whitespace-pre-wrap text-sm">
-                {analysis[field.key] || 'Não preenchido'}
+              <div className="bg-muted/30 rounded-md p-4 prose prose-sm max-w-none dark:prose-invert">
+                <ReactMarkdown>
+                  {analysis[field.key] || 'Não preenchido'}
+                </ReactMarkdown>
               </div>
             )}
             
