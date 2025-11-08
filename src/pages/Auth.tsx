@@ -16,6 +16,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [signupDisabled, setSignupDisabled] = useState(false);
@@ -103,7 +104,8 @@ const Auth = () => {
           toast.error(error.message || "Erro ao fazer login");
         }
       } else {
-        const { error } = await signUp(email, password, name, phone);
+        const fullName = `${name} ${lastName}`.trim();
+        const { error } = await signUp(email, password, fullName, phone);
         if (error) {
           toast.error(error.message || "Erro ao criar conta");
         } else {
@@ -137,17 +139,32 @@ const Auth = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Seu nome"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    className="bg-background"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Seu nome"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Sobrenome</Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Seu sobrenome"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="bg-background"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
