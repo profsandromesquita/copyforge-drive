@@ -40,6 +40,7 @@ const ProjectConfig = () => {
         setLoading(false);
       } else if (id) {
         // Load existing project
+        setIsNew(false);
         await refreshProjects();
         const project = projects.find(p => p.id === id);
         if (project) {
