@@ -142,8 +142,8 @@ const ProjectConfig = () => {
             <IdentityTab 
               isNew={isNew} 
               onSaveSuccess={() => {
-                // Avança para próxima aba quando salvar identidade pela primeira vez
-                if (isAudienceUnlocked && activeTab === 'identity') {
+                // Avança para próxima aba sempre que salvar identidade
+                if (isNew || (isAudienceUnlocked && activeTab === 'identity')) {
                   setActiveTab('audience');
                 }
               }}

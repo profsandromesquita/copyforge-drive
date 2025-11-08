@@ -115,8 +115,11 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
         await refreshProjects();
         setActiveProject(projectData as any);
         setIsEditing(false);
-        onSaveSuccess?.();
         navigate(`/project/${projectData.id}`);
+        // Avança para próxima aba após navegação
+        setTimeout(() => {
+          onSaveSuccess?.();
+        }, 100);
       } else if (activeProject) {
         // Update existing project
         const { error } = await supabase
