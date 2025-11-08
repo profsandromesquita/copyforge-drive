@@ -237,10 +237,17 @@ export const AudienceSegmentForm = ({
 
         {questions.map((question) => (
           <div key={question.id} className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <Label htmlFor={question.id} className="text-sm font-medium">
-                {question.label}
-              </Label>
+            <Label htmlFor={question.id} className="text-sm font-medium">
+              {question.label}
+            </Label>
+            <div className="relative">
+              <Textarea
+                id={question.id}
+                value={formData[question.id as keyof typeof formData] as string || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
+                placeholder={question.placeholder}
+                className="min-h-[100px] resize-none pr-12"
+              />
               <VoiceInput
                 onTranscript={(text) => setFormData(prev => ({
                   ...prev,
@@ -250,13 +257,6 @@ export const AudienceSegmentForm = ({
                 }))}
               />
             </div>
-            <Textarea
-              id={question.id}
-              value={formData[question.id as keyof typeof formData] as string || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
-              placeholder={question.placeholder}
-              className="min-h-[100px] resize-none"
-            />
           </div>
         ))}
       </div>
