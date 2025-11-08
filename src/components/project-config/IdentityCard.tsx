@@ -57,18 +57,6 @@ export const IdentityCard = ({ project, onEdit }: IdentityCardProps) => {
           </div>
         </div>
       )}
-
-      {/* Keywords */}
-      {project.keywords && project.keywords.length > 0 && (
-        <div>
-          <p className="font-medium text-sm text-muted-foreground mb-2">Palavras-chave</p>
-          <div className="flex flex-wrap gap-2">
-            {project.keywords.map(kw => (
-              <Badge key={kw} variant="outline">{kw}</Badge>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

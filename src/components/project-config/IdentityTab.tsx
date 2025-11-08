@@ -9,8 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'phosphor-react';
 import { VoiceInput } from './VoiceInput';
 import { IdentityCard } from './IdentityCard';
 import { SECTORS, VOICE_TONES, BRAND_PERSONALITIES } from '@/types/project-config';
@@ -37,8 +35,6 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
   const { user } = useAuth();
   const [voiceTones, setVoiceTones] = useState<string[]>([]);
   const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [newKeyword, setNewKeyword] = useState('');
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -65,7 +61,6 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
       setValue('central_purpose', activeProject.central_purpose || '');
       setVoiceTones(activeProject.voice_tones || []);
       setBrandPersonality(activeProject.brand_personality || []);
-      setKeywords(activeProject.keywords || []);
     }
   }, [activeProject, isNew, setValue]);
 
@@ -81,17 +76,6 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
     );
   };
 
-  const addKeyword = () => {
-    if (newKeyword.trim() && !keywords.includes(newKeyword.trim())) {
-      setKeywords([...keywords, newKeyword.trim()]);
-      setNewKeyword('');
-    }
-  };
-
-  const removeKeyword = (keyword: string) => {
-    setKeywords(keywords.filter(k => k !== keyword));
-  };
-
   const onSubmit = async (data: any) => {
     setSaving(true);
     try {
@@ -101,7 +85,6 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         central_purpose: data.central_purpose || null,
         voice_tones: voiceTones,
         brand_personality: brandPersonality,
-        keywords: keywords,
       };
 
       if (isNew && !activeProject) {
@@ -274,43 +257,6 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Palavras-chave */}
-        <div className="space-y-3">
-          <Label>Palavras-chave da marca (opcional)</Label>
-          <div className="flex gap-2">
-            <Input
-              value={newKeyword}
-              onChange={(e) => setNewKeyword(e.target.value)}
-              placeholder="Digite uma palavra-chave"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addKeyword();
-                }
-              }}
-            />
-            <Button type="button" size="icon" onClick={addKeyword}>
-              <Plus size={20} />
-            </Button>
-          </div>
-          {keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {keywords.map((keyword) => (
-                <Badge key={keyword} variant="secondary" className="pl-3 pr-2">
-                  {keyword}
-                  <button
-                    type="button"
-                    onClick={() => removeKeyword(keyword)}
-                    className="ml-2 hover:text-destructive"
-                  >
-                    <X size={14} />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="flex gap-2">
