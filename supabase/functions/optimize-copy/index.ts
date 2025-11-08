@@ -86,18 +86,56 @@ function buildUserPrompt(
     prompt += `IDENTIDADE DA MARCA:\n`;
     if (projectIdentity.brand_name) prompt += `- Nome: ${projectIdentity.brand_name}\n`;
     if (projectIdentity.sector) prompt += `- Setor: ${projectIdentity.sector}\n`;
-    if (projectIdentity.central_purpose) prompt += `- Propósito: ${projectIdentity.central_purpose}\n`;
-    if (projectIdentity.voice_tones?.length) prompt += `- Tom de Voz: ${projectIdentity.voice_tones.join(', ')}\n`;
-    if (projectIdentity.brand_personality?.length) prompt += `- Personalidade: ${projectIdentity.brand_personality.join(', ')}\n`;
+    if (projectIdentity.central_purpose) prompt += `- Propósito Central: ${projectIdentity.central_purpose}\n`;
+    if (projectIdentity.brand_personality?.length) prompt += `- Personalidade da Marca: ${projectIdentity.brand_personality.join(', ')}\n`;
+    if (projectIdentity.keywords?.length) prompt += `- Palavras-chave: ${projectIdentity.keywords.join(', ')}\n`;
     prompt += `\n`;
   }
 
   if (audienceSegment) {
     prompt += `PÚBLICO-ALVO:\n`;
-    if (audienceSegment.name) prompt += `- Segmento: ${audienceSegment.name}\n`;
-    if (audienceSegment.description) prompt += `- Descrição: ${audienceSegment.description}\n`;
-    if (audienceSegment.pain_points?.length) prompt += `- Dores: ${audienceSegment.pain_points.join(', ')}\n`;
-    if (audienceSegment.desires?.length) prompt += `- Desejos: ${audienceSegment.desires.join(', ')}\n`;
+    prompt += `\n=== PERFIL BÁSICO (Preenchimento Manual) ===\n`;
+    
+    if (audienceSegment.who_is) 
+      prompt += `Quem é: ${audienceSegment.who_is}\n`;
+    if (audienceSegment.biggest_desire) 
+      prompt += `Maior desejo: ${audienceSegment.biggest_desire}\n`;
+    if (audienceSegment.biggest_pain) 
+      prompt += `Maior dor: ${audienceSegment.biggest_pain}\n`;
+    if (audienceSegment.failed_attempts) 
+      prompt += `Tentativas que falharam: ${audienceSegment.failed_attempts}\n`;
+    if (audienceSegment.beliefs) 
+      prompt += `Crenças: ${audienceSegment.beliefs}\n`;
+    if (audienceSegment.behavior) 
+      prompt += `Comportamento: ${audienceSegment.behavior}\n`;
+    if (audienceSegment.journey) 
+      prompt += `Jornada: ${audienceSegment.journey}\n`;
+
+    // Se tiver análise avançada, adicionar
+    if (audienceSegment.advanced_analysis) {
+      prompt += `\n=== ANÁLISE AVANÇADA (Perfil Psicográfico Profundo) ===\n`;
+      const aa = audienceSegment.advanced_analysis;
+      
+      if (aa.consciousness_level) 
+        prompt += `\nNível de Consciência:\n${aa.consciousness_level}\n`;
+      if (aa.psychographic_profile) 
+        prompt += `\nPerfil Psicográfico:\n${aa.psychographic_profile}\n`;
+      if (aa.pains_frustrations) 
+        prompt += `\nDores e Frustrações:\n${aa.pains_frustrations}\n`;
+      if (aa.desires_aspirations) 
+        prompt += `\nDesejos e Aspirações:\n${aa.desires_aspirations}\n`;
+      if (aa.behaviors_habits) 
+        prompt += `\nComportamentos e Hábitos:\n${aa.behaviors_habits}\n`;
+      if (aa.language_communication) 
+        prompt += `\nLinguagem e Comunicação:\n${aa.language_communication}\n`;
+      if (aa.influences_references) 
+        prompt += `\nInfluências e Referências:\n${aa.influences_references}\n`;
+      if (aa.internal_barriers) 
+        prompt += `\nBarreiras Internas:\n${aa.internal_barriers}\n`;
+      if (aa.anti_persona) 
+        prompt += `\nAnti-Persona:\n${aa.anti_persona}\n`;
+    }
+    
     prompt += `\n`;
   }
 

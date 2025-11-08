@@ -180,6 +180,7 @@ export const CopyAITab = () => {
           sector: activeProject.sector,
           central_purpose: activeProject.central_purpose,
           brand_personality: activeProject.brand_personality,
+          keywords: activeProject.keywords,
         };
 
         if (audienceSegmentId) {
@@ -314,8 +315,8 @@ export const CopyAITab = () => {
             brand_name: projectData.brand_name,
             sector: projectData.sector,
             central_purpose: projectData.central_purpose,
-            voice_tones: projectData.voice_tones,
-            brand_personality: projectData.brand_personality
+            brand_personality: projectData.brand_personality,
+            keywords: projectData.keywords
           };
 
           if (audienceSegmentId && Array.isArray(projectData.audience_segments)) {
@@ -437,8 +438,8 @@ export const CopyAITab = () => {
             brand_name: projectData.brand_name,
             sector: projectData.sector,
             central_purpose: projectData.central_purpose,
-            voice_tones: projectData.voice_tones,
-            brand_personality: projectData.brand_personality
+            brand_personality: projectData.brand_personality,
+            keywords: projectData.keywords
           };
 
           if (audienceSegmentId && Array.isArray(projectData.audience_segments)) {

@@ -496,7 +496,6 @@ function buildUserPrompt(params: any): string {
 - Nome da Marca: ${projectIdentity.brand_name || "não especificado"}
 - Setor: ${projectIdentity.sector || "não especificado"}
 - Propósito Central: ${projectIdentity.central_purpose || "não especificado"}
-- Tons de Voz: ${projectIdentity.voice_tones?.join(", ") || "não especificado"}
 - Personalidade da Marca: ${projectIdentity.brand_personality?.join(", ") || "não especificado"}
 - Palavras-chave: ${projectIdentity.keywords?.join(", ") || "não especificado"}
 `;
@@ -506,15 +505,33 @@ function buildUserPrompt(params: any): string {
   if (audienceSegment) {
     audienceContext = `
 **PÚBLICO-ALVO:**
-- Nome: ${audienceSegment.name}
-- Avatar: ${audienceSegment.avatar}
-- Segmento: ${audienceSegment.segment}
-- Situação Atual: ${audienceSegment.current_situation}
-- Resultado Desejado: ${audienceSegment.desired_result}
-- Nível de Consciência: ${audienceSegment.awareness_level}
-- Objeções: ${audienceSegment.objections?.join(", ") || "não especificado"}
-- Tom de Comunicação: ${audienceSegment.communication_tone}
+
+=== PERFIL BÁSICO (Preenchimento Manual) ===
+- Quem é: ${audienceSegment.who_is || "não especificado"}
+- Maior desejo: ${audienceSegment.biggest_desire || "não especificado"}
+- Maior dor: ${audienceSegment.biggest_pain || "não especificado"}
+- Tentativas que falharam: ${audienceSegment.failed_attempts || "não especificado"}
+- Crenças: ${audienceSegment.beliefs || "não especificado"}
+- Comportamento: ${audienceSegment.behavior || "não especificado"}
+- Jornada: ${audienceSegment.journey || "não especificado"}
 `;
+
+    // Se tiver análise avançada, adicionar
+    if (audienceSegment.advanced_analysis) {
+      const aa = audienceSegment.advanced_analysis;
+      audienceContext += `
+=== ANÁLISE AVANÇADA (Perfil Psicográfico Profundo) ===
+${aa.consciousness_level ? `\nNível de Consciência:\n${aa.consciousness_level}` : ''}
+${aa.psychographic_profile ? `\nPerfil Psicográfico:\n${aa.psychographic_profile}` : ''}
+${aa.pains_frustrations ? `\nDores e Frustrações:\n${aa.pains_frustrations}` : ''}
+${aa.desires_aspirations ? `\nDesejos e Aspirações:\n${aa.desires_aspirations}` : ''}
+${aa.behaviors_habits ? `\nComportamentos e Hábitos:\n${aa.behaviors_habits}` : ''}
+${aa.language_communication ? `\nLinguagem e Comunicação:\n${aa.language_communication}` : ''}
+${aa.influences_references ? `\nInfluências e Referências:\n${aa.influences_references}` : ''}
+${aa.internal_barriers ? `\nBarreiras Internas:\n${aa.internal_barriers}` : ''}
+${aa.anti_persona ? `\nAnti-Persona:\n${aa.anti_persona}` : ''}
+`;
+    }
   }
 
   let offerContext = "";
