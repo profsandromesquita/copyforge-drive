@@ -26,9 +26,10 @@ const identitySchema = z.object({
 
 interface IdentityTabProps {
   isNew: boolean;
+  onSaveSuccess?: () => void;
 }
 
-export const IdentityTab = ({ isNew }: IdentityTabProps) => {
+export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const navigate = useNavigate();
   const { activeProject, createProject, refreshProjects, setActiveProject } = useProject();
   const { activeWorkspace } = useWorkspace();
@@ -120,6 +121,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         await refreshProjects();
         setActiveProject(projectData as any);
         setIsEditing(false);
+        onSaveSuccess?.();
         navigate(`/project/${projectData.id}`);
       } else if (activeProject) {
         // Update existing project
@@ -135,6 +137,7 @@ export const IdentityTab = ({ isNew }: IdentityTabProps) => {
         toast.success('Alterações salvas!');
         await refreshProjects();
         setIsEditing(false);
+        onSaveSuccess?.();
       }
     } catch (error) {
       console.error('Error saving identity:', error);

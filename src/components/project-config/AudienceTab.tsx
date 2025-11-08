@@ -6,7 +6,11 @@ import { AudienceSegmentCard } from './AudienceSegmentCard';
 import { AudienceSegmentForm } from './AudienceSegmentForm';
 import { useProject } from '@/hooks/useProject';
 
-export const AudienceTab = () => {
+interface AudienceTabProps {
+  onSaveSuccess?: () => void;
+}
+
+export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const { activeProject } = useProject();
   const [segments, setSegments] = useState<AudienceSegment[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -75,7 +79,13 @@ export const AudienceTab = () => {
         onOpenChange={setIsFormOpen}
         segment={editingSegment}
         allSegments={segments}
-        onSave={setSegments}
+        onSave={(newSegments) => {
+          setSegments(newSegments);
+          // Se é um novo segmento (não está editando), chama o callback
+          if (!editingSegment) {
+            onSaveSuccess?.();
+          }
+        }}
       />
     </div>
   );
