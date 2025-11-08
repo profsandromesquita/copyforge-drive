@@ -62,13 +62,22 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 
     setWorkspaces(workspaceList);
     
-    // Set first workspace as active if none selected
-    if (workspaceList.length > 0 && !activeWorkspace) {
-      const savedWorkspaceId = localStorage.getItem('activeWorkspaceId');
-      const workspace = savedWorkspaceId 
-        ? workspaceList.find(w => w.id === savedWorkspaceId) || workspaceList[0]
-        : workspaceList[0];
-      setActiveWorkspaceState(workspace);
+    // Update active workspace or set first workspace as active
+    if (workspaceList.length > 0) {
+      if (activeWorkspace) {
+        // Update active workspace with fresh data
+        const updatedActiveWorkspace = workspaceList.find(w => w.id === activeWorkspace.id);
+        if (updatedActiveWorkspace) {
+          setActiveWorkspaceState(updatedActiveWorkspace);
+        }
+      } else {
+        // Set first workspace as active if none selected
+        const savedWorkspaceId = localStorage.getItem('activeWorkspaceId');
+        const workspace = savedWorkspaceId 
+          ? workspaceList.find(w => w.id === savedWorkspaceId) || workspaceList[0]
+          : workspaceList[0];
+        setActiveWorkspaceState(workspace);
+      }
     }
     
     setLoading(false);
