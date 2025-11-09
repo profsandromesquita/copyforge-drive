@@ -2,8 +2,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { AIPromptTemplate } from "@/types/ai-prompts";
-import { useAIPrompts } from "@/hooks/useAIPrompts";
+import { AIPromptTemplate, AIPromptHistory } from "@/types/ai-prompts";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowCounterClockwise } from "phosphor-react";
@@ -15,8 +16,43 @@ interface PromptHistoryModalProps {
 }
 
 export const PromptHistoryModal = ({ prompt, open, onClose }: PromptHistoryModalProps) => {
-  const { getHistory } = useAIPrompts();
-  const historyQuery = prompt ? getHistory(prompt.id) : { data: [], isLoading: false };
+  // Use useQuery diretamente no componente para evitar hooks condicionais
+  const historyQuery = useQuery({
+    queryKey: ['prompt-history', prompt?.id],
+    queryFn: async () => {
+      if (!prompt?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('ai_prompt_history')
+        .select('*')
+        .eq('template_id', prompt.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Buscar perfis dos usuários que modificaram
+      const userIds = [...new Set(data.map(h => h.modified_by).filter(Boolean))];
+      let profiles: Record<string, any> = {};
+      
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', userIds);
+        
+        if (profilesData) {
+          profiles = Object.fromEntries(profilesData.map(p => [p.id, p]));
+        }
+      }
+      
+      // Combinar dados
+      return data.map(h => ({
+        ...h,
+        profiles: h.modified_by ? profiles[h.modified_by] : undefined
+      })) as (AIPromptHistory & { profiles?: { name: string; email: string } })[];
+    },
+    enabled: !!prompt?.id && open
+  });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -116,46 +116,10 @@ export function useAIPrompts() {
     }
   });
 
-  const getHistory = (templateId: string) => useQuery({
-    queryKey: ['prompt-history', templateId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_prompt_history')
-        .select('*')
-        .eq('template_id', templateId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Buscar perfis dos usuários que modificaram
-      const userIds = [...new Set(data.map(h => h.modified_by).filter(Boolean))];
-      let profiles: Record<string, any> = {};
-      
-      if (userIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, name, email')
-          .in('id', userIds);
-        
-        if (profilesData) {
-          profiles = Object.fromEntries(profilesData.map(p => [p.id, p]));
-        }
-      }
-      
-      // Combinar dados
-      return data.map(h => ({
-        ...h,
-        profiles: h.modified_by ? profiles[h.modified_by] : undefined
-      })) as (AIPromptHistory & { profiles?: { name: string; email: string } })[];
-    },
-    enabled: !!templateId
-  });
-
   return {
     prompts: listPrompts.data || [],
     isLoading: listPrompts.isLoading,
     updatePrompt,
-    restoreDefault,
-    getHistory
+    restoreDefault
   };
 }
