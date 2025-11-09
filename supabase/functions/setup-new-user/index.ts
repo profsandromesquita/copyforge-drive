@@ -106,11 +106,29 @@ Deno.serve(async (req) => {
 
       if (profileError) {
         console.error('[setup-new-user] Error creating profile:', profileError);
-        throw new Error(`Profile creation failed: ${profileError.message}`);
+        
+        // If duplicate key error, profile was created by trigger - fetch it
+        if (profileError.code === '23505') {
+          console.log('[setup-new-user] Profile already exists (created by trigger), fetching...');
+          const { data: fetchedProfile, error: fetchError } = await supabaseAdmin
+            .from('profiles')
+            .select('id, email, name')
+            .eq('id', userId)
+            .single();
+          
+          if (fetchError) {
+            throw new Error(`Profile fetch after duplicate failed: ${fetchError.message}`);
+          }
+          
+          profileData = fetchedProfile;
+          console.log('[setup-new-user] Profile fetched successfully after duplicate');
+        } else {
+          throw new Error(`Profile creation failed: ${profileError.message}`);
+        }
+      } else {
+        profileData = newProfile;
+        console.log('[setup-new-user] Profile created successfully');
       }
-
-      profileData = newProfile;
-      console.log('[setup-new-user] Profile created successfully');
     } else {
       console.log('[setup-new-user] Profile already exists');
     }
