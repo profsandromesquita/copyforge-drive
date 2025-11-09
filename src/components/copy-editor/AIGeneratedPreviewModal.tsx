@@ -36,6 +36,24 @@ export const AIGeneratedPreviewModal = ({
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
 
+  const selectAll = () => {
+    const allSessionIds = generatedSessions.map((s) => s.id);
+    const allBlockIds = generatedSessions.flatMap((s) => s.blocks.map((b) => b.id));
+    setSelectedSessions(allSessionIds);
+    setSelectedBlocks(allBlockIds);
+  };
+
+  const deselectAll = () => {
+    setSelectedSessions([]);
+    setSelectedBlocks([]);
+  };
+
+  const isAllSelected = () => {
+    const totalSessions = generatedSessions.length;
+    const totalBlocks = generatedSessions.reduce((sum, s) => sum + s.blocks.length, 0);
+    return selectedSessions.length === totalSessions && selectedBlocks.length === totalBlocks;
+  };
+
   const toggleSession = (sessionId: string) => {
     if (selectedSessions.includes(sessionId)) {
       // Deselect session and all its blocks
@@ -138,9 +156,19 @@ export const AIGeneratedPreviewModal = ({
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Copy Gerada pela IA</DialogTitle>
-          <DialogDescription>
-            Selecione as sessões e blocos que deseja adicionar à sua copy
-          </DialogDescription>
+          <div className="flex items-center justify-between gap-4">
+            <DialogDescription>
+              Selecione as sessões e blocos que deseja adicionar à sua copy
+            </DialogDescription>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={isAllSelected() ? deselectAll : selectAll}
+              className="shrink-0"
+            >
+              {isAllSelected() ? 'Desmarcar Tudo' : 'Selecionar Tudo'}
+            </Button>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="h-[500px] pr-4">
