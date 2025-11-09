@@ -940,14 +940,6 @@ export const CopyAITab = () => {
                               {item.copy_type.replace('_', ' ')}
                             </span>
                           )}
-                          {item.model_used && (
-                            <Badge 
-                              variant={item.model_used === 'openai/gpt-5-mini' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {getModelDisplayName(item.model_used)}
-                            </Badge>
-                          )}
                           {item.was_auto_routed && (
                             <Badge variant="outline" className="text-xs">
                               Auto
