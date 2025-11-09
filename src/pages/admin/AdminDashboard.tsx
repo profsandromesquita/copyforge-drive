@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditTransactionCard } from "@/components/credits/CreditTransactionCard";
-import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
 
 interface Stats {
   clientes: number;
   workspaces: number;
   copies: number;
   creditos: number;
+  saldo_total: number;
 }
 
 interface LastTransaction {
@@ -27,10 +27,10 @@ export default function AdminDashboard() {
     workspaces: 0,
     copies: 0,
     creditos: 0,
+    saldo_total: 0,
   });
   const [loading, setLoading] = useState(true);
   const [lastTransaction, setLastTransaction] = useState<LastTransaction | null>(null);
-  const { data: workspaceCredits, isLoading: creditsLoading } = useWorkspaceCredits();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -48,14 +48,16 @@ export default function AdminDashboard() {
             .single()
         ]);
 
-        // Calcular total de créditos usados em todas as workspaces
+        // Calcular total de créditos usados e saldo total em todas as workspaces
         const totalUsed = creditsRes.data?.reduce((sum, item) => sum + item.total_used, 0) || 0;
+        const totalBalance = creditsRes.data?.reduce((sum, item) => sum + item.balance, 0) || 0;
 
         setStats({
           clientes: clientesRes.count || 0,
           workspaces: workspacesRes.count || 0,
           copies: copiesRes.count || 0,
           creditos: totalUsed,
+          saldo_total: totalBalance,
         });
 
         if (lastTransactionRes.data) {
@@ -130,19 +132,19 @@ export default function AdminDashboard() {
             </Card>
           ))}
           
-          {/* Card de Saldo da Workspace Ativa */}
+          {/* Card de Saldo Total da Plataforma */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Saldo de Créditos
+                Saldo Total (Plataforma)
               </CardTitle>
               <CreditCard size={20} className="text-green-600" />
             </CardHeader>
             <CardContent>
-              {loading || creditsLoading ? (
+              {loading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-3xl font-bold">{workspaceCredits?.balance.toFixed(2) || '0.00'}</div>
+                <div className="text-3xl font-bold">{stats.saldo_total.toFixed(2)}</div>
               )}
             </CardContent>
           </Card>
