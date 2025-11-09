@@ -1209,6 +1209,10 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_workspace_admin: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
       fix_orphaned_users: {
         Args: never
         Returns: {

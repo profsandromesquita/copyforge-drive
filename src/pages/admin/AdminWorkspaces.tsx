@@ -12,13 +12,79 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye } from "phosphor-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Eye, Trash } from "phosphor-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminWorkspaces = () => {
   const navigate = useNavigate();
   const { data: workspaces, isLoading } = useAdminWorkspaces();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (workspaceId: string) => {
+      const { data, error } = await supabase.rpc('delete_workspace_admin', {
+        p_workspace_id: workspaceId
+      });
+
+      if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string; copies_count?: number };
+      
+      if (!result.success) {
+        if (result.error === 'workspace_has_copies') {
+          throw new Error(`Não é possível excluir. Este workspace possui ${result.copies_count} copies criadas.`);
+        }
+        throw new Error('Erro ao excluir workspace');
+      }
+      
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Workspace excluído",
+        description: "O workspace e seus projetos foram excluídos com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-workspaces'] });
+      setDeleteDialogOpen(false);
+      setWorkspaceToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteClick = (workspace: { id: string; name: string }) => {
+    setWorkspaceToDelete(workspace);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (workspaceToDelete) {
+      deleteMutation.mutate(workspaceToDelete.id);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -150,14 +216,24 @@ const AdminWorkspaces = () => {
                       </p>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => navigate(`/painel/admin/workspaces/${workspace.id}`)}
-                      >
-                        <Eye size={16} className="mr-2" />
-                        Ver
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => navigate(`/painel/admin/workspaces/${workspace.id}`)}
+                        >
+                          <Eye size={16} className="mr-2" />
+                          Ver
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteClick({ id: workspace.id, name: workspace.name })}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash size={16} className="text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -174,6 +250,39 @@ const AdminWorkspaces = () => {
           </Table>
         </div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o workspace "{workspaceToDelete?.name}"?
+              <br /><br />
+              <strong>Esta ação irá:</strong>
+              <ul className="list-disc list-inside mt-2">
+                <li>Excluir todos os projetos deste workspace</li>
+                <li>Excluir todas as configurações e membros</li>
+              </ul>
+              <br />
+              <strong className="text-destructive">Esta ação não pode ser desfeita.</strong>
+              <br /><br />
+              <em className="text-sm text-muted-foreground">
+                Nota: Workspaces com copies criadas não podem ser excluídos.
+              </em>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };
