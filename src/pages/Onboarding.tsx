@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useProject } from "@/hooks/useProject";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +17,7 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { activeWorkspace, workspaces, loading: workspaceLoading } = useWorkspace();
+  const { refreshProjects, setActiveProject } = useProject();
   const { isCompleted, completeOnboarding, saveProgress, loadProgress, clearProgress } = useOnboarding();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -132,6 +134,11 @@ const Onboarding = () => {
         projectData: data,
         projectId: project.id
       });
+      
+      // Atualiza a lista de projetos e define como ativo
+      await refreshProjects();
+      setActiveProject(project as any);
+      
       setCurrentStep(4);
     } catch (error: any) {
       console.error("Erro ao criar projeto:", error);
