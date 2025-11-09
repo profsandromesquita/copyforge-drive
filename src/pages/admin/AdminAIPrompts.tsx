@@ -4,9 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PromptCard } from "@/components/admin/ai-prompts/PromptCard";
 import { PromptEditorModal } from "@/components/admin/ai-prompts/PromptEditorModal";
 import { PromptHistoryModal } from "@/components/admin/ai-prompts/PromptHistoryModal";
+import { CharacteristicsList } from "@/components/admin/ai-characteristics/CharacteristicsList";
 import { useAIPrompts } from "@/hooks/useAIPrompts";
 import { AIPromptTemplate } from "@/types/ai-prompts";
-import { Brain } from "phosphor-react";
+import { Brain, Sliders } from "phosphor-react";
 
 const AdminAIPrompts = () => {
   const { prompts, isLoading, updatePrompt, restoreDefault } = useAIPrompts();
@@ -57,59 +58,103 @@ const AdminAIPrompts = () => {
             <p className="text-muted-foreground mt-4">Carregando prompts...</p>
           </div>
         ) : (
-          <Tabs defaultValue="generate_copy" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="generate_copy">
-                Geração de Copy ({generateCopyPrompts.length})
+          <Tabs defaultValue="prompts" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="prompts" className="flex items-center gap-2">
+                <Brain size={18} />
+                Prompts IA
               </TabsTrigger>
-              <TabsTrigger value="optimize_copy">
-                Otimização ({optimizeCopyPrompts.length})
-              </TabsTrigger>
-              <TabsTrigger value="analyze_audience">
-                Análise ({analyzeAudiencePrompts.length})
+              <TabsTrigger value="characteristics" className="flex items-center gap-2">
+                <Sliders size={18} />
+                Características
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="generate_copy" className="space-y-4 mt-6">
-              <div className="grid gap-4">
-                {generateCopyPrompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEdit}
-                    onHistory={handleHistory}
-                    onRestore={handleRestore}
-                  />
-                ))}
-              </div>
+            {/* Aba de Prompts */}
+            <TabsContent value="prompts" className="mt-6">
+              <Tabs defaultValue="generate_copy" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="generate_copy">
+                    Geração de Copy ({generateCopyPrompts.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="optimize_copy">
+                    Otimização ({optimizeCopyPrompts.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="analyze_audience">
+                    Análise ({analyzeAudiencePrompts.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="generate_copy" className="space-y-4 mt-6">
+                  <div className="grid gap-4">
+                    {generateCopyPrompts.map((prompt) => (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                        onEdit={handleEdit}
+                        onHistory={handleHistory}
+                        onRestore={handleRestore}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="optimize_copy" className="space-y-4 mt-6">
+                  <div className="grid gap-4">
+                    {optimizeCopyPrompts.map((prompt) => (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                        onEdit={handleEdit}
+                        onHistory={handleHistory}
+                        onRestore={handleRestore}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="analyze_audience" className="space-y-4 mt-6">
+                  <div className="grid gap-4">
+                    {analyzeAudiencePrompts.map((prompt) => (
+                      <PromptCard
+                        key={prompt.id}
+                        prompt={prompt}
+                        onEdit={handleEdit}
+                        onHistory={handleHistory}
+                        onRestore={handleRestore}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
-            <TabsContent value="optimize_copy" className="space-y-4 mt-6">
-              <div className="grid gap-4">
-                {optimizeCopyPrompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEdit}
-                    onHistory={handleHistory}
-                    onRestore={handleRestore}
-                  />
-                ))}
-              </div>
-            </TabsContent>
+            {/* Aba de Características */}
+            <TabsContent value="characteristics" className="mt-6">
+              <Tabs defaultValue="objetivos" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="objetivos">Objetivos</TabsTrigger>
+                  <TabsTrigger value="estilos">Estilos</TabsTrigger>
+                  <TabsTrigger value="tamanhos">Tamanhos</TabsTrigger>
+                  <TabsTrigger value="preferencias">Preferências</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="analyze_audience" className="space-y-4 mt-6">
-              <div className="grid gap-4">
-                {analyzeAudiencePrompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEdit}
-                    onHistory={handleHistory}
-                    onRestore={handleRestore}
-                  />
-                ))}
-              </div>
+                <TabsContent value="objetivos" className="mt-6">
+                  <CharacteristicsList category="objetivos" />
+                </TabsContent>
+
+                <TabsContent value="estilos" className="mt-6">
+                  <CharacteristicsList category="estilos" />
+                </TabsContent>
+
+                <TabsContent value="tamanhos" className="mt-6">
+                  <CharacteristicsList category="tamanhos" />
+                </TabsContent>
+
+                <TabsContent value="preferencias" className="mt-6">
+                  <CharacteristicsList category="preferencias" />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         )}

@@ -17,6 +17,30 @@ interface OptimizeRequest {
   workspaceId: string;
 }
 
+// Função para buscar prompt do banco de dados
+async function getPromptFromDatabase(supabase: any, action: 'otimizar' | 'variacao'): Promise<string | null> {
+  try {
+    const promptKey = action === 'otimizar' ? 'optimize_copy_otimizar' : 'optimize_copy_variacao';
+    
+    const { data, error } = await supabase
+      .from('ai_prompt_templates')
+      .select('current_prompt')
+      .eq('prompt_key', promptKey)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) {
+      console.error('Erro ao buscar prompt do banco:', error);
+      return null;
+    }
+    
+    return data?.current_prompt || null;
+  } catch (error) {
+    console.error('Erro ao buscar prompt do banco:', error);
+    return null;
+  }
+}
+
 function buildSystemPrompt(action: 'otimizar' | 'variacao'): string {
   const basePrompt = `Você é um especialista em copywriting e marketing digital.`;
   
@@ -223,7 +247,26 @@ Deno.serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = buildSystemPrompt(action);
+    // Buscar prompt do banco de dados
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    let systemPrompt = buildSystemPrompt(action); // Fallback padrão
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, action);
+        if (dynamicPrompt) {
+          systemPrompt = dynamicPrompt;
+          console.log(`✓ Usando prompt dinâmico do banco para ação: ${action}`);
+        } else {
+          console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${action}`);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar prompt do banco, usando fallback:', error);
+      }
+    }
     const userPrompt = buildUserPrompt(
       action,
       originalContent,

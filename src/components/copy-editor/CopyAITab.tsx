@@ -28,33 +28,9 @@ import { AIModel, CopyType, getModelDisplayName, getAutoRoutedModel } from '@/li
 import { useModelSwitchNotification } from '@/hooks/useModelSwitchNotification';
 import { Zap } from 'lucide-react';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { useAICharacteristics } from '@/hooks/useAICharacteristics';
 
 type Etapa = 1 | 2 | 3;
-
-const OBJETIVOS = [
-  { value: 'venda', label: 'Venda' },
-  { value: 'engajamento', label: 'Engajamento' },
-];
-
-const ESTILOS = [
-  { value: 'girias', label: 'Uso de Gírias' },
-  { value: 'tecnico', label: 'Técnico' },
-  { value: 'casual', label: 'Casual' },
-  { value: 'formal', label: 'Formal' },
-  { value: 'didatico', label: 'Didático' },
-  { value: 'emocional', label: 'Emocional' },
-];
-
-const TAMANHOS = [
-  { value: 'curta', label: 'Curta' },
-  { value: 'conciso', label: 'Conciso' },
-  { value: 'extenso', label: 'Extenso' },
-];
-
-const PREFERENCIAS = [
-  { value: 'cta', label: 'CTA' },
-  { value: 'emoji', label: 'Emoji' },
-];
 
 export const CopyAITab = () => {
   const { copyId, copyType, sessions: copySessions, importSessions, updateSession } = useCopyEditor();
@@ -64,6 +40,20 @@ export const CopyAITab = () => {
   const { toast } = useToast();
   const { notifyModelSwitch } = useModelSwitchNotification();
   const { checkCopyAI } = usePlanLimits();
+
+  // Carregar características dinâmicas do banco
+  const { characteristics: objetivosData, isLoading: loadingObjetivos } = useAICharacteristics('objetivos');
+  const { characteristics: estilosData, isLoading: loadingEstilos } = useAICharacteristics('estilos');
+  const { characteristics: tamanhosData, isLoading: loadingTamanhos } = useAICharacteristics('tamanhos');
+  const { characteristics: preferenciasData, isLoading: loadingPreferencias } = useAICharacteristics('preferencias');
+
+  // Mapear características para formato esperado pelos selects
+  const OBJETIVOS = objetivosData.map(c => ({ value: c.value, label: c.label }));
+  const ESTILOS = estilosData.map(c => ({ value: c.value, label: c.label }));
+  const TAMANHOS = tamanhosData.map(c => ({ value: c.value, label: c.label }));
+  const PREFERENCIAS = preferenciasData.map(c => ({ value: c.value, label: c.label }));
+
+  const isLoadingCharacteristics = loadingObjetivos || loadingEstilos || loadingTamanhos || loadingPreferencias;
 
   // Controle de abas
   const [activeTab, setActiveTab] = useState('criar');
@@ -738,6 +728,13 @@ export const CopyAITab = () => {
               <Sparkles className="h-5 w-5 mr-2" />
               Fazer Upgrade
             </Button>
+          </div>
+        </div>
+      ) : isLoadingCharacteristics ? (
+        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">Carregando características...</p>
           </div>
         </div>
       ) : (

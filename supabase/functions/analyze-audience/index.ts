@@ -52,14 +52,29 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Buscar system prompt do banco de dados
+    let systemPrompt = 'Você é um especialista em psicologia do consumidor, antropologia cultural e análise comportamental. Foque apenas em entender o público profundamente, sem sugerir estratégias de vendas.';
+    
+    try {
+      const { data: promptData } = await supabase
+        .from('ai_prompt_templates')
+        .select('current_prompt')
+        .eq('prompt_key', 'analyze_audience_base')
+        .eq('is_active', true)
+        .single();
+      
+      if (promptData?.current_prompt) {
+        systemPrompt = promptData.current_prompt;
+        console.log('✓ Usando prompt dinâmico do banco para análise de público');
+      } else {
+        console.log('⚠️ Prompt não encontrado no banco, usando fallback');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar prompt do banco, usando fallback:', error);
+    }
+
     // Construir prompt otimizado para análise profunda de PÚBLICO (sem foco em vendas)
     const prompt = `
-Você é um especialista em psicologia do consumidor, antropologia cultural e análise comportamental.
-Sua missão é criar um PERFIL PSICOGRÁFICO PROFUNDO deste segmento de público.
-
-**IMPORTANTE:** NÃO sugira estratégias de vendas, copy ou conversão. Apenas ENTENDA profundamente quem é essa pessoa.
-Analise como um pesquisador: observe padrões, motivações intrínsecas, barreiras emocionais, linguagem natural e influências culturais.
-
 **DADOS DO PÚBLICO:**
 
 1. **Quem é:** ${segment.who_is}
@@ -87,7 +102,7 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'Você é um especialista em psicologia do consumidor, antropologia cultural e análise comportamental. Foque apenas em entender o público profundamente, sem sugerir estratégias de vendas.' },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
         tools: [
