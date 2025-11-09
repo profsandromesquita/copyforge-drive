@@ -114,6 +114,92 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_history: {
+        Row: {
+          change_reason: string | null
+          created_at: string | null
+          id: string
+          modified_by: string | null
+          new_prompt: string
+          old_prompt: string | null
+          prompt_key: string
+          template_id: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          created_at?: string | null
+          id?: string
+          modified_by?: string | null
+          new_prompt: string
+          old_prompt?: string | null
+          prompt_key: string
+          template_id?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          created_at?: string | null
+          id?: string
+          modified_by?: string | null
+          new_prompt?: string
+          old_prompt?: string | null
+          prompt_key?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_prompt_history_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "ai_prompt_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_prompt_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          current_prompt: string
+          default_prompt: string
+          description: string
+          id: string
+          is_active: boolean | null
+          last_modified_by: string | null
+          name: string
+          prompt_key: string
+          purpose: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          current_prompt: string
+          default_prompt: string
+          description: string
+          id?: string
+          is_active?: boolean | null
+          last_modified_by?: string | null
+          name: string
+          prompt_key: string
+          purpose: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          current_prompt?: string
+          default_prompt?: string
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          last_modified_by?: string | null
+          name?: string
+          prompt_key?: string
+          purpose?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       copies: {
         Row: {
           copy_count: number | null
