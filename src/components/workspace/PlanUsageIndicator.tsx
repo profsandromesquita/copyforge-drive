@@ -71,11 +71,7 @@ export const PlanUsageIndicator = () => {
   };
 
   const handleUpgradeClick = () => {
-    window.dispatchEvent(
-      new CustomEvent('show-upgrade-modal', {
-        detail: { limitType: 'projects' },
-      })
-    );
+    window.location.href = '/planos';
   };
 
   if (loading) {
@@ -112,7 +108,7 @@ export const PlanUsageIndicator = () => {
           onClick={handleUpgradeClick}
         >
           <TrendingUp className="h-3 w-3 mr-1" />
-          Upgrade
+          Ver Planos
         </Button>
       </div>
 

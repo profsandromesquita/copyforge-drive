@@ -1,4 +1,4 @@
-import { Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus } from "phosphor-react";
+import { Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus, CurrencyCircleDollar } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ const menuItems = [
   { icon: Folder, label: "Drive", path: "/dashboard" },
   { icon: Sparkle, label: "Modelos", path: "/templates" },
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
+  { icon: CurrencyCircleDollar, label: "Planos", path: "/planos" },
 ];
 
 const MobileMenu = () => {

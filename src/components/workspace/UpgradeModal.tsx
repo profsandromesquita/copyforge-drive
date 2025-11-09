@@ -291,10 +291,10 @@ export const UpgradeModal = ({
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
           <p>
-            Tem dúvidas sobre qual plano escolher?{' '}
-            <button className="text-primary underline hover:no-underline">
-              Fale com nosso time
-            </button>
+            Quer ver todos os planos e recursos?{' '}
+            <a href="/planos" className="text-primary underline hover:no-underline">
+              Comparar todos os planos
+            </a>
           </p>
         </div>
       </DialogContent>
