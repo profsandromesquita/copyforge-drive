@@ -27,6 +27,7 @@ import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { useProject } from '@/hooks/useProject';
+import { UpgradeModal } from '@/components/workspace/UpgradeModal';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -42,11 +43,37 @@ const Dashboard = () => {
   const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  
+  // Estados para modal de upgrade
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeLimitType, setUpgradeLimitType] = useState<'projects' | 'copies' | 'copy_ai'>('projects');
+  const [upgradeLimitData, setUpgradeLimitData] = useState<{
+    currentLimit?: number;
+    currentUsage?: number;
+  }>({});
 
   // Força modo claro no Dashboard
   useEffect(() => {
     setTheme('light');
   }, [setTheme]);
+
+  // Listener para evento de upgrade
+  useEffect(() => {
+    const handleShowUpgradeModal = (event: CustomEvent) => {
+      setUpgradeLimitType(event.detail.limitType);
+      setUpgradeLimitData({
+        currentLimit: event.detail.currentLimit,
+        currentUsage: event.detail.currentUsage
+      });
+      setUpgradeModalOpen(true);
+    };
+
+    window.addEventListener('show-upgrade-modal', handleShowUpgradeModal as EventListener);
+
+    return () => {
+      window.removeEventListener('show-upgrade-modal', handleShowUpgradeModal as EventListener);
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -421,6 +448,13 @@ const Dashboard = () => {
         open={createCopyOpen} 
         onOpenChange={setCreateCopyOpen}
         onCreateCopy={handleCreateCopy}
+      />
+      <UpgradeModal
+        open={upgradeModalOpen}
+        onOpenChange={setUpgradeModalOpen}
+        limitType={upgradeLimitType}
+        currentLimit={upgradeLimitData.currentLimit}
+        currentUsage={upgradeLimitData.currentUsage}
       />
     </div>
   );

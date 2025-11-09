@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye } from 'lucide-react';
+import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -27,6 +27,7 @@ import { ptBR } from 'date-fns/locale';
 import { AIModel, CopyType, getModelDisplayName, getAutoRoutedModel } from '@/lib/ai-models';
 import { useModelSwitchNotification } from '@/hooks/useModelSwitchNotification';
 import { Zap } from 'lucide-react';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 type Etapa = 1 | 2 | 3;
 
@@ -62,9 +63,14 @@ export const CopyAITab = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { notifyModelSwitch } = useModelSwitchNotification();
+  const { checkCopyAI } = usePlanLimits();
 
   // Controle de abas
   const [activeTab, setActiveTab] = useState('criar');
+  
+  // Estado para verificação de acesso Copy IA
+  const [copyAIEnabled, setCopyAIEnabled] = useState<boolean | null>(null);
+  const [loadingAccess, setLoadingAccess] = useState(true);
 
   // Estado para criação
   const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
@@ -97,6 +103,18 @@ export const CopyAITab = () => {
 
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
+
+  // Verificar acesso Copy IA ao carregar
+  useEffect(() => {
+    const checkAccess = async () => {
+      setLoadingAccess(true);
+      const result = await checkCopyAI();
+      setCopyAIEnabled(result.allowed);
+      setLoadingAccess(false);
+    };
+    
+    checkAccess();
+  }, [checkCopyAI]);
 
   useEffect(() => {
     if (activeTab === 'historico' && copyId) {
@@ -692,18 +710,50 @@ export const CopyAITab = () => {
 
   return (
     <>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="criar" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="otimizar" className="gap-2">
-            <Wand2 className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="gap-2">
-            <History className="h-4 w-4" />
-          </TabsTrigger>
-        </TabsList>
+      {/* Verificação de acesso Copy IA */}
+      {loadingAccess ? (
+        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : !copyAIEnabled ? (
+        <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+          <div className="text-center space-y-6 max-w-md px-6">
+            <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+              <Lock className="h-10 w-10 text-primary" />
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xl font-semibold">Copy IA Não Disponível</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Esta funcionalidade não está disponível no seu plano atual. Faça upgrade para usar inteligência artificial na criação e otimização de suas copies.
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('show-upgrade-modal', {
+                  detail: { limitType: 'copy_ai' }
+                }));
+              }}
+            >
+              <Sparkles className="h-5 w-5 mr-2" />
+              Fazer Upgrade
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="criar" className="gap-2">
+                <Sparkles className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="otimizar" className="gap-2">
+                <Wand2 className="h-4 w-4" />
+              </TabsTrigger>
+              <TabsTrigger value="historico" className="gap-2">
+                <History className="h-4 w-4" />
+              </TabsTrigger>
+            </TabsList>
 
         <TabsContent value="criar" className="flex-1 mt-0">
           {renderCriarTab()}
@@ -1076,6 +1126,8 @@ export const CopyAITab = () => {
         onRegenerate={handleRegenerate}
         isRegenerating={isOptimizing}
       />
+        </>
+      )}
     </>
   );
 };

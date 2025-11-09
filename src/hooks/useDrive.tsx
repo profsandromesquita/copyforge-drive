@@ -217,6 +217,25 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      // Verificar limite de copies
+      const { data: limitCheck } = await supabase.rpc('check_plan_limit', {
+        p_workspace_id: activeWorkspace.id,
+        p_limit_type: 'copies'
+      });
+
+      const limitData = limitCheck as any;
+      if (!limitData?.allowed) {
+        // Disparar evento para abrir modal de upgrade
+        window.dispatchEvent(new CustomEvent('show-upgrade-modal', {
+          detail: {
+            limitType: 'copies',
+            currentLimit: limitData?.limit,
+            currentUsage: limitData?.current
+          }
+        }));
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('copies')
         .insert({

@@ -85,6 +85,25 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
+      // Verificar limite de projetos
+      const { data: limitCheck } = await supabase.rpc('check_plan_limit', {
+        p_workspace_id: activeWorkspace.id,
+        p_limit_type: 'projects'
+      });
+
+      const limitData = limitCheck as any;
+      if (!limitData?.allowed) {
+        // Disparar evento para abrir modal de upgrade
+        window.dispatchEvent(new CustomEvent('show-upgrade-modal', {
+          detail: {
+            limitType: 'projects',
+            currentLimit: limitData?.limit,
+            currentUsage: limitData?.current
+          }
+        }));
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('projects')
         .insert({
