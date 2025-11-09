@@ -16,7 +16,6 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
-import { CreditBadge } from '@/components/credits/CreditBadge';
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -105,7 +104,6 @@ const Discover = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <CreditBadge />
               <UserMenu />
             </div>
           </div>

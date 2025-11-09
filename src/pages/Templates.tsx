@@ -19,7 +19,6 @@ import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { startOfDay, endOfDay, subDays, startOfYear, endOfYear, subYears, isWithinInterval } from 'date-fns';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
-import { CreditBadge } from '@/components/credits/CreditBadge';
 import { CreateCopyDialog, CopyType } from '@/components/drive/CreateCopyDialog';
 import { CreateFolderDialog } from '@/components/drive/CreateFolderDialog';
 import { useDrive } from '@/hooks/useDrive';
@@ -197,7 +196,6 @@ const Templates = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <CreditBadge />
               <UserMenu />
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceGeneral } from "./settings/WorkspaceGeneral";
@@ -8,10 +8,18 @@ import { WorkspaceBilling } from "./settings/WorkspaceBilling";
 interface WorkspaceSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: string;
 }
 
-export const WorkspaceSettingsModal = ({ open, onOpenChange }: WorkspaceSettingsModalProps) => {
-  const [activeTab, setActiveTab] = useState("general");
+export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "general" }: WorkspaceSettingsModalProps) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  
+  // Update activeTab when defaultTab changes
+  useEffect(() => {
+    if (open) {
+      setActiveTab(defaultTab);
+    }
+  }, [open, defaultTab]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

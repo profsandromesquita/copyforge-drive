@@ -26,7 +26,6 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { CreatorFilter } from '@/components/filters/CreatorFilter';
 import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { UserMenu } from '@/components/layout/UserMenu';
-import { CreditBadge } from '@/components/credits/CreditBadge';
 import { useProject } from '@/hooks/useProject';
 
 const Dashboard = () => {
@@ -234,7 +233,6 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <CreditBadge />
               <UserMenu />
             </div>
           </div>

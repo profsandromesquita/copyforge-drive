@@ -27,6 +27,7 @@ export const UserMenu = () => {
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const { data: credits } = useWorkspaceCredits();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<string>("general");
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -35,7 +36,11 @@ export const UserMenu = () => {
 
   return (
     <>
-      <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <WorkspaceSettingsModal 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen}
+        defaultTab={settingsTab}
+      />
       <CreateWorkspaceModal open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen} />
       <UserProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
       
@@ -86,7 +91,10 @@ export const UserMenu = () => {
                   <span className="text-sm font-semibold text-foreground">Credits</span>
                   <button 
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors group"
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={() => {
+                      setSettingsTab("billing");
+                      setSettingsOpen(true);
+                    }}
                   >
                     <span className="font-medium">{credits.balance.toFixed(1)} left</span>
                     <CaretRight size={14} className="group-hover:translate-x-0.5 transition-transform" weight="bold" />
@@ -98,7 +106,7 @@ export const UserMenu = () => {
                 />
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="text-xs text-muted-foreground">Using monthly credits</span>
+                  <span className="text-xs text-muted-foreground">Usando créditos mensais</span>
                 </div>
               </div>
               <DropdownMenuSeparator className="my-2" />
@@ -147,7 +155,10 @@ export const UserMenu = () => {
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => {
+                setSettingsTab("general");
+                setSettingsOpen(true);
+              }}
             >
               <Gear size={16} className="text-muted-foreground" />
               <span className="text-sm">Configurações do Workspace</span>
