@@ -34,9 +34,15 @@ export const GeneralSettings = () => {
       const { data, error } = await supabase
         .from("system_settings")
         .select("*")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast.error("Configurações do sistema não encontradas");
+        setLoading(false);
+        return;
+      }
       
       // Se não houver logos configuradas, usar as logos padrão dos assets
       setSettings({
