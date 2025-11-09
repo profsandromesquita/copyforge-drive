@@ -90,7 +90,6 @@ const Onboarding = () => {
         occupation,
         customOccupation 
       });
-      toast.success("Workspace configurado!");
       setCurrentStep(3);
     } catch (error: any) {
       console.error("Erro ao atualizar workspace:", error);
@@ -133,7 +132,6 @@ const Onboarding = () => {
         projectData: data,
         projectId: project.id
       });
-      toast.success("Projeto criado com sucesso!");
       setCurrentStep(4);
     } catch (error: any) {
       console.error("Erro ao criar projeto:", error);
