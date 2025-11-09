@@ -27,7 +27,6 @@ export const AudienceSegmentForm = ({
   const { activeProject, refreshProjects } = useProject();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
     id: '',
-    identifier: '',
     who_is: '',
     biggest_desire: '',
     biggest_pain: '',
@@ -355,21 +354,6 @@ export const AudienceSegmentForm = ({
 
         {segmentCreated && (
           <>
-            <div className="space-y-2">
-              <Label htmlFor="identifier" className="text-sm font-medium">
-                Identificador do Público (para seleção)
-              </Label>
-              <Input
-                id="identifier"
-                value={formData.identifier || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, identifier: e.target.value }))}
-                placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
-                className="text-base placeholder:text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                Nome curto que aparecerá nos seletores de público (opcional)
-              </p>
-            </div>
             {questions.map((question) => {
               const charCount = getCharCount(question.id);
               const isValid = charCount >= MIN_CHARS;
