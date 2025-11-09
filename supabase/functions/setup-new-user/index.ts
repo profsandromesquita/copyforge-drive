@@ -117,11 +117,13 @@ Deno.serve(async (req) => {
 
     // Step 2: Check if user already has a workspace
     console.log('[setup-new-user] Checking for existing workspace...');
-    const { data: existingMembership, error: membershipCheckError } = await supabaseAdmin
+    const { data: existingMemberships, error: membershipCheckError } = await supabaseAdmin
       .from('workspace_members')
       .select('workspace_id')
       .eq('user_id', userId)
-      .maybeSingle();
+      .limit(1);
+
+    const existingMembership = existingMemberships?.[0];
 
     if (membershipCheckError) {
       console.error('[setup-new-user] Error checking workspace membership:', membershipCheckError);

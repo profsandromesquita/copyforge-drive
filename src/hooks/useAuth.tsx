@@ -38,15 +38,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Wait a bit before checking workspace (gives trigger time to run)
           setTimeout(async () => {
             try {
-              const { data: membership, error: membershipError } = await supabase
+              const { data: memberships, error: membershipError } = await supabase
                 .from('workspace_members')
                 .select('workspace_id')
                 .eq('user_id', session.user.id)
-                .maybeSingle();
+                .limit(1);
 
               if (membershipError) {
                 console.error('[useAuth] Error checking membership:', membershipError);
               }
+
+              const membership = memberships?.[0];
 
               if (!membership) {
                 console.log('[useAuth] No workspace found, calling setup...');
@@ -65,13 +67,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   console.error('[useAuth] Setup error:', setupError);
                   
                   // Verify again if workspace was created despite error
-                  const { data: retryMembership } = await supabase
+                  const { data: retryMemberships } = await supabase
                     .from('workspace_members')
                     .select('workspace_id')
                     .eq('user_id', session.user.id)
-                    .maybeSingle();
+                    .limit(1);
                   
-                  if (!retryMembership) {
+                  if (!retryMemberships?.[0]) {
                     // Show warning but don't block login
                     import('sonner').then(({ toast }) => {
                       toast.warning('Configuração inicial pendente. Entre em contato com o suporte se problemas persistirem.');
@@ -83,13 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   console.warn('[useAuth] Setup returned non-success:', setupData);
                   
                   // Verify if workspace exists anyway
-                  const { data: retryMembership } = await supabase
+                  const { data: retryMemberships } = await supabase
                     .from('workspace_members')
                     .select('workspace_id')
                     .eq('user_id', session.user.id)
-                    .maybeSingle();
+                    .limit(1);
                   
-                  if (retryMembership) {
+                  if (retryMemberships?.[0]) {
                     console.log('[useAuth] Workspace exists despite setup warning');
                   }
                 } else {
