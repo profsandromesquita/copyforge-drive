@@ -9,12 +9,17 @@ interface OnboardingStep4Props {
 
 const OnboardingStep4 = ({ firstName, onComplete, onBack }: OnboardingStep4Props) => {
   useEffect(() => {
+    console.log('[OnboardingStep4] Iniciando timer de 3 segundos...');
     const timer = setTimeout(() => {
+      console.log('[OnboardingStep4] Timer concluído, chamando onComplete');
       onComplete();
     }, 3000);
 
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+    return () => {
+      console.log('[OnboardingStep4] Limpando timer');
+      clearTimeout(timer);
+    };
+  }, []); // Array vazio para executar apenas uma vez na montagem
   return (
     <div className="max-w-xl mx-auto text-center animate-fade-in">
       <div className="flex flex-col items-center justify-center min-h-[400px]">
