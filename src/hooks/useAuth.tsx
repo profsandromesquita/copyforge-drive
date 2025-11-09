@@ -107,8 +107,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const currentPath = window.location.pathname;
           console.log('Signed in, current path:', currentPath);
           
-          // Only redirect from auth page or root
-          if (currentPath === '/auth' || currentPath === '/') {
+          // Redirect to dashboard unless already there
+          if (!currentPath.startsWith('/dashboard')) {
+            console.log('[useAuth] Redirecting to dashboard after sign in');
             navigate('/dashboard');
           }
         } else if (event === 'SIGNED_OUT') {
