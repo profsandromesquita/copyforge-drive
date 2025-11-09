@@ -632,6 +632,30 @@ export type Database = {
           },
         ]
       }
+      signup_errors: {
+        Row: {
+          created_at: string | null
+          error_detail: string | null
+          error_message: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_detail?: string | null
+          error_message?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_detail?: string | null
+          error_message?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           annual_price: number
