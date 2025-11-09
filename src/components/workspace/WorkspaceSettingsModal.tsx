@@ -22,8 +22,19 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
     }
   }, [open, defaultTab]);
 
+  // Handle close with navigation logic
+  const handleClose = (newOpen: boolean) => {
+    // If trying to close and not on general tab, go back to general instead
+    if (!newOpen && activeTab !== "general") {
+      setActiveTab("general");
+    } else {
+      // Otherwise close the modal
+      onOpenChange(newOpen);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl h-[600px] p-0 gap-0 flex flex-col">
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
