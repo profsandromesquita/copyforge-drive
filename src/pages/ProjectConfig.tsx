@@ -116,13 +116,6 @@ const ProjectConfig = () => {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-6">
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className={`h-2 w-2 rounded-full transition-all ${isIdentityComplete ? 'bg-primary w-8' : 'bg-muted'}`} />
-          <div className={`h-2 w-2 rounded-full transition-all ${hasAudienceSegments ? 'bg-primary w-8' : 'bg-muted'}`} />
-          <div className={`h-2 w-2 rounded-full transition-all ${activeTab === 'offers' ? 'bg-primary w-8' : 'bg-muted'}`} />
-        </div>
-        
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid grid-cols-3 w-full h-auto p-1 bg-muted/50">
             <TabsTrigger 
