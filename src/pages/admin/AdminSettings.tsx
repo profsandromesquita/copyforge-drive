@@ -5,6 +5,7 @@ import { IntegrationsSettings } from "@/components/admin/settings/IntegrationsSe
 import { UsersSettings } from "@/components/admin/settings/UsersSettings";
 import { AISettings } from "@/components/admin/settings/AISettings";
 import { CreditSettings } from "@/components/admin/settings/CreditSettings";
+import { PlanSettings } from "@/components/admin/settings/PlanSettings";
 import { SettingsSidebar } from "@/components/admin/settings/SettingsSidebar";
 
 export default function AdminSettings() {
@@ -22,6 +23,8 @@ export default function AdminSettings() {
         return <AISettings />;
       case "creditos":
         return <CreditSettings />;
+      case "planos":
+        return <PlanSettings />;
       default:
         return <GeneralSettings />;
     }

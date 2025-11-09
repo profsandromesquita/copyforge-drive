@@ -264,6 +264,54 @@ export type Database = {
           },
         ]
       }
+      credit_rollover_history: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          original_credits: number
+          rolled_credits: number
+          rollover_percentage: number
+          subscription_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          original_credits: number
+          rolled_credits: number
+          rollover_percentage: number
+          subscription_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          original_credits?: number
+          rolled_credits?: number
+          rollover_percentage?: number
+          subscription_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_rollover_history_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_rollover_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           amount: number
@@ -584,6 +632,66 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          annual_price: number
+          copy_ai_enabled: boolean | null
+          created_at: string | null
+          credits_per_month: number
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          max_copies: number | null
+          max_projects: number | null
+          monthly_price: number
+          name: string
+          rollover_days: number | null
+          rollover_enabled: boolean | null
+          rollover_percentage: number | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          annual_price?: number
+          copy_ai_enabled?: boolean | null
+          created_at?: string | null
+          credits_per_month?: number
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_copies?: number | null
+          max_projects?: number | null
+          monthly_price?: number
+          name: string
+          rollover_days?: number | null
+          rollover_enabled?: boolean | null
+          rollover_percentage?: number | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          annual_price?: number
+          copy_ai_enabled?: boolean | null
+          created_at?: string | null
+          credits_per_month?: number
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_copies?: number | null
+          max_projects?: number | null
+          monthly_price?: number
+          name?: string
+          rollover_days?: number | null
+          rollover_enabled?: boolean | null
+          rollover_percentage?: number | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           created_at: string | null
@@ -793,6 +901,78 @@ export type Database = {
           },
         ]
       }
+      workspace_subscriptions: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle_type"]
+          cancelled_at: string | null
+          copies_count: number | null
+          created_at: string | null
+          current_copy_ai_enabled: boolean | null
+          current_max_copies: number | null
+          current_max_projects: number | null
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          plan_id: string
+          projects_count: number | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle_type"]
+          cancelled_at?: string | null
+          copies_count?: number | null
+          created_at?: string | null
+          current_copy_ai_enabled?: boolean | null
+          current_max_copies?: number | null
+          current_max_projects?: number | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id: string
+          projects_count?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle_type"]
+          cancelled_at?: string | null
+          copies_count?: number | null
+          created_at?: string | null
+          current_copy_ai_enabled?: boolean | null
+          current_max_copies?: number | null
+          current_max_projects?: number | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          plan_id?: string
+          projects_count?: number | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           avatar_url: string | null
@@ -848,6 +1028,10 @@ export type Database = {
       calculate_tpc_model: {
         Args: { cost_limit_pct: number; p_model_name: string }
         Returns: number
+      }
+      check_plan_limit: {
+        Args: { p_limit_type: string; p_workspace_id: string }
+        Returns: Json
       }
       check_workspace_credits: {
         Args: {
@@ -905,8 +1089,14 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      process_credit_rollover: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
     }
     Enums: {
+      billing_cycle_type: "monthly" | "annual" | "free"
+      subscription_status: "active" | "cancelled" | "expired" | "past_due"
       system_role: "super_admin" | "admin"
       workspace_role: "owner" | "admin" | "editor"
     }
@@ -1036,6 +1226,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      billing_cycle_type: ["monthly", "annual", "free"],
+      subscription_status: ["active", "cancelled", "expired", "past_due"],
       system_role: ["super_admin", "admin"],
       workspace_role: ["owner", "admin", "editor"],
     },
