@@ -30,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Auth state changed:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false);
         
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[useAuth] User signed in:', session.user.email);
