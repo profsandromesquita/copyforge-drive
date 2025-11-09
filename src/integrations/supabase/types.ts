@@ -1078,6 +1078,15 @@ export type Database = {
         }
         Returns: Json
       }
+      fix_users_without_workspace: {
+        Args: never
+        Returns: {
+          error_message: string
+          user_email: string
+          user_id: string
+          workspace_created: boolean
+        }[]
+      }
       get_workspace_role: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
