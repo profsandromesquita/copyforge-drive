@@ -78,13 +78,12 @@ const Auth = () => {
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
-    
     try {
+      setLoading(true);
       const { error } = await signInWithGoogle();
       
       if (error) {
-        setLoading(false); // Stop loading immediately on error
+        setLoading(false);
         
         if (error.message?.includes('popup_closed')) {
           toast.error('Login cancelado. Por favor, tente novamente.');
@@ -94,19 +93,8 @@ const Auth = () => {
           toast.error('Erro ao fazer login com Google. Tente novamente.');
         }
         console.error('[Auth] Google sign in error:', error);
-        return;
       }
-      
-      // Redirect will be automatic via onAuthStateChange
-      // But add a safety timeout
-      setTimeout(() => {
-        if (loading) {
-          setLoading(false);
-          console.warn('[Auth] Login timeout - forcing navigation');
-          navigate('/dashboard');
-        }
-      }, 5000); // 5 second timeout
-      
+      // Loading state will be cleared by redirect or by onAuthStateChange
     } catch (error) {
       setLoading(false);
       toast.error("Erro inesperado ao conectar com Google");
