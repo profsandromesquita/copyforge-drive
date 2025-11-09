@@ -18,68 +18,65 @@ const OnboardingStep2 = ({ firstName, onComplete, onBack }: OnboardingStep2Props
   };
 
   return (
-    <div className="max-w-3xl mx-auto animate-in fade-in duration-500">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">
-          Boa! Agora digite o nome do seu primeiro Workspace
+    <div className="max-w-xl mx-auto animate-fade-in">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+          Nome do Workspace
         </h1>
-        <p className="text-xl text-muted-foreground">
-          Este será o espaço principal onde você organizará seus projetos e copies.
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Seu espaço para organizar projetos e copies
         </p>
       </div>
 
-      <div className="mb-8">
-        <label htmlFor="workspace-name" className="block text-sm font-medium mb-2 text-foreground">
-          Nome do Workspace
-        </label>
+      <div className="mb-6 sm:mb-8">
         <Input
           id="workspace-name"
           value={workspaceName}
           onChange={(e) => setWorkspaceName(e.target.value)}
           placeholder={`Workspace de ${firstName}`}
-          className="text-lg h-12"
+          className="text-base sm:text-lg h-12 sm:h-14 text-center font-medium"
         />
       </div>
 
-      <div className="bg-card border-2 border-border rounded-lg p-8 mb-8">
-        <div className="space-y-8">
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+        <div className="space-y-4 sm:space-y-5">
           {/* Workspace */}
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Layers className="w-6 h-6 text-primary" />
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold mb-2">WORKSPACE</h3>
-              <p className="text-muted-foreground">
-                O espaço principal onde tudo acontece. Você pode ter vários workspaces.
+              <h3 className="text-sm sm:text-base font-bold">Workspace</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Espaço principal
               </p>
             </div>
           </div>
 
-          <div className="ml-6 border-l-2 border-border pl-6">
+          <div className="ml-5 sm:ml-6 border-l-2 border-border/50 pl-4 sm:pl-5">
             {/* Projeto */}
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <FolderOpen className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold mb-2">PROJETO</h3>
-                <p className="text-muted-foreground">
-                  Cada projeto representa uma marca ou negócio. Configure identidade, público e ofertas.
+                <h3 className="text-sm sm:text-base font-bold">Projetos</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Cada marca/negócio
                 </p>
               </div>
             </div>
 
-            <div className="ml-6 mt-6 border-l-2 border-border pl-6">
+            <div className="ml-5 sm:ml-6 border-l-2 border-border/50 pl-4 sm:pl-5">
               {/* Drive de Copies */}
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-6 h-6 text-primary" />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">DRIVE DE COPIES</h3>
-                  <p className="text-muted-foreground">
-                    Dentro de cada projeto, organize suas copies em pastas e crie conteúdos incríveis.
+                  <h3 className="text-sm sm:text-base font-bold">Copies</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Seus conteúdos
                   </p>
                 </div>
               </div>
@@ -88,20 +85,15 @@ const OnboardingStep2 = ({ firstName, onComplete, onBack }: OnboardingStep2Props
         </div>
       </div>
 
-      <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 mb-8">
-        <p className="text-lg text-center">
-          Seu workspace será o local onde você criará e organizará todos os seus projetos.
-        </p>
-      </div>
-
-      <div className="flex justify-between">
-        <Button onClick={onBack} variant="outline" size="lg">
+      <div className="flex gap-3">
+        <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
           Voltar
         </Button>
         <Button 
           onClick={handleContinue} 
           size="lg"
           disabled={!workspaceName.trim()}
+          className="flex-1"
         >
           Continuar
         </Button>

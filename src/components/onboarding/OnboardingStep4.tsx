@@ -9,33 +9,32 @@ interface OnboardingStep4Props {
 
 const OnboardingStep4 = ({ firstName, onComplete, onBack }: OnboardingStep4Props) => {
   return (
-    <div className="max-w-2xl mx-auto text-center animate-in fade-in duration-500">
-      <div className="mb-12">
-        <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-          <CheckCircle2 className="w-12 h-12 text-green-600" />
+    <div className="max-w-xl mx-auto text-center animate-fade-in">
+      <div className="mb-8 sm:mb-12">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-full bg-green-100 flex items-center justify-center">
+          <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
         </div>
         
-        <h1 className="text-4xl font-bold mb-4">
-          Show {firstName}, tudo pronto para criar sua primeira copy!
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+          Projeto criado! 🎉
         </h1>
-        <p className="text-xl text-muted-foreground mb-8">
-          Mas antes, escolha o plano ideal para o seu Workspace
+        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
+          Agora escolha seu plano
         </p>
 
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
-          <p className="text-lg">
-            Seu projeto foi criado com sucesso! 🎉<br />
-            Agora vamos escolher o plano que melhor se adapta às suas necessidades.
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 sm:p-5">
+          <p className="text-sm sm:text-base">
+            Comece grátis e faça upgrade quando precisar
           </p>
         </div>
       </div>
 
-      <div className="flex justify-between">
-        <Button onClick={onBack} variant="outline" size="lg">
+      <div className="flex gap-3">
+        <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
           Voltar
         </Button>
-        <Button onClick={onComplete} size="lg">
-          Escolher Plano
+        <Button onClick={onComplete} size="lg" className="flex-1">
+          Ver Planos
         </Button>
       </div>
     </div>

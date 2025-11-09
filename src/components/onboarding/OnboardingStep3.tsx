@@ -47,176 +47,173 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-8">
       {subStep === 1 && (
-        <>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">
-              Vamos criar seu primeiro projeto!
+        <div className="max-w-xl mx-auto animate-fade-in">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+              Seu primeiro projeto
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Digite o nome do seu Projeto/Marca:
+            <p className="text-sm sm:text-base text-muted-foreground">
+              1/4 · Nome do Projeto
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="project-name">Nome do Projeto</Label>
-              <Input
-                id="project-name"
-                placeholder="Ex: Minha Empresa"
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className="text-lg"
-                autoFocus
-              />
-            </div>
+          <div className="mb-6">
+            <Label htmlFor="project-name" className="text-sm sm:text-base mb-2 block">Nome do Projeto</Label>
+            <Input
+              id="project-name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="Ex: Minha Empresa"
+              className="text-base h-11 sm:h-12"
+              autoFocus
+            />
           </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button onClick={onBack} variant="outline" size="lg">
+          <div className="flex gap-3">
+            <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
               Voltar
             </Button>
-            <Button 
-              onClick={handleNextSubStep} 
+            <Button
+              onClick={handleNextSubStep}
               disabled={!projectName.trim()}
               size="lg"
+              className="flex-1"
             >
               Continuar
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {subStep === 2 && (
-        <>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">
-              Qual o setor de atuação?
+        <div className="max-w-xl mx-auto animate-fade-in">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+              Setor de atuação
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Isso nos ajuda a personalizar suas copies
+            <p className="text-sm sm:text-base text-muted-foreground">
+              2/4 · Qual o setor?
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sector">Setor</Label>
-              <Select value={sector} onValueChange={setSector}>
-                <SelectTrigger id="sector" className="text-lg">
-                  <SelectValue placeholder="Selecione o setor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="mb-6">
+            <Label htmlFor="sector" className="text-sm sm:text-base mb-2 block">Setor</Label>
+            <Select value={sector} onValueChange={setSector}>
+              <SelectTrigger id="sector" className="h-11 sm:h-12 text-base">
+                <SelectValue placeholder="Selecione o setor" />
+              </SelectTrigger>
+              <SelectContent>
+                {SECTORS.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button onClick={() => setSubStep(1)} variant="outline" size="lg">
+          <div className="flex gap-3">
+            <Button onClick={() => setSubStep(1)} variant="outline" size="lg" className="flex-1">
               Voltar
             </Button>
-            <Button 
-              onClick={handleNextSubStep} 
+            <Button
+              onClick={handleNextSubStep}
               disabled={!sector}
               size="lg"
+              className="flex-1"
             >
               Continuar
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {subStep === 3 && (
-        <>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">
-              Qual o propósito central do seu projeto?
+        <div className="max-w-xl mx-auto animate-fade-in">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+              Propósito central
             </h1>
-            <p className="text-xl text-muted-foreground">
-              O que você busca alcançar com este projeto?
+            <p className="text-sm sm:text-base text-muted-foreground">
+              3/4 · Por que seu projeto existe?
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="purpose">Propósito Central</Label>
-              <Textarea
-                id="purpose"
-                placeholder="Ex: Ajudar pessoas a alcançarem liberdade financeira através de investimentos inteligentes"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                className="min-h-[120px] text-lg"
-                autoFocus
-              />
-            </div>
+          <div className="mb-6">
+            <Label htmlFor="purpose" className="text-sm sm:text-base mb-2 block">Descreva o propósito</Label>
+            <Textarea
+              id="purpose"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Ex: Ajudar empresas a crescerem através de marketing digital"
+              className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none"
+              autoFocus
+            />
           </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button onClick={() => setSubStep(2)} variant="outline" size="lg">
+          <div className="flex gap-3">
+            <Button onClick={() => setSubStep(2)} variant="outline" size="lg" className="flex-1">
               Voltar
             </Button>
-            <Button 
-              onClick={handleNextSubStep} 
+            <Button
+              onClick={handleNextSubStep}
               disabled={!purpose.trim()}
               size="lg"
+              className="flex-1"
             >
               Continuar
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {subStep === 4 && (
-        <>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">
+        <div className="max-w-xl mx-auto animate-fade-in">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
               Personalidade da marca
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Selecione até 3 características que definem sua marca
+            <p className="text-sm sm:text-base text-muted-foreground">
+              4/4 · Escolha até 3 características
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {BRAND_PERSONALITIES.map((personality) => (
-              <button
-                key={personality}
-                onClick={() => togglePersonality(personality)}
-                disabled={!personalities.includes(personality) && personalities.length >= 3}
-                className={`p-4 text-left rounded-lg border-2 transition-all ${
-                  personalities.includes(personality)
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-card hover:border-primary/50"
-                } ${
-                  !personalities.includes(personality) && personalities.length >= 3
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
-              >
-                <span className="font-medium">{personality}</span>
-              </button>
-            ))}
+          <div className="mb-6">
+            <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+              {BRAND_PERSONALITIES.map((personality) => (
+                <button
+                  key={personality}
+                  onClick={() => togglePersonality(personality)}
+                  disabled={personalities.length >= 3 && !personalities.includes(personality)}
+                  className={`p-3 sm:p-3.5 rounded-lg border transition-all text-sm sm:text-base ${
+                    personalities.includes(personality)
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:border-primary/50 hover:bg-accent/50"
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                >
+                  <span className="font-medium">{personality}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-xs sm:text-sm text-muted-foreground mt-3">
+              {personalities.length}/3 selecionadas
+            </p>
           </div>
 
-          <div className="mt-8 flex justify-between">
-            <Button onClick={() => setSubStep(3)} variant="outline" size="lg">
+          <div className="flex gap-3">
+            <Button onClick={() => setSubStep(3)} variant="outline" size="lg" className="flex-1">
               Voltar
             </Button>
-            <Button 
-              onClick={handleComplete} 
+            <Button
+              onClick={handleComplete}
               disabled={personalities.length === 0 || loading}
               size="lg"
+              className="flex-1"
             >
-              {loading ? "Criando projeto..." : "Criar Projeto"}
+              {loading ? "Criando..." : "Criar"}
             </Button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

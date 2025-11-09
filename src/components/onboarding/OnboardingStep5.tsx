@@ -62,22 +62,22 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   }
 
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in duration-500">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">
-          Escolha o plano ideal para você
+    <div className="animate-fade-in">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+          Escolha seu plano
         </h1>
-        <p className="text-xl text-muted-foreground mb-8">
-          Comece grátis e faça upgrade quando precisar de mais recursos
+        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
+          Comece grátis, faça upgrade depois
         </p>
 
         {/* Billing Cycle Toggle */}
-        <div className="inline-flex rounded-lg border border-border p-1 bg-muted">
+        <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted">
           <button
             onClick={() => setBillingCycle('monthly')}
-            className={`px-6 py-2 rounded-md transition-all ${
+            className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-md transition-all text-sm ${
               billingCycle === 'monthly'
-                ? 'bg-background shadow-sm'
+                ? 'bg-background shadow-sm font-medium'
                 : 'text-muted-foreground'
             }`}
           >
@@ -85,86 +85,87 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
           </button>
           <button
             onClick={() => setBillingCycle('annual')}
-            className={`px-6 py-2 rounded-md transition-all ${
+            className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-md transition-all text-sm ${
               billingCycle === 'annual'
-                ? 'bg-background shadow-sm'
+                ? 'bg-background shadow-sm font-medium'
                 : 'text-muted-foreground'
             }`}
           >
             Anual
-            <Badge variant="secondary" className="ml-2">-20%</Badge>
+            <Badge variant="secondary" className="ml-1.5 text-xs">-20%</Badge>
           </button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {activePlans.map((plan) => {
           const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
           const isCurrentPlan = plan.slug === currentPlanSlug;
           const isPopular = plan.slug === 'pro';
 
           return (
-            <Card key={plan.id} className={`relative ${isPopular ? 'border-primary shadow-lg' : ''}`}>
+            <Card key={plan.id} className={`relative ${isPopular ? 'border-primary' : ''}`}>
               {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground">
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground text-xs">
                     <Sparkles className="w-3 h-3 mr-1" />
                     Popular
                   </Badge>
                 </div>
               )}
 
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg flex items-center justify-between">
                   {plan.name}
                   {isCurrentPlan && (
-                    <Badge variant="secondary">Atual</Badge>
+                    <Badge variant="secondary" className="text-xs">Atual</Badge>
                   )}
                 </CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold">{formatCurrency(price)}</span>
-                  <span className="text-muted-foreground">
+                <CardDescription className="text-xs sm:text-sm line-clamp-2">{plan.description}</CardDescription>
+                <div className="mt-2 sm:mt-3">
+                  <span className="text-2xl sm:text-3xl font-bold">{formatCurrency(price)}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">
                     /{billingCycle === 'monthly' ? 'mês' : 'ano'}
                   </span>
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
+              <CardContent className="space-y-3 pb-3 sm:pb-4">
+                <div className="space-y-1.5 text-xs sm:text-sm">
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>
                       {plan.max_projects === null ? 'Projetos ilimitados' : `${plan.max_projects} projeto(s)`}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>
                       {plan.max_copies === null ? 'Copies ilimitadas' : `${plan.max_copies} copies`}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>{plan.credits_per_month} créditos/mês</span>
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>{plan.credits_per_month} créditos</span>
                   </div>
                   {plan.copy_ai_enabled && (
                     <div className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span>Copy AI habilitada</span>
+                      <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span>Copy AI</span>
                     </div>
                   )}
                 </div>
               </CardContent>
 
-              <CardFooter>
+              <CardFooter className="pt-0">
                 <Button
                   onClick={() => handleSelectPlan(plan.id, plan.slug)}
                   disabled={isCurrentPlan || isChanging || loading}
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                   variant={isPopular ? 'default' : 'outline'}
+                  size="sm"
                 >
-                  {isCurrentPlan ? 'Plano Atual' : `Escolher ${plan.name}`}
+                  {isCurrentPlan ? 'Atual' : `Escolher`}
                 </Button>
               </CardFooter>
             </Card>
@@ -172,16 +173,17 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
         })}
       </div>
 
-      <div className="flex justify-between">
-        <Button onClick={onBack} variant="outline" size="lg">
+      <div className="flex gap-3">
+        <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
           Voltar
         </Button>
         <Button 
           onClick={() => onComplete()} 
           variant="ghost"
           size="lg"
+          className="flex-1"
         >
-          Pular por enquanto
+          Pular
         </Button>
       </div>
     </div>

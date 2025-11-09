@@ -30,50 +30,52 @@ const OnboardingStep1 = ({ firstName, onComplete }: OnboardingStep1Props) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-in fade-in duration-500">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">
-          Opa {firstName}, bom ter você no Copy Drive 🚀!
+    <div className="max-w-xl mx-auto animate-fade-in">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+          Opa {firstName}! 👋
         </h1>
-        <p className="text-xl text-muted-foreground">
-          O que melhor define sua atuação:
+        <p className="text-base sm:text-lg text-muted-foreground">
+          O que melhor define sua atuação?
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-2.5">
         {OCCUPATIONS.map((occupation) => (
           <button
             key={occupation}
             onClick={() => setSelected(occupation)}
-            className={`w-full p-4 text-left rounded-lg border-2 transition-all hover:border-primary ${
+            className={`w-full p-3 sm:p-3.5 text-left rounded-lg border transition-all ${
               selected === occupation
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card"
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border hover:border-primary/50 hover:bg-accent/50"
             }`}
           >
-            <span className="text-lg font-medium">{occupation}</span>
+            <span className="text-sm sm:text-base font-medium">{occupation}</span>
           </button>
         ))}
       </div>
 
       {selected === "Outro" && (
-        <div className="mt-6 space-y-2 animate-in fade-in duration-300">
-          <Label htmlFor="custom-occupation">Digite sua atuação</Label>
+        <div className="mt-4 space-y-2 animate-fade-in">
+          <Label htmlFor="custom-occupation" className="text-sm">Digite sua atuação</Label>
           <Input
             id="custom-occupation"
             placeholder="Ex: Redator Publicitário"
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}
             autoFocus
+            className="h-11"
           />
         </div>
       )}
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-6 sm:mt-8 flex justify-end">
         <Button
           onClick={handleContinue}
           disabled={!selected || (selected === "Outro" && !customValue.trim())}
           size="lg"
+          className="px-8"
         >
           Continuar
         </Button>

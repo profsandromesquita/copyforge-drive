@@ -168,24 +168,24 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-border/50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-3">
             <img 
               src="/src/assets/copydrive-logo.png" 
               alt="Copy Drive" 
-              className="h-8"
+              className="h-6 sm:h-8"
             />
-            <span className="text-sm text-muted-foreground">
-              Passo {currentStep} de 5
+            <span className="text-xs sm:text-sm text-muted-foreground font-medium">
+              {currentStep}/5
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <Progress value={progress} className="h-1.5" />
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-12">
         {currentStep === 1 && (
           <OnboardingStep1 
             firstName={firstName}
