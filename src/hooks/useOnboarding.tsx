@@ -40,6 +40,28 @@ export const useOnboarding = () => {
     };
 
     checkOnboardingStatus();
+
+    // Escutar mudanças no perfil em tempo real
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          setIsCompleted(newData.onboarding_completed ?? false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const completeOnboarding = async (occupation: string) => {

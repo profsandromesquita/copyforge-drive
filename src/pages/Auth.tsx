@@ -52,10 +52,36 @@ const Auth = () => {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      // Redirect to the specified path or dashboard
-      navigate(redirectPath || '/dashboard');
-    }
+    const checkOnboardingAndRedirect = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('Error checking onboarding:', error);
+            navigate('/onboarding');
+            return;
+          }
+
+          const onboardingCompleted = data?.onboarding_completed ?? false;
+          
+          if (onboardingCompleted) {
+            navigate(redirectPath || '/dashboard');
+          } else {
+            navigate('/onboarding');
+          }
+        } catch (error) {
+          console.error('Error checking onboarding:', error);
+          navigate('/onboarding');
+        }
+      }
+    };
+
+    checkOnboardingAndRedirect();
   }, [user, navigate, redirectPath]);
 
   const formatPhone = (value: string) => {
