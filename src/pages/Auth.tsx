@@ -172,7 +172,7 @@ const Auth = () => {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="(11) 98765-4321"
+                    placeholder="(99) 9999-9999"
                     value={phone}
                     onChange={handlePhoneChange}
                     required
