@@ -222,7 +222,7 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
                 size="lg"
                 className="flex-1"
               >
-                {loading ? "Criando..." : "Criar"}
+                {loading ? "Avançando..." : "Avançar"}
               </Button>
             </div>
           </div>
