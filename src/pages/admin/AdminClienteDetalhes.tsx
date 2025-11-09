@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useParams, NavLink, Navigate } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,6 +50,7 @@ export default function AdminClienteDetalhes() {
   const [copies, setCopies] = useState<Copy[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [activeSection, setActiveSection] = useState('informacoes');
 
   useEffect(() => {
     const fetchClienteData = async () => {
@@ -138,6 +139,35 @@ export default function AdminClienteDetalhes() {
     fetchClienteData();
   }, [id]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3, rootMargin: '-100px 0px -60% 0px' }
+    );
+
+    const sections = ['informacoes', 'workspaces', 'copies'];
+    sections.forEach((sectionId) => {
+      const element = document.getElementById(sectionId);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [loading]);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(sectionId);
+    }
+  };
+
   if (notFound) {
     return <Navigate to="/painel/admin/clientes" replace />;
   }
@@ -218,49 +248,42 @@ export default function AdminClienteDetalhes() {
               </div>
 
               <nav className="space-y-1">
-                <NavLink
-                  to={`/painel/admin/clientes/${id}`}
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )
-                  }
+                <button
+                  onClick={() => scrollToSection('informacoes')}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                    activeSection === 'informacoes'
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
                 >
                   <User size={20} />
                   <span>Informações</span>
-                </NavLink>
-                <NavLink
-                  to={`/painel/admin/clientes/${id}/workspaces`}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )
-                  }
+                </button>
+                <button
+                  onClick={() => scrollToSection('workspaces')}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                    activeSection === 'workspaces'
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
                 >
                   <FolderOpen size={20} />
                   <span>Workspaces</span>
-                </NavLink>
-                <NavLink
-                  to={`/painel/admin/clientes/${id}/copies`}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )
-                  }
+                </button>
+                <button
+                  onClick={() => scrollToSection('copies')}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                    activeSection === 'copies'
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
                 >
                   <FileText size={20} />
                   <span>Copies</span>
-                </NavLink>
+                </button>
               </nav>
             </>
           ) : null}
@@ -276,7 +299,7 @@ export default function AdminClienteDetalhes() {
             </div>
           ) : cliente ? (
             <>
-              <div>
+              <div id="informacoes" className="scroll-mt-6">
                 <h1 className="text-3xl font-bold">Informações do Cliente</h1>
                 <p className="text-muted-foreground">Dados e estatísticas</p>
               </div>
@@ -316,7 +339,7 @@ export default function AdminClienteDetalhes() {
                 </Card>
               </div>
 
-              <Card>
+              <Card id="workspaces" className="scroll-mt-6">
                 <CardHeader>
                   <CardTitle>Workspaces</CardTitle>
                 </CardHeader>
@@ -352,7 +375,7 @@ export default function AdminClienteDetalhes() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card id="copies" className="scroll-mt-6">
                 <CardHeader>
                   <CardTitle>Copies Criadas</CardTitle>
                 </CardHeader>
