@@ -23,7 +23,7 @@ export const AdminHeader = () => {
           <span className="text-sm text-muted-foreground">/ Admin</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <div className="text-right">
             <p className="text-sm font-medium">
               {user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuário"}
