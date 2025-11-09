@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditTransactionCard } from "@/components/credits/CreditTransactionCard";
+import { TokensByModelCard } from "@/components/admin/TokensByModelCard";
 
 interface Stats {
   clientes: number;
@@ -21,6 +22,15 @@ interface LastTransaction {
   timestamp: string;
 }
 
+interface ModelTokenStats {
+  model_used: string;
+  total_tokens: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_credits_debited: number;
+  transaction_count: number;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     clientes: 0,
@@ -31,11 +41,12 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [lastTransaction, setLastTransaction] = useState<LastTransaction | null>(null);
+  const [modelStats, setModelStats] = useState<ModelTokenStats[]>([]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [clientesRes, workspacesRes, copiesRes, creditsRes, lastTransactionRes] = await Promise.all([
+        const [clientesRes, workspacesRes, copiesRes, creditsRes, lastTransactionRes, modelStatsRes] = await Promise.all([
           supabase.from('profiles').select('id', { count: 'exact', head: true }),
           supabase.from('workspaces').select('id', { count: 'exact', head: true }),
           supabase.from('copies').select('id', { count: 'exact', head: true }),
@@ -45,7 +56,12 @@ export default function AdminDashboard() {
             .select('credits_debited, total_tokens, tpc_snapshot, created_at')
             .order('created_at', { ascending: false })
             .limit(1)
-            .single()
+            .single(),
+          supabase
+            .from('credit_transactions')
+            .select('model_used, tokens_used, input_tokens, output_tokens, amount')
+            .eq('transaction_type', 'debit')
+            .not('model_used', 'is', null)
         ]);
 
         // Calcular total de créditos usados e saldo total em todas as workspaces
@@ -67,6 +83,31 @@ export default function AdminDashboard() {
             tpc: lastTransactionRes.data.tpc_snapshot || 10000,
             timestamp: lastTransactionRes.data.created_at || new Date().toISOString()
           });
+        }
+
+        // Agregar dados por modelo
+        if (modelStatsRes.data) {
+          const aggregated = modelStatsRes.data.reduce((acc, transaction) => {
+            const model = transaction.model_used as string;
+            if (!acc[model]) {
+              acc[model] = {
+                model_used: model,
+                total_tokens: 0,
+                total_input_tokens: 0,
+                total_output_tokens: 0,
+                total_credits_debited: 0,
+                transaction_count: 0,
+              };
+            }
+            acc[model].total_tokens += transaction.tokens_used || 0;
+            acc[model].total_input_tokens += transaction.input_tokens || 0;
+            acc[model].total_output_tokens += transaction.output_tokens || 0;
+            acc[model].total_credits_debited += transaction.amount || 0;
+            acc[model].transaction_count += 1;
+            return acc;
+          }, {} as Record<string, ModelTokenStats>);
+
+          setModelStats(Object.values(aggregated).sort((a, b) => b.total_credits_debited - a.total_credits_debited));
         }
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -160,16 +201,7 @@ export default function AdminDashboard() {
           />
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Tokens Usados por Modelo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-muted-foreground">
-              Sistema de tracking de tokens em desenvolvimento
-            </div>
-          </CardContent>
-        </Card>
+        <TokensByModelCard modelStats={modelStats} loading={loading} />
       </div>
     </AdminLayout>
   );
