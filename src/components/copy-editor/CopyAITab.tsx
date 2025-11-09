@@ -535,7 +535,7 @@ export const CopyAITab = () => {
     if (etapa === 2) {
       return (
         <ScrollArea className="h-[calc(100vh-12rem)]">
-          <div className="space-y-8 p-6 animate-fade-in">
+          <div className="space-y-5 p-4 animate-fade-in">
             <Button 
               variant="ghost" 
               onClick={() => setEtapa(1)} 
@@ -546,7 +546,7 @@ export const CopyAITab = () => {
               <span className="ml-2">Voltar</span>
             </Button>
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Objetivos
               </Label>
@@ -568,9 +568,7 @@ export const CopyAITab = () => {
               </ToggleGroup>
             </div>
 
-            <div className="h-px bg-border/50" />
-
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Estilos
               </Label>
@@ -592,9 +590,7 @@ export const CopyAITab = () => {
               </ToggleGroup>
             </div>
 
-            <div className="h-px bg-border/50" />
-
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Tamanho
               </Label>
@@ -616,9 +612,7 @@ export const CopyAITab = () => {
               </ToggleGroup>
             </div>
 
-            <div className="h-px bg-border/50" />
-
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Preferências
               </Label>
@@ -640,7 +634,7 @@ export const CopyAITab = () => {
               </ToggleGroup>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-2">
               <Button onClick={() => setEtapa(3)} className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow">
                 Próximo
               </Button>
