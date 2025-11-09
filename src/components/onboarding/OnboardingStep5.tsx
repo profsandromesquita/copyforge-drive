@@ -120,10 +120,22 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm line-clamp-2">{plan.description}</CardDescription>
                 <div className="mt-2 sm:mt-3">
-                  <span className="text-2xl sm:text-3xl font-bold">{formatCurrency(price)}</span>
-                  <span className="text-xs sm:text-sm text-muted-foreground">
-                    /{billingCycle === 'monthly' ? 'mês' : 'ano'}
-                  </span>
+                  {billingCycle === 'monthly' ? (
+                    <>
+                      <span className="text-2xl sm:text-3xl font-bold">{formatCurrency(price)}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground">/mês</span>
+                    </>
+                  ) : (
+                    <div className="flex flex-col">
+                      <div>
+                        <span className="text-2xl sm:text-3xl font-bold">{formatCurrency(price / 12)}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">/mês</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground/70 mt-1">
+                        {formatCurrency(price)} cobrado anualmente
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
 
