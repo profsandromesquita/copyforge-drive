@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { VoiceInput } from "@/components/project-config/VoiceInput";
 import { SECTORS, BRAND_PERSONALITIES } from "@/types/project-config";
 
 interface OnboardingStep3Props {
@@ -145,14 +146,21 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
 
           <div className="mb-6">
             <Label htmlFor="purpose" className="text-sm sm:text-base mb-2 block">Descreva o propósito</Label>
-            <Textarea
-              id="purpose"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              placeholder="Ex: Ajudar empresas a crescerem através de marketing digital"
-              className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none"
-              autoFocus
-            />
+            <div className="relative">
+              <Textarea
+                id="purpose"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                placeholder="Ex: Ajudar empresas a crescerem através de marketing digital"
+                className="min-h-[100px] sm:min-h-[120px] text-sm sm:text-base resize-none pr-12"
+                autoFocus
+              />
+              <VoiceInput
+                onTranscript={(text) => {
+                  setPurpose(prev => prev ? `${prev} ${text}` : text);
+                }}
+              />
+            </div>
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
