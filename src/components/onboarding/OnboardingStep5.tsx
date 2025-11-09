@@ -64,12 +64,9 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   return (
     <div className="animate-fade-in">
       <div className="text-center mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
           Escolha seu plano
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
-          Comece grátis, faça upgrade depois
-        </p>
 
         {/* Billing Cycle Toggle */}
         <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted">
