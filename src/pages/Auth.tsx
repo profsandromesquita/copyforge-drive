@@ -133,8 +133,6 @@ const Auth = () => {
         const { error } = await signUp(email, password, fullName, phone);
         if (error) {
           toast.error(error.message || "Erro ao criar conta");
-        } else {
-          toast.success("Conta criada com sucesso!");
         }
       }
     } catch (error) {

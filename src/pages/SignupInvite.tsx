@@ -117,8 +117,6 @@ export default function SignupInvite() {
       });
 
       if (error) throw error;
-
-      toast.success("Conta criada com sucesso!");
       
       // Redirect to accept invite page
       navigate(`/accept-invite?token=${token}`);
