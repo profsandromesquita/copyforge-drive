@@ -647,6 +647,8 @@ export type Database = {
           name: string
           neighborhood: string | null
           number: string | null
+          occupation: string | null
+          onboarding_completed: boolean | null
           phone: string | null
           state: string | null
           street: string | null
@@ -664,6 +666,8 @@ export type Database = {
           name: string
           neighborhood?: string | null
           number?: string | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           state?: string | null
           street?: string | null
@@ -681,6 +685,8 @@ export type Database = {
           name?: string
           neighborhood?: string | null
           number?: string | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           state?: string | null
           street?: string | null

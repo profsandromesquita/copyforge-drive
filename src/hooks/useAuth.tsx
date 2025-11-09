@@ -106,14 +106,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }, 500); // Wait 500ms for trigger to execute
           
-          // Redirect independently of workspace check
+          // Check onboarding status and redirect
           const currentPath = window.location.pathname;
           console.log('Signed in, current path:', currentPath);
           
-          // Redirect to dashboard only if on auth page or root
+          // Only redirect if on auth page or root
           if (currentPath === '/auth' || currentPath === '/') {
-            console.log('[useAuth] Redirecting to dashboard after sign in');
-            navigate('/dashboard');
+            // Check if onboarding is completed
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('onboarding_completed')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.onboarding_completed) {
+              console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
+              navigate('/dashboard');
+            } else {
+              console.log('[useAuth] Redirecting to onboarding (first access)');
+              navigate('/onboarding');
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('Signed out, redirecting to auth');
