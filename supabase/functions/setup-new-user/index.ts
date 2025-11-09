@@ -34,6 +34,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[setup-new-user] Request received');
+    console.log('[setup-new-user] Request headers:', Object.fromEntries(req.headers.entries()));
 
     // Parse request body
     const { userId, email, name }: SetupRequest = await req.json();
@@ -53,11 +54,20 @@ Deno.serve(async (req) => {
     }
 
     console.log('[setup-new-user] Setting up user:', { userId, email, name });
+    
+    // Validar variáveis de ambiente
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('[setup-new-user] Missing environment variables');
+      throw new Error('Missing Supabase configuration');
+    }
 
     // Create Supabase client with SERVICE ROLE (bypasses RLS)
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      serviceRoleKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -65,6 +75,8 @@ Deno.serve(async (req) => {
         }
       }
     );
+    
+    console.log('[setup-new-user] Supabase admin client created');
 
     // Step 1: Create or verify profile
     console.log('[setup-new-user] Creating profile...');
@@ -187,6 +199,28 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('[setup-new-user] Fatal error:', error);
+    console.error('[setup-new-user] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Registrar erro no banco de dados para debug
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && serviceRoleKey) {
+        const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+        const { userId } = await req.clone().json();
+        
+        await supabaseAdmin.from('signup_errors').insert({
+          user_id: userId,
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          error_detail: error instanceof Error ? error.stack : JSON.stringify(error)
+        });
+        
+        console.log('[setup-new-user] Error logged to database');
+      }
+    } catch (logError) {
+      console.error('[setup-new-user] Failed to log error:', logError);
+    }
     
     const errorResponse: SetupResponse = {
       success: false,
