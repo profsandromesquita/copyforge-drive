@@ -99,7 +99,8 @@ Deno.serve(async (req) => {
         .insert({
           id: userId,
           email: email,
-          name: name || email.split('@')[0]
+          name: name || email.split('@')[0],
+          onboarding_completed: false
         })
         .select('id, email, name')
         .single();

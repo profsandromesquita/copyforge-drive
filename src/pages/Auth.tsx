@@ -54,35 +54,14 @@ const Auth = () => {
   useEffect(() => {
     const checkOnboardingAndRedirect = async () => {
       if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('onboarding_completed')
-            .eq('id', user.id)
-            .single();
-
-          if (error) {
-            console.error('Error checking onboarding:', error);
-            navigate('/onboarding');
-            return;
-          }
-
-          const onboardingCompleted = data?.onboarding_completed ?? false;
-          
-          if (onboardingCompleted) {
-            navigate(redirectPath || '/dashboard');
-          } else {
-            navigate('/onboarding');
-          }
-        } catch (error) {
-          console.error('Error checking onboarding:', error);
-          navigate('/onboarding');
-        }
+        console.log('[Auth.tsx] User logged in, but useAuth should handle redirect');
+        // Deixar o useAuth lidar com o redirecionamento
+        // Remover lógica duplicada aqui
       }
     };
 
     checkOnboardingAndRedirect();
-  }, [user, navigate, redirectPath]);
+  }, [user]);
 
   const formatPhone = (value: string) => {
     // Remove tudo que não é número

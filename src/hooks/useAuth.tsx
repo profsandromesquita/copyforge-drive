@@ -108,24 +108,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           // Check onboarding status and redirect
           const currentPath = window.location.pathname;
-          console.log('Signed in, current path:', currentPath);
+          console.log('[useAuth] Signed in, current path:', currentPath);
           
           // Only redirect if on auth page or root
           if (currentPath === '/auth' || currentPath === '/') {
+            console.log('[useAuth] On auth page, checking onboarding status...');
+            
+            // Wait a bit to ensure profile is created
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
             // Check if onboarding is completed
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('onboarding_completed')
               .eq('id', session.user.id)
               .single();
             
-            if (profile?.onboarding_completed) {
-              console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
-              navigate('/dashboard');
-            } else {
-              console.log('[useAuth] Redirecting to onboarding (first access)');
+            console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
+            
+            if (profileError) {
+              console.error('[useAuth] Error fetching profile:', profileError);
+              // Default to onboarding if error
+              console.log('[useAuth] Redirecting to onboarding due to error');
               navigate('/onboarding');
+            } else {
+              // Trata NULL ou false como não completado
+              const isCompleted = profile?.onboarding_completed === true;
+              console.log('[useAuth] Onboarding completed:', isCompleted);
+              
+              if (isCompleted) {
+                console.log('[useAuth] Redirecting to dashboard');
+                navigate('/dashboard');
+              } else {
+                console.log('[useAuth] Redirecting to onboarding');
+                navigate('/onboarding');
+              }
             }
+          } else {
+            console.log('[useAuth] Not on auth page, skipping redirect');
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('Signed out, redirecting to auth');
