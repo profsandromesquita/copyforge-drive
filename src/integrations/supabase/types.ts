@@ -1078,13 +1078,14 @@ export type Database = {
         }
         Returns: Json
       }
-      fix_users_without_workspace: {
+      fix_orphaned_users: {
         Args: never
         Returns: {
+          action_taken: string
           error_message: string
+          success: boolean
           user_email: string
           user_id: string
-          workspace_created: boolean
         }[]
       }
       get_workspace_role: {
