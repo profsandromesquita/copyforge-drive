@@ -63,18 +63,18 @@ export const WorkspaceUsers = () => {
     }
 
     // Fetch credits used by each user in this workspace
-    const { data: creditsData } = await supabase
-      .from('credit_transactions')
-      .select('user_id, amount')
-      .eq('workspace_id', activeWorkspace.id)
-      .eq('transaction_type', 'usage');
+      const { data: creditsData } = await supabase
+        .from('credit_transactions')
+        .select('user_id, amount')
+        .eq('workspace_id', activeWorkspace.id)
+        .eq('transaction_type', 'debit');
 
     // Calculate total credits used per user
     const creditsMap = new Map<string, number>();
-    creditsData?.forEach((transaction) => {
-      const current = creditsMap.get(transaction.user_id) || 0;
-      creditsMap.set(transaction.user_id, current + Math.abs(Number(transaction.amount)));
-    });
+      creditsData?.forEach((transaction) => {
+        const current = creditsMap.get(transaction.user_id) || 0;
+        creditsMap.set(transaction.user_id, current + Number(transaction.amount));
+      });
 
     // Merge members data with credits data
     const membersWithCredits = data?.map((member: any) => ({
@@ -369,7 +369,7 @@ export const WorkspaceUsers = () => {
                 
                 <div className="col-span-2 text-right">
                   <p className="text-sm font-medium tabular-nums">
-                    {member.credits_used.toFixed(1)}
+                    {member.credits_used.toFixed(2)}
                   </p>
                 </div>
                 
