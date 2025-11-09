@@ -1,4 +1,4 @@
-import { User, SignOut, Gear, Plus } from "phosphor-react";
+import { User, SignOut, Gear, Plus, Buildings, Check } from "phosphor-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -53,50 +54,85 @@ export const UserMenu = () => {
           </div>
         </DropdownMenuTrigger>
         
-        <DropdownMenuContent align="end" className="w-64 bg-popover border-border">
-          <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-          {workspaces.map((workspace) => (
-            <DropdownMenuItem
-              key={workspace.id}
-              className="cursor-pointer"
-              onClick={() => setActiveWorkspace(workspace)}
+        <DropdownMenuContent align="end" className="w-72 bg-popover border-border p-2">
+          {/* User Info Header */}
+          <div className="flex items-center gap-3 px-2 py-3 mb-1">
+            <Avatar className="h-10 w-10 ring-2 ring-border">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {userName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col flex-1 min-w-0">
+              <p className="font-semibold text-sm text-foreground truncate">
+                {userName}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+
+          <DropdownMenuSeparator className="my-2" />
+          
+          {/* Workspaces Section */}
+          <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">
+            Workspaces
+          </DropdownMenuLabel>
+          <DropdownMenuGroup>
+            {workspaces.map((workspace) => (
+              <DropdownMenuItem
+                key={workspace.id}
+                className="cursor-pointer flex items-center justify-between px-2 py-2 rounded-md"
+                onClick={() => setActiveWorkspace(workspace)}
+              >
+                <div className="flex items-center gap-2">
+                  <Buildings size={16} className="text-muted-foreground" />
+                  <span className="text-sm">{workspace.name}</span>
+                </div>
+                {activeWorkspace?.id === workspace.id && (
+                  <Check size={16} className="text-primary" weight="bold" />
+                )}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem 
+              className="cursor-pointer text-primary flex items-center gap-2 px-2 py-2 rounded-md mt-1"
+              onClick={() => setCreateWorkspaceOpen(true)}
             >
-              {workspace.name}
-              {activeWorkspace?.id === workspace.id && " ✓"}
+              <Plus size={16} weight="bold" />
+              <span className="text-sm font-medium">Criar Workspace</span>
             </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem 
-            className="cursor-pointer text-primary"
-            onClick={() => setCreateWorkspaceOpen(true)}
-          >
-            <Plus size={18} className="mr-2" />
-            Criar Workspace
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator className="my-2" />
           
-          <DropdownMenuItem 
-            className="cursor-pointer"
-            onClick={() => setProfileOpen(true)}
-          >
-            <User size={18} className="mr-2" />
-            Minha Conta
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {/* Account Section */}
+          <DropdownMenuGroup>
+            <DropdownMenuItem 
+              className="cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md"
+              onClick={() => setProfileOpen(true)}
+            >
+              <User size={16} className="text-muted-foreground" />
+              <span className="text-sm">Minha Conta</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Gear size={16} className="text-muted-foreground" />
+              <span className="text-sm">Configurações do Workspace</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator className="my-2" />
           
+          {/* Sign Out */}
           <DropdownMenuItem 
-            className="cursor-pointer"
-            onClick={() => setSettingsOpen(true)}
-          >
-            <Gear size={18} className="mr-2" />
-            Configurações do Workspace
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="cursor-pointer text-destructive"
+            className="cursor-pointer text-destructive flex items-center gap-2 px-2 py-2 rounded-md hover:bg-destructive/10"
             onClick={signOut}
           >
-            <SignOut size={18} className="mr-2" />
-            Sair
+            <SignOut size={16} weight="bold" />
+            <span className="text-sm font-medium">Sair</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
