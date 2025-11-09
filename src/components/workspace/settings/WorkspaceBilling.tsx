@@ -1,80 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
+import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, CreditCard, Calendar } from "lucide-react";
+import { CreditCard, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlanCard } from "@/components/plans/PlanCard";
+import { PlanChangeModal } from "./PlanChangeModal";
 
-interface Payment {
-  id: string;
-  amount: number;
-  currency: string;
-  status: string;
-  created_at: string;
-  description: string;
-  receipt_url?: string;
-}
+type BillingCycle = 'monthly' | 'annual';
 
 export const WorkspaceBilling = () => {
   const { activeWorkspace } = useWorkspace();
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: subscription, isLoading: loadingSubscription } = useWorkspaceSubscription(activeWorkspace?.id);
+  const { plans, isLoading: loadingPlans } = useSubscriptionPlans();
+  
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchPayments();
-  }, [activeWorkspace]);
-
-  const fetchPayments = async () => {
-    if (!activeWorkspace) return;
-
-    setLoading(true);
-    
-    // Simulando dados de pagamento (substitua pela chamada real à API do Stripe)
-    // Quando você integrar com Stripe, use uma edge function para buscar os pagamentos
-    setTimeout(() => {
-      const mockPayments: Payment[] = [
-        {
-          id: "pay_1",
-          amount: 4900,
-          currency: "BRL",
-          status: "succeeded",
-          created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Plano Pro - Mensal",
-          receipt_url: "#"
-        },
-        {
-          id: "pay_2",
-          amount: 4900,
-          currency: "BRL",
-          status: "succeeded",
-          created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Plano Pro - Mensal",
-          receipt_url: "#"
-        },
-        {
-          id: "pay_3",
-          amount: 4900,
-          currency: "BRL",
-          status: "succeeded",
-          created_at: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Plano Pro - Mensal",
-          receipt_url: "#"
-        }
-      ];
-      
-      setPayments(mockPayments);
-      setLoading(false);
-    }, 1000);
-  };
-
-  const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency.toUpperCase()
-    }).format(amount / 100);
+  const handleSelectPlan = (plan: any) => {
+    if (!subscription) return;
+    setSelectedPlan(plan);
+    setIsModalOpen(true);
   };
 
   const formatDate = (dateString: string) => {
@@ -87,108 +38,172 @@ export const WorkspaceBilling = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: any }> = {
-      succeeded: { label: 'Pago', variant: 'default' },
-      pending: { label: 'Pendente', variant: 'secondary' },
-      failed: { label: 'Falhou', variant: 'destructive' }
+      active: { label: 'Ativo', variant: 'default' },
+      pending_payment: { label: 'Aguardando Pagamento', variant: 'secondary' },
+      cancelled: { label: 'Cancelado', variant: 'destructive' },
+      expired: { label: 'Expirado', variant: 'destructive' },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[status] || statusConfig.active;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  if (loading) {
+  const isUpgrade = (plan: any) => {
+    if (!subscription) return false;
+    const currentPrice = subscription.billing_cycle === 'monthly' 
+      ? subscription.plan.monthly_price 
+      : subscription.plan.annual_price;
+    const newPrice = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
+    return newPrice > currentPrice;
+  };
+
+  if (loadingSubscription || loadingPlans) {
     return (
       <div className="space-y-6">
         <div className="space-y-3">
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
+          <Skeleton className="h-32 w-full rounded-lg" />
         </div>
-        <div className="space-y-3">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg" />
+            <Skeleton key={i} className="h-96 rounded-lg" />
           ))}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Current Plan */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-semibold">Plano Atual</h3>
-              </div>
-              <p className="text-2xl font-bold text-primary">Plano Pro</p>
-              <p className="text-sm text-muted-foreground">
-                Renovação automática em 15 de dezembro de 2024
-              </p>
-            </div>
-            <Badge className="bg-primary text-primary-foreground">Ativo</Badge>
-          </div>
-        </CardContent>
-      </Card>
+  if (!subscription) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Nenhuma assinatura ativa encontrada</p>
+      </div>
+    );
+  }
 
-      {/* Payment History */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-lg font-semibold">Histórico de Pagamentos</h3>
+  const activePlans = plans?.filter(p => p.is_active) || [];
+
+  return (
+    <div className="space-y-8">
+      {/* Current Plan Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Plano Atual</h3>
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <h4 className="text-lg font-semibold">Assinatura</h4>
+                </div>
+                <p className="text-2xl font-bold text-primary">{subscription.plan.name}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline">
+                    {subscription.billing_cycle === 'monthly' ? 'Mensal' : 
+                     subscription.billing_cycle === 'annual' ? 'Anual' : 'Gratuito'}
+                  </Badge>
+                  {getStatusBadge(subscription.status)}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold">
+                  R$ {(subscription.billing_cycle === 'monthly' 
+                    ? subscription.plan.monthly_price 
+                    : subscription.plan.annual_price / 12
+                  ).toFixed(2)}
+                </p>
+                <p className="text-sm text-muted-foreground">/mês</p>
+              </div>
+            </div>
+
+            {/* Usage Statistics */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Projetos</p>
+                <p className="text-lg font-semibold">
+                  {subscription.projects_count} / {subscription.current_max_projects || '∞'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Copies</p>
+                <p className="text-lg font-semibold">
+                  {subscription.copies_count} / {subscription.current_max_copies || '∞'}
+                </p>
+              </div>
+            </div>
+
+            {subscription.current_period_end && (
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <p>Renovação em {formatDate(subscription.current_period_end)}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Available Plans Section */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Planos Disponíveis</h3>
+          <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
+            <TabsList>
+              <TabsTrigger value="monthly">Mensal</TabsTrigger>
+              <TabsTrigger value="annual">Anual</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        {payments.length === 0 ? (
-          <div className="text-center py-12 border border-border rounded-lg">
-            <p className="text-muted-foreground">Nenhum pagamento encontrado</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {payments.map((payment) => (
-              <Card key={payment.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-3">
-                        <p className="font-semibold text-base">
-                          {payment.description}
-                        </p>
-                        {getStatusBadge(payment.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(payment.created_at)}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <p className="text-xl font-bold">
-                        {formatCurrency(payment.amount, payment.currency)}
-                      </p>
-                      
-                      {payment.receipt_url && payment.status === 'succeeded' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Aqui você implementaria o download do comprovante
-                            toast.info("Funcionalidade de download em desenvolvimento");
-                            // window.open(payment.receipt_url, '_blank');
-                          }}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Comprovante
-                        </Button>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activePlans.map((plan) => {
+            const isCurrent = plan.id === subscription.plan.id;
+            const upgrade = isUpgrade(plan);
+
+            return (
+              <div key={plan.id} className="relative">
+                {!isCurrent && (
+                  <div className="absolute -top-3 right-4 z-10">
+                    <Badge variant={upgrade ? "default" : "secondary"} className="gap-1">
+                      {upgrade ? (
+                        <>
+                          <TrendingUp className="h-3 w-3" />
+                          Upgrade
+                        </>
+                      ) : (
+                        <>
+                          <TrendingDown className="h-3 w-3" />
+                          Downgrade
+                        </>
                       )}
-                    </div>
+                    </Badge>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                )}
+                <PlanCard
+                  plan={plan}
+                  billingCycle={billingCycle}
+                  isCurrentPlan={isCurrent}
+                  onSelect={() => handleSelectPlan(plan)}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {/* Plan Change Modal */}
+      {selectedPlan && (
+        <PlanChangeModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedPlan(null);
+          }}
+          currentSubscription={subscription}
+          newPlan={selectedPlan}
+          billingCycle={billingCycle}
+          workspaceId={activeWorkspace?.id || ''}
+        />
+      )}
     </div>
   );
 };

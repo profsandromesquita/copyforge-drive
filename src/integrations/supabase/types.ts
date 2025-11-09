@@ -1184,6 +1184,15 @@ export type Database = {
         Args: { cost_limit_pct: number; p_model_name: string }
         Returns: number
       }
+      change_workspace_plan: {
+        Args: {
+          p_new_billing_cycle: Database["public"]["Enums"]["billing_cycle_type"]
+          p_new_plan_id: string
+          p_payment_id?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       check_plan_limit: {
         Args: { p_limit_type: string; p_workspace_id: string }
         Returns: Json
@@ -1269,7 +1278,12 @@ export type Database = {
     }
     Enums: {
       billing_cycle_type: "monthly" | "annual" | "free"
-      subscription_status: "active" | "cancelled" | "expired" | "past_due"
+      subscription_status:
+        | "active"
+        | "cancelled"
+        | "expired"
+        | "past_due"
+        | "pending_payment"
       system_role: "super_admin" | "admin"
       workspace_role: "owner" | "admin" | "editor"
     }
@@ -1400,7 +1414,13 @@ export const Constants = {
   public: {
     Enums: {
       billing_cycle_type: ["monthly", "annual", "free"],
-      subscription_status: ["active", "cancelled", "expired", "past_due"],
+      subscription_status: [
+        "active",
+        "cancelled",
+        "expired",
+        "past_due",
+        "pending_payment",
+      ],
       system_role: ["super_admin", "admin"],
       workspace_role: ["owner", "admin", "editor"],
     },
