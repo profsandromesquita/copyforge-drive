@@ -28,12 +28,15 @@ import { DateFilter, DateFilterType } from '@/components/filters/DateFilter';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { useProject } from '@/hooks/useProject';
 import { UpgradeModal } from '@/components/workspace/UpgradeModal';
+import { LimitExceededBanner } from '@/components/workspace/LimitExceededBanner';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
   const { activeProject } = useProject();
   const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy } = useDrive();
+  const { checkProjectLimit, checkCopyLimit } = usePlanLimits();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,6 +54,13 @@ const Dashboard = () => {
     currentLimit?: number;
     currentUsage?: number;
   }>({});
+
+  // Estado para notificação de limite excedido
+  const [limitExceeded, setLimitExceeded] = useState<{
+    type: 'projects' | 'copies';
+    current: number;
+    limit: number;
+  } | null>(null);
 
   // Força modo claro no Dashboard
   useEffect(() => {
@@ -74,6 +84,40 @@ const Dashboard = () => {
       window.removeEventListener('show-upgrade-modal', handleShowUpgradeModal as EventListener);
     };
   }, []);
+
+  // Verificar limites de plano ao carregar
+  useEffect(() => {
+    const checkLimits = async () => {
+      if (!activeProject) return;
+
+      // Verificar projetos
+      const projectResult = await checkProjectLimit();
+      if (!projectResult.allowed && projectResult.current && projectResult.limit) {
+        if (projectResult.current > projectResult.limit) {
+          setLimitExceeded({
+            type: 'projects',
+            current: projectResult.current,
+            limit: projectResult.limit
+          });
+          return;
+        }
+      }
+
+      // Verificar copies
+      const copyResult = await checkCopyLimit();
+      if (!copyResult.allowed && copyResult.current && copyResult.limit) {
+        if (copyResult.current > copyResult.limit) {
+          setLimitExceeded({
+            type: 'copies',
+            current: copyResult.current,
+            limit: copyResult.limit
+          });
+        }
+      }
+    };
+
+    checkLimits();
+  }, [activeProject, checkProjectLimit, checkCopyLimit]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -325,6 +369,14 @@ const Dashboard = () => {
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Banner de Limite Excedido */}
+          {limitExceeded && activeProject && (
+            <LimitExceededBanner
+              limitType={limitExceeded.type}
+              current={limitExceeded.current}
+              limit={limitExceeded.limit}
+            />
+          )}
           <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
