@@ -535,58 +535,116 @@ export const CopyAITab = () => {
     if (etapa === 2) {
       return (
         <ScrollArea className="h-[calc(100vh-12rem)]">
-          <div className="space-y-6 p-4">
-            <Button variant="ghost" onClick={() => setEtapa(1)} className="w-full justify-start">
-              ← Voltar
+          <div className="space-y-8 p-6 animate-fade-in">
+            <Button 
+              variant="ghost" 
+              onClick={() => setEtapa(1)} 
+              className="group -ml-2 px-2 text-muted-foreground hover:text-foreground transition-colors"
+              size="sm"
+            >
+              <span className="transition-transform group-hover:-translate-x-1 inline-block">←</span>
+              <span className="ml-2">Voltar</span>
             </Button>
 
-            <div className="space-y-2">
-              <Label className="font-semibold">Objetivos</Label>
-              <ToggleGroup type="multiple" value={objetivos} onValueChange={setObjetivos} className="flex flex-wrap gap-2 justify-start">
+            <div className="space-y-3">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Objetivos
+              </Label>
+              <ToggleGroup 
+                type="multiple" 
+                value={objetivos} 
+                onValueChange={setObjetivos} 
+                className="flex flex-wrap gap-2 justify-start"
+              >
                 {OBJETIVOS.map((obj) => (
-                  <ToggleGroupItem key={obj.value} value={obj.value} className="flex-shrink-0">
+                  <ToggleGroupItem 
+                    key={obj.value} 
+                    value={obj.value} 
+                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
+                  >
                     {obj.label}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-semibold">Estilos</Label>
-              <ToggleGroup type="multiple" value={estilos} onValueChange={setEstilos} className="flex flex-wrap gap-2 justify-start">
+            <div className="h-px bg-border/50" />
+
+            <div className="space-y-3">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Estilos
+              </Label>
+              <ToggleGroup 
+                type="multiple" 
+                value={estilos} 
+                onValueChange={setEstilos} 
+                className="flex flex-wrap gap-2 justify-start"
+              >
                 {ESTILOS.map((estilo) => (
-                  <ToggleGroupItem key={estilo.value} value={estilo.value} className="flex-shrink-0">
+                  <ToggleGroupItem 
+                    key={estilo.value} 
+                    value={estilo.value} 
+                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
+                  >
                     {estilo.label}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-semibold">Tamanho</Label>
-              <ToggleGroup type="single" value={tamanho} onValueChange={setTamanho} className="flex flex-wrap gap-2 justify-start">
+            <div className="h-px bg-border/50" />
+
+            <div className="space-y-3">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Tamanho
+              </Label>
+              <ToggleGroup 
+                type="single" 
+                value={tamanho} 
+                onValueChange={setTamanho} 
+                className="flex flex-wrap gap-2 justify-start"
+              >
                 {TAMANHOS.map((tam) => (
-                  <ToggleGroupItem key={tam.value} value={tam.value} className="flex-shrink-0">
+                  <ToggleGroupItem 
+                    key={tam.value} 
+                    value={tam.value} 
+                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
+                  >
                     {tam.label}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
             </div>
 
-            <div className="space-y-2">
-              <Label className="font-semibold">Preferências</Label>
-              <ToggleGroup type="multiple" value={preferencias} onValueChange={setPreferencias} className="flex flex-wrap gap-2 justify-start">
+            <div className="h-px bg-border/50" />
+
+            <div className="space-y-3">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Preferências
+              </Label>
+              <ToggleGroup 
+                type="multiple" 
+                value={preferencias} 
+                onValueChange={setPreferencias} 
+                className="flex flex-wrap gap-2 justify-start"
+              >
                 {PREFERENCIAS.map((pref) => (
-                  <ToggleGroupItem key={pref.value} value={pref.value} className="flex-shrink-0">
+                  <ToggleGroupItem 
+                    key={pref.value} 
+                    value={pref.value} 
+                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
+                  >
                     {pref.label}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
             </div>
 
-            <Button onClick={() => setEtapa(3)} className="w-full">
-              Próximo
-            </Button>
+            <div className="pt-4">
+              <Button onClick={() => setEtapa(3)} className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow">
+                Próximo
+              </Button>
+            </div>
           </div>
         </ScrollArea>
       );
