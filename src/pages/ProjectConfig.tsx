@@ -97,21 +97,21 @@ const ProjectConfig = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/40">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center gap-4">
+          <img 
+            src="/favicon.svg" 
+            alt="CopyDrive" 
+            className="h-6 w-6 opacity-90"
+          />
+          
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group ml-auto"
             aria-label="Voltar ao Dashboard"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium hidden sm:inline">Dashboard</span>
           </button>
-          
-          <img 
-            src="/src/assets/copydrive-logo.png" 
-            alt="CopyDrive" 
-            className="h-7 opacity-90"
-          />
         </div>
       </header>
 
