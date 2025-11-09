@@ -92,7 +92,7 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
             <TabsContent value="users" className="flex-1 overflow-y-auto p-6 m-0 h-0">
               <WorkspaceUsers />
             </TabsContent>
-            <TabsContent value="credits" className="flex-1 overflow-y-auto p-6 m-0 h-0">
+            <TabsContent value="credits" className="flex-1 overflow-y-auto overflow-x-hidden p-6 m-0 h-0">
               <WorkspaceCreditsTab />
             </TabsContent>
             <TabsContent value="billing" className="flex-1 overflow-y-auto p-6 m-0 h-0">

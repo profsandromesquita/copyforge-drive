@@ -54,7 +54,7 @@ export const WorkspaceCredits = () => {
   const isLowBalance = credits.balance < currentThreshold;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0">
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Saldo de Créditos</CardTitle>
@@ -63,20 +63,20 @@ export const WorkspaceCredits = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Saldo Atual</p>
-              <p className={`text-2xl font-bold ${isLowBalance ? 'text-red-600' : 'text-green-600'}`}>
+          <div className="grid grid-cols-3 gap-2 min-w-0">
+            <div className="space-y-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Saldo Atual</p>
+              <p className={`text-xl font-bold ${isLowBalance ? 'text-red-600' : 'text-green-600'}`}>
                 {credits.balance.toFixed(2)}
               </p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total Usado</p>
-              <p className="text-2xl font-bold">{credits.total_used.toFixed(2)}</p>
+            <div className="space-y-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Total Usado</p>
+              <p className="text-xl font-bold">{credits.total_used.toFixed(2)}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total Adicionado</p>
-              <p className="text-2xl font-bold">{credits.total_added.toFixed(2)}</p>
+            <div className="space-y-1 min-w-0">
+              <p className="text-xs text-muted-foreground">Total Adicionado</p>
+              <p className="text-xl font-bold">{credits.total_added.toFixed(2)}</p>
             </div>
           </div>
 
