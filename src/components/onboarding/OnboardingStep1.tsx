@@ -30,7 +30,7 @@ const OnboardingStep1 = ({ firstName, onComplete }: OnboardingStep1Props) => {
   };
 
   return (
-    <div className="max-w-xl mx-auto animate-fade-in">
+    <div className="max-w-xl mx-auto animate-fade-in pb-24 md:pb-0">
       <div className="text-center mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
           Opa {firstName}! 👋
@@ -70,15 +70,17 @@ const OnboardingStep1 = ({ firstName, onComplete }: OnboardingStep1Props) => {
         </div>
       )}
 
-      <div className="mt-6 sm:mt-8 flex justify-end">
-        <Button
-          onClick={handleContinue}
-          disabled={!selected || (selected === "Outro" && !customValue.trim())}
-          size="lg"
-          className="px-8"
-        >
-          Continuar
-        </Button>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:mt-6 sm:md:mt-8 md:p-0">
+        <div className="max-w-xl mx-auto flex justify-end">
+          <Button
+            onClick={handleContinue}
+            disabled={!selected || (selected === "Outro" && !customValue.trim())}
+            size="lg"
+            className="w-full md:w-auto md:px-8"
+          >
+            Continuar
+          </Button>
+        </div>
       </div>
     </div>
   );
