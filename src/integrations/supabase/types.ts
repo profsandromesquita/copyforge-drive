@@ -1127,6 +1127,7 @@ export type Database = {
         Args: { amount: number; description?: string; p_workspace_id: string }
         Returns: Json
       }
+      admin_sync_all_workspace_limits: { Args: never; Returns: Json }
       auto_fix_orphaned_users: {
         Args: never
         Returns: {
@@ -1219,6 +1220,10 @@ export type Database = {
       }
       process_credit_rollover: {
         Args: { p_workspace_id: string }
+        Returns: Json
+      }
+      sync_workspace_plan_limits: {
+        Args: { p_workspace_id?: string }
         Returns: Json
       }
     }
