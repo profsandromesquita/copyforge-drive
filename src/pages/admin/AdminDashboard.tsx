@@ -158,16 +158,16 @@ export default function AdminDashboard() {
           {cards.map((card) => (
             <Card key={card.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-sm font-medium text-muted-foreground break-words leading-tight">
                   {card.title}
                 </CardTitle>
-                <card.icon size={20} className={card.color} />
+                <card.icon size={20} className={`${card.color} flex-shrink-0`} />
               </CardHeader>
               <CardContent>
                 {loading ? (
                   <Skeleton className="h-8 w-20" />
                 ) : (
-                  <div className="text-3xl font-bold">{card.value.toLocaleString()}</div>
+                  <div className="text-3xl font-bold break-all">{card.value.toLocaleString()}</div>
                 )}
               </CardContent>
             </Card>
@@ -176,16 +176,16 @@ export default function AdminDashboard() {
           {/* Card de Saldo Total da Plataforma */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-sm font-medium text-muted-foreground break-words leading-tight">
                 Saldo Total (Plataforma)
               </CardTitle>
-              <CreditCard size={20} className="text-green-600" />
+              <CreditCard size={20} className="text-green-600 flex-shrink-0" />
             </CardHeader>
             <CardContent>
               {loading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-3xl font-bold">{stats.saldo_total.toFixed(2)}</div>
+                <div className="text-3xl font-bold break-all">{stats.saldo_total.toFixed(2)}</div>
               )}
             </CardContent>
           </Card>
