@@ -54,16 +54,16 @@ export const WorkspaceCredits = () => {
   const isLowBalance = credits.balance < currentThreshold;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Saldo de Créditos</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Saldo de Créditos</CardTitle>
+          <CardDescription className="text-xs">
             Visualize o saldo atual e configure alertas
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Saldo Atual</p>
               <p className={`text-2xl font-bold ${isLowBalance ? 'text-red-600' : 'text-green-600'}`}>
@@ -92,13 +92,13 @@ export const WorkspaceCredits = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Configurar Limite de Alerta</CardTitle>
-          <CardDescription>
-            Defina quando deseja ser notificado sobre créditos baixos. Você receberá uma notificação quando o saldo ficar abaixo deste valor.
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Configurar Limite de Alerta</CardTitle>
+          <CardDescription className="text-xs">
+            Defina quando deseja ser notificado sobre créditos baixos.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           <div className="space-y-2">
             <Label htmlFor="threshold">Limite atual: {currentThreshold.toFixed(0)} créditos</Label>
             <div className="flex gap-2">

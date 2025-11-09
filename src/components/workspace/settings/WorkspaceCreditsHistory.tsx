@@ -121,12 +121,12 @@ export const WorkspaceCreditsHistory = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 pb-3">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Total Debitado</p>
                 <p className="text-2xl font-bold text-destructive flex items-center gap-1">
@@ -138,7 +138,7 @@ export const WorkspaceCreditsHistory = () => {
           </Card>
           
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 pb-3">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Total Adicionado</p>
                 <p className="text-2xl font-bold text-green-600 flex items-center gap-1">
@@ -150,7 +150,7 @@ export const WorkspaceCreditsHistory = () => {
           </Card>
           
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 pb-3">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Média por Geração</p>
                 <p className="text-2xl font-bold">{summary.avgPerGeneration.toFixed(4)}</p>
@@ -159,7 +159,7 @@ export const WorkspaceCreditsHistory = () => {
           </Card>
           
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 pb-3">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Modelo + Usado</p>
                 <p className="text-lg font-bold truncate" title={summary.mostUsedModel}>
@@ -173,11 +173,11 @@ export const WorkspaceCreditsHistory = () => {
 
       {/* Filters and Export */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <CardTitle>Histórico de Transações</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base">Histórico de Transações</CardTitle>
+              <CardDescription className="text-xs">
                 Visualize todas as operações de crédito e débito
               </CardDescription>
             </div>
@@ -204,13 +204,13 @@ export const WorkspaceCreditsHistory = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-3">
           {!transactions || transactions.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Nenhuma transação encontrada</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm">Nenhuma transação encontrada</p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-hidden max-h-[280px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
