@@ -42,6 +42,7 @@ const Dashboard = () => {
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Força modo claro no Dashboard
   useEffect(() => {
@@ -216,7 +217,8 @@ const Dashboard = () => {
       <div className="flex-1 flex flex-col">
         {/* Header com barra de pesquisa */}
         <header className="bg-background px-6 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between gap-4">
+          {/* Desktop Header */}
+          <div className="hidden lg:flex items-center justify-between gap-4">
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <MagnifyingGlass 
@@ -235,6 +237,46 @@ const Dashboard = () => {
               <CreditBadge />
               <UserMenu />
             </div>
+          </div>
+
+          {/* Mobile Header */}
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <img 
+                src="/favicon.svg" 
+                alt="CopyDrive" 
+                className="h-7 opacity-90"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                  className="p-2 hover:bg-muted rounded-full transition-colors"
+                  aria-label="Buscar"
+                >
+                  <MagnifyingGlass size={20} className="text-muted-foreground" />
+                </button>
+                <UserMenu />
+              </div>
+            </div>
+            
+            {/* Expanded Search Bar */}
+            {isSearchExpanded && (
+              <div className="mt-3">
+                <div className="relative">
+                  <MagnifyingGlass 
+                    size={20} 
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    placeholder="Buscar..."
+                    className="pl-10 bg-muted/30 rounded-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
