@@ -5,6 +5,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { PlanCard } from "@/components/plans/PlanCard";
 import { FeatureComparisonTable } from "@/components/plans/FeatureComparisonTable";
+import { FAQSection } from "@/components/plans/FAQSection";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +142,7 @@ export default function Plans() {
       </section>
 
       {/* Feature Comparison Table */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section className="py-20 px-4 bg-muted/30" id="comparison">
         <div className="container mx-auto max-w-7xl">
           <h2 className="text-3xl font-bold text-center mb-12">
             Compare Todos os Recursos
@@ -152,6 +153,9 @@ export default function Plans() {
           />
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <FAQSection />
 
       {/* CTA Section */}
       <section className="py-20 px-4">
