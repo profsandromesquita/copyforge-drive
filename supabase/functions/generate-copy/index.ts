@@ -102,7 +102,27 @@ serve(async (req) => {
 
     console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
 
-    const systemPrompt = buildSystemPrompt(copyType);
+    // Buscar system prompt do banco de dados
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    let systemPrompt = buildSystemPrompt(copyType); // Fallback padrão
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, copyType);
+        if (dynamicPrompt) {
+          systemPrompt = dynamicPrompt;
+          console.log(`✓ Usando prompt dinâmico do banco para tipo: ${copyType}`);
+        } else {
+          console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${copyType}`);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar prompt do banco, usando fallback:", error);
+      }
+    }
+    
     const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -392,6 +412,62 @@ serve(async (req) => {
     );
   }
 });
+
+// Função para buscar prompt do banco de dados
+async function getPromptFromDatabase(supabase: any, copyType: string): Promise<string | null> {
+  try {
+    // Mapear copyType para prompt_key
+    const promptKeyMap: Record<string, string> = {
+      'anuncio': 'generate_copy_ad',
+      'landing_page': 'generate_copy_landing_page',
+      'vsl': 'generate_copy_vsl',
+      'email': 'generate_copy_email',
+      'webinar': 'generate_copy_webinar',
+      'conteudo': 'generate_copy_content',
+      'mensagem': 'generate_copy_message',
+      'outro': 'generate_copy_base'
+    };
+    
+    const promptKey = promptKeyMap[copyType] || 'generate_copy_base';
+    
+    // Buscar base prompt primeiro
+    const { data: basePromptData } = await supabase
+      .from('ai_prompt_templates')
+      .select('current_prompt')
+      .eq('prompt_key', 'generate_copy_base')
+      .eq('is_active', true)
+      .single();
+    
+    const basePrompt = basePromptData?.current_prompt || '';
+    
+    // Se for o tipo base, retornar apenas ele
+    if (promptKey === 'generate_copy_base') {
+      return basePrompt || null;
+    }
+    
+    // Buscar prompt específico do tipo
+    const { data: specificPromptData } = await supabase
+      .from('ai_prompt_templates')
+      .select('current_prompt')
+      .eq('prompt_key', promptKey)
+      .eq('is_active', true)
+      .single();
+    
+    if (specificPromptData?.current_prompt) {
+      // Combinar base + específico se existir
+      return basePrompt 
+        ? `${basePrompt}\n\n${specificPromptData.current_prompt}`
+        : specificPromptData.current_prompt;
+    }
+    
+    // Se não encontrou prompt específico mas tem base, retornar base
+    return basePrompt || null;
+    
+  } catch (error) {
+    console.error('Erro ao buscar prompt do banco:', error);
+    return null;
+  }
+}
 
 function buildSystemPrompt(copyType: string): string {
   const basePrompt = `Você é um especialista em copywriting que cria conteúdo persuasivo e bem estruturado em português brasileiro.
