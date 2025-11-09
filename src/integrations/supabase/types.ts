@@ -99,13 +99,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ai_generation_history_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_copy"
             columns: ["copy_id"]
             isOneToOne: false
@@ -185,13 +178,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "copies_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "copies_folder_id_fkey"
             columns: ["folder_id"]
             isOneToOne: false
@@ -244,13 +230,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "credit_config_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
         ]
       }
       credit_config_history: {
@@ -281,13 +260,6 @@ export type Database = {
             columns: ["changed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "credit_config_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
             referencedColumns: ["id"]
           },
         ]
@@ -411,13 +383,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "credit_transactions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
             referencedColumns: ["id"]
           },
           {
@@ -659,13 +624,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "projects_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "projects_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -821,13 +779,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
         ]
       }
       workspace_credits: {
@@ -917,13 +868,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "workspace_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workspace_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -966,24 +910,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "workspace_members_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workspace_members_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
             referencedColumns: ["id"]
           },
           {
@@ -1100,44 +1030,11 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users_without_workspace"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      users_without_workspace: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string | null
-          issue_type: string | null
-          last_error: string | null
-          name: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          id?: string | null
-          issue_type?: never
-          last_error?: never
-          name?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          id?: string | null
-          issue_type?: never
-          last_error?: never
-          name?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_workspace_credits: {
