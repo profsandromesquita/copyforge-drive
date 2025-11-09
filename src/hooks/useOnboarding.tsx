@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 interface OnboardingData {
-  occupation: string;
-  projectData: {
+  currentStep?: number;
+  occupation?: string;
+  customOccupation?: string;
+  projectId?: string;
+  projectData?: {
     name: string;
     sector: string;
     central_purpose: string;
@@ -60,7 +63,9 @@ export const useOnboarding = () => {
   };
 
   const saveProgress = (data: Partial<OnboardingData>) => {
-    localStorage.setItem('onboarding_progress', JSON.stringify(data));
+    const existing = loadProgress() || {};
+    const merged = { ...existing, ...data };
+    localStorage.setItem('onboarding_progress', JSON.stringify(merged));
   };
 
   const loadProgress = (): Partial<OnboardingData> | null => {

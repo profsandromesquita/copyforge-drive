@@ -40,11 +40,20 @@ const Onboarding = () => {
     // Carrega progresso salvo
     const saved = loadProgress();
     if (saved) {
+      if (saved.currentStep) {
+        setCurrentStep(saved.currentStep);
+      }
       if (saved.occupation) {
         setOccupation(saved.occupation);
       }
+      if (saved.customOccupation) {
+        setCustomOccupation(saved.customOccupation);
+      }
       if (saved.projectData) {
         setProjectData(saved.projectData);
+      }
+      if (saved.projectId) {
+        setProjectId(saved.projectId);
       }
     }
   }, [isCompleted, navigate, loadProgress]);
@@ -52,7 +61,11 @@ const Onboarding = () => {
   const handleStep1Complete = (selectedOccupation: string, custom?: string) => {
     setOccupation(selectedOccupation);
     setCustomOccupation(custom || "");
-    saveProgress({ occupation: selectedOccupation });
+    saveProgress({ 
+      currentStep: 2,
+      occupation: selectedOccupation,
+      customOccupation: custom || ""
+    });
     setCurrentStep(2);
   };
 
@@ -72,6 +85,11 @@ const Onboarding = () => {
 
       if (error) throw error;
 
+      saveProgress({ 
+        currentStep: 3,
+        occupation,
+        customOccupation 
+      });
       toast.success("Workspace configurado!");
       setCurrentStep(3);
     } catch (error: any) {
@@ -108,7 +126,13 @@ const Onboarding = () => {
 
       setProjectId(project.id);
       setProjectData(data);
-      saveProgress({ occupation, projectData: data });
+      saveProgress({ 
+        currentStep: 4,
+        occupation, 
+        customOccupation,
+        projectData: data,
+        projectId: project.id
+      });
       toast.success("Projeto criado com sucesso!");
       setCurrentStep(4);
     } catch (error: any) {
@@ -120,6 +144,13 @@ const Onboarding = () => {
   };
 
   const handleStep4Complete = () => {
+    saveProgress({ 
+      currentStep: 5,
+      occupation,
+      customOccupation,
+      projectData,
+      projectId
+    });
     setCurrentStep(5);
   };
 
