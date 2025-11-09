@@ -25,7 +25,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchWorkspaces = async () => {
+  const fetchWorkspaces = async (retryCount = 0) => {
     if (!user) {
       setWorkspaces([]);
       setActiveWorkspaceState(null);
@@ -60,6 +60,15 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       role: item.role
     })) || [];
 
+    // Retry mechanism for new users - workspace might still be creating
+    if (workspaceList.length === 0 && retryCount < 3) {
+      console.log(`[Workspace] No workspaces found, retrying in ${(retryCount + 1) * 1000}ms...`);
+      setTimeout(() => {
+        fetchWorkspaces(retryCount + 1);
+      }, (retryCount + 1) * 1000);
+      return;
+    }
+
     setWorkspaces(workspaceList);
     
     // Update active workspace or set first workspace as active
@@ -85,6 +94,30 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchWorkspaces();
+
+    // Setup realtime subscription for workspace changes
+    if (!user) return;
+
+    const channel = supabase
+      .channel('workspace-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'workspace_members',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('[Workspace] Realtime update detected, refreshing...');
+          fetchWorkspaces();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const setActiveWorkspace = (workspace: Workspace) => {
