@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Star, CheckCircle2, Quote } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LeaveTestimonialModal } from "./LeaveTestimonialModal";
 
 interface Testimonial {
   id: string;
@@ -13,7 +14,7 @@ interface Testimonial {
   role: string;
   company: string;
   avatar?: string;
-  plan: 'free' | 'pro' | 'business' | 'enterprise';
+  plan: 'free' | 'starter' | 'pro' | 'business';
   rating: 1 | 2 | 3 | 4 | 5;
   content: string;
   highlight?: string;
@@ -192,39 +193,39 @@ const testimonials: Testimonial[] = [
     verified: true
   },
 
-  // ENTERPRISE PLAN (3 depoimentos)
+  // STARTER PLAN (3 depoimentos)
   {
-    id: "enterprise-1",
-    name: "Roberto Almeida",
-    role: "VP de Marketing",
-    company: "TechCorp Brasil",
-    plan: "enterprise",
+    id: "starter-1",
+    name: "Ricardo Oliveira",
+    role: "Copywriter Freelancer",
+    company: "Autônomo",
+    plan: "starter",
     rating: 5,
-    highlight: "Escalabilidade que precisávamos",
-    content: "Com 200+ campanhas ativas simultaneamente, precisávamos de recursos ilimitados e suporte dedicado. O Enterprise foi decisivo para nossa operação. Equipe de 35 pessoas usa sem limitações.",
+    highlight: "Perfeito para quem está crescendo!",
+    content: "Estava no Free e precisava de mais espaço. O Starter me deu exatamente o que precisava para crescer sem comprometer o orçamento. Mais projetos, mais copies e ainda alguns créditos de IA para testar nas campanhas dos clientes!",
     verified: true
   },
   {
-    id: "enterprise-2",
-    name: "Patricia Ferreira",
-    role: "CMO",
-    company: "Grupo Varejo S.A.",
-    plan: "enterprise",
+    id: "starter-2",
+    name: "Fernanda Azevedo",
+    role: "Social Media",
+    company: "Agência Digital Pequena",
+    plan: "starter",
     rating: 5,
-    highlight: "Suporte VIP faz diferença",
-    content: "O gerente de conta dedicado entende nosso negócio e nos ajuda a otimizar processos. Integramos com nossas ferramentas internas via API. Solução enterprise de verdade!",
+    highlight: "Recursos extras que fazem diferença",
+    content: "Como freelancer, não preciso dos recursos completos do Pro ainda. O Starter me dá limites maiores que o Free e alguns créditos de IA para testar. Custo-benefício perfeito! Consigo atender bem meus 3-4 clientes fixos.",
     verified: true
   },
   {
-    id: "enterprise-3",
-    name: "Eduardo Barbosa",
-    role: "Diretor de Marketing Digital",
-    company: "Multinacional Retail",
-    plan: "enterprise",
-    rating: 5,
-    highlight: "Performance em escala global",
-    content: "Operamos em 8 países e precisávamos de uma solução que escalasse globalmente. O Enterprise nos dá recursos ilimitados, SLA garantido e suporte 24/7. Indispensável para nossa operação.",
-    verified: true
+    id: "starter-3",
+    name: "Thiago Ribeiro",
+    role: "Empreendedor Digital",
+    company: "Startup Inicial",
+    plan: "starter",
+    rating: 4,
+    highlight: "Ideal para pequenas equipes",
+    content: "Somos uma equipe de 2 pessoas começando e o Starter é perfeito. Mais espaço que o Free, colaboração básica funcionando bem e preço acessível. Quando crescermos mais, migramos pro Pro. Recomendo!",
+    verified: false
   }
 ];
 
@@ -234,6 +235,10 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
       color: "bg-muted text-muted-foreground border-muted",
       label: "FREE"
     },
+    starter: {
+      color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800",
+      label: "STARTER"
+    },
     pro: {
       color: "bg-primary/10 text-primary border-primary/20",
       label: "PRO"
@@ -241,10 +246,6 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
     business: {
       color: "bg-secondary/10 text-secondary-foreground border-secondary/20",
       label: "BUSINESS"
-    },
-    enterprise: {
-      color: "bg-accent/10 text-accent-foreground border-accent/20",
-      label: "ENTERPRISE"
     }
   };
 
@@ -325,6 +326,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
 
 export const TestimonialsSection = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const filteredTestimonials = selectedPlan === 'all' 
     ? testimonials 
@@ -366,13 +368,13 @@ export const TestimonialsSection = () => {
 
         {/* Filter Tabs */}
         <Tabs value={selectedPlan} onValueChange={setSelectedPlan} className="mb-12">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 h-auto">
-            <TabsTrigger value="all" className="text-xs sm:text-sm">Todos</TabsTrigger>
-            <TabsTrigger value="free" className="text-xs sm:text-sm">Free</TabsTrigger>
-            <TabsTrigger value="pro" className="text-xs sm:text-sm">Pro</TabsTrigger>
-            <TabsTrigger value="business" className="text-xs sm:text-sm">Business</TabsTrigger>
-            <TabsTrigger value="enterprise" className="text-xs sm:text-sm">Enterprise</TabsTrigger>
-          </TabsList>
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 h-auto">
+              <TabsTrigger value="all" className="text-xs sm:text-sm">Todos</TabsTrigger>
+              <TabsTrigger value="free" className="text-xs sm:text-sm">Free</TabsTrigger>
+              <TabsTrigger value="starter" className="text-xs sm:text-sm">Starter</TabsTrigger>
+              <TabsTrigger value="pro" className="text-xs sm:text-sm">Pro</TabsTrigger>
+              <TabsTrigger value="business" className="text-xs sm:text-sm">Business</TabsTrigger>
+            </TabsList>
         </Tabs>
 
         {/* Testimonials Grid */}
@@ -396,11 +398,21 @@ export const TestimonialsSection = () => {
           <p className="text-muted-foreground mb-6">
             Compartilhe sua experiência e ajude outros profissionais!
           </p>
-          <Button variant="default" size="lg">
-            Deixar Depoimento
-          </Button>
+            <Button 
+              variant="default" 
+              size="lg"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Deixar Depoimento
+            </Button>
         </div>
       </div>
+
+      {/* Modal de Depoimento */}
+      <LeaveTestimonialModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </section>
   );
 };
