@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { useCreditAlert } from "@/hooks/useCreditAlert";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProjectProvider } from "@/hooks/useProject";
@@ -58,9 +57,6 @@ import Plans from "./pages/Plans";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  // Inicializa o sistema de alertas de créditos
-  useCreditAlert();
-  
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/auth" replace />} />

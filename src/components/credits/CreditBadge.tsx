@@ -1,13 +1,11 @@
 import { Coins } from "phosphor-react";
 import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
-import { useCreditAlert } from "@/hooks/useCreditAlert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export const CreditBadge = () => {
   const { data: credits, isLoading } = useWorkspaceCredits();
-  const { isLowBalance, threshold } = useCreditAlert();
 
   if (isLoading) {
     return <Skeleton className="h-8 w-24" />;
@@ -23,24 +21,14 @@ export const CreditBadge = () => {
         <TooltipTrigger asChild>
           <div className={cn(
             "group relative flex items-center gap-2.5 px-4 py-2 rounded-full transition-all duration-200",
-            "bg-background border border-border/50 hover:border-border hover:shadow-sm",
-            isLowBalance && "border-destructive/30 bg-destructive/5"
+            "bg-background border border-border/50 hover:border-border hover:shadow-sm"
           )}>
-            <div className={cn(
-              "flex items-center justify-center w-5 h-5 rounded-full transition-colors",
-              isLowBalance ? "text-destructive" : "text-muted-foreground group-hover:text-foreground"
-            )}>
+            <div className="flex items-center justify-center w-5 h-5 rounded-full text-muted-foreground group-hover:text-foreground transition-colors">
               <Coins size={16} weight="fill" />
             </div>
-            <span className={cn(
-              "text-sm font-medium tabular-nums transition-colors",
-              isLowBalance ? "text-destructive" : "text-foreground"
-            )}>
+            <span className="text-sm font-medium tabular-nums text-foreground transition-colors">
               {balance.toFixed(1)}
             </span>
-            {isLowBalance && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />
-            )}
           </div>
         </TooltipTrigger>
         <TooltipContent side="bottom" sideOffset={12} align="end" className="min-w-[240px]">
@@ -59,20 +47,6 @@ export const CreditBadge = () => {
                 <span className="text-sm">{credits.total_added.toFixed(2)}</span>
               </div>
             </div>
-            
-            {isLowBalance && (
-              <div className="pt-3 border-t border-border/50">
-                <div className="flex items-start gap-2 text-xs text-destructive">
-                  <span>⚠️</span>
-                  <div>
-                    <p className="font-medium">Saldo baixo</p>
-                    <p className="text-muted-foreground mt-0.5">
-                      Limite de alerta: {threshold.toFixed(0)} créditos
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
             
             <div className="pt-3 border-t border-border/50 text-[11px] text-muted-foreground leading-relaxed">
               Créditos debitados proporcionalmente baseados nos tokens usados (TPC)

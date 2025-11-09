@@ -6,8 +6,6 @@ interface WorkspaceCredits {
   balance: number;
   total_added: number;
   total_used: number;
-  low_credit_threshold: number;
-  low_credit_alert_shown: boolean;
 }
 
 export const useWorkspaceCredits = () => {
@@ -20,7 +18,7 @@ export const useWorkspaceCredits = () => {
 
       const { data, error } = await supabase
         .from('workspace_credits')
-        .select('balance, total_added, total_used, low_credit_threshold, low_credit_alert_shown')
+        .select('balance, total_added, total_used')
         .eq('workspace_id', activeWorkspace.id)
         .single();
 
