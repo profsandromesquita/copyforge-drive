@@ -43,6 +43,24 @@ export function SelectContentModal({ open, onOpenChange, sessions, onConfirm }: 
   const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set());
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
 
+  const selectAll = () => {
+    const allSessionIds = new Set(sessions.map(s => s.id));
+    const allBlockIds = new Set(sessions.flatMap(s => s.blocks.map(b => b.id)));
+    setSelectedSessionIds(allSessionIds);
+    setSelectedBlockIds(allBlockIds);
+  };
+
+  const deselectAll = () => {
+    setSelectedBlockIds(new Set());
+    setSelectedSessionIds(new Set());
+  };
+
+  const isAllSelected = () => {
+    const totalSessions = sessions.length;
+    const totalBlocks = sessions.reduce((sum, s) => sum + s.blocks.length, 0);
+    return selectedSessionIds.size === totalSessions && selectedBlockIds.size === totalBlocks;
+  };
+
   const handleSessionToggle = (sessionId: string, blocks: Block[]) => {
     const newSelectedSessions = new Set(selectedSessionIds);
     const newSelectedBlocks = new Set(selectedBlockIds);
@@ -118,7 +136,17 @@ export function SelectContentModal({ open, onOpenChange, sessions, onConfirm }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Selecionar Conteúdo para Otimizar</DialogTitle>
+          <div className="flex items-center justify-between gap-4">
+            <DialogTitle>Selecionar Conteúdo para Otimizar</DialogTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={isAllSelected() ? deselectAll : selectAll}
+              className="shrink-0"
+            >
+              {isAllSelected() ? 'Desmarcar Tudo' : 'Selecionar Tudo'}
+            </Button>
+          </div>
         </DialogHeader>
         
         <ScrollArea className="h-[500px] pr-4">
