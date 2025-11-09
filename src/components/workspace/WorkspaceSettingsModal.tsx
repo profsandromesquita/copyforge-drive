@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceGeneral } from "./settings/WorkspaceGeneral";
 import { WorkspaceUsers } from "./settings/WorkspaceUsers";
 import { WorkspaceBilling } from "./settings/WorkspaceBilling";
+import { WorkspaceCreditsTab } from "./settings/WorkspaceCreditsTab";
 
 interface WorkspaceSettingsModalProps {
   open: boolean;
@@ -50,6 +51,16 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
                 Usuários
               </button>
               <button
+                onClick={() => setActiveTab("credits")}
+                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === "credits"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-accent"
+                }`}
+              >
+                Créditos
+              </button>
+              <button
                 onClick={() => setActiveTab("billing")}
                 className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === "billing"
@@ -69,6 +80,9 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
             </TabsContent>
             <TabsContent value="users" className="flex-1 overflow-y-auto p-6 m-0 h-0">
               <WorkspaceUsers />
+            </TabsContent>
+            <TabsContent value="credits" className="flex-1 overflow-y-auto p-6 m-0 h-0">
+              <WorkspaceCreditsTab />
             </TabsContent>
             <TabsContent value="billing" className="flex-1 overflow-y-auto p-6 m-0 h-0">
               <WorkspaceBilling />
