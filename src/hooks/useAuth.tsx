@@ -25,12 +25,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Verificar se usuário tem workspace
+          console.log('[useAuth] Checking if user has workspace...');
+          
+          setTimeout(async () => {
+            try {
+              const { data: membership, error } = await supabase
+                .from('workspace_members')
+                .select('workspace_id')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+
+              if (error) {
+                console.error('[useAuth] Error checking workspace:', error);
+              } else if (!membership) {
+                console.log('[useAuth] User has no workspace, attempting setup...');
+                
+                const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
+                  body: {
+                    userId: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.name || session.user.email?.split('@')[0]
+                  }
+                });
+
+                if (setupError) {
+                  console.error('[useAuth] Setup retry failed:', setupError);
+                } else {
+                  console.log('[useAuth] Setup retry successful:', setupData);
+                }
+              } else {
+                console.log('[useAuth] User has workspace:', membership.workspace_id);
+              }
+            } catch (error) {
+              console.error('[useAuth] Workspace check failed:', error);
+            }
+          }, 0);
+          
           // Only redirect if user is on auth page or root
           const currentPath = window.location.pathname;
           console.log('Signed in, current path:', currentPath);
@@ -63,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -74,6 +111,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     });
+    
+    // Se signup foi bem-sucedido, chamar Edge Function para setup
+    if (!error && data.user) {
+      console.log('[useAuth] Signup successful, calling setup-new-user...');
+      
+      try {
+        const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
+          body: {
+            userId: data.user.id,
+            email: data.user.email,
+            name: name
+          }
+        });
+
+        if (setupError) {
+          console.error('[useAuth] Setup function error:', setupError);
+        } else if (setupData && !setupData.success) {
+          console.error('[useAuth] Setup failed:', setupData.error, setupData.details);
+        } else {
+          console.log('[useAuth] User setup completed successfully:', setupData);
+        }
+      } catch (setupError) {
+        console.error('[useAuth] Failed to call setup function:', setupError);
+      }
+    }
     
     return { error };
   };
