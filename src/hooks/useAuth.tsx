@@ -115,34 +115,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('[useAuth] On auth page, checking onboarding status...');
             
             // Wait a bit to ensure profile is created
+            console.log('[useAuth] Waiting 1 second for profile creation...');
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Check if onboarding is completed
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('onboarding_completed')
-              .eq('id', session.user.id)
-              .single();
-            
-            console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
-            
-            if (profileError) {
-              console.error('[useAuth] Error fetching profile:', profileError);
-              // Default to onboarding if error
-              console.log('[useAuth] Redirecting to onboarding due to error');
-              navigate('/onboarding');
-            } else {
-              // Trata NULL ou false como não completado
-              const isCompleted = profile?.onboarding_completed === true;
-              console.log('[useAuth] Onboarding completed:', isCompleted);
+            try {
+              console.log('[useAuth] Fetching profile for user:', session.user.id);
               
-              if (isCompleted) {
-                console.log('[useAuth] Redirecting to dashboard');
-                navigate('/dashboard');
-              } else {
-                console.log('[useAuth] Redirecting to onboarding');
+              // Add timeout to prevent hanging
+              const profilePromise = supabase
+                .from('profiles')
+                .select('onboarding_completed')
+                .eq('id', session.user.id)
+                .single();
+              
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+              );
+              
+              const { data: profile, error: profileError } = await Promise.race([
+                profilePromise,
+                timeoutPromise
+              ]) as any;
+              
+              console.log('[useAuth] Profile fetch result - Data:', profile, 'Error:', profileError);
+              
+              if (profileError) {
+                console.error('[useAuth] Error fetching profile:', profileError);
+                // If profile doesn't exist yet, definitely go to onboarding
+                if (profileError.code === 'PGRST116') {
+                  console.log('[useAuth] Profile not found (PGRST116), redirecting to onboarding');
+                  navigate('/onboarding');
+                  return;
+                }
+                // Default to onboarding for other errors
+                console.log('[useAuth] Redirecting to onboarding due to error');
                 navigate('/onboarding');
+              } else {
+                // Trata NULL ou false como não completado
+                const isCompleted = profile?.onboarding_completed === true;
+                console.log('[useAuth] Onboarding completed:', isCompleted);
+                
+                if (isCompleted) {
+                  console.log('[useAuth] Redirecting to dashboard');
+                  navigate('/dashboard');
+                } else {
+                  console.log('[useAuth] Redirecting to onboarding');
+                  navigate('/onboarding');
+                }
               }
+            } catch (error) {
+              console.error('[useAuth] Exception during profile check:', error);
+              // On any exception, go to onboarding
+              console.log('[useAuth] Redirecting to onboarding due to exception');
+              navigate('/onboarding');
             }
           } else {
             console.log('[useAuth] Not on auth page, skipping redirect');
