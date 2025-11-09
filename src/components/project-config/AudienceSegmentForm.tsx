@@ -314,7 +314,7 @@ export const AudienceSegmentForm = ({
               id="identification"
               value={identification}
               onChange={(e) => setIdentification(e.target.value)}
-              placeholder="Ex: Mulheres 40-55 anos com dificuldade para emagrecer"
+              placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
               className="text-base font-medium placeholder:text-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
