@@ -7,7 +7,7 @@ import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Lock } from 'phosphor-react';
+import { Lock, ArrowLeft } from 'phosphor-react';
 import { toast } from 'sonner';
 
 const ProjectConfig = () => {
@@ -95,6 +95,26 @@ const ProjectConfig = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/40">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+            aria-label="Voltar ao Dashboard"
+          >
+            <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium hidden sm:inline">Dashboard</span>
+          </button>
+          
+          <img 
+            src="/src/assets/copydrive-logo.png" 
+            alt="CopyDrive" 
+            className="h-7 opacity-90"
+          />
+        </div>
+      </header>
+
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-6">
         {/* Progress Indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
