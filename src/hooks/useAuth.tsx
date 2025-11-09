@@ -32,48 +32,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // Verificar se usuário tem workspace
-          console.log('[useAuth] Checking if user has workspace...');
+          console.log('[useAuth] User signed in:', session.user.email);
           
+          // Wait a bit before checking workspace (gives trigger time to run)
           setTimeout(async () => {
             try {
-              const { data: membership, error } = await supabase
+              const { data: membership, error: membershipError } = await supabase
                 .from('workspace_members')
                 .select('workspace_id')
                 .eq('user_id', session.user.id)
                 .maybeSingle();
 
-              if (error) {
-                console.error('[useAuth] Error checking workspace:', error);
-              } else if (!membership) {
-                console.log('[useAuth] User has no workspace, attempting setup...');
+              if (membershipError) {
+                console.error('[useAuth] Error checking membership:', membershipError);
+              }
+
+              if (!membership) {
+                console.log('[useAuth] No workspace found, calling setup...');
                 
                 const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
                   body: {
                     userId: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.name || session.user.email?.split('@')[0]
+                    name: session.user.user_metadata?.name || 
+                          session.user.user_metadata?.full_name ||
+                          session.user.email?.split('@')[0]
                   }
                 });
 
                 if (setupError) {
-                  console.error('[useAuth] Setup retry failed:', setupError);
+                  console.error('[useAuth] Setup error:', setupError);
+                  
+                  // Verify again if workspace was created despite error
+                  const { data: retryMembership } = await supabase
+                    .from('workspace_members')
+                    .select('workspace_id')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
+                  
+                  if (!retryMembership) {
+                    // Show warning but don't block login
+                    import('sonner').then(({ toast }) => {
+                      toast.warning('Configuração inicial pendente. Entre em contato com o suporte se problemas persistirem.');
+                    });
+                  } else {
+                    console.log('[useAuth] Workspace created despite error');
+                  }
+                } else if (!setupData?.success) {
+                  console.warn('[useAuth] Setup returned non-success:', setupData);
+                  
+                  // Verify if workspace exists anyway
+                  const { data: retryMembership } = await supabase
+                    .from('workspace_members')
+                    .select('workspace_id')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
+                  
+                  if (retryMembership) {
+                    console.log('[useAuth] Workspace exists despite setup warning');
+                  }
                 } else {
-                  console.log('[useAuth] Setup retry successful:', setupData);
+                  console.log('[useAuth] Setup completed successfully');
                 }
               } else {
                 console.log('[useAuth] User has workspace:', membership.workspace_id);
               }
             } catch (error) {
               console.error('[useAuth] Workspace check failed:', error);
+              // Don't block login
             }
-          }, 0);
+          }, 500); // Wait 500ms for trigger to execute
           
-          // Only redirect if user is on auth page or root
+          // Redirect independently of workspace check
           const currentPath = window.location.pathname;
           console.log('Signed in, current path:', currentPath);
           
-          // Only redirect from auth page or root, never from other pages
+          // Only redirect from auth page or root
           if (currentPath === '/auth' || currentPath === '/') {
             navigate('/dashboard');
           }

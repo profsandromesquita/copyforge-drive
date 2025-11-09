@@ -142,42 +142,118 @@ Deno.serve(async (req) => {
         console.log('[setup-new-user] User already has workspace:', workspaceData);
       }
     } else {
-      // Step 3: Create workspace
-      console.log('[setup-new-user] Creating workspace...');
-      const { data: newWorkspace, error: workspaceError } = await supabaseAdmin
+      // Check if user already has a workspace by created_by
+      console.log('[setup-new-user] Checking for workspace created by user...');
+      const { data: ownedWorkspace } = await supabaseAdmin
         .from('workspaces')
-        .insert({
-          name: 'Meu Workspace',
-          created_by: userId
-        })
         .select('id, name')
-        .single();
+        .eq('created_by', userId)
+        .maybeSingle();
 
-      if (workspaceError) {
-        console.error('[setup-new-user] Error creating workspace:', workspaceError);
-        throw new Error(`Workspace creation failed: ${workspaceError.message}`);
+      if (ownedWorkspace) {
+        // Workspace exists but no membership - create membership
+        workspaceData = ownedWorkspace;
+        console.log('[setup-new-user] Found existing workspace without membership:', workspaceData);
+        
+        const { error: memberError } = await supabaseAdmin
+          .from('workspace_members')
+          .insert({
+            workspace_id: ownedWorkspace.id,
+            user_id: userId,
+            role: 'owner',
+            invited_by: userId
+          });
+
+        if (memberError) {
+          // Ignore duplicate errors
+          if (memberError.code === '23505') {
+            console.log('[setup-new-user] Membership already exists (duplicate key), continuing...');
+          } else {
+            console.error('[setup-new-user] Error creating membership:', memberError);
+            throw new Error(`Membership creation failed: ${memberError.message}`);
+          }
+        } else {
+          console.log('[setup-new-user] Membership created for existing workspace');
+        }
+      } else {
+        // Step 3: Create workspace
+        console.log('[setup-new-user] Creating new workspace...');
+        
+        try {
+          const { data: newWorkspace, error: workspaceError } = await supabaseAdmin
+            .from('workspaces')
+            .insert({
+              name: 'Meu Workspace',
+              created_by: userId
+            })
+            .select('id, name')
+            .single();
+
+          if (workspaceError) {
+            // If duplicate error, fetch existing workspace
+            if (workspaceError.code === '23505') {
+              console.log('[setup-new-user] Workspace already exists (duplicate), fetching...');
+              const { data: existingWs } = await supabaseAdmin
+                .from('workspaces')
+                .select('id, name')
+                .eq('created_by', userId)
+                .single();
+              
+              if (existingWs) {
+                workspaceData = existingWs;
+                console.log('[setup-new-user] Found existing workspace after conflict:', workspaceData);
+              } else {
+                throw new Error('Workspace conflict but not found');
+              }
+            } else {
+              console.error('[setup-new-user] Error creating workspace:', workspaceError);
+              throw new Error(`Workspace creation failed: ${workspaceError.message}`);
+            }
+          } else {
+            workspaceData = newWorkspace;
+            console.log('[setup-new-user] Workspace created:', workspaceData);
+          }
+
+          // Step 4: Add user as owner (only if workspace was just created)
+          if (workspaceData) {
+            console.log('[setup-new-user] Adding user as workspace owner...');
+            const { error: memberError } = await supabaseAdmin
+              .from('workspace_members')
+              .insert({
+                workspace_id: workspaceData.id,
+                user_id: userId,
+                role: 'owner',
+                invited_by: userId
+              });
+
+            if (memberError) {
+              // Ignore duplicate errors
+              if (memberError.code === '23505') {
+                console.log('[setup-new-user] Membership already exists (duplicate key), continuing...');
+              } else {
+                console.error('[setup-new-user] Error creating workspace membership:', memberError);
+                throw new Error(`Membership creation failed: ${memberError.message}`);
+              }
+            } else {
+              console.log('[setup-new-user] Workspace membership created successfully');
+            }
+          }
+        } catch (error) {
+          console.error('[setup-new-user] Error in workspace creation flow:', error);
+          throw error;
+        }
       }
-
-      workspaceData = newWorkspace;
-      console.log('[setup-new-user] Workspace created:', workspaceData);
-
-      // Step 4: Add user as owner
-      console.log('[setup-new-user] Adding user as workspace owner...');
-      const { error: memberError } = await supabaseAdmin
-        .from('workspace_members')
-        .insert({
-          workspace_id: newWorkspace.id,
-          user_id: userId,
-          role: 'owner',
-          invited_by: userId
-        });
-
-      if (memberError) {
-        console.error('[setup-new-user] Error creating workspace membership:', memberError);
-        throw new Error(`Membership creation failed: ${memberError.message}`);
-      }
-
-      console.log('[setup-new-user] Workspace membership created successfully');
+    }
+    
+    // Verify subscription was created by trigger
+    if (workspaceData) {
+      const { data: subscription } = await supabaseAdmin
+        .from('workspace_subscriptions')
+        .select('id')
+        .eq('workspace_id', workspaceData.id)
+        .maybeSingle();
+      
+      console.log('[setup-new-user] Subscription check:', subscription ? 'exists' : 'not found');
     }
 
     // Success response
