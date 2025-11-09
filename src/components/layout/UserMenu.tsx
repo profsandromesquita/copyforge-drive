@@ -5,10 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
+import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { UserProfileModal } from "@/components/user-profile/UserProfileModal";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +21,50 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const WorkspaceItem = ({ workspace, isActive, onClick }: any) => {
+  const { data: plan } = useWorkspacePlan(workspace.id);
+  
+  const getPlanColor = (slug: string) => {
+    switch (slug) {
+      case 'free':
+        return 'bg-muted/50 text-muted-foreground border-border/50';
+      case 'starter':
+        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+      case 'pro':
+        return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+      case 'business':
+        return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+      default:
+        return 'bg-muted/50 text-muted-foreground border-border/50';
+    }
+  };
+
+  return (
+    <DropdownMenuItem
+      className="cursor-pointer flex items-center justify-between px-2 py-2 rounded-md gap-2"
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <Buildings size={16} className="text-muted-foreground shrink-0" />
+        <span className="text-sm truncate">{workspace.name}</span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {plan && (
+          <Badge 
+            variant="outline" 
+            className={`text-[10px] px-1.5 py-0 h-4 font-medium ${getPlanColor(plan.plan_slug)}`}
+          >
+            {plan.plan_slug.toUpperCase()}
+          </Badge>
+        )}
+        {isActive && (
+          <Check size={16} className="text-primary" weight="bold" />
+        )}
+      </div>
+    </DropdownMenuItem>
+  );
+};
 
 export const UserMenu = () => {
   const navigate = useNavigate();
@@ -119,19 +165,12 @@ export const UserMenu = () => {
           </DropdownMenuLabel>
           <DropdownMenuGroup>
             {workspaces.map((workspace) => (
-              <DropdownMenuItem
+              <WorkspaceItem
                 key={workspace.id}
-                className="cursor-pointer flex items-center justify-between px-2 py-2 rounded-md"
+                workspace={workspace}
+                isActive={activeWorkspace?.id === workspace.id}
                 onClick={() => setActiveWorkspace(workspace)}
-              >
-                <div className="flex items-center gap-2">
-                  <Buildings size={16} className="text-muted-foreground" />
-                  <span className="text-sm">{workspace.name}</span>
-                </div>
-                {activeWorkspace?.id === workspace.id && (
-                  <Check size={16} className="text-primary" weight="bold" />
-                )}
-              </DropdownMenuItem>
+              />
             ))}
             <DropdownMenuItem 
               className="cursor-pointer text-primary flex items-center gap-2 px-2 py-2 rounded-md mt-1"
