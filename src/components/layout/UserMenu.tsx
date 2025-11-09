@@ -88,7 +88,7 @@ export const UserMenu = () => {
             <>
               <div className="px-2 py-3 bg-muted/30 rounded-lg mb-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-foreground">Credits</span>
+                  <span className="text-sm font-semibold text-foreground">Créditos</span>
                   <button 
                     className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors group"
                     onClick={() => {
@@ -96,7 +96,7 @@ export const UserMenu = () => {
                       setSettingsOpen(true);
                     }}
                   >
-                    <span className="font-medium">{credits.balance.toFixed(1)} left</span>
+                    <span className="font-medium">{credits.balance.toFixed(1)} restantes</span>
                     <CaretRight size={14} className="group-hover:translate-x-0.5 transition-transform" weight="bold" />
                   </button>
                 </div>
