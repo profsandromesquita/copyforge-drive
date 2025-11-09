@@ -1,12 +1,14 @@
-import { User, SignOut, Gear, Plus, Buildings, Check } from "phosphor-react";
+import { User, SignOut, Gear, Plus, Buildings, Check, CaretRight } from "phosphor-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { UserProfileModal } from "@/components/user-profile/UserProfileModal";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,7 @@ export const UserMenu = () => {
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const { data: credits } = useWorkspaceCredits();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -74,6 +77,33 @@ export const UserMenu = () => {
           </div>
 
           <DropdownMenuSeparator className="my-2" />
+
+          {/* Credits Section */}
+          {credits && (
+            <>
+              <div className="px-2 py-3 bg-muted/30 rounded-lg mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-foreground">Credits</span>
+                  <button 
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <span className="font-medium">{credits.balance.toFixed(1)} left</span>
+                    <CaretRight size={14} className="group-hover:translate-x-0.5 transition-transform" weight="bold" />
+                  </button>
+                </div>
+                <Progress 
+                  value={(credits.balance / credits.total_added) * 100} 
+                  className="h-1.5 mb-2"
+                />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-xs text-muted-foreground">Using monthly credits</span>
+                </div>
+              </div>
+              <DropdownMenuSeparator className="my-2" />
+            </>
+          )}
           
           {/* Workspaces Section */}
           <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">
