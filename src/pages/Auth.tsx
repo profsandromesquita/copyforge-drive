@@ -20,7 +20,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [signupDisabled, setSignupDisabled] = useState(false);
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,18 +50,6 @@ const Auth = () => {
       }
     };
   }, []);
-
-  useEffect(() => {
-    const checkOnboardingAndRedirect = async () => {
-      if (user) {
-        console.log('[Auth.tsx] User logged in, but useAuth should handle redirect');
-        // Deixar o useAuth lidar com o redirecionamento
-        // Remover lógica duplicada aqui
-      }
-    };
-
-    checkOnboardingAndRedirect();
-  }, [user]);
 
   const formatPhone = (value: string) => {
     // Remove tudo que não é número
