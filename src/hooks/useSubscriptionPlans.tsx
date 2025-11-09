@@ -39,7 +39,7 @@ export const useSubscriptionPlans = () => {
   });
 
   const createPlan = useMutation({
-    mutationFn: async (plan: Partial<SubscriptionPlan>) => {
+    mutationFn: async (plan: Omit<SubscriptionPlan, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('subscription_plans')
         .insert([plan])

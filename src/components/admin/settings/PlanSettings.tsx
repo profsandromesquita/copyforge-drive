@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Package } from "phosphor-react";
+import { Plus, PencilSimple, Package } from "phosphor-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlanFormData {
@@ -65,9 +65,10 @@ export const PlanSettings = () => {
     e.preventDefault();
     
     if (isEditing && formData.id) {
-      await updatePlan.mutateAsync(formData);
+      await updatePlan.mutateAsync(formData as any);
     } else {
-      await createPlan.mutateAsync(formData);
+      const { id, ...planData } = formData;
+      await createPlan.mutateAsync(planData as any);
     }
     
     setIsDialogOpen(false);
@@ -295,7 +296,7 @@ export const PlanSettings = () => {
                     size="icon"
                     onClick={() => handleOpenDialog(plan)}
                   >
-                    <Edit size={16} />
+                    <PencilSimple size={16} />
                   </Button>
                 </div>
               </div>
