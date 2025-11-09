@@ -209,9 +209,6 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
                 </button>
               ))}
             </div>
-            <p className="text-center text-xs sm:text-sm text-muted-foreground mt-3">
-              {personalities.length}/3 selecionadas
-            </p>
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
