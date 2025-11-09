@@ -432,10 +432,16 @@ const Dashboard = () => {
                       {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhum item nesta pasta'}
                     </p>
                     {!searchQuery && (
-                      <Button onClick={() => setCreateFolderOpen(true)}>
-                        <FolderPlus size={20} className="mr-2" />
-                        Criar Primeira Pasta
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button onClick={() => setCreateFolderOpen(true)} variant="outline">
+                          <FolderPlus size={20} className="mr-2" />
+                          Criar Primeira Pasta
+                        </Button>
+                        <Button onClick={() => setCreateCopyOpen(true)}>
+                          <Plus size={20} className="mr-2" />
+                          Criar Primeira Copy
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ) : (
