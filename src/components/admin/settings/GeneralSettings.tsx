@@ -37,7 +37,14 @@ export const GeneralSettings = () => {
         .single();
 
       if (error) throw error;
-      setSettings(data);
+      
+      // Se não houver logos configuradas, usar as logos padrão dos assets
+      setSettings({
+        ...data,
+        logo_light_url: data.logo_light_url || '/src/assets/copydrive-logo.png',
+        logo_dark_url: data.logo_dark_url || '/src/assets/copydrive-logo.png',
+        favicon_url: data.favicon_url || '/src/assets/copydrive-icon.svg'
+      });
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
       toast.error("Erro ao carregar configurações");
@@ -191,22 +198,20 @@ export const GeneralSettings = () => {
           {/* Logo Modo Claro */}
           <div className="space-y-3">
             <Label>Logo Modo Claro</Label>
-            {settings.logo_light_url && (
-              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                <img 
-                  src={settings.logo_light_url} 
-                  alt="Logo Claro" 
-                  className="h-16 w-auto object-contain"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSettings({ ...settings, logo_light_url: null })}
-                >
-                  Remover
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+              <img 
+                src={settings.logo_light_url || '/src/assets/copydrive-logo.png'} 
+                alt="Logo Claro" 
+                className="h-16 w-auto object-contain"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettings({ ...settings, logo_light_url: null })}
+              >
+                Remover
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 type="file"
@@ -237,22 +242,20 @@ export const GeneralSettings = () => {
           {/* Logo Modo Escuro */}
           <div className="space-y-3">
             <Label>Logo Modo Escuro</Label>
-            {settings.logo_dark_url && (
-              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                <img 
-                  src={settings.logo_dark_url} 
-                  alt="Logo Escuro" 
-                  className="h-16 w-auto object-contain"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSettings({ ...settings, logo_dark_url: null })}
-                >
-                  Remover
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+              <img 
+                src={settings.logo_dark_url || '/src/assets/copydrive-logo.png'} 
+                alt="Logo Escuro" 
+                className="h-16 w-auto object-contain"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettings({ ...settings, logo_dark_url: null })}
+              >
+                Remover
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 type="file"
@@ -283,22 +286,20 @@ export const GeneralSettings = () => {
           {/* Favicon */}
           <div className="space-y-3">
             <Label>Favicon</Label>
-            {settings.favicon_url && (
-              <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                <img 
-                  src={settings.favicon_url} 
-                  alt="Favicon" 
-                  className="h-8 w-8 object-contain"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSettings({ ...settings, favicon_url: null })}
-                >
-                  Remover
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+              <img 
+                src={settings.favicon_url || '/src/assets/copydrive-icon.svg'} 
+                alt="Favicon" 
+                className="h-8 w-8 object-contain"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettings({ ...settings, favicon_url: null })}
+              >
+                Remover
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 type="file"
