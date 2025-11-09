@@ -56,8 +56,30 @@ const Onboarding = () => {
     setCurrentStep(2);
   };
 
-  const handleStep2Complete = () => {
-    setCurrentStep(3);
+  const handleStep2Complete = async (workspaceName: string) => {
+    setLoading(true);
+    try {
+      if (!activeWorkspace?.id) {
+        toast.error("Workspace não encontrado");
+        return;
+      }
+
+      // Atualizar nome do workspace
+      const { error } = await supabase
+        .from('workspaces')
+        .update({ name: workspaceName })
+        .eq('id', activeWorkspace.id);
+
+      if (error) throw error;
+
+      toast.success("Workspace configurado!");
+      setCurrentStep(3);
+    } catch (error: any) {
+      console.error("Erro ao atualizar workspace:", error);
+      toast.error("Erro ao configurar workspace. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStep3Complete = async (data: typeof projectData) => {
@@ -173,7 +195,7 @@ const Onboarding = () => {
 
         {currentStep === 2 && (
           <OnboardingStep2 
-            workspaceName={activeWorkspace?.name || "seu Workspace"}
+            firstName={firstName}
             onComplete={handleStep2Complete}
             onBack={handleBack}
           />

@@ -1,22 +1,44 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { FolderOpen, FileText, Layers } from "lucide-react";
+import { useState } from "react";
 
 interface OnboardingStep2Props {
-  workspaceName: string;
-  onComplete: () => void;
+  firstName: string;
+  onComplete: (workspaceName: string) => void;
   onBack: () => void;
 }
 
-const OnboardingStep2 = ({ workspaceName, onComplete, onBack }: OnboardingStep2Props) => {
+const OnboardingStep2 = ({ firstName, onComplete, onBack }: OnboardingStep2Props) => {
+  const [workspaceName, setWorkspaceName] = useState(`Workspace de ${firstName}`);
+  const handleContinue = () => {
+    if (workspaceName.trim()) {
+      onComplete(workspaceName.trim());
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto animate-in fade-in duration-500">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">
-          Entenda a hierarquia do sistema
+          Boa! Agora digite o nome do seu primeiro Workspace
         </h1>
         <p className="text-xl text-muted-foreground">
-          É simples e intuitivo! 💡
+          Este será o espaço principal onde você organizará seus projetos e copies.
         </p>
+      </div>
+
+      <div className="mb-8">
+        <label htmlFor="workspace-name" className="block text-sm font-medium mb-2 text-foreground">
+          Nome do Workspace
+        </label>
+        <Input
+          id="workspace-name"
+          value={workspaceName}
+          onChange={(e) => setWorkspaceName(e.target.value)}
+          placeholder={`Workspace de ${firstName}`}
+          className="text-lg h-12"
+        />
       </div>
 
       <div className="bg-card border-2 border-border rounded-lg p-8 mb-8">
@@ -68,8 +90,7 @@ const OnboardingStep2 = ({ workspaceName, onComplete, onBack }: OnboardingStep2P
 
       <div className="bg-primary/5 border border-primary/20 rounded-lg p-6 mb-8">
         <p className="text-lg text-center">
-          <strong>Boa!</strong> Agora vamos criar o primeiro projeto do seu Workspace{" "}
-          <span className="font-bold text-primary">{workspaceName}</span>, onde ficarão os seus projetos e drive de cada projeto.
+          Seu workspace será o local onde você criará e organizará todos os seus projetos.
         </p>
       </div>
 
@@ -77,7 +98,11 @@ const OnboardingStep2 = ({ workspaceName, onComplete, onBack }: OnboardingStep2P
         <Button onClick={onBack} variant="outline" size="lg">
           Voltar
         </Button>
-        <Button onClick={onComplete} size="lg">
+        <Button 
+          onClick={handleContinue} 
+          size="lg"
+          disabled={!workspaceName.trim()}
+        >
           Continuar
         </Button>
       </div>
