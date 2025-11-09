@@ -653,74 +653,34 @@ export const CopyAITab = () => {
     // Etapa 3
     return (
       <ScrollArea className="h-[calc(100vh-12rem)]">
-        <div className="space-y-4 p-4">
-          <Button variant="ghost" onClick={() => setEtapa(2)} className="w-full justify-start">
-            ← Voltar
+        <div className="space-y-8 p-6 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            onClick={() => setEtapa(2)} 
+            className="group -ml-2 px-2 text-muted-foreground hover:text-foreground transition-colors"
+            size="sm"
+          >
+            <span className="transition-transform group-hover:-translate-x-1 inline-block">←</span>
+            <span className="ml-2">Voltar</span>
           </Button>
 
-          {/* Indicador do Tipo de Copy */}
-          <Card className="p-4 bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-sm">
-                  Tipo: {copyType === 'vsl' ? 'VSL' : 
-                         copyType === 'landing_page' ? 'Landing Page' : 
-                         copyType === 'anuncio' ? 'Anúncio' :
-                         copyType === 'email' ? 'E-mail' :
-                         copyType === 'webinar' ? 'Webinar' :
-                         copyType === 'conteudo' ? 'Conteúdo' :
-                         copyType === 'mensagem' ? 'Mensagem' :
-                         copyType || 'Outro'}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {(copyType === 'vsl' || copyType === 'landing_page') ? (
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="h-4 w-4 text-purple-500" />
-                    Modelo Premium será usado
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-4 w-4 text-green-500" />
-                    Modelo Econômico será usado
-                  </span>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Model Selector - Somente Leitura */}
-          {copyType ? (
-            <ModelSelector 
-              copyType={copyType as CopyType}
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              disabled={isGenerating}
-            />
-          ) : (
-            <Card className="p-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Carregando configurações...</span>
-              </div>
-            </Card>
-          )}
-
-          <div className="space-y-2">
-            <Label className="font-semibold">Detalhes da Copy</Label>
+          <div className="space-y-3">
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Detalhes da Copy
+            </Label>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Descreva o que você precisa para sua copy..."
-              rows={12}
-              className="resize-none"
+              rows={14}
+              className="resize-none rounded-2xl"
             />
           </div>
 
           <Button
             onClick={handleGenerate}
             disabled={!prompt.trim() || isGenerating}
-            className="w-full"
+            className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow"
           >
             {isGenerating ? (
               <>
