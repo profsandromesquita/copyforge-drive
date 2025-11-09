@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanCard } from "@/components/plans/PlanCard";
 import { PlanChangeModal } from "./PlanChangeModal";
+import { formatCurrency } from "@/lib/utils";
 
 type BillingCycle = 'monthly' | 'annual';
 
@@ -107,10 +108,10 @@ export const WorkspaceBilling = () => {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold">
-                  R$ {(subscription.billing_cycle === 'monthly' 
+                  {formatCurrency(subscription.billing_cycle === 'monthly' 
                     ? subscription.plan.monthly_price 
                     : subscription.plan.annual_price / 12
-                  ).toFixed(2)}
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground">/mês</p>
               </div>

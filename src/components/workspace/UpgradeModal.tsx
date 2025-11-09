@@ -7,6 +7,7 @@ import { Check, Sparkles, Zap, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/utils';
 
 interface SubscriptionPlan {
   id: string;
@@ -215,13 +216,13 @@ export const UpgradeModal = ({
                     <div className="mt-4">
                       <div className="flex items-baseline gap-1">
                         <span className="text-3xl font-bold">
-                          R$ {plan.monthly_price.toFixed(2)}
+                          {formatCurrency(plan.monthly_price)}
                         </span>
                         <span className="text-muted-foreground">/mês</span>
                       </div>
                       {plan.annual_price < plan.monthly_price * 12 && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          R$ {plan.annual_price.toFixed(2)}/ano (economize{' '}
+                          {formatCurrency(plan.annual_price)}/ano (economize{' '}
                           {(
                             ((plan.monthly_price * 12 - plan.annual_price) /
                               (plan.monthly_price * 12)) *

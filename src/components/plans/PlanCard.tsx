@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Users, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface SubscriptionPlan {
   id: string;
@@ -90,13 +90,13 @@ export const PlanCard = ({ plan, billingCycle, isCurrentPlan, onSelect }: PlanCa
         <div>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-bold">
-              R$ {monthlyEquivalent.toFixed(2)}
+              {formatCurrency(monthlyEquivalent)}
             </span>
             <span className="text-muted-foreground">/mês</span>
           </div>
           {billingCycle === 'annual' && (
             <p className="text-sm text-muted-foreground mt-1">
-              Cobrado R$ {price.toFixed(2)} anualmente
+              Cobrado {formatCurrency(price)} anualmente
             </p>
           )}
           {Number(savings) > 0 && (

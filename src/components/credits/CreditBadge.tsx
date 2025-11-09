@@ -2,7 +2,7 @@ import { Coins } from "phosphor-react";
 import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, formatCredits } from "@/lib/utils";
 
 export const CreditBadge = () => {
   const { data: credits, isLoading } = useWorkspaceCredits();
@@ -27,7 +27,7 @@ export const CreditBadge = () => {
               <Coins size={16} weight="fill" />
             </div>
             <span className="text-sm font-medium tabular-nums text-foreground transition-colors">
-              {balance.toFixed(1)}
+              {formatCredits(balance)}
             </span>
           </div>
         </TooltipTrigger>
@@ -36,15 +36,15 @@ export const CreditBadge = () => {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">Saldo atual</span>
-                <span className="text-sm font-semibold">{balance.toFixed(2)}</span>
+                <span className="text-sm font-semibold">{formatCredits(balance)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">Total usado</span>
-                <span className="text-sm">{credits.total_used.toFixed(2)}</span>
+                <span className="text-sm">{formatCredits(credits.total_used)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">Total adicionado</span>
-                <span className="text-sm">{credits.total_added.toFixed(2)}</span>
+                <span className="text-sm">{formatCredits(credits.total_added)}</span>
               </div>
             </div>
             

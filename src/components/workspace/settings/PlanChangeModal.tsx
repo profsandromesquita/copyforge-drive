@@ -7,6 +7,7 @@ import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { PlanComparisonCard } from "./PlanComparisonCard";
 import { useChangePlan } from "@/hooks/useChangePlan";
 import { WorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
+import { formatCurrency } from "@/lib/utils";
 
 interface SubscriptionPlan {
   id: string;
@@ -131,12 +132,12 @@ export const PlanChangeModal = ({
               </Badge>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">R$ {monthlyEquivalent.toFixed(2)}</span>
+              <span className="text-3xl font-bold">{formatCurrency(monthlyEquivalent)}</span>
               <span className="text-muted-foreground">/mês</span>
             </div>
             {billingCycle === 'annual' && (
               <p className="text-sm text-muted-foreground mt-1">
-                Cobrado R$ {newPrice.toFixed(2)} anualmente
+                Cobrado {formatCurrency(newPrice)} anualmente
               </p>
             )}
           </div>

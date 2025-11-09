@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash, UserPlus } from "phosphor-react";
 import { Badge } from "@/components/ui/badge";
+import { formatCredits } from "@/lib/utils";
 
 interface WorkspaceMember {
   id: string;
@@ -369,7 +370,7 @@ export const WorkspaceUsers = () => {
                 
                 <div className="col-span-2 text-right">
                   <p className="text-sm font-medium tabular-nums">
-                    {member.credits_used.toFixed(2)}
+                    {formatCredits(member.credits_used)}
                   </p>
                 </div>
                 

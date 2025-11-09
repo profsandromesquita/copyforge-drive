@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Plus, PencilSimple, Package } from "phosphor-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 
 interface PlanFormData {
   id?: string;
@@ -306,13 +307,13 @@ export const PlanSettings = () => {
                 <div>
                   <span className="text-muted-foreground">Mensal:</span>
                   <span className="ml-2 font-semibold">
-                    R$ {plan.monthly_price.toFixed(2)}
+                    {formatCurrency(plan.monthly_price)}
                   </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Anual:</span>
                   <span className="ml-2 font-semibold">
-                    R$ {plan.annual_price.toFixed(2)}
+                    {formatCurrency(plan.annual_price)}
                   </span>
                 </div>
               </div>

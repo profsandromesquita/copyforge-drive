@@ -2,6 +2,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { Button } from "@/components/ui/button";
 import { Coins } from "phosphor-react";
 import { useNavigate } from "react-router-dom";
+import { formatCredits } from "@/lib/utils";
 
 interface InsufficientCreditsModalProps {
   open: boolean;
@@ -34,11 +35,11 @@ export const InsufficientCreditsModal = ({
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Saldo atual:</span>
-                <span className="font-semibold">{currentBalance.toFixed(2)} créditos</span>
+                <span className="font-semibold">{formatCredits(currentBalance)} créditos</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Custo estimado:</span>
-                <span className="font-semibold text-red-600">{estimatedCost.toFixed(2)} créditos</span>
+                <span className="font-semibold text-red-600">{formatCredits(estimatedCost)} créditos</span>
               </div>
             </div>
 

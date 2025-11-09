@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getModelDisplayName, getModelIcon } from "@/lib/model-display-names";
 import { ArrowRight, ArrowLeft } from "phosphor-react";
+import { formatCredits } from "@/lib/utils";
 
 interface ModelTokenStats {
   model_used: string;
@@ -114,7 +115,7 @@ export const TokensByModelCard = ({ modelStats, loading }: TokensByModelCardProp
                     {stat.total_output_tokens.toLocaleString()}
                   </td>
                   <td className="text-right py-3 px-2 font-mono font-semibold">
-                    {stat.total_credits_debited.toFixed(2)}
+                    {formatCredits(stat.total_credits_debited)}
                   </td>
                 </tr>
               ))}
@@ -132,7 +133,7 @@ export const TokensByModelCard = ({ modelStats, loading }: TokensByModelCardProp
                   {totals.total_output_tokens.toLocaleString()}
                 </td>
                 <td className="text-right py-3 px-2 font-mono">
-                  {totals.total_credits_debited.toFixed(2)}
+                  {formatCredits(totals.total_credits_debited)}
                 </td>
               </tr>
             </tbody>

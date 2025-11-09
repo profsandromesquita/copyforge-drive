@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
+import { formatCredits } from "@/lib/utils";
 
 export const WorkspaceCredits = () => {
   const { data: credits } = useWorkspaceCredits();
@@ -19,16 +20,16 @@ export const WorkspaceCredits = () => {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Saldo Atual</p>
             <p className="text-2xl font-bold text-green-600">
-              {credits.balance.toFixed(2)}
+              {formatCredits(credits.balance)}
             </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Total Usado</p>
-            <p className="text-2xl font-bold">{credits.total_used.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{formatCredits(credits.total_used)}</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Total Adicionado</p>
-            <p className="text-2xl font-bold">{credits.total_added.toFixed(2)}</p>
+            <p className="text-2xl font-bold">{formatCredits(credits.total_added)}</p>
           </div>
         </div>
       </CardContent>

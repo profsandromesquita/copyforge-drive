@@ -10,7 +10,7 @@ import { useWorkspaceTransactions, CreditTransaction } from "@/hooks/useWorkspac
 import { Download, ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatCredits } from "@/lib/utils";
 
 export const WorkspaceCreditsHistory = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'debit' | 'credit'>('all');
@@ -75,8 +75,8 @@ export const WorkspaceCreditsHistory = () => {
       tx.user?.name || 'N/A',
       tx.user?.email || 'N/A',
       tx.amount.toFixed(4),
-      tx.balance_before.toFixed(2),
-      tx.balance_after.toFixed(2),
+      formatCredits(tx.balance_before),
+      formatCredits(tx.balance_after),
       tx.model_used || '-',
       tx.tokens_used || '-',
       tx.description || '-'
@@ -131,7 +131,7 @@ export const WorkspaceCreditsHistory = () => {
                 <p className="text-xs text-muted-foreground">Total Debitado</p>
                 <p className="text-xl font-bold text-destructive flex items-center gap-1">
                   <ArrowDown className="h-3 w-3" />
-                  {summary.totalDebited.toFixed(2)}
+                  {formatCredits(summary.totalDebited)}
                 </p>
               </div>
             </CardContent>
@@ -143,7 +143,7 @@ export const WorkspaceCreditsHistory = () => {
                 <p className="text-xs text-muted-foreground">Total Adicionado</p>
                 <p className="text-xl font-bold text-green-600 flex items-center gap-1">
                   <ArrowUp className="h-3 w-3" />
-                  {summary.totalAdded.toFixed(2)}
+                  {formatCredits(summary.totalAdded)}
                 </p>
               </div>
             </CardContent>
@@ -281,7 +281,7 @@ export const WorkspaceCreditsHistory = () => {
                             {tx.transaction_type === 'debit' ? '-' : '+'}{Math.abs(tx.amount).toFixed(4)}
                           </TableCell>
                           <TableCell className="text-right font-medium text-xs px-2 whitespace-nowrap">
-                            {tx.balance_after.toFixed(2)}
+                            {formatCredits(tx.balance_after)}
                           </TableCell>
                         </TableRow>
                         
@@ -328,7 +328,7 @@ export const WorkspaceCreditsHistory = () => {
                                   )}
                                   <div>
                                     <p className="text-muted-foreground">Saldo Anterior</p>
-                                    <p className="font-medium">{tx.balance_before.toFixed(2)}</p>
+                                    <p className="font-medium">{formatCredits(tx.balance_before)}</p>
                                   </div>
                                 </div>
                                 

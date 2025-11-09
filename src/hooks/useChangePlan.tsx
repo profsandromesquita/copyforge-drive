@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 interface ChangePlanParams {
   workspaceId: string;
@@ -61,7 +62,7 @@ export const useChangePlan = () => {
       if (data.requires_payment) {
         // TODO: Redirecionar para gateway de pagamento
         toast.info('Preparando checkout para pagamento...', {
-          description: `Valor a pagar: R$ ${data.amount_to_pay?.toFixed(2)}`
+          description: `Valor a pagar: ${formatCurrency(data.amount_to_pay || 0)}`
         });
         
         // Quando integrar com gateway:
