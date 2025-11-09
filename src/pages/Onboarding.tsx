@@ -164,7 +164,6 @@ const Onboarding = () => {
       }
 
       clearProgress();
-      toast.success("Bem-vindo ao Copy Drive! 🚀");
       navigate('/dashboard');
     } catch (error) {
       console.error("Erro ao completar onboarding:", error);
