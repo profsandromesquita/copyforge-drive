@@ -120,7 +120,6 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
               {isPopular && (
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
                   <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 shadow-md">
-                    <Sparkles className="w-2.5 h-2.5 mr-1" />
                     Mais Popular
                   </Badge>
                 </div>
