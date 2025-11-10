@@ -345,6 +345,20 @@ serve(async (req) => {
   }
 });
 
+// ========== FUNÇÕES AUXILIARES ==========
+
+// Função para buscar o user_id do owner de um workspace
+async function getWorkspaceOwnerId(supabase: any, workspaceId: string): Promise<string | null> {
+  const { data: member } = await supabase
+    .from('workspace_members')
+    .select('user_id')
+    .eq('workspace_id', workspaceId)
+    .eq('role', 'owner')
+    .single();
+  
+  return member?.user_id || null;
+}
+
 // ========== HANDLERS DE EVENTOS ==========
 
 // 1. Venda Aprovada / Pagamento Confirmado
@@ -396,8 +410,9 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     .eq('workspace_id', member.workspace_id)
     .eq('status', 'active');
 
-  // Determinar ciclo de cobrança
-  const billingCycle = payload.order.paid_amount === plan.monthly_price ? 'monthly' : 'annual';
+  // Determinar ciclo de cobrança - CORRIGIDO: paid_amount vem em centavos
+  const paidAmountInReais = payload.order.paid_amount / 100;
+  const billingCycle = Math.abs(paidAmountInReais - plan.monthly_price) < 1 ? 'monthly' : 'annual';
   const periodMonths = billingCycle === 'monthly' ? 1 : 12;
   
   // Criar nova assinatura
@@ -505,23 +520,44 @@ async function handleChargeback(supabase: any, payload: TictoWebhookPayload): Pr
     throw new Error('Invoice não encontrada');
   }
 
+  // Buscar owner do workspace para registrar transação
+  const ownerId = await getWorkspaceOwnerId(supabase, invoice.workspace_id);
+  if (!ownerId) {
+    throw new Error('Owner do workspace não encontrado');
+  }
+
   // Remover créditos proporcionalmente
   const { data: credits } = await supabase
     .from('workspace_credits')
-    .select('balance')
+    .select('balance, total_used')
     .eq('workspace_id', invoice.workspace_id)
     .single();
 
   const debitAmount = invoice.amount * 0.1; // Exemplo: debitar 10% como penalidade
-  const newBalance = Math.max(0, (credits?.balance || 0) - debitAmount);
+  const currentBalance = credits?.balance || 0;
+  const newBalance = Math.max(0, currentBalance - debitAmount);
 
+  // CORRIGIDO: Incrementar total_used corretamente
   await supabase
     .from('workspace_credits')
     .update({
       balance: newBalance,
-      total_used: (credits?.balance || 0) - newBalance
+      total_used: (credits?.total_used || 0) + debitAmount
     })
     .eq('workspace_id', invoice.workspace_id);
+
+  // Registrar transação de débito
+  await supabase
+    .from('credit_transactions')
+    .insert({
+      workspace_id: invoice.workspace_id,
+      user_id: ownerId,
+      transaction_type: 'debit',
+      amount: debitAmount,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: `Chargeback - Penalidade de 10% sobre o valor da invoice ${invoice.invoice_number}`
+    });
 
   // Suspender assinatura
   await supabase
@@ -554,20 +590,53 @@ async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promis
     throw new Error('Invoice não encontrada');
   }
 
+  // Buscar owner do workspace para registrar transação
+  const ownerId = await getWorkspaceOwnerId(supabase, invoice.workspace_id);
+  if (!ownerId) {
+    throw new Error('Owner do workspace não encontrado');
+  }
+
   // Remover créditos proporcionalmente
   const { data: credits } = await supabase
     .from('workspace_credits')
-    .select('balance')
+    .select('balance, total_used')
     .eq('workspace_id', invoice.workspace_id)
     .single();
 
-  const refundAmount = invoice.amount * 0.5; // Exemplo: remover 50% dos créditos
-  const newBalance = Math.max(0, (credits?.balance || 0) - refundAmount);
+  const refundAmount = invoice.amount * 0.5; // Remover 50% dos créditos
+  const currentBalance = credits?.balance || 0;
+  const newBalance = Math.max(0, currentBalance - refundAmount);
 
+  // CORRIGIDO: Atualizar balance e total_used
   await supabase
     .from('workspace_credits')
-    .update({ balance: newBalance })
+    .update({ 
+      balance: newBalance,
+      total_used: (credits?.total_used || 0) + refundAmount
+    })
     .eq('workspace_id', invoice.workspace_id);
+
+  // Registrar transação de débito
+  await supabase
+    .from('credit_transactions')
+    .insert({
+      workspace_id: invoice.workspace_id,
+      user_id: ownerId,
+      transaction_type: 'debit',
+      amount: refundAmount,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: `Reembolso - Remoção de 50% dos créditos referente à invoice ${invoice.invoice_number}`
+    });
+
+  // Cancelar assinatura associada
+  await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString()
+    })
+    .eq('id', invoice.subscription_id);
 
   return {
     status: 'success',
@@ -575,7 +644,7 @@ async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promis
     event_category: 'refund',
     workspace_id: invoice.workspace_id,
     credits_removed: refundAmount,
-    message: 'Reembolso processado'
+    message: 'Reembolso processado e assinatura cancelada'
   };
 }
 
@@ -638,6 +707,17 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
     throw new Error(`Oferta ${offerId} não mapeada`);
   }
 
+  // Buscar dados do plano
+  const { data: plan } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('id', planId)
+    .single();
+
+  if (!plan) {
+    throw new Error(`Plano ${planId} não encontrado`);
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
@@ -659,7 +739,10 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
     throw new Error('Workspace não encontrado');
   }
 
-  // Criar assinatura em trial
+  const trialDays = payload.item.trial_days || 7;
+  const trialEndDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+
+  // MELHORADO: Criar assinatura em trial com todos os campos necessários
   await supabase
     .from('workspace_subscriptions')
     .insert({
@@ -667,6 +750,12 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
       plan_id: planId,
       billing_cycle: 'monthly',
       status: 'trialing',
+      current_max_projects: plan.max_projects,
+      current_max_copies: plan.max_copies,
+      current_copy_ai_enabled: plan.copy_ai_enabled,
+      started_at: new Date().toISOString(),
+      current_period_start: new Date().toISOString(),
+      current_period_end: trialEndDate.toISOString(),
       payment_gateway: 'ticto',
       external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
     });
@@ -676,7 +765,8 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
     event_type: 'subscription.trial_started',
     event_category: 'subscription',
     workspace_id: member.workspace_id,
-    message: 'Trial iniciado'
+    trial_days: trialDays,
+    message: 'Trial iniciado com todos os limites do plano'
   };
 }
 
@@ -685,25 +775,137 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
   console.log('🔚 Processando fim de trial...');
   
   const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  const subscriptionData = payload.subscriptions?.[0];
   
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
-    .update({ status: 'active' })
+    .select('*, subscription_plans(*)')
     .eq('external_subscription_id', subscriptionId)
-    .select()
     .single();
 
   if (!subscription) {
     throw new Error('Assinatura não encontrada');
   }
 
-  return {
-    status: 'success',
-    event_type: 'subscription.trial_ended',
-    event_category: 'subscription',
-    workspace_id: subscription.workspace_id,
-    message: 'Trial encerrado e assinatura ativada'
-  };
+  const plan = subscription.subscription_plans;
+
+  // REFATORADO: Verificar se houve conversão para pagamento ou cancelamento
+  // Se next_charge existe, trial converteu para assinatura paga
+  const hasConverted = subscriptionData?.next_charge && !subscriptionData?.canceled_at;
+  
+  if (hasConverted) {
+    console.log('✅ Trial converteu para assinatura paga');
+    
+    // Buscar owner para registrar transação
+    const ownerId = await getWorkspaceOwnerId(supabase, subscription.workspace_id);
+    if (!ownerId) {
+      throw new Error('Owner do workspace não encontrado');
+    }
+    
+    // Ativar assinatura e definir períodos
+    const periodStart = new Date();
+    const periodEnd = subscriptionData.next_charge 
+      ? new Date(subscriptionData.next_charge) 
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // fallback para 30 dias
+    
+    await supabase
+      .from('workspace_subscriptions')
+      .update({ 
+        status: 'active',
+        current_period_start: periodStart.toISOString(),
+        current_period_end: periodEnd.toISOString()
+      })
+      .eq('id', subscription.id);
+
+    // Adicionar créditos do plano
+    const { data: credits } = await supabase
+      .from('workspace_credits')
+      .select('balance')
+      .eq('workspace_id', subscription.workspace_id)
+      .single();
+
+    const currentBalance = credits?.balance || 0;
+    const newBalance = currentBalance + plan.credits_per_month;
+
+    await supabase
+      .from('workspace_credits')
+      .update({
+        balance: newBalance,
+        total_added: (credits?.balance || 0) + plan.credits_per_month
+      })
+      .eq('workspace_id', subscription.workspace_id);
+
+    // Registrar transação
+    await supabase
+      .from('credit_transactions')
+      .insert({
+        workspace_id: subscription.workspace_id,
+        user_id: ownerId,
+        transaction_type: 'credit',
+        amount: plan.credits_per_month,
+        balance_before: currentBalance,
+        balance_after: newBalance,
+        description: `Créditos do plano ${plan.name} - Trial convertido para assinatura paga`
+      });
+
+    // Criar invoice da primeira cobrança
+    await supabase
+      .from('workspace_invoices')
+      .insert({
+        workspace_id: subscription.workspace_id,
+        subscription_id: subscription.id,
+        invoice_number: await generateInvoiceNumber(supabase),
+        amount: payload.order.paid_amount / 100,
+        currency: 'BRL',
+        status: 'paid',
+        payment_method: payload.payment_method,
+        payment_id: payload.order.hash,
+        external_payment_id: payload.order.hash,
+        paid_at: new Date(payload.status_date).toISOString(),
+        billing_period_start: periodStart.toISOString(),
+        billing_period_end: periodEnd.toISOString(),
+        due_date: periodStart.toISOString(),
+        line_items: [{
+          description: `${plan.name} - Mensal`,
+          amount: payload.order.paid_amount / 100,
+          quantity: 1
+        }],
+        metadata: { 
+          trial_conversion: true,
+          ticto_order_id: payload.order.id 
+        }
+      });
+
+    return {
+      status: 'success',
+      event_type: 'subscription.trial_ended',
+      event_category: 'subscription',
+      workspace_id: subscription.workspace_id,
+      converted: true,
+      credits_added: plan.credits_per_month,
+      message: 'Trial encerrado e convertido para assinatura paga'
+    };
+  } else {
+    console.log('❌ Trial não converteu - cancelando assinatura');
+    
+    // Trial não converteu, cancelar assinatura
+    await supabase
+      .from('workspace_subscriptions')
+      .update({ 
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString()
+      })
+      .eq('id', subscription.id);
+
+    return {
+      status: 'success',
+      event_type: 'subscription.trial_ended',
+      event_category: 'subscription',
+      workspace_id: subscription.workspace_id,
+      converted: false,
+      message: 'Trial encerrado sem conversão - assinatura cancelada'
+    };
+  }
 }
 
 // 8. Assinatura Retomada
@@ -727,6 +929,12 @@ async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPay
     throw new Error('Assinatura não encontrada');
   }
 
+  // CORRIGIDO: Buscar owner para registrar transação
+  const ownerId = await getWorkspaceOwnerId(supabase, subscription.workspace_id);
+  if (!ownerId) {
+    throw new Error('Owner do workspace não encontrado');
+  }
+
   // Adicionar créditos do período
   const plan = subscription.subscription_plans;
   const { data: credits } = await supabase
@@ -735,7 +943,8 @@ async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPay
     .eq('workspace_id', subscription.workspace_id)
     .single();
 
-  const newBalance = (credits?.balance || 0) + plan.credits_per_month;
+  const currentBalance = credits?.balance || 0;
+  const newBalance = currentBalance + plan.credits_per_month;
 
   await supabase
     .from('workspace_credits')
@@ -744,6 +953,19 @@ async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPay
       total_added: (credits?.balance || 0) + plan.credits_per_month
     })
     .eq('workspace_id', subscription.workspace_id);
+
+  // Registrar transação de crédito
+  await supabase
+    .from('credit_transactions')
+    .insert({
+      workspace_id: subscription.workspace_id,
+      user_id: ownerId,
+      transaction_type: 'credit',
+      amount: plan.credits_per_month,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: `Créditos do plano ${plan.name} - Assinatura retomada`
+    });
 
   return {
     status: 'success',
@@ -819,6 +1041,12 @@ async function handleSubscriptionExtended(supabase: any, payload: TictoWebhookPa
     throw new Error('Assinatura não encontrada');
   }
 
+  // CORRIGIDO: Buscar owner para registrar transação
+  const ownerId = await getWorkspaceOwnerId(supabase, subscription.workspace_id);
+  if (!ownerId) {
+    throw new Error('Owner do workspace não encontrado');
+  }
+
   // Adicionar créditos proporcionais
   const plan = subscription.subscription_plans;
   const extensionCredits = plan.credits_per_month * 0.5; // 50% dos créditos do mês
@@ -829,7 +1057,8 @@ async function handleSubscriptionExtended(supabase: any, payload: TictoWebhookPa
     .eq('workspace_id', subscription.workspace_id)
     .single();
 
-  const newBalance = (credits?.balance || 0) + extensionCredits;
+  const currentBalance = credits?.balance || 0;
+  const newBalance = currentBalance + extensionCredits;
 
   await supabase
     .from('workspace_credits')
@@ -838,6 +1067,19 @@ async function handleSubscriptionExtended(supabase: any, payload: TictoWebhookPa
       total_added: (credits?.balance || 0) + extensionCredits
     })
     .eq('workspace_id', subscription.workspace_id);
+
+  // Registrar transação de crédito
+  await supabase
+    .from('credit_transactions')
+    .insert({
+      workspace_id: subscription.workspace_id,
+      user_id: ownerId,
+      transaction_type: 'credit',
+      amount: extensionCredits,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: `Créditos proporcionais (50%) - Assinatura extendida`
+    });
 
   return {
     status: 'success',
