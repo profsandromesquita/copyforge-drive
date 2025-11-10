@@ -143,11 +143,8 @@ export const UpgradeModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className="h-6 w-6 text-primary" />
-            {message.title}
+            Escolha o Plano do seu Workspace
           </DialogTitle>
-          <DialogDescription className="text-base">
-            {message.description}
-          </DialogDescription>
         </DialogHeader>
 
         {currentLimit !== undefined && currentUsage !== undefined && (
