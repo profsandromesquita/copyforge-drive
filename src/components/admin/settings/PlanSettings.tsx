@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import { PlanOfferModal } from "./PlanOfferModal";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PlanFormData {
   id?: string;
@@ -52,13 +53,17 @@ export const PlanSettings = () => {
   const [formData, setFormData] = useState<PlanFormData>(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedPlanForOffers, setSelectedPlanForOffers] = useState<string | null>(null);
+  const [selectedGateway, setSelectedGateway] = useState<string>('');
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<any>(null);
   const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
   
   const { offers, createOffer, updateOffer, deleteOffer, toggleOfferStatus, isCreating, isUpdating } = usePlanOffers(selectedPlanForOffers || undefined);
   
-  const activeGateway = gateways.find(g => g.is_active);
+  // Filtrar ofertas pelo gateway selecionado
+  const filteredOffers = selectedGateway 
+    ? offers.filter(offer => offer.payment_gateway_id === selectedGateway)
+    : offers;
 
   const handleOpenDialog = (plan?: any) => {
     if (plan) {
@@ -97,6 +102,11 @@ export const PlanSettings = () => {
 
   const handleManageOffers = (planId: string) => {
     setSelectedPlanForOffers(planId);
+    // Auto-selecionar primeiro gateway ativo
+    const firstGateway = gateways.find(g => g.is_active);
+    if (firstGateway) {
+      setSelectedGateway(firstGateway.id);
+    }
   };
 
   const handleCreateOffer = () => {
@@ -395,106 +405,128 @@ export const PlanSettings = () => {
             </DialogHeader>
 
             <div className="space-y-4">
-              {!activeGateway && (
+              {gateways.length === 0 ? (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
                   <p className="font-semibold text-yellow-800">⚠️ Nenhum gateway de pagamento ativo</p>
                   <p className="text-yellow-700 mt-1">Configure um gateway de pagamento em Configurações → Integrações</p>
                 </div>
-              )}
-
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-muted-foreground">
-                  {offers.length} {offers.length === 1 ? 'oferta configurada' : 'ofertas configuradas'}
-                </p>
-                <Button onClick={handleCreateOffer} disabled={!activeGateway}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Oferta
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {offers.map((offer) => (
-                  <Card key={offer.id} className={!offer.is_active ? 'opacity-60' : ''}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold">{offer.name}</h4>
-                            <Badge variant={offer.is_active ? "default" : "secondary"}>
-                              {offer.is_active ? 'Ativa' : 'Inativa'}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Preço:</span>
-                              <span className="ml-2 font-semibold">{formatCurrency(offer.price)}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Período:</span>
-                              <span className="ml-2">{getBillingPeriodLabel(offer.billing_period_value, offer.billing_period_unit)}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">ID Gateway:</span>
-                              <span className="ml-2 font-mono text-xs">{offer.gateway_offer_id}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleOfferStatus({ id: offer.id, is_active: !offer.is_active })}
-                          >
-                            <Switch checked={offer.is_active} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditOffer(offer)}
-                          >
-                            <PencilSimple size={16} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteOffer(offer.id)}
-                          >
-                            <Trash size={16} />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-
-                {offers.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Package size={48} className="mx-auto mb-2 opacity-50" />
-                    <p>Nenhuma oferta configurada ainda</p>
-                    <p className="text-sm mt-1">Clique em "Nova Oferta" para começar</p>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Gateway de Pagamento</Label>
+                    <Select value={selectedGateway} onValueChange={setSelectedGateway}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o gateway" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {gateways.map((gateway) => (
+                          <SelectItem key={gateway.id} value={gateway.id}>
+                            {gateway.integrations.name} {gateway.is_active ? '(Ativo)' : '(Inativo)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      As ofertas e seus checkouts são específicos por gateway de pagamento
+                    </p>
                   </div>
-                )}
-              </div>
+
+                  {selectedGateway && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">
+                          {filteredOffers.length} {filteredOffers.length === 1 ? 'oferta configurada' : 'ofertas configuradas'} para este gateway
+                        </p>
+                        <Button onClick={handleCreateOffer}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Nova Oferta
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {filteredOffers.map((offer) => (
+                          <Card key={offer.id} className={!offer.is_active ? 'opacity-60' : ''}>
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold">{offer.name}</h4>
+                                    <Badge variant={offer.is_active ? "default" : "secondary"}>
+                                      {offer.is_active ? 'Ativa' : 'Inativa'}
+                                    </Badge>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">Preço:</span>
+                                      <span className="ml-2 font-semibold">{formatCurrency(offer.price)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Período:</span>
+                                      <span className="ml-2">{getBillingPeriodLabel(offer.billing_period_value, offer.billing_period_unit)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">ID Gateway:</span>
+                                      <span className="ml-2 font-mono text-xs">{offer.gateway_offer_id}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => toggleOfferStatus({ id: offer.id, is_active: !offer.is_active })}
+                                  >
+                                    <Switch checked={offer.is_active} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditOffer(offer)}
+                                  >
+                                    <PencilSimple size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteOffer(offer.id)}
+                                  >
+                                    <Trash size={16} />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                        {filteredOffers.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>Nenhuma oferta configurada para este gateway</p>
+                            <p className="text-sm mt-1">Clique em "Nova Oferta" para criar</p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </DialogContent>
         </Dialog>
       )}
 
       {/* Modal de Criar/Editar Oferta */}
-      {activeGateway && (
-        <PlanOfferModal
-          open={isOfferModalOpen}
-          onClose={() => {
-            setIsOfferModalOpen(false);
-            setEditingOffer(null);
-          }}
-          onSubmit={handleOfferSubmit}
-          planId={selectedPlanForOffers || ''}
-          activeGatewayId={activeGateway.id}
-          offer={editingOffer}
-          isSubmitting={isCreating || isUpdating}
-        />
-      )}
+      <PlanOfferModal
+        open={isOfferModalOpen}
+        onClose={() => {
+          setIsOfferModalOpen(false);
+          setEditingOffer(null);
+        }}
+        onSubmit={handleOfferSubmit}
+        planId={selectedPlanForOffers || ''}
+        activeGatewayId={selectedGateway}
+        offer={editingOffer}
+        isSubmitting={isCreating || isUpdating}
+      />
 
       {/* Dialog de Confirmação de Exclusão */}
       <AlertDialog open={!!offerToDelete} onOpenChange={() => setOfferToDelete(null)}>
