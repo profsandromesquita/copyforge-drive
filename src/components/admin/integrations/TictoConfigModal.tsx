@@ -35,13 +35,32 @@ export function TictoConfigModal({ open, onOpenChange, onViewLogs }: TictoConfig
     if (config) {
       setValidationToken(config.config?.validation_token || '');
       setIsActive(config.is_active);
+      
+      // Buscar os IDs das ofertas a partir dos mappings salvos
+      const starterPlan = plans?.find(p => p.slug === 'starter');
+      const proPlan = plans?.find(p => p.slug === 'pro');
+      const businessPlan = plans?.find(p => p.slug === 'business');
+      
+      // Inverter o mapeamento: procurar o offer_id que aponta para cada plan_id
+      let starterOfferId = '';
+      let proOfferId = '';
+      let businessOfferId = '';
+      
+      if (config.config?.offer_mappings) {
+        Object.entries(config.config.offer_mappings).forEach(([offerId, planId]) => {
+          if (planId === starterPlan?.id) starterOfferId = offerId;
+          if (planId === proPlan?.id) proOfferId = offerId;
+          if (planId === businessPlan?.id) businessOfferId = offerId;
+        });
+      }
+      
       setOfferMappings({
-        starter_offer_id: config.config?.offer_mappings?.starter_offer_id || '',
-        pro_offer_id: config.config?.offer_mappings?.pro_offer_id || '',
-        business_offer_id: config.config?.offer_mappings?.business_offer_id || '',
+        starter_offer_id: starterOfferId,
+        pro_offer_id: proOfferId,
+        business_offer_id: businessOfferId,
       });
     }
-  }, [config]);
+  }, [config, plans]);
 
   const handleCopyWebhookUrl = () => {
     navigator.clipboard.writeText(webhookUrl);
