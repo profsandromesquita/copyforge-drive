@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,7 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, TrendingUp, Users, FileText, Brain } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
+import { buildCheckoutUrl } from "@/lib/checkout-utils";
 import { PlanOffer } from "@/hooks/usePlanOffers";
+import { toast } from "sonner";
 
 interface SubscriptionPlan {
   id: string;
@@ -56,6 +61,8 @@ export const UpgradeModal = ({
   currentUsage,
 }: UpgradeModalProps) => {
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,7 +161,27 @@ export const UpgradeModal = ({
   };
 
   const handleUpgrade = (offer: PlanOffer) => {
-    window.open(offer.checkout_url, '_blank');
+    if (!offer.checkout_url) {
+      toast.error("Link de checkout não disponível");
+      return;
+    }
+
+    if (!activeWorkspace || !user || !profile) {
+      toast.error("Informações do usuário não disponíveis");
+      return;
+    }
+
+    // Construir URL com tracking e pré-preenchimento
+    const enrichedUrl = buildCheckoutUrl(offer.checkout_url, {
+      workspace_id: activeWorkspace.id,
+      user_id: user.id,
+      email: profile.email,
+      name: profile.name,
+      phone: profile.phone,
+      source: 'upgrade_modal'
+    });
+
+    window.open(enrichedUrl, '_blank');
     onOpenChange(false);
   };
 

@@ -4,10 +4,13 @@ import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useChangePlan } from "@/hooks/useChangePlan";
 import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { buildCheckoutUrl } from "@/lib/checkout-utils";
 import { toast } from "sonner";
 
 interface OnboardingStep5Props {
@@ -21,6 +24,8 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   const { plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { data: currentPlan } = useWorkspacePlan(workspaceId);
   const { changePlan, isChanging } = useChangePlan();
+  const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
 
   const activePlans = plans?.filter(plan => plan.is_active) || [];
@@ -54,12 +59,31 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
       return;
     }
 
-    toast.info(
-      "Estrutura de pagamento preparada. Em breve você poderá processar pagamentos aqui.",
-      { duration: 5000 }
-    );
+    if (!user || !profile) {
+      toast.error("Informações do usuário não disponíveis");
+      return;
+    }
 
     try {
+      // Buscar oferta para obter checkout_url
+      const planOffers = offersByPlan[planId] || [];
+      const selectedOffer = planOffers.find(o => o.id === offerId);
+      
+      if (selectedOffer?.checkout_url) {
+        // Construir URL com tracking e pré-preenchimento
+        const enrichedUrl = buildCheckoutUrl(selectedOffer.checkout_url, {
+          workspace_id: workspaceId,
+          user_id: user.id,
+          email: profile.email,
+          name: profile.name,
+          phone: profile.phone,
+          source: 'onboarding'
+        });
+
+        // Abrir checkout em nova aba
+        window.open(enrichedUrl, '_blank');
+      }
+
       await changePlan({
         workspaceId,
         planOfferId: offerId,

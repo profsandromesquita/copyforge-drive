@@ -439,6 +439,19 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   const offer = await findPlanOfferByGatewayId(supabase, tictoOfferId, gateway.id);
   const plan = offer.subscription_plans;
 
+  // Extrair parâmetros de tracking da URL
+  const urlParams = payload.url_params || {};
+  const workspaceIdFromUrl = urlParams.workspace_id;
+  const userIdFromUrl = urlParams.user_id;
+  const sourceFromUrl = urlParams.source;
+
+  console.log('📊 Tracking params:', {
+    workspace_id: workspaceIdFromUrl,
+    user_id: userIdFromUrl,
+    source: sourceFromUrl,
+    customer_email: payload.customer.email
+  });
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
@@ -449,22 +462,49 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     throw new Error(`Usuário ${payload.customer.email} não encontrado`);
   }
 
-  const { data: member } = await supabase
-    .from('workspace_members')
-    .select('workspace_id')
-    .eq('user_id', profile.id)
-    .eq('role', 'owner')
-    .single();
+  // Se workspace_id vier na URL, usar ele; senão, buscar pelo owner
+  let targetWorkspaceId = workspaceIdFromUrl;
+  
+  if (!targetWorkspaceId) {
+    const { data: member } = await supabase
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', profile.id)
+      .eq('role', 'owner')
+      .single();
 
-  if (!member) {
-    throw new Error(`Workspace não encontrado para usuário`);
+    if (!member) {
+      throw new Error(`Workspace não encontrado para usuário`);
+    }
+    
+    targetWorkspaceId = member.workspace_id;
+  } else {
+    // Validar se workspace existe e usuário tem acesso
+    const { data: workspaceAccess } = await supabase
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('workspace_id', targetWorkspaceId)
+      .eq('user_id', profile.id)
+      .single();
+
+    if (!workspaceAccess) {
+      console.warn(`⚠️ Workspace ${targetWorkspaceId} não encontrado ou usuário sem acesso. Usando workspace owner.`);
+      const { data: member } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', profile.id)
+        .eq('role', 'owner')
+        .single();
+
+      targetWorkspaceId = member?.workspace_id;
+    }
   }
 
   // Cancelar assinatura antiga se existir
   await supabase
     .from('workspace_subscriptions')
     .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
-    .eq('workspace_id', member.workspace_id)
+    .eq('workspace_id', targetWorkspaceId)
     .eq('status', 'active');
 
   // Calcular períodos baseado na oferta flexível
@@ -475,7 +515,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   const { data: newSubscription } = await supabase
     .from('workspace_subscriptions')
     .insert({
-      workspace_id: member.workspace_id,
+      workspace_id: targetWorkspaceId,
       plan_id: plan.id,
       plan_offer_id: offer.id,
       billing_cycle: billingCycle,
@@ -491,13 +531,14 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     .select()
     .single();
 
-  // Criar invoice com informações da oferta
+  // Criar invoice com informações da oferta e tracking
   await supabase
     .from('workspace_invoices')
     .insert({
-      workspace_id: member.workspace_id,
+      workspace_id: targetWorkspaceId,
       subscription_id: newSubscription.id,
       invoice_number: await generateInvoiceNumber(supabase),
+      notes: sourceFromUrl ? `Origem: ${sourceFromUrl}` : null,
       amount: payload.order.paid_amount / 100,
       currency: 'BRL',
       status: 'paid',
@@ -526,7 +567,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   const { data: credits } = await supabase
     .from('workspace_credits')
     .select('balance')
-    .eq('workspace_id', member.workspace_id)
+    .eq('workspace_id', targetWorkspaceId)
     .single();
 
   const newBalance = (credits?.balance || 0) + plan.credits_per_month;
@@ -537,13 +578,13 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
       balance: newBalance,
       total_added: (credits?.balance || 0) + plan.credits_per_month
     })
-    .eq('workspace_id', member.workspace_id);
+    .eq('workspace_id', targetWorkspaceId);
 
   // Registrar transação
   await supabase
     .from('credit_transactions')
     .insert({
-      workspace_id: member.workspace_id,
+      workspace_id: targetWorkspaceId,
       user_id: profile.id,
       transaction_type: 'credit',
       amount: plan.credits_per_month,
@@ -556,7 +597,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     status: 'success',
     event_type: 'purchase.approved',
     event_category: 'payment',
-    workspace_id: member.workspace_id,
+    workspace_id: targetWorkspaceId,
     plan_name: plan.name,
     credits_added: plan.credits_per_month,
     message: 'Venda aprovada e assinatura ativada'
