@@ -1,4 +1,5 @@
-import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus } from "phosphor-react";
+import { useState } from "react";
+import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus, Crown } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import copyDriveLogo from "@/assets/copydrive-logo.png";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ProjectSelector } from "./ProjectSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
+import { UpgradeModal } from "@/components/workspace/UpgradeModal";
 
 const menuItems = [
   { icon: Folder, label: "Drive", path: "/dashboard" },
@@ -24,6 +28,11 @@ interface SidebarProps {
 
 const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
   const isDisabled = !onCreateCopy && !onCreateFolder;
+  const { activeWorkspace } = useWorkspace();
+  const { data: workspacePlan } = useWorkspacePlan(activeWorkspace?.id);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  const isFreeplan = workspacePlan?.plan_slug === 'free';
 
   return (
     <aside className="hidden lg:flex flex-col w-64 bg-background h-screen sticky top-0">
@@ -111,6 +120,26 @@ const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
           ))}
         </ul>
       </nav>
+
+      {/* Upgrade Button - Only for Free Plan */}
+      {isFreeplan && (
+        <div className="p-4 border-t border-border">
+          <Button
+            onClick={() => setShowUpgradeModal(true)}
+            className="w-full gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            size="lg"
+          >
+            <Crown size={20} weight="fill" />
+            <span>Fazer Upgrade</span>
+          </Button>
+        </div>
+      )}
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        limitType="projects"
+      />
     </aside>
   );
 };
