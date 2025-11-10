@@ -579,6 +579,7 @@ export type Database = {
           icon_url: string | null
           id: string
           is_enabled: boolean
+          metadata: Json | null
           name: string
           slug: string
           updated_at: string | null
@@ -590,6 +591,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_enabled?: boolean
+          metadata?: Json | null
           name: string
           slug: string
           updated_at?: string | null
@@ -601,6 +603,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_enabled?: boolean
+          metadata?: Json | null
           name?: string
           slug?: string
           updated_at?: string | null
@@ -633,6 +636,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payment_gateways: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          integration_id: string
+          is_active: boolean
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_gateways_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_gateways_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -912,6 +960,42 @@ export type Database = {
           },
         ]
       }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          headers: Json | null
+          id: string
+          integration_slug: string
+          payload: Json
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          headers?: Json | null
+          id?: string
+          integration_slug: string
+          payload: Json
+          processed_at?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          headers?: Json | null
+          id?: string
+          integration_slug?: string
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       workspace_credits: {
         Row: {
           balance: number
@@ -1142,7 +1226,9 @@ export type Database = {
           current_max_projects: number | null
           current_period_end: string | null
           current_period_start: string | null
+          external_subscription_id: string | null
           id: string
+          payment_gateway: string | null
           plan_id: string
           projects_count: number | null
           started_at: string | null
@@ -1160,7 +1246,9 @@ export type Database = {
           current_max_projects?: number | null
           current_period_end?: string | null
           current_period_start?: string | null
+          external_subscription_id?: string | null
           id?: string
+          payment_gateway?: string | null
           plan_id: string
           projects_count?: number | null
           started_at?: string | null
@@ -1178,7 +1266,9 @@ export type Database = {
           current_max_projects?: number | null
           current_period_end?: string | null
           current_period_start?: string | null
+          external_subscription_id?: string | null
           id?: string
+          payment_gateway?: string | null
           plan_id?: string
           projects_count?: number | null
           started_at?: string | null
@@ -1359,6 +1449,10 @@ export type Database = {
       }
       sync_workspace_plan_limits: {
         Args: { p_workspace_id?: string }
+        Returns: Json
+      }
+      test_ticto_connection: {
+        Args: { p_validation_token: string }
         Returns: Json
       }
     }

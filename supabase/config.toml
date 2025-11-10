@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.setup-new-user]
 verify_jwt = false
+
+[functions.webhook-ticto]
+verify_jwt = false

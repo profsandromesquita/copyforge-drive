@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plug, Lightning } from "phosphor-react";
+import { TictoConfigModal } from "@/components/admin/integrations/TictoConfigModal";
+import { WebhookLogsModal } from "@/components/admin/integrations/WebhookLogsModal";
+import { usePaymentGateway } from "@/hooks/usePaymentGateway";
 
 interface Integration {
   id: string;
@@ -18,6 +21,9 @@ interface Integration {
 export const IntegrationsSettings = () => {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tictoConfigOpen, setTictoConfigOpen] = useState(false);
+  const [tictoLogsOpen, setTictoLogsOpen] = useState(false);
+  const { config: tictoConfig } = usePaymentGateway('ticto');
 
   useEffect(() => {
     loadIntegrations();
@@ -123,9 +129,23 @@ export const IntegrationsSettings = () => {
                 >
                   {integration.is_enabled ? "Desativar" : "Ativar"}
                 </Button>
-                <Button variant="outline" size="sm" disabled>
-                  Configurar
-                </Button>
+                <div className="flex gap-2 items-center">
+                  {integration.slug === 'ticto' && tictoConfig?.is_active && (
+                    <Badge variant="default">Configurado</Badge>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (integration.slug === 'ticto') {
+                        setTictoConfigOpen(true);
+                      }
+                    }}
+                    disabled={integration.slug !== 'ticto'}
+                  >
+                    Configurar
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -142,6 +162,21 @@ export const IntegrationsSettings = () => {
           </CardContent>
         </Card>
       )}
+
+      <TictoConfigModal 
+        open={tictoConfigOpen}
+        onOpenChange={setTictoConfigOpen}
+        onViewLogs={() => {
+          setTictoConfigOpen(false);
+          setTictoLogsOpen(true);
+        }}
+      />
+
+      <WebhookLogsModal
+        open={tictoLogsOpen}
+        onOpenChange={setTictoLogsOpen}
+        integrationSlug="ticto"
+      />
     </div>
   );
 };
