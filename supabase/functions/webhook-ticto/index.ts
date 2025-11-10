@@ -15,6 +15,7 @@ interface TictoWebhookPayload {
   token: string;
   payment_method: string;
   url_params?: any;
+  query_params?: any; // Ticto v2.0 envia params em query_params
   tracking?: any;
   checkout_url?: string;
   order: {
@@ -468,8 +469,8 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
   const plan = offer.subscription_plans;
 
-  // Extrair parâmetros de tracking da URL
-  const urlParams = payload.url_params || {};
+  // Extrair parâmetros de tracking da URL (Ticto envia em query_params)
+  const urlParams = payload.query_params || payload.url_params || {};
   const workspaceIdFromUrl = urlParams.workspace_id;
   const userIdFromUrl = urlParams.user_id;
   const sourceFromUrl = urlParams.source;
@@ -526,7 +527,15 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
         .single();
 
       targetWorkspaceId = member?.workspace_id;
+      
+      if (!targetWorkspaceId) {
+        throw new Error(`Nenhum workspace encontrado para o usuário`);
+      }
     }
+  }
+  
+  if (!targetWorkspaceId) {
+    throw new Error(`Workspace não identificado`);
   }
 
   // Cancelar assinatura antiga se existir

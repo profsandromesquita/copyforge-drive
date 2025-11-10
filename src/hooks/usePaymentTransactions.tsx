@@ -59,7 +59,8 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
       const enrichedData = await Promise.all(
         data.map(async (log) => {
           const payload = log.payload as any;
-          const workspaceIdFromPayload = payload?.url_params?.workspace_id;
+          // Ticto envia em query_params (v2.0) ou url_params (legado)
+          const workspaceIdFromPayload = payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
           
           let workspaceName, ownerName, ownerEmail;
 
