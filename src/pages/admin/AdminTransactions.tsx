@@ -32,13 +32,13 @@ import { useNavigate } from "react-router-dom";
 const AdminTransactions = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [gatewayFilter, setGatewayFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [gatewayFilter, setGatewayFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const navigate = useNavigate();
 
   const { data: transactions, isLoading } = usePaymentTransactions({
-    gateway: gatewayFilter || undefined,
-    status: statusFilter || undefined,
+    gateway: gatewayFilter !== "all" ? gatewayFilter : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
   const { data: summary } = usePaymentTransactionsSummary();
@@ -122,7 +122,7 @@ const AdminTransactions = () => {
                 <SelectValue placeholder="Todos os gateways" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="ticto">Ticto</SelectItem>
                 <SelectItem value="stripe">Stripe</SelectItem>
               </SelectContent>
@@ -133,7 +133,7 @@ const AdminTransactions = () => {
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="success">Aprovada</SelectItem>
                 <SelectItem value="failed">Falha</SelectItem>
                 <SelectItem value="processing">Processando</SelectItem>
