@@ -275,14 +275,14 @@ export const PlanSettings = () => {
                 <div className="space-y-2">
                   <Label htmlFor="payment_gateway">Gateway de Pagamento</Label>
                   <Select
-                    value={formData.payment_gateway_id || ''}
-                    onValueChange={(value) => handleInputChange('payment_gateway_id', value || null)}
+                    value={formData.payment_gateway_id || 'none'}
+                    onValueChange={(value) => handleInputChange('payment_gateway_id', value === 'none' ? null : value)}
                   >
                     <SelectTrigger id="payment_gateway">
                       <SelectValue placeholder="Selecione um gateway" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {gateways.map((gateway) => (
                         <SelectItem key={gateway.id} value={gateway.id}>
                           {gateway.integrations.name}
