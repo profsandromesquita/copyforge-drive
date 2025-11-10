@@ -359,28 +359,85 @@ async function getWorkspaceOwnerId(supabase: any, workspaceId: string): Promise<
   return member?.user_id || null;
 }
 
+// Função para buscar oferta pelo gateway_offer_id da Ticto
+async function findPlanOfferByGatewayId(
+  supabase: any, 
+  gatewayOfferId: string | number, 
+  gatewayId: string
+): Promise<any> {
+  const { data: offer, error } = await supabase
+    .from('plan_offers')
+    .select('*, subscription_plans(*)')
+    .eq('gateway_offer_id', gatewayOfferId.toString())
+    .eq('payment_gateway_id', gatewayId)
+    .eq('is_active', true)
+    .single();
+  
+  if (error || !offer) {
+    throw new Error(`Oferta ${gatewayOfferId} não encontrada ou não está ativa`);
+  }
+  
+  return offer;
+}
+
+// Função para calcular período de fim baseado na oferta
+function calculatePeriodEnd(offer: any): Date | null {
+  const now = new Date();
+  const value = offer.billing_period_value;
+  const unit = offer.billing_period_unit;
+  
+  switch (unit) {
+    case 'days':
+      return new Date(now.getTime() + value * 24 * 60 * 60 * 1000);
+    case 'months':
+      const monthEnd = new Date(now);
+      monthEnd.setMonth(monthEnd.getMonth() + value);
+      return monthEnd;
+    case 'years':
+      const yearEnd = new Date(now);
+      yearEnd.setFullYear(yearEnd.getFullYear() + value);
+      return yearEnd;
+    case 'lifetime':
+      return null;
+    default:
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // fallback 30 dias
+  }
+}
+
+// Função para determinar billing_cycle baseado na oferta
+function determineBillingCycle(offer: any): string {
+  const value = offer.billing_period_value;
+  const unit = offer.billing_period_unit;
+  
+  if (value === 1 && unit === 'months') return 'monthly';
+  if (value === 12 && unit === 'months') return 'annual';
+  return 'monthly'; // padrão
+}
+
 // ========== HANDLERS DE EVENTOS ==========
 
 // 1. Venda Aprovada / Pagamento Confirmado
 async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
   console.log('💰 Processando venda aprovada...');
   
-  const offerId = payload.item.offer_id;
-  const planId = config.offer_mappings?.[offerId];
-  
-  if (!planId) {
-    throw new Error(`Oferta ${offerId} não mapeada para nenhum plano`);
-  }
-
-  const { data: plan } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .eq('id', planId)
+  // Buscar gateway da Ticto
+  const { data: integration } = await supabase
+    .from('integrations')
+    .select('id')
+    .eq('slug', 'ticto')
     .single();
-
-  if (!plan) {
-    throw new Error(`Plano ${planId} não encontrado`);
-  }
+  
+  const { data: gateway } = await supabase
+    .from('payment_gateways')
+    .select('id')
+    .eq('integration_id', integration.id)
+    .is('workspace_id', null)
+    .single();
+  
+  // Buscar oferta pelo gateway_offer_id da Ticto
+  const tictoOfferId = payload.item.offer_id;
+  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferId, gateway.id);
+  const plan = offer.subscription_plans;
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -410,31 +467,31 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     .eq('workspace_id', member.workspace_id)
     .eq('status', 'active');
 
-  // Determinar ciclo de cobrança - CORRIGIDO: paid_amount vem em centavos
-  const paidAmountInReais = payload.order.paid_amount / 100;
-  const billingCycle = Math.abs(paidAmountInReais - plan.monthly_price) < 1 ? 'monthly' : 'annual';
-  const periodMonths = billingCycle === 'monthly' ? 1 : 12;
+  // Calcular períodos baseado na oferta flexível
+  const billingCycle = determineBillingCycle(offer);
+  const periodEnd = calculatePeriodEnd(offer);
   
-  // Criar nova assinatura
+  // Criar nova assinatura com oferta flexível
   const { data: newSubscription } = await supabase
     .from('workspace_subscriptions')
     .insert({
       workspace_id: member.workspace_id,
-      plan_id: planId,
+      plan_id: plan.id,
+      plan_offer_id: offer.id,
       billing_cycle: billingCycle,
       status: 'active',
       current_max_projects: plan.max_projects,
       current_max_copies: plan.max_copies,
       current_copy_ai_enabled: plan.copy_ai_enabled,
       current_period_start: new Date().toISOString(),
-      current_period_end: new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      current_period_end: periodEnd?.toISOString() || null,
       payment_gateway: 'ticto',
       external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
     })
     .select()
     .single();
 
-  // Criar invoice
+  // Criar invoice com informações da oferta
   await supabase
     .from('workspace_invoices')
     .insert({
@@ -449,17 +506,19 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
       external_payment_id: payload.order.hash,
       paid_at: new Date(payload.status_date).toISOString(),
       billing_period_start: new Date().toISOString(),
-      billing_period_end: new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      billing_period_end: periodEnd?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       due_date: new Date().toISOString(),
       line_items: [{
-        description: `${plan.name} - ${billingCycle === 'monthly' ? 'Mensal' : 'Anual'}`,
+        description: `${plan.name} - ${offer.name}`,
         amount: payload.order.paid_amount / 100,
         quantity: 1
       }],
       metadata: {
         ticto_order_id: payload.order.id,
         ticto_transaction_hash: payload.order.transaction_hash,
-        installments: payload.order.installments
+        installments: payload.order.installments,
+        offer_id: offer.id,
+        offer_name: offer.name
       }
     });
 
@@ -700,23 +759,24 @@ async function handleCardUpdated(supabase: any, payload: TictoWebhookPayload): P
 async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
   console.log('🆓 Processando início de trial...');
   
-  const offerId = payload.item.offer_id;
-  const planId = config.offer_mappings?.[offerId];
-  
-  if (!planId) {
-    throw new Error(`Oferta ${offerId} não mapeada`);
-  }
-
-  // Buscar dados do plano
-  const { data: plan } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .eq('id', planId)
+  // Buscar gateway da Ticto
+  const { data: integration } = await supabase
+    .from('integrations')
+    .select('id')
+    .eq('slug', 'ticto')
     .single();
-
-  if (!plan) {
-    throw new Error(`Plano ${planId} não encontrado`);
-  }
+  
+  const { data: gateway } = await supabase
+    .from('payment_gateways')
+    .select('id')
+    .eq('integration_id', integration.id)
+    .is('workspace_id', null)
+    .single();
+  
+  // Buscar oferta pelo gateway_offer_id
+  const tictoOfferId = payload.item.offer_id;
+  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferId, gateway.id);
+  const plan = offer.subscription_plans;
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -741,14 +801,16 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
 
   const trialDays = payload.item.trial_days || 7;
   const trialEndDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+  const billingCycle = determineBillingCycle(offer);
 
-  // MELHORADO: Criar assinatura em trial com todos os campos necessários
+  // Criar assinatura em trial com oferta flexível
   await supabase
     .from('workspace_subscriptions')
     .insert({
       workspace_id: member.workspace_id,
-      plan_id: planId,
-      billing_cycle: 'monthly',
+      plan_id: plan.id,
+      plan_offer_id: offer.id,
+      billing_cycle: billingCycle,
       status: 'trialing',
       current_max_projects: plan.max_projects,
       current_max_copies: plan.max_copies,
@@ -779,7 +841,7 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
   
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
-    .select('*, subscription_plans(*)')
+    .select('*, subscription_plans(*), plan_offers(*)')
     .eq('external_subscription_id', subscriptionId)
     .single();
 
@@ -788,6 +850,7 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
   }
 
   const plan = subscription.subscription_plans;
+  const offer = subscription.plan_offers;
 
   // REFATORADO: Verificar se houve conversão para pagamento ou cancelamento
   // Se next_charge existe, trial converteu para assinatura paga
@@ -802,18 +865,16 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
       throw new Error('Owner do workspace não encontrado');
     }
     
-    // Ativar assinatura e definir períodos
+    // Ativar assinatura e definir períodos baseado na oferta
     const periodStart = new Date();
-    const periodEnd = subscriptionData.next_charge 
-      ? new Date(subscriptionData.next_charge) 
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // fallback para 30 dias
+    const periodEnd = offer ? calculatePeriodEnd(offer) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     
     await supabase
       .from('workspace_subscriptions')
       .update({ 
         status: 'active',
         current_period_start: periodStart.toISOString(),
-        current_period_end: periodEnd.toISOString()
+        current_period_end: periodEnd?.toISOString() || null
       })
       .eq('id', subscription.id);
 
@@ -863,18 +924,18 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
         external_payment_id: payload.order.hash,
         paid_at: new Date(payload.status_date).toISOString(),
         billing_period_start: periodStart.toISOString(),
-        billing_period_end: periodEnd.toISOString(),
+        billing_period_end: periodEnd?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         due_date: periodStart.toISOString(),
-        line_items: [{
-          description: `${plan.name} - Mensal`,
-          amount: payload.order.paid_amount / 100,
-          quantity: 1
-        }],
-        metadata: { 
-          trial_conversion: true,
-          ticto_order_id: payload.order.id 
-        }
-      });
+      line_items: [{
+        description: `${plan.name} - Mensal`,
+        amount: payload.order.paid_amount / 100,
+        quantity: 1
+      }],
+      metadata: { 
+        trial_conversion: true,
+        ticto_order_id: payload.order.id 
+      }
+    });
 
     return {
       status: 'success',
@@ -916,18 +977,26 @@ async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPay
   
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
-    .update({ 
-      status: 'active',
-      current_period_start: new Date().toISOString(),
-      current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    })
+    .select('*, subscription_plans(*), plan_offers(*)')
     .eq('external_subscription_id', subscriptionId)
-    .select('*, subscription_plans(*)')
     .single();
 
   if (!subscription) {
     throw new Error('Assinatura não encontrada');
   }
+  
+  // Calcular período baseado na oferta
+  const offer = subscription.plan_offers;
+  const periodEnd = offer ? calculatePeriodEnd(offer) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  
+  await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      status: 'active',
+      current_period_start: new Date().toISOString(),
+      current_period_end: periodEnd?.toISOString() || null
+    })
+    .eq('id', subscription.id);
 
   // CORRIGIDO: Buscar owner para registrar transação
   const ownerId = await getWorkspaceOwnerId(supabase, subscription.workspace_id);
@@ -1030,16 +1099,26 @@ async function handleSubscriptionExtended(supabase: any, payload: TictoWebhookPa
   
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
-    .update({ 
-      current_period_end: nextCharge ? new Date(nextCharge).toISOString() : null
-    })
+    .select('*, subscription_plans(*), plan_offers(*)')
     .eq('external_subscription_id', subscriptionId)
-    .select('*, subscription_plans(*)')
     .single();
 
   if (!subscription) {
     throw new Error('Assinatura não encontrada');
   }
+  
+  // Calcular novo período baseado na oferta
+  const offer = subscription.plan_offers;
+  const periodEnd = nextCharge 
+    ? new Date(nextCharge) 
+    : (offer ? calculatePeriodEnd(offer) : null);
+  
+  await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      current_period_end: periodEnd?.toISOString() || null
+    })
+    .eq('id', subscription.id);
 
   // CORRIGIDO: Buscar owner para registrar transação
   const ownerId = await getWorkspaceOwnerId(supabase, subscription.workspace_id);

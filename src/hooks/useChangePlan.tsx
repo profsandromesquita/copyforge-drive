@@ -5,8 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 
 interface ChangePlanParams {
   workspaceId: string;
-  newPlanId: string;
-  billingCycle: 'monthly' | 'annual';
+  planOfferId: string;
 }
 
 interface ChangePlanResponse {
@@ -24,11 +23,10 @@ export const useChangePlan = () => {
   const queryClient = useQueryClient();
 
   const changePlan = useMutation({
-    mutationFn: async ({ workspaceId, newPlanId, billingCycle }: ChangePlanParams) => {
+    mutationFn: async ({ workspaceId, planOfferId }: ChangePlanParams) => {
       const { data, error } = await supabase.rpc('change_workspace_plan', {
         p_workspace_id: workspaceId,
-        p_new_plan_id: newPlanId,
-        p_new_billing_cycle: billingCycle,
+        p_plan_offer_id: planOfferId,
       });
 
       if (error) throw error;

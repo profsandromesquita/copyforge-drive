@@ -172,7 +172,7 @@ export const WorkspaceBilling = () => {
           }}
           currentSubscription={subscription}
           newPlan={selectedPlan}
-          billingCycle="monthly"
+          availableOffers={offersByPlan[selectedPlan.id] || []}
           workspaceId={activeWorkspace?.id || ''}
         />
       )}

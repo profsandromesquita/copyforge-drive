@@ -25,10 +25,16 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   const activePlans = plans?.filter(plan => plan.is_active) || [];
   const currentPlanSlug = currentPlan?.plan_slug || 'free';
 
-  const handleSelectPlan = async (planId: string, planSlug: string) => {
+  const handleSelectPlan = async (planId: string, planSlug: string, firstOfferId?: string) => {
     if (planSlug === 'free') {
       // Se escolher FREE, apenas completa onboarding
       onComplete(planSlug);
+      return;
+    }
+
+    // Para planos pagos, se não tem offerId, mostra aviso
+    if (!firstOfferId) {
+      toast.error("Este plano não possui ofertas disponíveis no momento.");
       return;
     }
 
@@ -42,8 +48,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
     try {
       await changePlan({
         workspaceId,
-        newPlanId: planId,
-        billingCycle
+        planOfferId: firstOfferId,
       });
       
       onComplete(planSlug);
@@ -176,7 +181,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
 
                 <div className="ml-4">
                   <Button
-                    onClick={() => handleSelectPlan(plan.id, plan.slug)}
+                    onClick={() => handleSelectPlan(plan.id, plan.slug, undefined)}
                     disabled={isCurrentPlan || isChanging || loading}
                     className="h-9 px-4 text-xs font-medium whitespace-nowrap"
                     variant={isPopular ? 'default' : 'outline'}
@@ -227,7 +232,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
 
                 <div className="ml-4">
                   <Button
-                    onClick={() => handleSelectPlan(plan.id, plan.slug)}
+                    onClick={() => handleSelectPlan(plan.id, plan.slug, undefined)}
                     disabled={isCurrentPlan || isChanging || loading}
                     className="h-8 px-3 text-[10px] font-medium whitespace-nowrap"
                     variant="outline"

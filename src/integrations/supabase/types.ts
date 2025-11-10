@@ -1472,9 +1472,8 @@ export type Database = {
       can_create_free_workspace: { Args: { _user_id: string }; Returns: Json }
       change_workspace_plan: {
         Args: {
-          p_new_billing_cycle: Database["public"]["Enums"]["billing_cycle_type"]
-          p_new_plan_id: string
           p_payment_id?: string
+          p_plan_offer_id: string
           p_workspace_id: string
         }
         Returns: Json

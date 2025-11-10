@@ -28,6 +28,7 @@ export interface WorkspaceSubscription {
   current_max_projects: number | null;
   current_max_copies: number | null;
   current_copy_ai_enabled: boolean;
+  plan_offer_id?: string | null;
 }
 
 export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
@@ -50,6 +51,7 @@ export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
           current_max_projects,
           current_max_copies,
           current_copy_ai_enabled,
+          plan_offer_id,
           subscription_plans (
             id,
             name,
@@ -102,6 +104,7 @@ export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
         current_max_projects: data.current_max_projects,
         current_max_copies: data.current_max_copies,
         current_copy_ai_enabled: data.current_copy_ai_enabled,
+        plan_offer_id: data.plan_offer_id,
       };
     },
     enabled: !!workspaceId,

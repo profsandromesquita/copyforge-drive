@@ -3,10 +3,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { PlanComparisonCard } from "./PlanComparisonCard";
 import { useChangePlan } from "@/hooks/useChangePlan";
 import { WorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
+import { PlanOffer } from "@/hooks/usePlanOffers";
 import { formatCurrency } from "@/lib/utils";
 
 interface SubscriptionPlan {
@@ -26,7 +29,7 @@ interface PlanChangeModalProps {
   onClose: () => void;
   currentSubscription: WorkspaceSubscription;
   newPlan: SubscriptionPlan;
-  billingCycle: 'monthly' | 'annual';
+  availableOffers: PlanOffer[];
   workspaceId: string;
 }
 
@@ -35,18 +38,23 @@ export const PlanChangeModal = ({
   onClose, 
   currentSubscription, 
   newPlan, 
-  billingCycle,
+  availableOffers,
   workspaceId 
 }: PlanChangeModalProps) => {
   const { changePlan, isChanging } = useChangePlan();
-  const [confirmed, setConfirmed] = useState(false);
+  const [selectedOfferId, setSelectedOfferId] = useState<string>(availableOffers[0]?.id || "");
 
   const currentPlan = currentSubscription.plan;
-  const isUpgrade = (billingCycle === 'monthly' ? newPlan.monthly_price : newPlan.annual_price) > 
-                    (currentSubscription.billing_cycle === 'monthly' ? currentPlan.monthly_price : currentPlan.annual_price);
+  const selectedOffer = availableOffers.find(o => o.id === selectedOfferId);
   
-  const newPrice = billingCycle === 'monthly' ? newPlan.monthly_price : newPlan.annual_price;
-  const monthlyEquivalent = billingCycle === 'annual' ? newPrice / 12 : newPrice;
+  const isUpgrade = selectedOffer 
+    ? selectedOffer.price > (currentSubscription.billing_cycle === 'monthly' ? currentPlan.monthly_price : currentPlan.annual_price)
+    : false;
+  
+  const newPrice = selectedOffer?.price || 0;
+  const monthlyEquivalent = selectedOffer?.billing_period_unit === 'months' && selectedOffer.billing_period_value > 1
+    ? newPrice / selectedOffer.billing_period_value
+    : newPrice;
 
   // Validações de downgrade
   const projectsExceed = newPlan.max_projects !== null && 
@@ -56,12 +64,11 @@ export const PlanChangeModal = ({
   const hasBlockingIssues = projectsExceed || copiesExceed;
 
   const handleConfirm = () => {
-    if (hasBlockingIssues) return;
+    if (hasBlockingIssues || !selectedOfferId) return;
     
     changePlan({
       workspaceId,
-      newPlanId: newPlan.id,
-      billingCycle,
+      planOfferId: selectedOfferId,
     }, {
       onSuccess: (data) => {
         if (data?.success && !data.requires_payment) {
@@ -123,24 +130,55 @@ export const PlanChangeModal = ({
             features={features}
           />
 
+          {/* Seleção de Oferta */}
+          {availableOffers.length > 1 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Selecione a forma de pagamento</Label>
+              <RadioGroup value={selectedOfferId} onValueChange={setSelectedOfferId}>
+                {availableOffers.map((offer) => (
+                  <div key={offer.id} className="flex items-center space-x-2 border rounded-lg p-3">
+                    <RadioGroupItem value={offer.id} id={offer.id} />
+                    <Label htmlFor={offer.id} className="flex-1 cursor-pointer">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{offer.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {offer.billing_period_value} {offer.billing_period_unit === 'months' ? 'meses' : offer.billing_period_unit === 'days' ? 'dias' : 'anos'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">{formatCurrency(offer.price)}</p>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+
           {/* Informações de Preço */}
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Novo valor</span>
-              <Badge variant={isUpgrade ? "default" : "secondary"}>
-                {billingCycle === 'monthly' ? 'Mensal' : 'Anual'}
-              </Badge>
+          {selectedOffer && (
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Novo valor</span>
+                <Badge variant={isUpgrade ? "default" : "secondary"}>
+                  {selectedOffer.name}
+                </Badge>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold">{formatCurrency(monthlyEquivalent)}</span>
+                <span className="text-muted-foreground">/mês</span>
+              </div>
+              {selectedOffer.billing_period_value > 1 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Cobrado {formatCurrency(newPrice)} a cada {selectedOffer.billing_period_value} {
+                    selectedOffer.billing_period_unit === 'months' ? 'meses' : selectedOffer.billing_period_unit === 'days' ? 'dias' : 'anos'
+                  }
+                </p>
+              )}
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{formatCurrency(monthlyEquivalent)}</span>
-              <span className="text-muted-foreground">/mês</span>
-            </div>
-            {billingCycle === 'annual' && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Cobrado {formatCurrency(newPrice)} anualmente
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Avisos de Validação */}
           {hasBlockingIssues && (
@@ -189,7 +227,7 @@ export const PlanChangeModal = ({
           </Button>
           <Button 
             onClick={handleConfirm} 
-            disabled={hasBlockingIssues || isChanging}
+            disabled={hasBlockingIssues || isChanging || !selectedOfferId}
             variant={isUpgrade ? "default" : "secondary"}
           >
             {isChanging ? 'Processando...' : 'Confirmar Mudança'}
