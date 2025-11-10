@@ -64,19 +64,19 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   return (
     <div className="animate-fade-in pb-28 md:pb-0">
       {/* Header */}
-      <div className="text-center mb-6 md:mb-8 px-4">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">
+      <div className="text-center mb-4 md:mb-6 px-4">
+        <h1 className="text-xl md:text-2xl font-bold mb-2">
           Escolha seu plano
         </h1>
-        <p className="text-sm text-muted-foreground mb-6">
+        <p className="text-xs md:text-sm text-muted-foreground mb-4">
           Comece grátis e faça upgrade quando precisar
         </p>
 
         {/* Billing Cycle Toggle */}
-        <div className="inline-flex rounded-xl border border-border p-1 bg-muted/50 backdrop-blur-sm">
+        <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/50 backdrop-blur-sm">
           <button
             onClick={() => setBillingCycle('monthly')}
-            className={`px-6 py-2.5 rounded-lg transition-all text-sm font-medium ${
+            className={`px-4 py-1.5 rounded-md transition-all text-xs font-medium ${
               billingCycle === 'monthly'
                 ? 'bg-background shadow-md'
                 : 'text-muted-foreground hover:text-foreground'
@@ -86,241 +86,172 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
           </button>
           <button
             onClick={() => setBillingCycle('annual')}
-            className={`px-6 py-2.5 rounded-lg transition-all text-sm font-medium flex items-center gap-2 ${
+            className={`px-4 py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 ${
               billingCycle === 'annual'
                 ? 'bg-background shadow-md'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             Anual
-            <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-0">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-0">
               -20%
             </Badge>
           </button>
         </div>
       </div>
 
-      {/* Plans Grid - Mobile Scroll Horizontal, Desktop Grid */}
-      <div className="mb-8">
-        {/* Mobile: Scroll Horizontal */}
-        <div className="md:hidden overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory">
-          <div className="flex gap-4 min-w-max">
-            {activePlans.map((plan) => {
-              const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
-              const isCurrentPlan = plan.slug === currentPlanSlug;
-              const isPopular = plan.slug === 'pro';
+      {/* Plans - Vertical Stack */}
+      <div className="mb-6 space-y-3 px-4 max-w-2xl mx-auto">
+        {/* Paid Plans */}
+        {activePlans.filter(plan => plan.slug !== 'free').map((plan) => {
+          const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
+          const isCurrentPlan = plan.slug === currentPlanSlug;
+          const isPopular = plan.slug === 'pro';
 
-              return (
-                <Card 
-                  key={plan.id} 
-                  className={`relative flex-shrink-0 w-[280px] snap-center transition-all ${
-                    isPopular 
-                      ? 'border-2 border-primary shadow-lg' 
-                      : 'border border-border'
-                  }`}
-                >
-                  {isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                      <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 shadow-md">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Mais Popular
-                      </Badge>
-                    </div>
-                  )}
+          return (
+            <Card 
+              key={plan.id} 
+              className={`relative transition-all ${
+                isPopular 
+                  ? 'border-2 border-primary shadow-md' 
+                  : 'border border-border'
+              }`}
+            >
+              {isPopular && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
+                  <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 shadow-md">
+                    <Sparkles className="w-2.5 h-2.5 mr-1" />
+                    Mais Popular
+                  </Badge>
+                </div>
+              )}
 
-                  <CardHeader className="pb-4 pt-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
-                      {isCurrentPlan && (
-                        <Badge variant="secondary" className="text-xs">Atual</Badge>
-                      )}
-                    </div>
-                    
-                    <div className="mt-4 mb-2">
-                      {billingCycle === 'monthly' ? (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold">{formatCurrency(price)}</span>
-                          <span className="text-sm text-muted-foreground">/mês</span>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-bold">{formatCurrency(price / 12)}</span>
-                            <span className="text-sm text-muted-foreground">/mês</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatCurrency(price)} por ano
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3 pb-4">
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-sm">
-                          {plan.max_projects === null ? 'Projetos ilimitados' : `${plan.max_projects} projeto${plan.max_projects > 1 ? 's' : ''}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-sm">
-                          {plan.max_copies === null ? 'Copies ilimitadas' : `${plan.max_copies} copies`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-sm">{plan.credits_per_month} créditos/mês</span>
-                      </div>
-                      {plan.copy_ai_enabled && (
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-primary" />
-                          </div>
-                          <span className="text-sm font-medium">Copy AI incluído</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-
-                  <CardFooter className="pt-0 pb-6">
-                    <Button
-                      onClick={() => handleSelectPlan(plan.id, plan.slug)}
-                      disabled={isCurrentPlan || isChanging || loading}
-                      className="w-full h-11 font-medium"
-                      variant={isPopular ? 'default' : 'outline'}
-                    >
-                      {isCurrentPlan ? 'Plano Atual' : 'Escolher Plano'}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Desktop: Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto px-4">
-          {activePlans.map((plan) => {
-            const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
-            const isCurrentPlan = plan.slug === currentPlanSlug;
-            const isPopular = plan.slug === 'pro';
-
-            return (
-              <Card 
-                key={plan.id} 
-                className={`relative flex flex-col transition-all hover:shadow-lg ${
-                  isPopular 
-                    ? 'border-2 border-primary shadow-md scale-105' 
-                    : 'border border-border'
-                }`}
-              >
-                {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                    <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 shadow-md">
-                      <Sparkles className="w-3.5 h-3.5 mr-1" />
-                      Mais Popular
-                    </Badge>
-                  </div>
-                )}
-
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle className="text-lg font-bold">{plan.name}</CardTitle>
+              <div className="flex items-center justify-between p-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-base font-bold">{plan.name}</h3>
                     {isCurrentPlan && (
-                      <Badge variant="secondary" className="text-xs">Atual</Badge>
+                      <Badge variant="secondary" className="text-[10px]">Atual</Badge>
                     )}
                   </div>
                   
-                  <div className="mt-4">
+                  <div className="flex items-baseline gap-1 mb-3">
                     {billingCycle === 'monthly' ? (
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">{formatCurrency(price)}</span>
-                        <span className="text-sm text-muted-foreground">/mês</span>
-                      </div>
+                      <>
+                        <span className="text-2xl font-bold">{formatCurrency(Math.floor(price))}</span>
+                        <span className="text-xs text-muted-foreground">/mês</span>
+                      </>
                     ) : (
-                      <div>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold">{formatCurrency(price / 12)}</span>
-                          <span className="text-sm text-muted-foreground">/mês</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatCurrency(price)} por ano
-                        </p>
-                      </div>
+                      <>
+                        <span className="text-2xl font-bold">{formatCurrency(Math.floor(price / 12))}</span>
+                        <span className="text-xs text-muted-foreground">/mês</span>
+                      </>
                     )}
                   </div>
-                </CardHeader>
 
-                <CardContent className="space-y-3 flex-1">
-                  <div className="space-y-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-primary" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-primary" />
                       </div>
-                      <span className="text-sm">
+                      <span className="text-xs">
                         {plan.max_projects === null ? 'Projetos ilimitados' : `${plan.max_projects} projeto${plan.max_projects > 1 ? 's' : ''}`}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-primary" />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-primary" />
                       </div>
-                      <span className="text-sm">
+                      <span className="text-xs">
                         {plan.max_copies === null ? 'Copies ilimitadas' : `${plan.max_copies} copies`}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-primary" />
+                    <div className="flex items-center gap-2">
+                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-primary" />
                       </div>
-                      <span className="text-sm">{plan.credits_per_month} créditos/mês</span>
+                      <span className="text-xs">{plan.credits_per_month} créditos/mês</span>
                     </div>
-                    {plan.copy_ai_enabled && (
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-sm font-medium">Copy AI incluído</span>
-                      </div>
-                    )}
                   </div>
-                </CardContent>
+                </div>
 
-                <CardFooter className="pt-4">
+                <div className="ml-4">
                   <Button
                     onClick={() => handleSelectPlan(plan.id, plan.slug)}
                     disabled={isCurrentPlan || isChanging || loading}
-                    className="w-full h-11 font-medium"
+                    className="h-9 px-4 text-xs font-medium whitespace-nowrap"
                     variant={isPopular ? 'default' : 'outline'}
                   >
-                    {isCurrentPlan ? 'Plano Atual' : 'Escolher Plano'}
+                    {isCurrentPlan ? 'Plano Atual' : 'Escolher'}
                   </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+
+        {/* Free Plan - Smaller */}
+        {activePlans.filter(plan => plan.slug === 'free').map((plan) => {
+          const isCurrentPlan = plan.slug === currentPlanSlug;
+
+          return (
+            <Card 
+              key={plan.id} 
+              className="border border-border/50 bg-muted/30"
+            >
+              <div className="flex items-center justify-between p-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-sm font-bold">{plan.name}</h3>
+                    {isCurrentPlan && (
+                      <Badge variant="secondary" className="text-[10px]">Atual</Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="text-lg font-bold">R$ 0</span>
+                    <span className="text-[10px] text-muted-foreground">/mês</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <span className="text-[10px] text-muted-foreground">
+                      {plan.max_projects} projeto
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {plan.max_copies} copies
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {plan.credits_per_month} créditos/mês
+                    </span>
+                  </div>
+                </div>
+
+                <div className="ml-4">
+                  <Button
+                    onClick={() => handleSelectPlan(plan.id, plan.slug)}
+                    disabled={isCurrentPlan || isChanging || loading}
+                    className="h-8 px-3 text-[10px] font-medium whitespace-nowrap"
+                    variant="outline"
+                  >
+                    {isCurrentPlan ? 'Atual' : 'Escolher'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Footer Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border md:relative md:border-t-0 md:p-0 md:bg-transparent">
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <Button 
             onClick={() => onComplete()} 
             variant="ghost"
             size="lg"
-            className="w-full h-12 text-muted-foreground hover:text-foreground"
+            className="w-full h-10 text-sm text-muted-foreground hover:text-foreground"
           >
-            Pular por agora
+            Continuar no Plano Gratuito
           </Button>
         </div>
       </div>
