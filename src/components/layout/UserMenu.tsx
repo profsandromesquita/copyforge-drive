@@ -209,7 +209,11 @@ export const UserMenu = () => {
           {/* Sign Out */}
           <DropdownMenuItem 
             className="cursor-pointer text-destructive flex items-center gap-2 px-2 py-2 rounded-md hover:bg-destructive/10"
-            onClick={signOut}
+            onClick={async (e) => {
+              e.preventDefault();
+              console.log('[UserMenu] Signing out...');
+              await signOut();
+            }}
           >
             <SignOut size={16} weight="bold" />
             <span className="text-sm font-medium">Sair</span>
