@@ -31,6 +31,7 @@ export const ProjectSelector = () => {
 
   return (
     <div className="p-4 border-b border-border">
+      <label className="text-xs text-muted-foreground mb-2 block">Projeto</label>
       <div className="flex items-center gap-2">
         <Select
           value={activeProject?.id || ''}
