@@ -20,7 +20,7 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [signupDisabled, setSignupDisabled] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +50,13 @@ const Auth = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      // Redirect to the specified path or dashboard
+      navigate(redirectPath || '/dashboard');
+    }
+  }, [user, navigate, redirectPath]);
 
   const formatPhone = (value: string) => {
     // Remove tudo que não é número
@@ -120,31 +127,17 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message || "Erro ao fazer login");
-          setLoading(false);
         }
-        // Se login bem-sucedido, onAuthStateChange vai redirecionar
       } else {
         const fullName = `${name} ${lastName}`.trim();
-        const { error, justSignedUp } = await signUp(email, password, fullName, phone);
-        
+        const { error } = await signUp(email, password, fullName, phone);
         if (error) {
           toast.error(error.message || "Erro ao criar conta");
-          setLoading(false);
-        } else if (justSignedUp) {
-          // Limpar loading ANTES de navegar
-          setLoading(false);
-          
-          // Aguardar um pouco para garantir que o state foi atualizado
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Navegar para onboarding
-          console.log('[Auth] Redirecting to onboarding after successful signup');
-          navigate('/onboarding');
         }
       }
     } catch (error) {
-      console.error('[Auth] Unexpected error:', error);
       toast.error("Erro inesperado");
+    } finally {
       setLoading(false);
     }
   };

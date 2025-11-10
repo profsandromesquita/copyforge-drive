@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any; justSignedUp?: boolean }>;
+  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -19,136 +19,176 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSigningUp, setIsSigningUp] = useState(false);
   const navigate = useNavigate();
-  
-  // Helper function to check onboarding with retry logic
-  const checkOnboardingWithRetry = async (userId: string, attempt = 1): Promise<void> => {
-    const maxAttempts = 3;
-    const delays = [1000, 2000, 4000]; // Exponential backoff
-    
-    try {
-      console.log(`[useAuth] Checking onboarding (attempt ${attempt}/${maxAttempts})...`);
-      
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error('[useAuth] Error fetching profile:', error);
-        
-        if (attempt < maxAttempts) {
-          console.log(`[useAuth] Retrying in ${delays[attempt - 1]}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delays[attempt - 1]));
-          return checkOnboardingWithRetry(userId, attempt + 1);
-        } else {
-          console.log('[useAuth] Max retries reached, redirecting to onboarding');
-          navigate('/onboarding');
-          return;
-        }
-      }
-      
-      const isCompleted = profile?.onboarding_completed === true;
-      console.log('[useAuth] Onboarding completed:', isCompleted);
-      
-      navigate(isCompleted ? '/dashboard' : '/onboarding');
-    } catch (error) {
-      console.error('[useAuth] Exception during profile check:', error);
-      navigate('/onboarding');
-    }
-  };
 
   useEffect(() => {
-    console.log('[useAuth] Setting up auth state listener...');
+    console.log('=== useAuth initializing ===');
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[useAuth] Auth state changed:', event, 'User:', session?.user?.email);
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // Só verificar onboarding em páginas públicas e se não estiver em processo de signup
-      if (event === 'SIGNED_IN' && session && !isSigningUp) {
-        console.log('[useAuth] User signed in, checking if should redirect...');
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, 'Session:', !!session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
         
-        const currentPath = window.location.pathname;
-        if (currentPath === '/auth' || currentPath === '/') {
-          console.log('[useAuth] On auth/root page, checking onboarding with retry...');
-          await checkOnboardingWithRetry(session.user.id);
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('[useAuth] User signed in:', session.user.email);
+          
+          // Wait a bit before checking workspace (gives trigger time to run)
+          setTimeout(async () => {
+            try {
+              const { data: memberships, error: membershipError } = await supabase
+                .from('workspace_members')
+                .select('workspace_id')
+                .eq('user_id', session.user.id)
+                .limit(1);
+
+              if (membershipError) {
+                console.error('[useAuth] Error checking membership:', membershipError);
+              }
+
+              const membership = memberships?.[0];
+
+              if (!membership) {
+                console.log('[useAuth] No workspace found, calling setup...');
+                
+                const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
+                  body: {
+                    userId: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.name || 
+                          session.user.user_metadata?.full_name ||
+                          session.user.email?.split('@')[0]
+                  }
+                });
+
+                if (setupError) {
+                  console.error('[useAuth] Setup error:', setupError);
+                  
+                  // Verify again if workspace was created despite error
+                  const { data: retryMemberships } = await supabase
+                    .from('workspace_members')
+                    .select('workspace_id')
+                    .eq('user_id', session.user.id)
+                    .limit(1);
+                  
+                  if (!retryMemberships?.[0]) {
+                    // Show warning but don't block login
+                    import('sonner').then(({ toast }) => {
+                      toast.warning('Configuração inicial pendente. Entre em contato com o suporte se problemas persistirem.');
+                    });
+                  } else {
+                    console.log('[useAuth] Workspace created despite error');
+                  }
+                } else if (!setupData?.success) {
+                  console.warn('[useAuth] Setup returned non-success:', setupData);
+                  
+                  // Verify if workspace exists anyway
+                  const { data: retryMemberships } = await supabase
+                    .from('workspace_members')
+                    .select('workspace_id')
+                    .eq('user_id', session.user.id)
+                    .limit(1);
+                  
+                  if (retryMemberships?.[0]) {
+                    console.log('[useAuth] Workspace exists despite setup warning');
+                  }
+                } else {
+                  console.log('[useAuth] Setup completed successfully');
+                }
+              } else {
+                console.log('[useAuth] User has workspace:', membership.workspace_id);
+              }
+            } catch (error) {
+              console.error('[useAuth] Workspace check failed:', error);
+              // Don't block login
+            }
+          }, 500); // Wait 500ms for trigger to execute
+          
+          // Check onboarding status and redirect
+          const currentPath = window.location.pathname;
+          console.log('Signed in, current path:', currentPath);
+          
+          // Only redirect if on auth page or root
+          if (currentPath === '/auth' || currentPath === '/') {
+            // Check if onboarding is completed
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('onboarding_completed')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.onboarding_completed) {
+              console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
+              navigate('/dashboard');
+            } else {
+              console.log('[useAuth] Redirecting to onboarding (first access)');
+              navigate('/onboarding');
+            }
+          }
+        } else if (event === 'SIGNED_OUT') {
+          console.log('Signed out, redirecting to auth');
+          navigate('/auth');
         }
-      } else if (event === 'SIGNED_OUT') {
-        console.log('[useAuth] Signed out, redirecting to auth');
-        navigate('/auth');
       }
-    });
+    );
 
     // Check for existing session
+    console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[useAuth] Initial session check:', session?.user?.email);
+      console.log('Existing session found:', !!session);
+      console.log('User:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      console.log('Auth loading complete');
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
-    try {
-      console.log('[useAuth] Starting signup for:', email);
-      setIsSigningUp(true);
-      
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            name,
-            phone,
-          },
-        },
-      });
-
-      if (error) {
-        console.error('[useAuth] Signup error:', error);
-        return { error, justSignedUp: false };
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name,
+          phone
+        }
       }
-
+    });
+    
+    // Se signup foi bem-sucedido, chamar Edge Function para setup
+    if (!error && data.user) {
       console.log('[useAuth] Signup successful, calling setup-new-user...');
       
-      const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
-        body: {
-          userId: data.user?.id,
-          email: email,
-          name: name,
-        },
-      });
+      try {
+        const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
+          body: {
+            userId: data.user.id,
+            email: data.user.email,
+            name: name
+          }
+        });
 
-      if (setupError) {
-        console.error('[useAuth] Setup error:', setupError);
-        return { error: setupError, justSignedUp: false };
+        if (setupError) {
+          console.error('[useAuth] Setup function error:', setupError);
+        } else if (setupData && !setupData.success) {
+          console.error('[useAuth] Setup failed:', setupData.error, setupData.details);
+        } else {
+          console.log('[useAuth] User setup completed successfully:', setupData);
+        }
+      } catch (setupError) {
+        console.error('[useAuth] Failed to call setup function:', setupError);
       }
-
-      console.log('[useAuth] User setup completed:', setupData);
-      
-      // Aguardar um pouco para garantir que o profile foi criado
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return { error: null, justSignedUp: true };
-    } catch (error) {
-      console.error('[useAuth] Signup exception:', error);
-      return { error, justSignedUp: false };
-    } finally {
-      setIsSigningUp(false);
     }
+    
+    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
