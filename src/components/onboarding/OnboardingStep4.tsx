@@ -26,7 +26,8 @@ const OnboardingStep4 = ({ firstName, onComplete, onBack }: OnboardingStep4Props
         <img 
           src={copyDriveIcon} 
           alt="CopyDrive" 
-          className="w-20 h-20 sm:w-24 sm:h-24 mb-6 sm:mb-8 animate-pulse"
+          className="w-20 h-20 sm:w-24 sm:h-24 mb-6 sm:mb-8 animate-spin"
+          style={{ animationDuration: '2s' }}
         />
         
         <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4">
