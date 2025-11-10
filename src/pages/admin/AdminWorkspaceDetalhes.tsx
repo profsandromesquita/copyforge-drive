@@ -1,19 +1,40 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { useWorkspaceDetails } from "@/hooks/useWorkspaceDetails";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Users, FolderOpen, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Users, FolderOpen, FileText, Receipt } from "lucide-react";
+import { useWorkspaceDetails } from "@/hooks/useWorkspaceDetails";
+import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
+import { WorkspaceMembersTab } from "@/components/admin/workspace-details/WorkspaceMembersTab";
+import { WorkspaceProjectsTab } from "@/components/admin/workspace-details/WorkspaceProjectsTab";
+import { WorkspaceCopiesTab } from "@/components/admin/workspace-details/WorkspaceCopiesTab";
+import { WorkspacePlanBillingTab } from "@/components/admin/workspace-details/WorkspacePlanBillingTab";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+
+interface WorkspaceProject {
+  id: string;
+  name: string;
+  brand_name: string | null;
+  sector: string | null;
+  central_purpose: string | null;
+  created_at: string;
+  updated_at: string;
+  audience_segments: any;
+  offers: any;
+  voice_tones: string[] | null;
+  brand_personality: string[] | null;
+  keywords: string[] | null;
+}
 
 const AdminWorkspaceDetalhes = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, isLoading } = useWorkspaceDetails(id || '');
+  const { data, isLoading, refetch } = useWorkspaceDetails(id || '');
+  const { data: plan } = useWorkspacePlan(id);
 
   if (isLoading) {
     return (
@@ -50,154 +71,125 @@ const AdminWorkspaceDetalhes = () => {
 
   const { workspace, members, projects } = data;
 
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'default';
-      case 'admin':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'owner':
-        return 'Proprietário';
-      case 'admin':
-        return 'Administrador';
-      case 'editor':
-        return 'Editor';
-      case 'viewer':
-        return 'Visualizador';
-      default:
-        return role;
-    }
-  };
-
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/painel/admin/workspaces')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/painel/admin/workspaces')}
-            >
-              <ArrowLeft size={20} />
-            </Button>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={workspace.avatar_url || ''} />
-                <AvatarFallback>{workspace.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">{workspace.name}</h1>
-                <p className="text-sm text-muted-foreground">
-                  Criado em {format(new Date(workspace.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </p>
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={workspace.avatar_url || ''} />
+              <AvatarFallback>
+                {workspace.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">{workspace.name}</h1>
+                {plan && (
+                  <Badge variant="secondary">{plan.plan_name}</Badge>
+                )}
               </div>
+              <p className="text-muted-foreground">
+                Criado em {format(new Date(workspace.created_at), 'dd/MM/yyyy')}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{members.length}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total de Membros</p>
+                  <p className="text-2xl font-bold">{members.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Projetos</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{projects.length}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <FolderOpen className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Projetos</p>
+                  <p className="text-2xl font-bold">{projects.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Última Atualização</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm">{format(new Date(workspace.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</div>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <FileText className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Plano Atual</p>
+                  <p className="text-lg font-semibold">{plan?.plan_name || 'Free'}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Members Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Membros ({members.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {members.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhum membro encontrado</p>
-            ) : (
-              <div className="space-y-4">
-                {members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={member.profiles.avatar_url || ''} />
-                        <AvatarFallback>
-                          {member.profiles.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{member.profiles.name}</p>
-                        <p className="text-sm text-muted-foreground">{member.profiles.email}</p>
-                      </div>
-                    </div>
-                    <Badge variant={getRoleBadgeVariant(member.role)}>
-                      {getRoleLabel(member.role)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Tabs Section */}
+        <Tabs defaultValue="members" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="members">
+              <Users className="h-4 w-4 mr-2" />
+              Membros
+            </TabsTrigger>
+            <TabsTrigger value="projects">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Projetos
+            </TabsTrigger>
+            <TabsTrigger value="copies">
+              <FileText className="h-4 w-4 mr-2" />
+              Copies
+            </TabsTrigger>
+            <TabsTrigger value="billing">
+              <Receipt className="h-4 w-4 mr-2" />
+              Plano & Faturas
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Projects Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Projetos ({projects.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Nenhum projeto encontrado</p>
-            ) : (
-              <div className="space-y-4">
-                {projects.map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{project.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Criado em {format(new Date(project.created_at), "dd/MM/yyyy", { locale: ptBR })}
-                      </p>
-                    </div>
-                    <Badge variant="outline">
-                      {format(new Date(project.updated_at), "dd/MM/yyyy", { locale: ptBR })}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <TabsContent value="members" className="mt-6">
+            <WorkspaceMembersTab workspaceId={id!} />
+          </TabsContent>
+
+          <TabsContent value="projects" className="mt-6">
+            <WorkspaceProjectsTab 
+              projects={projects as WorkspaceProject[]} 
+              isLoading={isLoading}
+              onRefresh={refetch}
+            />
+          </TabsContent>
+
+          <TabsContent value="copies" className="mt-6">
+            <WorkspaceCopiesTab workspaceId={id!} />
+          </TabsContent>
+
+          <TabsContent value="billing" className="mt-6">
+            <WorkspacePlanBillingTab workspaceId={id!} />
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminLayout>
   );

@@ -1007,6 +1007,81 @@ export type Database = {
           },
         ]
       }
+      workspace_invoices: {
+        Row: {
+          amount: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          line_items: Json
+          metadata: Json | null
+          paid_at: string | null
+          payment_id: string | null
+          payment_method: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subscription_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          amount: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          line_items?: Json
+          metadata?: Json | null
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          billing_period_end?: string
+          billing_period_start?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          line_items?: Json
+          metadata?: Json | null
+          paid_at?: string | null
+          payment_id?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invoices_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           id: string
@@ -1242,6 +1317,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      generate_invoice_number: { Args: never; Returns: string }
       get_workspace_role: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: Database["public"]["Enums"]["workspace_role"]
@@ -1288,6 +1364,7 @@ export type Database = {
     }
     Enums: {
       billing_cycle_type: "monthly" | "annual" | "free"
+      invoice_status: "pending" | "paid" | "failed" | "cancelled" | "refunded"
       subscription_status:
         | "active"
         | "cancelled"
@@ -1424,6 +1501,7 @@ export const Constants = {
   public: {
     Enums: {
       billing_cycle_type: ["monthly", "annual", "free"],
+      invoice_status: ["pending", "paid", "failed", "cancelled", "refunded"],
       subscription_status: [
         "active",
         "cancelled",
