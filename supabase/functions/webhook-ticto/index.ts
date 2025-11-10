@@ -432,18 +432,30 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   console.log('💰 Processando venda aprovada...');
   
   // Buscar gateway da Ticto
-  const { data: integration } = await supabase
+  const { data: integration, error: integrationError } = await supabase
     .from('integrations')
     .select('id')
     .eq('slug', 'ticto')
     .single();
   
-  const { data: gateway } = await supabase
+  console.log('🔍 Integration lookup:', { integration, integrationError });
+  
+  if (!integration) {
+    throw new Error('Integração Ticto não encontrada');
+  }
+  
+  const { data: gateway, error: gatewayError } = await supabase
     .from('payment_gateways')
     .select('id')
     .eq('integration_id', integration.id)
     .is('workspace_id', null)
     .single();
+  
+  console.log('🔍 Gateway lookup:', { gateway, gatewayError, integration_id: integration.id });
+  
+  if (!gateway) {
+    throw new Error('Gateway de pagamento Ticto não encontrado');
+  }
   
   // Buscar oferta pelo gateway_offer_id da Ticto (usar código, não ID)
   const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
@@ -818,18 +830,30 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
   console.log('🆓 Processando início de trial...');
   
   // Buscar gateway da Ticto
-  const { data: integration } = await supabase
+  const { data: integration, error: integrationError } = await supabase
     .from('integrations')
     .select('id')
     .eq('slug', 'ticto')
     .single();
   
-  const { data: gateway } = await supabase
+  console.log('🔍 Integration lookup (trial):', { integration, integrationError });
+  
+  if (!integration) {
+    throw new Error('Integração Ticto não encontrada');
+  }
+  
+  const { data: gateway, error: gatewayError } = await supabase
     .from('payment_gateways')
     .select('id')
     .eq('integration_id', integration.id)
     .is('workspace_id', null)
     .single();
+  
+  console.log('🔍 Gateway lookup (trial):', { gateway, gatewayError, integration_id: integration.id });
+  
+  if (!gateway) {
+    throw new Error('Gateway de pagamento Ticto não encontrado');
+  }
   
   // Buscar oferta pelo gateway_offer_id (usar código, não ID)
   const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
