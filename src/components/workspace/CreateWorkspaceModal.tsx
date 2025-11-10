@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { toast } from 'sonner';
+import { UpgradeModal } from './UpgradeModal';
 
 interface CreateWorkspaceModalProps {
   open: boolean;
@@ -22,6 +23,8 @@ interface WorkspaceLimitCheck {
 export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModalProps) => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [limitData, setLimitData] = useState<WorkspaceLimitCheck | null>(null);
   const { user } = useAuth();
   const { refreshWorkspaces, setActiveWorkspace } = useWorkspace();
 
@@ -47,11 +50,8 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
       const limitData = limitCheck as unknown as WorkspaceLimitCheck;
 
       if (!limitData.can_create) {
-        toast.error(
-          `Você atingiu o limite de ${limitData.max_allowed} workspace(s) gratuito(s). ` +
-          'Faça upgrade de um workspace existente para criar mais.',
-          { duration: 5000 }
-        );
+        setLimitData(limitData);
+        setShowUpgradeModal(true);
         setLoading(false);
         return;
       }
@@ -97,43 +97,58 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Criar Novo Workspace</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Novo Workspace</DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="workspace-name">Nome do Workspace</Label>
-            <Input
-              id="workspace-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Meu Workspace"
-              disabled={loading}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleCreate();
-                }
-              }}
-            />
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="workspace-name">Nome do Workspace</Label>
+              <Input
+                id="workspace-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Meu Workspace"
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreate();
+                  }
+                }}
+              />
+            </div>
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button onClick={handleCreate} disabled={loading}>
-            {loading ? 'Criando...' : 'Criar Workspace'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreate} disabled={loading}>
+              {loading ? 'Criando...' : 'Criar Workspace'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={(open) => {
+          setShowUpgradeModal(open);
+          if (!open) {
+            onOpenChange(false);
+          }
+        }}
+        limitType="projects"
+        currentLimit={limitData?.max_allowed}
+        currentUsage={limitData?.current_count}
+      />
+    </>
   );
 };
