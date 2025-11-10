@@ -87,15 +87,12 @@ const OnboardingStep2 = ({ firstName, onComplete, onBack }: OnboardingStep2Props
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
-        <div className="max-w-xl mx-auto flex gap-3">
-          <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
-            Voltar
-          </Button>
+        <div className="max-w-xl mx-auto">
           <Button 
             onClick={handleContinue} 
             size="lg"
             disabled={!workspaceName.trim()}
-            className="flex-1"
+            className="w-full"
           >
             Continuar
           </Button>

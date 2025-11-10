@@ -73,15 +73,12 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
-            <div className="max-w-xl mx-auto flex gap-3">
-              <Button onClick={onBack} variant="outline" size="lg" className="flex-1">
-                Voltar
-              </Button>
+            <div className="max-w-xl mx-auto">
               <Button
                 onClick={handleNextSubStep}
                 disabled={!projectName.trim()}
                 size="lg"
-                className="flex-1"
+                className="w-full"
               >
                 Continuar
               </Button>
@@ -116,15 +113,12 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
-            <div className="max-w-xl mx-auto flex gap-3">
-              <Button onClick={() => setSubStep(1)} variant="outline" size="lg" className="flex-1">
-                Voltar
-              </Button>
+            <div className="max-w-xl mx-auto">
               <Button
                 onClick={handleNextSubStep}
                 disabled={!sector}
                 size="lg"
-                className="flex-1"
+                className="w-full"
               >
                 Continuar
               </Button>
@@ -164,15 +158,12 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
-            <div className="max-w-xl mx-auto flex gap-3">
-              <Button onClick={() => setSubStep(2)} variant="outline" size="lg" className="flex-1">
-                Voltar
-              </Button>
+            <div className="max-w-xl mx-auto">
               <Button
                 onClick={handleNextSubStep}
                 disabled={!purpose.trim()}
                 size="lg"
-                className="flex-1"
+                className="w-full"
               >
                 Continuar
               </Button>
@@ -212,15 +203,12 @@ const OnboardingStep3 = ({ firstName, onComplete, onBack, loading }: OnboardingS
           </div>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border md:relative md:border-t-0 md:p-0">
-            <div className="max-w-xl mx-auto flex gap-3">
-              <Button onClick={() => setSubStep(3)} variant="outline" size="lg" className="flex-1">
-                Voltar
-              </Button>
+            <div className="max-w-xl mx-auto">
               <Button
                 onClick={handleComplete}
                 disabled={personalities.length === 0 || loading}
                 size="lg"
-                className="flex-1"
+                className="w-full"
               >
                 {loading ? "Avançando..." : "Avançar"}
               </Button>
