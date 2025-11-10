@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { useActivePaymentGateways } from "@/hooks/useActivePaymentGateways";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, PencilSimple, Package } from "phosphor-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PlanFormData {
   id?: string;
@@ -27,6 +29,8 @@ interface PlanFormData {
   rollover_percentage: number;
   rollover_days: number;
   display_order: number;
+  payment_gateway_id: string | null;
+  checkout_url: string;
 }
 
 const emptyForm: PlanFormData = {
@@ -42,11 +46,14 @@ const emptyForm: PlanFormData = {
   rollover_enabled: false,
   rollover_percentage: 0,
   rollover_days: 0,
-  display_order: 0
+  display_order: 0,
+  payment_gateway_id: null,
+  checkout_url: '',
 };
 
 export const PlanSettings = () => {
   const { plans, isLoading, createPlan, updatePlan, togglePlanStatus } = useSubscriptionPlans();
+  const { data: gateways = [] } = useActivePaymentGateways();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<PlanFormData>(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
@@ -261,6 +268,42 @@ export const PlanSettings = () => {
                   value={formData.display_order}
                   onChange={(e) => handleInputChange('display_order', parseInt(e.target.value))}
                 />
+              </div>
+
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-semibold">Configuração de Pagamento</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="payment_gateway">Gateway de Pagamento</Label>
+                  <Select
+                    value={formData.payment_gateway_id || ''}
+                    onValueChange={(value) => handleInputChange('payment_gateway_id', value || null)}
+                  >
+                    <SelectTrigger id="payment_gateway">
+                      <SelectValue placeholder="Selecione um gateway" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {gateways.map((gateway) => (
+                        <SelectItem key={gateway.id} value={gateway.id}>
+                          {gateway.integrations.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.payment_gateway_id && (
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout_url">URL do Checkout</Label>
+                    <Input
+                      id="checkout_url"
+                      type="url"
+                      placeholder="https://..."
+                      value={formData.checkout_url}
+                      onChange={(e) => handleInputChange('checkout_url', e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2">

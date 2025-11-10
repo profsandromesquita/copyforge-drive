@@ -835,6 +835,7 @@ export type Database = {
       subscription_plans: {
         Row: {
           annual_price: number
+          checkout_url: string | null
           copy_ai_enabled: boolean | null
           created_at: string | null
           credits_per_month: number
@@ -846,6 +847,7 @@ export type Database = {
           max_projects: number | null
           monthly_price: number
           name: string
+          payment_gateway_id: string | null
           rollover_days: number | null
           rollover_enabled: boolean | null
           rollover_percentage: number | null
@@ -854,6 +856,7 @@ export type Database = {
         }
         Insert: {
           annual_price?: number
+          checkout_url?: string | null
           copy_ai_enabled?: boolean | null
           created_at?: string | null
           credits_per_month?: number
@@ -865,6 +868,7 @@ export type Database = {
           max_projects?: number | null
           monthly_price?: number
           name: string
+          payment_gateway_id?: string | null
           rollover_days?: number | null
           rollover_enabled?: boolean | null
           rollover_percentage?: number | null
@@ -873,6 +877,7 @@ export type Database = {
         }
         Update: {
           annual_price?: number
+          checkout_url?: string | null
           copy_ai_enabled?: boolean | null
           created_at?: string | null
           credits_per_month?: number
@@ -884,13 +889,22 @@ export type Database = {
           max_projects?: number | null
           monthly_price?: number
           name?: string
+          payment_gateway_id?: string | null
           rollover_days?: number | null
           rollover_enabled?: boolean | null
           rollover_percentage?: number | null
           slug?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_payment_gateway_id_fkey"
+            columns: ["payment_gateway_id"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
