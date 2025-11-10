@@ -123,6 +123,7 @@ export const usePaymentGateway = (integrationSlug: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-gateway-config', integrationSlug] });
+      queryClient.invalidateQueries({ queryKey: ['active-payment-gateways'] });
       toast.success('Configuração salva com sucesso!');
     },
     onError: (error: Error) => {
