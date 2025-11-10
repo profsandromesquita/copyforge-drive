@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: any; justSignedUp?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      // Só verificar onboarding se não estiver em processo de signup
+      // Só verificar onboarding em páginas públicas e se não estiver em processo de signup
       if (event === 'SIGNED_IN' && session && !isSigningUp) {
         console.log('[useAuth] User signed in, checking if should redirect...');
         
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, isSigningUp]);
+  }, [navigate]);
 
   const signUp = async (email: string, password: string, name: string, phone?: string) => {
     try {
@@ -119,8 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('[useAuth] Signup error:', error);
-        setIsSigningUp(false);
-        return { error };
+        return { error, justSignedUp: false };
       }
 
       console.log('[useAuth] Signup successful, calling setup-new-user...');
@@ -135,8 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (setupError) {
         console.error('[useAuth] Setup error:', setupError);
-        setIsSigningUp(false);
-        return { error: setupError };
+        return { error: setupError, justSignedUp: false };
       }
 
       console.log('[useAuth] User setup completed:', setupData);
@@ -144,16 +142,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Aguardar um pouco para garantir que o profile foi criado
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setIsSigningUp(false);
-      
-      // Redirecionar para onboarding após signup bem-sucedido
-      navigate('/onboarding');
-      
-      return { error: null };
+      return { error: null, justSignedUp: true };
     } catch (error) {
       console.error('[useAuth] Signup exception:', error);
+      return { error, justSignedUp: false };
+    } finally {
       setIsSigningUp(false);
-      return { error };
     }
   };
 
