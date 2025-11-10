@@ -58,7 +58,28 @@ serve(async (req) => {
       logId = logData?.id;
     }
 
-    // Buscar configuração da Ticto
+    // Se for um evento de teste/validação, retornar sucesso sem verificar configuração
+    console.log('Verificando tipo de evento:', payload.event);
+    if (payload.event === 'test' || payload.event === 'ping' || payload.event === 'webhook.test') {
+      console.log('Evento de teste detectado, retornando sucesso');
+      if (logId) {
+        await supabase
+          .from('webhook_logs')
+          .update({ 
+            status: 'success',
+            processed_at: new Date().toISOString()
+          })
+          .eq('id', logId);
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true, message: 'Webhook endpoint is working', event: payload.event }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // Buscar configuração da Ticto para eventos reais
+    console.log('Buscando configuração da Ticto');
     const { data: integration } = await supabase
       .from('integrations')
       .select('id')
@@ -75,6 +96,8 @@ serve(async (req) => {
       .eq('integration_id', integration.id)
       .is('workspace_id', null)
       .single();
+
+    console.log('Gateway encontrado:', gateway ? 'sim' : 'não', 'Ativo:', gateway?.is_active);
 
     if (!gateway || !gateway.is_active) {
       throw new Error('Gateway Ticto não está configurado ou ativo');
