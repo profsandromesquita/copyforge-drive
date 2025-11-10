@@ -26,6 +26,21 @@ interface TransactionDetailsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Helper para formatar telefone
+const formatPhone = (phone: any): string => {
+  if (!phone) return 'N/A';
+  
+  // Se for string, retorna direto
+  if (typeof phone === 'string') return phone;
+  
+  // Se for objeto com ddd, ddi, number
+  if (phone.ddd && phone.number) {
+    return `${phone.ddi || '+55'} (${phone.ddd}) ${phone.number}`;
+  }
+  
+  return 'N/A';
+};
+
 export const TransactionDetailsModal = ({
   transaction,
   open,
@@ -158,16 +173,22 @@ export const TransactionDetailsModal = ({
                       <p className="text-sm text-muted-foreground">Email</p>
                       <p className="font-medium">{transaction.payload.customer.email || 'N/A'}</p>
                     </div>
-                    {transaction.payload.customer.document && (
+                    {transaction.payload.customer.cpf && (
                       <div>
                         <p className="text-sm text-muted-foreground">CPF/CNPJ</p>
-                        <p className="font-medium">{transaction.payload.customer.document}</p>
+                        <p className="font-medium">{transaction.payload.customer.cpf}</p>
+                      </div>
+                    )}
+                    {transaction.payload.customer.cnpj && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">CNPJ</p>
+                        <p className="font-medium">{transaction.payload.customer.cnpj}</p>
                       </div>
                     )}
                     {transaction.payload.customer.phone && (
                       <div>
                         <p className="text-sm text-muted-foreground">Telefone</p>
-                        <p className="font-medium">{transaction.payload.customer.phone}</p>
+                        <p className="font-medium">{formatPhone(transaction.payload.customer.phone)}</p>
                       </div>
                     )}
                   </div>
