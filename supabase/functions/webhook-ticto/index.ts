@@ -31,6 +31,17 @@ interface TictoWebhookPayload {
     method: string;
     delivery_days: number;
   };
+  offer?: {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    price: number;
+    is_subscription: boolean;
+    interval: number;
+    trial_days: number;
+    first_charge_price: number | null;
+  };
   item: {
     product_name: string;
     product_id: number;
@@ -434,9 +445,15 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     .is('workspace_id', null)
     .single();
   
-  // Buscar oferta pelo gateway_offer_id da Ticto
-  const tictoOfferId = payload.item.offer_id;
-  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferId, gateway.id);
+  // Buscar oferta pelo gateway_offer_id da Ticto (usar código, não ID)
+  const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
+  
+  if (!tictoOfferCode) {
+    throw new Error('Código da oferta não encontrado no payload');
+  }
+  
+  console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
+  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
   const plan = offer.subscription_plans;
 
   // Extrair parâmetros de tracking da URL
@@ -814,9 +831,15 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
     .is('workspace_id', null)
     .single();
   
-  // Buscar oferta pelo gateway_offer_id
-  const tictoOfferId = payload.item.offer_id;
-  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferId, gateway.id);
+  // Buscar oferta pelo gateway_offer_id (usar código, não ID)
+  const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
+  
+  if (!tictoOfferCode) {
+    throw new Error('Código da oferta não encontrado no payload');
+  }
+  
+  console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
+  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
   const plan = offer.subscription_plans;
 
   const { data: profile } = await supabase
