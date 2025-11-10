@@ -682,6 +682,69 @@ export type Database = {
           },
         ]
       }
+      plan_offers: {
+        Row: {
+          billing_period_unit: string
+          billing_period_value: number
+          checkout_url: string
+          created_at: string | null
+          display_order: number | null
+          gateway_offer_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          payment_gateway_id: string
+          plan_id: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          billing_period_unit: string
+          billing_period_value: number
+          checkout_url: string
+          created_at?: string | null
+          display_order?: number | null
+          gateway_offer_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          payment_gateway_id: string
+          plan_id: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          billing_period_unit?: string
+          billing_period_value?: number
+          checkout_url?: string
+          created_at?: string | null
+          display_order?: number | null
+          gateway_offer_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          payment_gateway_id?: string
+          plan_id?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_offers_payment_gateway_id_fkey"
+            columns: ["payment_gateway_id"]
+            isOneToOne: false
+            referencedRelation: "payment_gateways"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_offers_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -854,6 +917,7 @@ export type Database = {
           rollover_percentage: number | null
           slug: string
           updated_at: string | null
+          uses_legacy_pricing: boolean | null
         }
         Insert: {
           annual_price?: number
@@ -876,6 +940,7 @@ export type Database = {
           rollover_percentage?: number | null
           slug: string
           updated_at?: string | null
+          uses_legacy_pricing?: boolean | null
         }
         Update: {
           annual_price?: number
@@ -898,6 +963,7 @@ export type Database = {
           rollover_percentage?: number | null
           slug?: string
           updated_at?: string | null
+          uses_legacy_pricing?: boolean | null
         }
         Relationships: [
           {
@@ -1253,6 +1319,7 @@ export type Database = {
           id: string
           payment_gateway: string | null
           plan_id: string
+          plan_offer_id: string | null
           projects_count: number | null
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"]
@@ -1273,6 +1340,7 @@ export type Database = {
           id?: string
           payment_gateway?: string | null
           plan_id: string
+          plan_offer_id?: string | null
           projects_count?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
@@ -1293,6 +1361,7 @@ export type Database = {
           id?: string
           payment_gateway?: string | null
           plan_id?: string
+          plan_offer_id?: string | null
           projects_count?: number | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
@@ -1305,6 +1374,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_subscriptions_plan_offer_id_fkey"
+            columns: ["plan_offer_id"]
+            isOneToOne: false
+            referencedRelation: "plan_offers"
             referencedColumns: ["id"]
           },
           {

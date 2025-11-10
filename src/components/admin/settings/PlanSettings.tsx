@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useActivePaymentGateways } from "@/hooks/useActivePaymentGateways";
+import { usePlanOffers } from "@/hooks/usePlanOffers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,18 +10,17 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PencilSimple, Package } from "phosphor-react";
+import { Plus, PencilSimple, Package, Trash, CurrencyDollar } from "phosphor-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlanOfferModal } from "./PlanOfferModal";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PlanFormData {
   id?: string;
   name: string;
   slug: string;
   description: string;
-  monthly_price: number;
-  annual_price: number;
   max_projects: number | null;
   max_copies: number | null;
   copy_ai_enabled: boolean;
@@ -29,17 +29,12 @@ interface PlanFormData {
   rollover_percentage: number;
   rollover_days: number;
   display_order: number;
-  payment_gateway_id: string | null;
-  checkout_url_monthly: string;
-  checkout_url_annual: string;
 }
 
 const emptyForm: PlanFormData = {
   name: '',
   slug: '',
   description: '',
-  monthly_price: 0,
-  annual_price: 0,
   max_projects: null,
   max_copies: null,
   copy_ai_enabled: false,
@@ -48,9 +43,6 @@ const emptyForm: PlanFormData = {
   rollover_percentage: 0,
   rollover_days: 0,
   display_order: 0,
-  payment_gateway_id: null,
-  checkout_url_monthly: '',
-  checkout_url_annual: '',
 };
 
 export const PlanSettings = () => {
@@ -59,6 +51,14 @@ export const PlanSettings = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<PlanFormData>(emptyForm);
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedPlanForOffers, setSelectedPlanForOffers] = useState<string | null>(null);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<any>(null);
+  const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
+  
+  const { offers, createOffer, updateOffer, deleteOffer, toggleOfferStatus, isCreating, isUpdating } = usePlanOffers(selectedPlanForOffers || undefined);
+  
+  const activeGateway = gateways.find(g => g.is_active);
 
   const handleOpenDialog = (plan?: any) => {
     if (plan) {
@@ -93,6 +93,47 @@ export const PlanSettings = () => {
       const slug = value.toLowerCase().replace(/\s+/g, '-');
       setFormData(prev => ({ ...prev, slug }));
     }
+  };
+
+  const handleManageOffers = (planId: string) => {
+    setSelectedPlanForOffers(planId);
+  };
+
+  const handleCreateOffer = () => {
+    setEditingOffer(null);
+    setIsOfferModalOpen(true);
+  };
+
+  const handleEditOffer = (offer: any) => {
+    setEditingOffer(offer);
+    setIsOfferModalOpen(true);
+  };
+
+  const handleOfferSubmit = (offerData: any) => {
+    if (editingOffer) {
+      updateOffer({ id: editingOffer.id, ...offerData });
+    } else {
+      createOffer(offerData);
+    }
+    setIsOfferModalOpen(false);
+    setEditingOffer(null);
+  };
+
+  const handleDeleteOffer = (offerId: string) => {
+    setOfferToDelete(offerId);
+  };
+
+  const confirmDeleteOffer = () => {
+    if (offerToDelete) {
+      deleteOffer(offerToDelete);
+      setOfferToDelete(null);
+    }
+  };
+
+  const getBillingPeriodLabel = (value: number, unit: string) => {
+    if (unit === 'lifetime') return 'Vitalício';
+    const unitLabel = unit === 'days' ? 'dia' : unit === 'months' ? 'mês' : 'ano';
+    return `${value} ${unitLabel}${value > 1 ? (unit === 'months' ? 'es' : 's') : ''}`;
   };
 
   if (isLoading) {
@@ -158,30 +199,6 @@ export const PlanSettings = () => {
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="monthly_price">Preço Mensal (R$)</Label>
-                  <Input
-                    id="monthly_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.monthly_price}
-                    onChange={(e) => handleInputChange('monthly_price', parseFloat(e.target.value))}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annual_price">Preço Anual (R$)</Label>
-                  <Input
-                    id="annual_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.annual_price}
-                    onChange={(e) => handleInputChange('annual_price', parseFloat(e.target.value))}
-                    required
-                  />
-                </div>
-              </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
@@ -272,53 +289,6 @@ export const PlanSettings = () => {
                 />
               </div>
 
-              <div className="space-y-4 border-t pt-4">
-                <h3 className="text-sm font-semibold">Configuração de Pagamento</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="payment_gateway">Gateway de Pagamento</Label>
-                  <Select
-                    value={formData.payment_gateway_id || 'none'}
-                    onValueChange={(value) => handleInputChange('payment_gateway_id', value === 'none' ? null : value)}
-                  >
-                    <SelectTrigger id="payment_gateway">
-                      <SelectValue placeholder="Selecione um gateway" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {gateways.map((gateway) => (
-                        <SelectItem key={gateway.id} value={gateway.id}>
-                          {gateway.integrations.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.payment_gateway_id && (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="checkout_url_monthly">URL Checkout Mensal</Label>
-                      <Input
-                        id="checkout_url_monthly"
-                        type="url"
-                        placeholder="https://..."
-                        value={formData.checkout_url_monthly}
-                        onChange={(e) => handleInputChange('checkout_url_monthly', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="checkout_url_annual">URL Checkout Anual</Label>
-                      <Input
-                        id="checkout_url_annual"
-                        type="url"
-                        placeholder="https://..."
-                        value={formData.checkout_url_annual}
-                        onChange={(e) => handleInputChange('checkout_url_annual', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -360,20 +330,6 @@ export const PlanSettings = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Mensal:</span>
-                  <span className="ml-2 font-semibold">
-                    {formatCurrency(plan.monthly_price)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Anual:</span>
-                  <span className="ml-2 font-semibold">
-                    {formatCurrency(plan.annual_price)}
-                  </span>
-                </div>
-              </div>
 
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
@@ -403,21 +359,158 @@ export const PlanSettings = () => {
                 </div>
               )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => togglePlanStatus.mutate({ 
-                  id: plan.id, 
-                  is_active: !plan.is_active 
-                })}
-              >
-                {plan.is_active ? 'Desativar' : 'Ativar'}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => togglePlanStatus.mutate({ 
+                    id: plan.id, 
+                    is_active: !plan.is_active 
+                  })}
+                >
+                  {plan.is_active ? 'Desativar' : 'Ativar'}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleManageOffers(plan.id)}
+                >
+                  <CurrencyDollar size={16} className="mr-1" />
+                  Ofertas
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Modal de Gerenciamento de Ofertas */}
+      {selectedPlanForOffers && (
+        <Dialog open={!!selectedPlanForOffers} onOpenChange={() => setSelectedPlanForOffers(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Ofertas - {plans?.find(p => p.id === selectedPlanForOffers)?.name}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {!activeGateway && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+                  <p className="font-semibold text-yellow-800">⚠️ Nenhum gateway de pagamento ativo</p>
+                  <p className="text-yellow-700 mt-1">Configure um gateway de pagamento em Configurações → Integrações</p>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  {offers.length} {offers.length === 1 ? 'oferta configurada' : 'ofertas configuradas'}
+                </p>
+                <Button onClick={handleCreateOffer} disabled={!activeGateway}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Oferta
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {offers.map((offer) => (
+                  <Card key={offer.id} className={!offer.is_active ? 'opacity-60' : ''}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold">{offer.name}</h4>
+                            <Badge variant={offer.is_active ? "default" : "secondary"}>
+                              {offer.is_active ? 'Ativa' : 'Inativa'}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-3 gap-4 mt-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Preço:</span>
+                              <span className="ml-2 font-semibold">{formatCurrency(offer.price)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Período:</span>
+                              <span className="ml-2">{getBillingPeriodLabel(offer.billing_period_value, offer.billing_period_unit)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">ID Gateway:</span>
+                              <span className="ml-2 font-mono text-xs">{offer.gateway_offer_id}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleOfferStatus({ id: offer.id, is_active: !offer.is_active })}
+                          >
+                            <Switch checked={offer.is_active} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditOffer(offer)}
+                          >
+                            <PencilSimple size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteOffer(offer.id)}
+                          >
+                            <Trash size={16} />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {offers.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package size={48} className="mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma oferta configurada ainda</p>
+                    <p className="text-sm mt-1">Clique em "Nova Oferta" para começar</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal de Criar/Editar Oferta */}
+      {activeGateway && (
+        <PlanOfferModal
+          open={isOfferModalOpen}
+          onClose={() => {
+            setIsOfferModalOpen(false);
+            setEditingOffer(null);
+          }}
+          onSubmit={handleOfferSubmit}
+          planId={selectedPlanForOffers || ''}
+          activeGatewayId={activeGateway.id}
+          offer={editingOffer}
+          isSubmitting={isCreating || isUpdating}
+        />
+      )}
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={!!offerToDelete} onOpenChange={() => setOfferToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta oferta? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteOffer}>Deletar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

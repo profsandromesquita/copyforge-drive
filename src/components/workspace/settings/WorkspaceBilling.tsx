@@ -2,25 +2,26 @@ import { useState } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CreditCard, Calendar, TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlanCard } from "@/components/plans/PlanCard";
 import { PlanChangeModal } from "./PlanChangeModal";
 import { formatCurrency } from "@/lib/utils";
-
-type BillingCycle = 'monthly' | 'annual';
 
 export const WorkspaceBilling = () => {
   const { activeWorkspace } = useWorkspace();
   const { data: subscription, isLoading: loadingSubscription } = useWorkspaceSubscription(activeWorkspace?.id);
   const { plans, isLoading: loadingPlans } = useSubscriptionPlans();
   
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const activePlans = plans?.filter(p => p.is_active) || [];
+  const planIds = activePlans.map(p => p.id);
+  const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
+  
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSelectPlan = (plan: any) => {
@@ -49,22 +50,10 @@ export const WorkspaceBilling = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const isUpgrade = (plan: any) => {
-    if (!subscription) return false;
-    const currentPrice = subscription.billing_cycle === 'monthly' 
-      ? subscription.plan.monthly_price 
-      : subscription.plan.annual_price;
-    const newPrice = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
-    return newPrice > currentPrice;
-  };
-
   if (loadingSubscription || loadingPlans) {
     return (
       <div className="space-y-6">
-        <div className="space-y-3">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-32 w-full rounded-lg" />
-        </div>
+        <Skeleton className="h-32 w-full rounded-lg" />
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-96 rounded-lg" />
@@ -82,11 +71,9 @@ export const WorkspaceBilling = () => {
     );
   }
 
-  const activePlans = plans?.filter(p => p.is_active) || [];
-
   return (
     <div className="space-y-8">
-      {/* Current Plan Section */}
+      {/* Current Plan */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Plano Atual</h3>
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -117,7 +104,6 @@ export const WorkspaceBilling = () => {
               </div>
             </div>
 
-            {/* Usage Statistics */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Projetos</p>
@@ -143,47 +129,32 @@ export const WorkspaceBilling = () => {
         </Card>
       </div>
 
-      {/* Available Plans Section */}
+      {/* Available Plans */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Planos Disponíveis</h3>
-          <Tabs value={billingCycle} onValueChange={(v) => setBillingCycle(v as BillingCycle)}>
-            <TabsList>
-              <TabsTrigger value="monthly">Mensal</TabsTrigger>
-              <TabsTrigger value="annual">Anual</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
+        <h3 className="text-lg font-semibold mb-4">Planos Disponíveis</h3>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activePlans.map((plan) => {
             const isCurrent = plan.id === subscription.plan.id;
-            const upgrade = isUpgrade(plan);
+            const planOffers = offersByPlan[plan.id] || [];
+            const selectedOfferId = selectedOffers[plan.id] || planOffers[0]?.id;
 
             return (
               <div key={plan.id} className="relative">
                 {!isCurrent && (
                   <div className="absolute -top-3 right-4 z-10">
-                    <Badge variant={upgrade ? "default" : "secondary"} className="gap-1">
-                      {upgrade ? (
-                        <>
-                          <TrendingUp className="h-3 w-3" />
-                          Upgrade
-                        </>
-                      ) : (
-                        <>
-                          <TrendingDown className="h-3 w-3" />
-                          Downgrade
-                        </>
-                      )}
+                    <Badge variant="default" className="gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      Mudar
                     </Badge>
                   </div>
                 )}
                 <PlanCard
                   plan={plan}
-                  billingCycle={billingCycle}
+                  offers={planOffers}
+                  selectedOfferId={selectedOfferId}
                   isCurrentPlan={isCurrent}
                   onSelect={() => handleSelectPlan(plan)}
+                  onOfferChange={(offerId) => setSelectedOffers(prev => ({ ...prev, [plan.id]: offerId }))}
                 />
               </div>
             );
@@ -201,7 +172,7 @@ export const WorkspaceBilling = () => {
           }}
           currentSubscription={subscription}
           newPlan={selectedPlan}
-          billingCycle={billingCycle}
+          billingCycle="monthly"
           workspaceId={activeWorkspace?.id || ''}
         />
       )}

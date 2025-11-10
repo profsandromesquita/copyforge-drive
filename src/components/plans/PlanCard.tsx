@@ -1,16 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Sparkles, Users, Zap } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { PlanOffer } from "@/hooks/usePlanOffers";
 
 interface SubscriptionPlan {
   id: string;
   name: string;
   slug: string;
   description: string | null;
-  monthly_price: number;
-  annual_price: number;
   max_projects: number | null;
   max_copies: number | null;
   copy_ai_enabled: boolean;
@@ -18,15 +18,15 @@ interface SubscriptionPlan {
   rollover_enabled: boolean;
   rollover_percentage: number;
   is_active: boolean;
-  checkout_url_monthly: string | null;
-  checkout_url_annual: string | null;
 }
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
-  billingCycle: 'monthly' | 'annual';
+  offers: PlanOffer[];
+  selectedOfferId: string;
   isCurrentPlan: boolean;
-  onSelect: () => void;
+  onSelect: (offerId: string) => void;
+  onOfferChange: (offerId: string) => void;
 }
 
 const FeatureItem = ({ text, highlighted }: { text: string; highlighted?: boolean }) => (
@@ -44,12 +44,28 @@ const FeatureItem = ({ text, highlighted }: { text: string; highlighted?: boolea
   </div>
 );
 
-export const PlanCard = ({ plan, billingCycle, isCurrentPlan, onSelect }: PlanCardProps) => {
-  const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
-  const monthlyEquivalent = billingCycle === 'annual' ? plan.annual_price / 12 : price;
-  const savings = billingCycle === 'annual' 
-    ? ((plan.monthly_price * 12 - plan.annual_price) / (plan.monthly_price * 12) * 100).toFixed(0)
-    : 0;
+const getBillingPeriodLabel = (value: number, unit: string) => {
+  if (unit === 'lifetime') return 'Vitalício';
+  const unitLabel = unit === 'days' ? 'dia' : unit === 'months' ? 'mês' : 'ano';
+  return `${value} ${unitLabel}${value > 1 ? (unit === 'months' ? 'es' : 's') : ''}`;
+};
+
+export const PlanCard = ({ plan, offers, selectedOfferId, isCurrentPlan, onSelect, onOfferChange }: PlanCardProps) => {
+  const selectedOffer = offers.find(o => o.id === selectedOfferId) || offers[0];
+  
+  if (!selectedOffer) {
+    return (
+      <Card className="relative">
+        <CardHeader>
+          <CardTitle>{plan.name}</CardTitle>
+          <CardDescription>{plan.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Nenhuma oferta disponível</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getRecommendationBadge = () => {
     if (plan.slug === 'pro') return { text: 'Mais Popular', variant: 'default' as const, icon: Sparkles };
@@ -83,29 +99,38 @@ export const PlanCard = ({ plan, billingCycle, isCurrentPlan, onSelect }: PlanCa
       )}
 
       <CardHeader className={cn(isCurrentPlan && "pt-6")}>
-        <CardTitle className="text-2xl">{plan.name}</CardTitle>
-        <CardDescription>{plan.description || "Plano completo para suas necessidades"}</CardDescription>
+        <CardTitle className="text-xl">{plan.name}</CardTitle>
+        <CardDescription>{plan.description || 'Plano personalizado'}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Pricing */}
+        {/* Seletor de Oferta */}
+        {offers.length > 1 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Escolha o período:</label>
+            <Select value={selectedOfferId} onValueChange={onOfferChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {offers.map((offer) => (
+                  <SelectItem key={offer.id} value={offer.id}>
+                    {offer.name} - {formatCurrency(offer.price)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Preço */}
         <div>
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold">
-              {formatCurrency(monthlyEquivalent)}
+            <span className="text-3xl font-bold">{formatCurrency(selectedOffer.price)}</span>
+            <span className="text-sm text-muted-foreground">
+              / {getBillingPeriodLabel(selectedOffer.billing_period_value, selectedOffer.billing_period_unit)}
             </span>
-            <span className="text-muted-foreground">/mês</span>
           </div>
-          {billingCycle === 'annual' && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Cobrado {formatCurrency(price)} anualmente
-            </p>
-          )}
-          {Number(savings) > 0 && (
-            <Badge variant="secondary" className="mt-2">
-              Economize {savings}%
-            </Badge>
-          )}
         </div>
 
         {/* Key Features */}
@@ -134,12 +159,12 @@ export const PlanCard = ({ plan, billingCycle, isCurrentPlan, onSelect }: PlanCa
           )}
         </div>
 
-        {/* CTA Button */}
+        {/* Call to Action */}
         <Button 
           className="w-full" 
-          variant={isCurrentPlan ? 'outline' : isRecommended ? 'default' : 'outline'}
+          variant={isCurrentPlan ? "outline" : "default"}
+          onClick={() => onSelect(selectedOfferId)}
           disabled={isCurrentPlan}
-          onClick={onSelect}
         >
           {isCurrentPlan ? 'Plano Atual' : 'Selecionar Plano'}
         </Button>

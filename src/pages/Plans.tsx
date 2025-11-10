@@ -3,12 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
+import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
 import { PlanCard } from "@/components/plans/PlanCard";
 import { FeatureComparisonTable } from "@/components/plans/FeatureComparisonTable";
 import { FAQSection } from "@/components/plans/FAQSection";
 import { TestimonialsSection } from "@/components/plans/TestimonialsSection";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
@@ -30,8 +30,15 @@ export default function Plans() {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { plans, isLoading } = useSubscriptionPlans();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
+
+  // Filtrar apenas planos ativos
+  const activePlans = plans?.filter(p => p.is_active) || [];
+  const planIds = activePlans.map(p => p.id);
+  
+  // Buscar ofertas de todos os planos ativos
+  const { data: offersByPlan = {}, isLoading: isLoadingOffers } = usePlanOffersPublic(planIds);
 
   // Buscar plano atual do workspace
   useEffect(() => {
@@ -53,10 +60,7 @@ export default function Plans() {
     fetchCurrentPlan();
   }, [activeWorkspace?.id]);
 
-  // Filtrar apenas planos ativos
-  const activePlans = plans?.filter(p => p.is_active) || [];
-
-  const handlePlanSelect = (plan: any) => {
+  const handlePlanSelect = (plan: any, offerId: string) => {
     // Se não está logado, redirecionar para signup
     if (!user) {
       navigate('/auth', { state: { selectedPlan: plan.id } });
@@ -69,18 +73,26 @@ export default function Plans() {
       return;
     }
 
-    // Redirecionar para a URL de checkout correta baseada no ciclo de cobrança
-    const checkoutUrl = billingCycle === 'monthly' 
-      ? plan.checkout_url_monthly 
-      : plan.checkout_url_annual;
+    // Buscar a oferta selecionada
+    const offers = offersByPlan[plan.id] || [];
+    const selectedOffer = offers.find(o => o.id === offerId);
+    
+    if (!selectedOffer) {
+      toast.error('Oferta não encontrada');
+      return;
+    }
 
-    if (!checkoutUrl) {
-      toast.error('URL de checkout não configurada para este plano');
+    if (!selectedOffer.checkout_url) {
+      toast.error('URL de checkout não configurada para esta oferta');
       return;
     }
 
     // Abrir URL de checkout em nova aba
-    window.open(checkoutUrl, '_blank');
+    window.open(selectedOffer.checkout_url, '_blank');
+  };
+
+  const handleOfferChange = (planId: string, offerId: string) => {
+    setSelectedOffers(prev => ({ ...prev, [planId]: offerId }));
   };
 
   return (
@@ -98,55 +110,50 @@ export default function Plans() {
       )}
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-6xl text-center space-y-6">
-          <h1 className="text-5xl font-bold tracking-tight">
-            Escolha o Plano Ideal para Você
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Potencialize sua criação de copies com inteligência artificial.
-            Escolha o plano que melhor atende suas necessidades.
-          </p>
-
-          {/* Toggle Mensal/Anual */}
-          <div className="flex items-center justify-center gap-4 pt-8">
-            <span className={billingCycle === 'monthly' ? 'font-bold' : 'text-muted-foreground'}>
-              Mensal
-            </span>
-            <Switch
-              checked={billingCycle === 'annual'}
-              onCheckedChange={(checked) => setBillingCycle(checked ? 'annual' : 'monthly')}
-            />
-            <span className={billingCycle === 'annual' ? 'font-bold' : 'text-muted-foreground'}>
-              Anual
-            </span>
-            <Badge variant="secondary" className="ml-2">
-              Economize até 20%
+      <section className="py-16 bg-gradient-to-b from-background to-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-3xl mx-auto">
+            <Badge variant="outline" className="mb-4">
+              Escolha seu plano
             </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Planos que crescem com você
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Escolha o plano ideal para o seu negócio. Sem surpresas, sem taxas escondidas.
+            </p>
           </div>
         </div>
       </section>
 
       {/* Plans Grid */}
-      <section className="pb-20 px-4">
-        <div className="container mx-auto max-w-7xl">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <PlanCardSkeleton key={i} />
-              ))}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          {(isLoading || isLoadingOffers) ? (
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <PlanCardSkeleton />
+              <PlanCardSkeleton />
+              <PlanCardSkeleton />
+              <PlanCardSkeleton />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {activePlans.map(plan => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  billingCycle={billingCycle}
-                  isCurrentPlan={plan.id === currentPlanId}
-                  onSelect={() => handlePlanSelect(plan)}
-                />
-              ))}
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {activePlans.map((plan) => {
+                const planOffers = offersByPlan[plan.id] || [];
+                const selectedOfferId = selectedOffers[plan.id] || planOffers[0]?.id;
+                
+                return (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    offers={planOffers}
+                    selectedOfferId={selectedOfferId}
+                    isCurrentPlan={plan.id === currentPlanId}
+                    onSelect={(offerId) => handlePlanSelect(plan, offerId)}
+                    onOfferChange={(offerId) => handleOfferChange(plan.id, offerId)}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
