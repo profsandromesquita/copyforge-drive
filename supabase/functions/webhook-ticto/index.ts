@@ -26,6 +26,18 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Responder a requisições GET (validação de URL)
+  if (req.method === 'GET') {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Webhook Ticto ativo e pronto para receber eventos',
+        timestamp: new Date().toISOString()
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    );
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
