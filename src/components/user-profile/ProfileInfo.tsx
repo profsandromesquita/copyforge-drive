@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -227,10 +227,6 @@ export const ProfileInfo = () => {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Foto de Perfil</CardTitle>
-          <CardDescription>Atualize sua foto de perfil</CardDescription>
-        </CardHeader>
         <CardContent className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src={profile?.avatar_url || undefined} />
@@ -262,10 +258,6 @@ export const ProfileInfo = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Informações Pessoais</CardTitle>
-          <CardDescription>Atualize suas informações pessoais</CardDescription>
-        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -314,10 +306,6 @@ export const ProfileInfo = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Endereço</CardTitle>
-          <CardDescription>Preencha seu endereço completo</CardDescription>
-        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -391,10 +379,6 @@ export const ProfileInfo = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Alterar Senha</CardTitle>
-          <CardDescription>Atualize sua senha de acesso</CardDescription>
-        </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nova Senha</Label>
