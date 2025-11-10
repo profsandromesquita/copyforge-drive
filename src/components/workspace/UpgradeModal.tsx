@@ -24,7 +24,7 @@ interface SubscriptionPlan {
 interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  limitType: 'projects' | 'copies' | 'copy_ai';
+  limitType: 'projects' | 'copies' | 'copy_ai' | 'general';
   currentLimit?: number;
   currentUsage?: number;
 }
@@ -41,6 +41,10 @@ const MESSAGES = {
   copy_ai: {
     title: 'Copy IA Não Disponível',
     description: 'A funcionalidade Copy IA não está disponível no seu plano atual. Faça upgrade para usar inteligência artificial na criação de copies.',
+  },
+  general: {
+    title: 'Escolha Seu Plano',
+    description: 'Selecione o plano ideal para suas necessidades e desbloqueie todo o potencial da plataforma.',
   },
 };
 
@@ -113,10 +117,15 @@ export const UpgradeModal = ({
   };
 
   const isPlanBetter = (plan: SubscriptionPlan) => {
+    // Se for upgrade geral, mostrar todos os planos exceto o atual
+    if (limitType === 'general') {
+      return !currentPlan || plan.id !== currentPlan.id;
+    }
+
     if (!currentPlan) return true;
 
-    const currentValue = getFeatureValue(currentPlan, limitType);
-    const planValue = getFeatureValue(plan, limitType);
+    const currentValue = getFeatureValue(currentPlan, limitType as 'projects' | 'copies' | 'copy_ai');
+    const planValue = getFeatureValue(plan, limitType as 'projects' | 'copies' | 'copy_ai');
 
     if (limitType === 'copy_ai') {
       return planValue === true && currentValue === false;

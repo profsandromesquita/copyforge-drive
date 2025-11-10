@@ -138,7 +138,7 @@ const Sidebar = ({ onCreateCopy, onCreateFolder }: SidebarProps) => {
       <UpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
-        limitType="projects"
+        limitType="general"
       />
     </aside>
   );
