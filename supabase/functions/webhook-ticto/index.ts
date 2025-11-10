@@ -467,6 +467,17 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   
   console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
   const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
+  
+  console.log('✅ Oferta encontrada:', {
+    offer_id: offer?.id,
+    offer_name: offer?.name,
+    has_subscription_plan: !!offer?.subscription_plans
+  });
+  
+  if (!offer.subscription_plans) {
+    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura associado`);
+  }
+  
   const plan = offer.subscription_plans;
 
   // Extrair parâmetros de tracking da URL (Ticto envia em query_params)
@@ -873,6 +884,17 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
   
   console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
   const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
+  
+  console.log('✅ Oferta encontrada (trial):', {
+    offer_id: offer?.id,
+    offer_name: offer?.name,
+    has_subscription_plan: !!offer?.subscription_plans
+  });
+  
+  if (!offer.subscription_plans) {
+    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura associado`);
+  }
+  
   const plan = offer.subscription_plans;
 
   const { data: profile } = await supabase
