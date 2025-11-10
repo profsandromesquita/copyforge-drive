@@ -52,17 +52,19 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
 
   // Iniciar em modo de edição se for novo projeto ou se não houver dados essenciais
   useEffect(() => {
-    if (isNew || !activeProject?.brand_name || !activeProject?.sector) {
+    const hasBrandName = activeProject?.brand_name || activeProject?.name;
+    if (isNew || !hasBrandName || !activeProject?.sector) {
       setIsEditing(true);
     } else {
       // Se tem projeto completo, mostrar o card
       setIsEditing(false);
     }
-  }, [isNew, activeProject?.brand_name, activeProject?.sector]);
+  }, [isNew, activeProject?.brand_name, activeProject?.name, activeProject?.sector]);
 
   useEffect(() => {
     if (activeProject && !isNew) {
-      setValue('brand_name', activeProject.brand_name || '');
+      // Usar name como fallback se brand_name for null
+      setValue('brand_name', activeProject.brand_name || activeProject.name || '');
       setValue('sector', activeProject.sector || '');
       setValue('central_purpose', activeProject.central_purpose || '');
       setBrandPersonality(activeProject.brand_personality || []);
@@ -187,7 +189,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const isFormValid = brandName && brandName.trim() !== '' && sector && sector.trim() !== '';
 
   // Modo de visualização
-  if (!isEditing && activeProject && activeProject.brand_name && activeProject.sector) {
+  if (!isEditing && activeProject && (activeProject.brand_name || activeProject.name) && activeProject.sector) {
     return (
       <IdentityCard 
         project={activeProject} 

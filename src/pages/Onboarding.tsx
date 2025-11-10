@@ -174,6 +174,7 @@ const Onboarding = () => {
           workspace_id: activeWorkspace.id,
           created_by: user?.id,
           name: data.name,
+          brand_name: data.name, // Adicionar brand_name com mesmo valor de name
           sector: data.sector,
           central_purpose: data.central_purpose,
           brand_personality: data.brand_personality
