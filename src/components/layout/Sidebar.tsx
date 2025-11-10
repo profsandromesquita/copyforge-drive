@@ -1,4 +1,4 @@
-import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus, CurrencyCircleDollar } from "phosphor-react";
+import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import copyDriveLogo from "@/assets/copydrive-logo.png";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ const menuItems = [
   { icon: Folder, label: "Drive", path: "/dashboard" },
   { icon: Sparkle, label: "Modelos", path: "/templates" },
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
-  { icon: CurrencyCircleDollar, label: "Planos", path: "/planos" },
 ];
 
 interface SidebarProps {
