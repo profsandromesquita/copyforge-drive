@@ -58,6 +58,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // No stored project, select first one
         setActiveProjectState(projects[0]);
         localStorage.setItem(`activeProjectId_${activeWorkspace.id}`, projects[0].id);
+      } else {
+        // No projects in this workspace
+        setActiveProjectState(null);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -65,6 +68,12 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false);
     }
+  }, [activeWorkspace?.id]);
+
+  // Clear active project immediately when workspace changes
+  useEffect(() => {
+    setActiveProjectState(null);
+    setProjects([]);
   }, [activeWorkspace?.id]);
 
   useEffect(() => {
