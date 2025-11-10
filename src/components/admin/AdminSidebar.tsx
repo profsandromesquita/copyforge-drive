@@ -5,7 +5,8 @@ import {
   FolderOpen, 
   FileText, 
   Gear,
-  Brain
+  Brain,
+  CreditCard
 } from "phosphor-react";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,7 @@ const menuItems = [
   { icon: Users, label: "Clientes", path: "/painel/admin/clientes" },
   { icon: FolderOpen, label: "Workspaces", path: "/painel/admin/workspaces" },
   { icon: FileText, label: "Copy IA", path: "/painel/admin/copies" },
+  { icon: CreditCard, label: "Transações", path: "/painel/admin/transacoes" },
   { icon: Brain, label: "Prompts IA", path: "/painel/admin/ai-prompts" },
   { icon: Gear, label: "Configurações", path: "/painel/admin/settings" },
 ];
