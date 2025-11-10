@@ -35,7 +35,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[useAuth] User signed in:', session.user.email);
           
-          // Wait a bit before checking workspace (gives trigger time to run)
+          // Check onboarding status and redirect - with delay to allow profile creation
+          const currentPath = window.location.pathname;
+          console.log('[useAuth] Signed in, current path:', currentPath);
+          
+          // Only redirect if on auth page or root
+          if (currentPath === '/auth' || currentPath === '/') {
+            // Wait a bit for profile to be created
+            setTimeout(async () => {
+              try {
+                console.log('[useAuth] Checking onboarding status...');
+                const { data: profile, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('onboarding_completed')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
+                
+                if (profile?.onboarding_completed) {
+                  console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
+                  navigate('/dashboard');
+                } else {
+                  console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
+                  navigate('/onboarding');
+                }
+              } catch (error) {
+                console.error('[useAuth] Error checking onboarding:', error);
+                // Default to onboarding if there's an error
+                console.log('[useAuth] Redirecting to onboarding (error fallback)');
+                navigate('/onboarding');
+              }
+            }, 800); // Wait 800ms for profile creation
+          }
+          
+          // Check workspace separately (no blocking)
           setTimeout(async () => {
             try {
               const { data: memberships, error: membershipError } = await supabase
@@ -65,35 +99,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
                 if (setupError) {
                   console.error('[useAuth] Setup error:', setupError);
-                  
-                  // Verify again if workspace was created despite error
-                  const { data: retryMemberships } = await supabase
-                    .from('workspace_members')
-                    .select('workspace_id')
-                    .eq('user_id', session.user.id)
-                    .limit(1);
-                  
-                  if (!retryMemberships?.[0]) {
-                    // Show warning but don't block login
-                    import('sonner').then(({ toast }) => {
-                      toast.warning('Configuração inicial pendente. Entre em contato com o suporte se problemas persistirem.');
-                    });
-                  } else {
-                    console.log('[useAuth] Workspace created despite error');
-                  }
                 } else if (!setupData?.success) {
                   console.warn('[useAuth] Setup returned non-success:', setupData);
-                  
-                  // Verify if workspace exists anyway
-                  const { data: retryMemberships } = await supabase
-                    .from('workspace_members')
-                    .select('workspace_id')
-                    .eq('user_id', session.user.id)
-                    .limit(1);
-                  
-                  if (retryMemberships?.[0]) {
-                    console.log('[useAuth] Workspace exists despite setup warning');
-                  }
                 } else {
                   console.log('[useAuth] Setup completed successfully');
                 }
@@ -102,31 +109,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             } catch (error) {
               console.error('[useAuth] Workspace check failed:', error);
-              // Don't block login
             }
-          }, 500); // Wait 500ms for trigger to execute
-          
-          // Check onboarding status and redirect
-          const currentPath = window.location.pathname;
-          console.log('Signed in, current path:', currentPath);
-          
-          // Only redirect if on auth page or root
-          if (currentPath === '/auth' || currentPath === '/') {
-            // Check if onboarding is completed
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('onboarding_completed')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (profile?.onboarding_completed) {
-              console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
-              navigate('/dashboard');
-            } else {
-              console.log('[useAuth] Redirecting to onboarding (first access)');
-              navigate('/onboarding');
-            }
-          }
+          }, 500);
         } else if (event === 'SIGNED_OUT') {
           console.log('Signed out, redirecting to auth');
           navigate('/auth');
