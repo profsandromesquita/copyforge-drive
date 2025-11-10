@@ -40,16 +40,16 @@ interface WorkspaceCopiesTabProps {
 
 export const WorkspaceCopiesTab = ({ workspaceId }: WorkspaceCopiesTabProps) => {
   const navigate = useNavigate();
-  const [copyTypeFilter, setCopyTypeFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [isTemplateFilter, setIsTemplateFilter] = useState<string>("");
+  const [copyTypeFilter, setCopyTypeFilter] = useState<string | undefined>(undefined);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [isTemplateFilter, setIsTemplateFilter] = useState<string | undefined>(undefined);
   const [copyToDelete, setCopyToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const { data: copies, isLoading, refetch } = useWorkspaceCopies({
     workspaceId,
-    copyType: copyTypeFilter || undefined,
-    status: statusFilter || undefined,
+    copyType: copyTypeFilter,
+    status: statusFilter,
     isTemplate: isTemplateFilter === "true" ? true : isTemplateFilter === "false" ? false : undefined,
   });
 
@@ -133,13 +133,12 @@ export const WorkspaceCopiesTab = ({ workspaceId }: WorkspaceCopiesTabProps) => 
     <div className="space-y-6">
       {/* Filters */}
       <Card className="p-4">
-        <div className="flex gap-4">
-          <Select value={copyTypeFilter} onValueChange={setCopyTypeFilter}>
+        <div className="flex gap-4 items-center">
+          <Select value={copyTypeFilter || undefined} onValueChange={(value) => setCopyTypeFilter(value)}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Tipo de Copy" />
+              <SelectValue placeholder="Todos os Tipos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os Tipos</SelectItem>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="landing-page">Landing Page</SelectItem>
               <SelectItem value="social-media">Social Media</SelectItem>
@@ -147,27 +146,39 @@ export const WorkspaceCopiesTab = ({ workspaceId }: WorkspaceCopiesTabProps) => 
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter || undefined} onValueChange={(value) => setStatusFilter(value)}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Todos os Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os Status</SelectItem>
               <SelectItem value="draft">Rascunho</SelectItem>
               <SelectItem value="published">Publicado</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={isTemplateFilter} onValueChange={setIsTemplateFilter}>
+          <Select value={isTemplateFilter || undefined} onValueChange={(value) => setIsTemplateFilter(value)}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Template" />
+              <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
               <SelectItem value="true">Apenas Templates</SelectItem>
               <SelectItem value="false">Não Templates</SelectItem>
             </SelectContent>
           </Select>
+
+          {(copyTypeFilter || statusFilter || isTemplateFilter) && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setCopyTypeFilter(undefined);
+                setStatusFilter(undefined);
+                setIsTemplateFilter(undefined);
+              }}
+            >
+              Limpar Filtros
+            </Button>
+          )}
         </div>
       </Card>
 
