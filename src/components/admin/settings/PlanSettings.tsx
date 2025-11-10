@@ -30,7 +30,8 @@ interface PlanFormData {
   rollover_days: number;
   display_order: number;
   payment_gateway_id: string | null;
-  checkout_url: string;
+  checkout_url_monthly: string;
+  checkout_url_annual: string;
 }
 
 const emptyForm: PlanFormData = {
@@ -48,7 +49,8 @@ const emptyForm: PlanFormData = {
   rollover_days: 0,
   display_order: 0,
   payment_gateway_id: null,
-  checkout_url: '',
+  checkout_url_monthly: '',
+  checkout_url_annual: '',
 };
 
 export const PlanSettings = () => {
@@ -293,15 +295,27 @@ export const PlanSettings = () => {
                 </div>
 
                 {formData.payment_gateway_id && (
-                  <div className="space-y-2">
-                    <Label htmlFor="checkout_url">URL do Checkout</Label>
-                    <Input
-                      id="checkout_url"
-                      type="url"
-                      placeholder="https://..."
-                      value={formData.checkout_url}
-                      onChange={(e) => handleInputChange('checkout_url', e.target.value)}
-                    />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout_url_monthly">URL Checkout Mensal</Label>
+                      <Input
+                        id="checkout_url_monthly"
+                        type="url"
+                        placeholder="https://..."
+                        value={formData.checkout_url_monthly}
+                        onChange={(e) => handleInputChange('checkout_url_monthly', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout_url_annual">URL Checkout Anual</Label>
+                      <Input
+                        id="checkout_url_annual"
+                        type="url"
+                        placeholder="https://..."
+                        value={formData.checkout_url_annual}
+                        onChange={(e) => handleInputChange('checkout_url_annual', e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

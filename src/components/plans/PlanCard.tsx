@@ -18,6 +18,8 @@ interface SubscriptionPlan {
   rollover_enabled: boolean;
   rollover_percentage: number;
   is_active: boolean;
+  checkout_url_monthly: string | null;
+  checkout_url_annual: string | null;
 }
 
 interface PlanCardProps {

@@ -18,6 +18,9 @@ interface SubscriptionPlan {
   rollover_days: number;
   is_active: boolean;
   display_order: number;
+  payment_gateway_id: string | null;
+  checkout_url_monthly: string | null;
+  checkout_url_annual: string | null;
   created_at: string;
   updated_at: string;
 }

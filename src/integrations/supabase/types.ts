@@ -835,7 +835,8 @@ export type Database = {
       subscription_plans: {
         Row: {
           annual_price: number
-          checkout_url: string | null
+          checkout_url_annual: string | null
+          checkout_url_monthly: string | null
           copy_ai_enabled: boolean | null
           created_at: string | null
           credits_per_month: number
@@ -856,7 +857,8 @@ export type Database = {
         }
         Insert: {
           annual_price?: number
-          checkout_url?: string | null
+          checkout_url_annual?: string | null
+          checkout_url_monthly?: string | null
           copy_ai_enabled?: boolean | null
           created_at?: string | null
           credits_per_month?: number
@@ -877,7 +879,8 @@ export type Database = {
         }
         Update: {
           annual_price?: number
-          checkout_url?: string | null
+          checkout_url_annual?: string | null
+          checkout_url_monthly?: string | null
           copy_ai_enabled?: boolean | null
           created_at?: string | null
           credits_per_month?: number

@@ -69,8 +69,18 @@ export default function Plans() {
       return;
     }
 
-    // TODO: Implementar modal de confirmação com integração de pagamento
-    toast.info('Funcionalidade de upgrade em desenvolvimento');
+    // Redirecionar para a URL de checkout correta baseada no ciclo de cobrança
+    const checkoutUrl = billingCycle === 'monthly' 
+      ? plan.checkout_url_monthly 
+      : plan.checkout_url_annual;
+
+    if (!checkoutUrl) {
+      toast.error('URL de checkout não configurada para este plano');
+      return;
+    }
+
+    // Abrir URL de checkout em nova aba
+    window.open(checkoutUrl, '_blank');
   };
 
   return (
