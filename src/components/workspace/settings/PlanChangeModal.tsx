@@ -1,27 +1,35 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Check, X, AlertCircle, Loader2 } from "lucide-react";
+import { useChangePlan } from "@/hooks/useChangePlan";
+import { useWorkspaceOffer } from "@/hooks/useWorkspaceOffer";
+import { formatCurrency } from "@/lib/utils";
+import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
-import { PlanComparisonCard } from "./PlanComparisonCard";
-import { useChangePlan } from "@/hooks/useChangePlan";
-import { WorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
+import { useState, useEffect } from "react";
 import { PlanOffer } from "@/hooks/usePlanOffers";
-import { formatCurrency } from "@/lib/utils";
 
 interface SubscriptionPlan {
   id: string;
   name: string;
-  slug: string;
-  monthly_price: number;
-  annual_price: number;
+  description?: string;
   max_projects: number | null;
   max_copies: number | null;
   copy_ai_enabled: boolean;
-  credits_per_month: number;
+}
+
+interface WorkspaceSubscription {
+  id: string;
+  workspace_id: string;
+  plan: SubscriptionPlan;
+  billing_cycle: 'monthly' | 'annual' | 'free';
+  status: string;
+  projects_count: number;
+  copies_count: number;
+  plan_offer_id?: string | null;
 }
 
 interface PlanChangeModalProps {
@@ -33,24 +41,32 @@ interface PlanChangeModalProps {
   workspaceId: string;
 }
 
-export const PlanChangeModal = ({ 
-  isOpen, 
-  onClose, 
-  currentSubscription, 
-  newPlan, 
+export const PlanChangeModal = ({
+  isOpen,
+  onClose,
+  currentSubscription,
+  newPlan,
   availableOffers,
-  workspaceId 
+  workspaceId
 }: PlanChangeModalProps) => {
   const { changePlan, isChanging } = useChangePlan();
-  const [selectedOfferId, setSelectedOfferId] = useState<string>(availableOffers[0]?.id || "");
+  const [selectedOfferId, setSelectedOfferId] = useState<string>('');
+  const { data: currentOffer } = useWorkspaceOffer(workspaceId);
 
-  const currentPlan = currentSubscription.plan;
+  const currentPlan: SubscriptionPlan = currentSubscription.plan;
+
+  useEffect(() => {
+    if (availableOffers.length > 0 && !selectedOfferId) {
+      setSelectedOfferId(availableOffers[0].id);
+    }
+  }, [availableOffers, selectedOfferId]);
+
   const selectedOffer = availableOffers.find(o => o.id === selectedOfferId);
   
-  const isUpgrade = selectedOffer 
-    ? selectedOffer.price > (currentSubscription.billing_cycle === 'monthly' ? currentPlan.monthly_price : currentPlan.annual_price)
+  const isUpgrade = selectedOffer && currentOffer
+    ? selectedOffer.price > currentOffer.price
     : false;
-  
+
   const newPrice = selectedOffer?.price || 0;
   const monthlyEquivalent = selectedOffer?.billing_period_unit === 'months' && selectedOffer.billing_period_value > 1
     ? newPrice / selectedOffer.billing_period_value
@@ -63,91 +79,100 @@ export const PlanChangeModal = ({
                        currentSubscription.copies_count > newPlan.max_copies;
   const hasBlockingIssues = projectsExceed || copiesExceed;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (hasBlockingIssues || !selectedOfferId) return;
     
-    changePlan({
-      workspaceId,
-      planOfferId: selectedOfferId,
-    }, {
-      onSuccess: (data) => {
-        if (data?.success && !data.requires_payment) {
-          onClose();
-        }
-      }
-    });
+    try {
+      await changePlan({
+        workspaceId,
+        planOfferId: selectedOfferId,
+      });
+      
+      toast.success(
+        isUpgrade 
+          ? 'Upgrade realizado com sucesso!' 
+          : 'Plano alterado com sucesso!'
+      );
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao alterar plano');
+    }
   };
-
-  const features = [
-    {
-      label: "Projetos",
-      current: currentSubscription.current_max_projects,
-      new: newPlan.max_projects,
-      isLimit: true,
-    },
-    {
-      label: "Copies",
-      current: currentSubscription.current_max_copies,
-      new: newPlan.max_copies,
-      isLimit: true,
-    },
-    {
-      label: "Créditos/Mês",
-      current: currentPlan.credits_per_month,
-      new: newPlan.credits_per_month,
-    },
-    {
-      label: "Copy IA",
-      current: currentPlan.copy_ai_enabled,
-      new: newPlan.copy_ai_enabled,
-    },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            {isUpgrade ? (
-              <TrendingUp className="h-5 w-5 text-green-500" />
-            ) : (
-              <TrendingDown className="h-5 w-5 text-orange-500" />
-            )}
-            <DialogTitle>
-              {isUpgrade ? 'Fazer Upgrade' : 'Fazer Downgrade'} de Plano
-            </DialogTitle>
-          </div>
+          <DialogTitle>
+            {isUpgrade ? 'Fazer Upgrade de Plano' : 'Alterar Plano'}
+          </DialogTitle>
           <DialogDescription>
-            Revise as mudanças antes de confirmar a alteração do plano
+            Revise as mudanças antes de confirmar
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Comparação de Planos */}
-          <PlanComparisonCard
-            currentPlanName={currentPlan.name}
-            newPlanName={newPlan.name}
-            features={features}
-          />
-
-          {/* Seleção de Oferta */}
-          {availableOffers.length > 1 && (
+        <div className="space-y-6">
+          {/* Plan Comparison */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Selecione a forma de pagamento</Label>
+              <p className="text-sm text-muted-foreground">Plano Atual</p>
+              <div className="p-4 rounded-lg border bg-muted/50">
+                <h3 className="font-semibold">{currentPlan.name}</h3>
+                {currentOffer && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm">{currentOffer.name}</p>
+                    <p className="text-xl font-bold">{formatCurrency(currentOffer.price)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Novo Plano</p>
+              <div className="p-4 rounded-lg border border-primary bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold">{newPlan.name}</h3>
+                  <Badge variant={isUpgrade ? "default" : "secondary"}>
+                    {isUpgrade ? 'Upgrade' : 'Mudança'}
+                  </Badge>
+                </div>
+                {selectedOffer && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm">{selectedOffer.name}</p>
+                    <p className="text-xl font-bold">{formatCurrency(selectedOffer.price)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Offer Selection */}
+          {availableOffers.length > 0 && (
+            <div className="space-y-3">
+              <Label>Escolha a forma de pagamento:</Label>
               <RadioGroup value={selectedOfferId} onValueChange={setSelectedOfferId}>
-                {availableOffers.map((offer) => (
-                  <div key={offer.id} className="flex items-center space-x-2 border rounded-lg p-3">
+                {availableOffers.map(offer => (
+                  <div key={offer.id} className="flex items-center space-x-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                     <RadioGroupItem value={offer.id} id={offer.id} />
                     <Label htmlFor={offer.id} className="flex-1 cursor-pointer">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{offer.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {offer.billing_period_value} {offer.billing_period_unit === 'months' ? 'meses' : offer.billing_period_unit === 'days' ? 'dias' : 'anos'}
+                            {offer.billing_period_value} {
+                              offer.billing_period_unit === 'months' ? 'mês(es)' :
+                              offer.billing_period_unit === 'years' ? 'ano(s)' : 
+                              offer.billing_period_unit
+                            }
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">{formatCurrency(offer.price)}</p>
+                          <p className="text-lg font-bold">{formatCurrency(offer.price)}</p>
+                          {offer.billing_period_value > 1 && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatCurrency(offer.price / offer.billing_period_value)}/mês
+                            </p>
+                          )}
                         </div>
                       </div>
                     </Label>
@@ -157,65 +182,70 @@ export const PlanChangeModal = ({
             </div>
           )}
 
-          {/* Informações de Preço */}
-          {selectedOffer && (
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Novo valor</span>
-                <Badge variant={isUpgrade ? "default" : "secondary"}>
-                  {selectedOffer.name}
-                </Badge>
+          {/* Features Comparison */}
+          <div className="space-y-2">
+            <p className="font-medium">Comparação de Recursos:</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <FeatureRow 
+                  label="Projetos" 
+                  value={currentPlan.max_projects === null ? '∞' : currentPlan.max_projects} 
+                />
+                <FeatureRow 
+                  label="Copies" 
+                  value={currentPlan.max_copies === null ? '∞' : currentPlan.max_copies} 
+                />
+                <FeatureRow 
+                  label="Copy IA" 
+                  value={currentPlan.copy_ai_enabled ? <Check className="h-4 w-4 text-primary" /> : <X className="h-4 w-4 text-muted-foreground" />} 
+                />
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold">{formatCurrency(monthlyEquivalent)}</span>
-                <span className="text-muted-foreground">/mês</span>
+              <div className="space-y-2">
+                <FeatureRow 
+                  label="Projetos" 
+                  value={newPlan.max_projects === null ? '∞' : newPlan.max_projects}
+                  highlight={newPlan.max_projects !== currentPlan.max_projects}
+                />
+                <FeatureRow 
+                  label="Copies" 
+                  value={newPlan.max_copies === null ? '∞' : newPlan.max_copies}
+                  highlight={newPlan.max_copies !== currentPlan.max_copies}
+                />
+                <FeatureRow 
+                  label="Copy IA" 
+                  value={newPlan.copy_ai_enabled ? <Check className="h-4 w-4 text-primary" /> : <X className="h-4 w-4 text-muted-foreground" />}
+                  highlight={newPlan.copy_ai_enabled !== currentPlan.copy_ai_enabled}
+                />
               </div>
-              {selectedOffer.billing_period_value > 1 && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Cobrado {formatCurrency(newPrice)} a cada {selectedOffer.billing_period_value} {
-                    selectedOffer.billing_period_unit === 'months' ? 'meses' : selectedOffer.billing_period_unit === 'days' ? 'dias' : 'anos'
-                  }
-                </p>
-              )}
             </div>
-          )}
+          </div>
 
-          {/* Avisos de Validação */}
-          {hasBlockingIssues && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
+          {/* Warnings */}
+          {!isUpgrade && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <p className="font-semibold mb-2">Não é possível fazer downgrade:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  {projectsExceed && (
-                    <li>
-                      Você possui {currentSubscription.projects_count} projetos, mas o plano {newPlan.name} permite apenas {newPlan.max_projects}. 
-                      Delete {currentSubscription.projects_count - newPlan.max_projects!} projeto(s) primeiro.
-                    </li>
-                  )}
-                  {copiesExceed && (
-                    <li>
-                      Você possui {currentSubscription.copies_count} copies, mas o plano {newPlan.name} permite apenas {newPlan.max_copies}. 
-                      Delete {currentSubscription.copies_count - newPlan.max_copies!} cop{currentSubscription.copies_count - newPlan.max_copies! > 1 ? 'ies' : 'y'} primeiro.
-                    </li>
-                  )}
-                </ul>
+                Mudanças de plano podem afetar recursos disponíveis. Certifique-se de revisar antes de continuar.
               </AlertDescription>
             </Alert>
           )}
 
-          {!hasBlockingIssues && isUpgrade && newPrice > 0 && (
-            <Alert>
-              <AlertDescription className="text-sm">
-                A mudança será processada imediatamente. Você receberá os créditos do novo plano automaticamente.
+          {projectsExceed && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Você possui {currentSubscription.projects_count} projetos, mas o novo plano permite apenas {newPlan.max_projects}. 
+                Exclua {currentSubscription.projects_count - (newPlan.max_projects || 0)} projeto(s) antes de continuar.
               </AlertDescription>
             </Alert>
           )}
 
-          {!hasBlockingIssues && !isUpgrade && (
-            <Alert>
-              <AlertDescription className="text-sm">
-                O downgrade entrará em vigor imediatamente. Os créditos do novo plano serão adicionados ao seu saldo atual.
+          {copiesExceed && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Você possui {currentSubscription.copies_count} copies, mas o novo plano permite apenas {newPlan.max_copies}. 
+                Exclua {currentSubscription.copies_count - (newPlan.max_copies || 0)} copy(ies) antes de continuar.
               </AlertDescription>
             </Alert>
           )}
@@ -227,13 +257,28 @@ export const PlanChangeModal = ({
           </Button>
           <Button 
             onClick={handleConfirm} 
-            disabled={hasBlockingIssues || isChanging || !selectedOfferId}
-            variant={isUpgrade ? "default" : "secondary"}
+            disabled={hasBlockingIssues || !selectedOfferId || isChanging}
           >
-            {isChanging ? 'Processando...' : 'Confirmar Mudança'}
+            {isChanging && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Confirmar Mudança
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
+const FeatureRow = ({ 
+  label, 
+  value, 
+  highlight = false 
+}: { 
+  label: string; 
+  value: React.ReactNode; 
+  highlight?: boolean 
+}) => (
+  <div className={`flex items-center justify-between p-2 rounded ${highlight ? 'bg-primary/10' : ''}`}>
+    <span className="text-sm text-muted-foreground">{label}</span>
+    <span className="font-medium">{value}</span>
+  </div>
+);

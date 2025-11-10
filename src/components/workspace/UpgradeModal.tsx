@@ -1,26 +1,23 @@
-import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, Zap, TrendingUp } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useWorkspace } from '@/hooks/useWorkspace';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Check, TrendingUp, Users, FileText, Brain } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
+import { PlanOffer } from "@/hooks/usePlanOffers";
 
 interface SubscriptionPlan {
   id: string;
   name: string;
-  slug: string;
-  description: string | null;
-  monthly_price: number;
-  annual_price: number;
+  description: string;
   max_projects: number | null;
   max_copies: number | null;
   copy_ai_enabled: boolean;
-  credits_per_month: number;
-  rollover_enabled: boolean;
   display_order: number;
 }
 
@@ -56,21 +53,24 @@ export const UpgradeModal = ({
 }: UpgradeModalProps) => {
   const { activeWorkspace } = useWorkspace();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
+  
+  const planIds = plans.map(p => p.id);
+  const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
 
   useEffect(() => {
-    if (open && activeWorkspace?.id) {
+    if (open && activeWorkspace) {
       loadPlansAndCurrentPlan();
     }
-  }, [open, activeWorkspace?.id]);
+  }, [open, activeWorkspace]);
 
   const loadPlansAndCurrentPlan = async () => {
-    if (!activeWorkspace?.id) return;
-
-    setLoading(true);
     try {
-      // Buscar planos ativos
+      setLoading(true);
+      
+      // Load available plans
       const { data: plansData, error: plansError } = await supabase
         .from('subscription_plans')
         .select('*')
@@ -78,19 +78,26 @@ export const UpgradeModal = ({
         .order('display_order');
 
       if (plansError) throw plansError;
+      setPlans(plansData || []);
 
-      // Buscar plano atual do workspace
-      const { data: subscriptionData, error: subError } = await supabase
+      // Load current workspace subscription
+      if (!activeWorkspace?.id) return;
+      
+      const { data: subData, error: subError } = await supabase
         .from('workspace_subscriptions')
-        .select('plan_id, subscription_plans(*)')
+        .select(`
+          *,
+          subscription_plans (*)
+        `)
         .eq('workspace_id', activeWorkspace.id)
         .eq('status', 'active')
         .single();
 
       if (subError) throw subError;
-
-      setPlans(plansData || []);
-      setCurrentPlan(subscriptionData?.subscription_plans as any);
+      
+      if (subData?.subscription_plans) {
+        setCurrentPlan(subData.subscription_plans as any);
+      }
     } catch (error) {
       console.error('Error loading plans:', error);
     } finally {
@@ -98,201 +105,187 @@ export const UpgradeModal = ({
     }
   };
 
-  const message = MESSAGES[limitType];
-
   const getFeatureValue = (plan: SubscriptionPlan, feature: 'projects' | 'copies' | 'copy_ai') => {
-    switch (feature) {
-      case 'projects':
-        return plan.max_projects === null ? 'Ilimitado' : plan.max_projects;
-      case 'copies':
-        return plan.max_copies === null ? 'Ilimitado' : plan.max_copies;
-      case 'copy_ai':
-        return plan.copy_ai_enabled ? 'Sim' : 'Não';
-    }
+    if (feature === 'projects') return plan.max_projects;
+    if (feature === 'copies') return plan.max_copies;
+    if (feature === 'copy_ai') return plan.copy_ai_enabled;
+    return null;
   };
 
   const isPlanBetter = (plan: SubscriptionPlan) => {
     if (!currentPlan) return true;
 
-    switch (limitType) {
-      case 'projects':
-        if (plan.max_projects === null) return true;
-        if (currentPlan.max_projects === null) return false;
-        return plan.max_projects > currentPlan.max_projects;
-      case 'copies':
-        if (plan.max_copies === null) return true;
-        if (currentPlan.max_copies === null) return false;
-        return plan.max_copies > currentPlan.max_copies;
-      case 'copy_ai':
-        return plan.copy_ai_enabled && !currentPlan.copy_ai_enabled;
-      default:
-        return false;
+    const currentValue = getFeatureValue(currentPlan, limitType);
+    const planValue = getFeatureValue(plan, limitType);
+
+    if (limitType === 'copy_ai') {
+      return planValue === true && currentValue === false;
     }
+
+    if (typeof currentValue === 'number' && typeof planValue === 'number') {
+      return planValue > currentValue;
+    }
+    
+    if (currentValue === null && planValue !== null) {
+      return true;
+    }
+
+    return false;
   };
 
   const getRecommendedPlan = () => {
     const betterPlans = plans.filter(isPlanBetter);
-    return betterPlans[0] || null;
+    return betterPlans.length > 0 ? betterPlans[0] : null;
   };
 
   const recommendedPlan = getRecommendedPlan();
 
+  const handleSelectOffer = (planId: string, offerId: string) => {
+    setSelectedOffers(prev => ({ ...prev, [planId]: offerId }));
+  };
+
+  const handleUpgrade = (offer: PlanOffer) => {
+    window.open(offer.checkout_url, '_blank');
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">
-            Escolha o Plano do seu Workspace
-          </DialogTitle>
+          <DialogTitle className="text-2xl">{MESSAGES[limitType].title}</DialogTitle>
+          <DialogDescription className="text-base">
+            {MESSAGES[limitType].description}
+          </DialogDescription>
         </DialogHeader>
 
         {currentLimit !== undefined && currentUsage !== undefined && (
-          <div className="bg-muted/50 rounded-lg p-4 mb-4">
+          <div className="bg-muted p-4 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Uso Atual</span>
-              <span className="text-sm font-bold">
-                {currentUsage} / {currentLimit === null ? '∞' : currentLimit}
+              <span className="text-sm text-muted-foreground">Uso Atual</span>
+              <span className="font-semibold">
+                {currentUsage} / {currentLimit}
               </span>
             </div>
-            <div className="w-full bg-muted rounded-full h-2 mt-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all"
-                style={{
-                  width: currentLimit === null ? '100%' : `${Math.min((currentUsage / currentLimit) * 100, 100)}%`,
-                }}
-              />
-            </div>
           </div>
         )}
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-full mt-2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {plans.filter(isPlanBetter).map((plan) => {
-              const isRecommended = plan.id === recommendedPlan?.id;
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <>
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-[400px]" />
+              ))}
+            </>
+          ) : (
+            <>
+              {plans.filter(isPlanBetter).map((plan) => {
+                const planOffers = offersByPlan[plan.id] || [];
+                const selectedOfferId = selectedOffers[plan.id] || planOffers[0]?.id;
+                const selectedOffer = planOffers.find(o => o.id === selectedOfferId);
 
-              return (
-                <Card
-                  key={plan.id}
-                  className={`relative ${
-                    isRecommended
-                      ? 'border-primary shadow-lg ring-2 ring-primary/20'
-                      : ''
-                  }`}
-                >
-                  {isRecommended && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-primary text-primary-foreground">
-                        <Zap className="h-3 w-3 mr-1" />
-                        Recomendado
-                      </Badge>
-                    </div>
-                  )}
-
-                  <CardHeader>
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
-                    {plan.description && (
-                      <CardDescription className="text-xs">
-                        {plan.description}
-                      </CardDescription>
-                    )}
-                    <div className="mt-4">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">
-                          {formatCurrency(plan.monthly_price)}
-                        </span>
-                        <span className="text-muted-foreground">/mês</span>
+                return (
+                  <Card 
+                    key={plan.id}
+                    className={recommendedPlan?.id === plan.id ? "border-primary shadow-lg" : ""}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl">{plan.name}</CardTitle>
+                        {recommendedPlan?.id === plan.id && (
+                          <Badge className="ml-2">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Recomendado
+                          </Badge>
+                        )}
                       </div>
-                      {plan.annual_price < plan.monthly_price * 12 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatCurrency(plan.annual_price)}/ano (economize{' '}
-                          {(
-                            ((plan.monthly_price * 12 - plan.annual_price) /
-                              (plan.monthly_price * 12)) *
-                            100
-                          ).toFixed(0)}
-                          %)
-                        </p>
-                      )}
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span>
-                          {plan.max_projects === null
-                            ? 'Projetos Ilimitados'
-                            : `${plan.max_projects} Projetos`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span>
-                          {plan.max_copies === null
-                            ? 'Copies Ilimitadas'
-                            : `${plan.max_copies} Copies`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-600" />
-                        <span>
-                          {plan.credits_per_month} Créditos/mês
-                        </span>
-                      </div>
-                      {plan.copy_ai_enabled && (
-                        <div className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-600" />
-                          <span className="font-medium">Copy IA Habilitada</span>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-muted-foreground">{plan.description}</p>
+                      
+                      {planOffers.length > 0 && (
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">Escolha o período:</p>
+                          <div className="grid gap-2">
+                            {planOffers.map(offer => (
+                              <button
+                                key={offer.id}
+                                onClick={() => handleSelectOffer(plan.id, offer.id)}
+                                className={`p-3 rounded-lg border-2 text-left transition-all ${
+                                  selectedOfferId === offer.id 
+                                    ? 'border-primary bg-primary/5' 
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium">{offer.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {offer.billing_period_value} {
+                                        offer.billing_period_unit === 'months' ? 'mês(es)' :
+                                        offer.billing_period_unit === 'years' ? 'ano(s)' : 
+                                        offer.billing_period_unit
+                                      }
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xl font-bold">{formatCurrency(offer.price)}</p>
+                                    <p className="text-xs text-muted-foreground">total</p>
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      {plan.rollover_enabled && (
+
+                      <div className="space-y-2 pt-4 border-t">
                         <div className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-green-600" />
-                          <span>Rollover de Créditos</span>
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {plan.max_projects === null 
+                              ? 'Projetos ilimitados' 
+                              : `Até ${plan.max_projects} projetos`}
+                          </span>
                         </div>
-                      )}
-                    </div>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {plan.max_copies === null 
+                              ? 'Copies ilimitadas' 
+                              : `Até ${plan.max_copies} copies`}
+                          </span>
+                        </div>
+                        {plan.copy_ai_enabled && (
+                          <div className="flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">IA para geração de copies</span>
+                            <Check className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
+                      </div>
 
-                    <Button
-                      className="w-full"
-                      variant={isRecommended ? 'default' : 'outline'}
-                      onClick={() => {
-                        // TODO: Implementar seleção de plano
-                        console.log('Selected plan:', plan.id);
-                      }}
-                    >
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Selecionar Plano
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        variant={recommendedPlan?.id === plan.id ? "default" : "outline"}
+                        onClick={() => selectedOffer && handleUpgrade(selectedOffer)}
+                        disabled={!selectedOffer}
+                      >
+                        Selecionar Plano
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          )}
+        </div>
 
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>
-            Quer ver todos os planos e recursos?{' '}
-            <a href="/planos" className="text-primary underline hover:no-underline">
-              Comparar todos os planos
-            </a>
-          </p>
+        <div className="text-center pt-4">
+          <Button variant="link" onClick={() => window.location.href = '/plans'}>
+            Ver comparação completa de planos
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

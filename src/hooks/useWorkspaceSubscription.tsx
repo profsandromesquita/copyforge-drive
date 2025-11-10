@@ -5,7 +5,9 @@ interface SubscriptionPlan {
   id: string;
   name: string;
   slug: string;
+  /** @deprecated Use plan_offers table instead */
   monthly_price: number;
+  /** @deprecated Use plan_offers table instead */
   annual_price: number;
   max_projects: number | null;
   max_copies: number | null;

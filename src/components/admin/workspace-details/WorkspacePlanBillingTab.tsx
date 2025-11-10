@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
 import { useWorkspaceInvoices } from "@/hooks/useWorkspaceInvoices";
+import { useWorkspaceOffer } from "@/hooks/useWorkspaceOffer";
 import { AdminChangePlanModal } from "./AdminChangePlanModal";
 import { AdminAddCreditsModal } from "./AdminAddCreditsModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
   const { data: plan, isLoading: planLoading } = useWorkspacePlan(workspaceId);
   const { data: subscription, isLoading: subscriptionLoading } = useWorkspaceSubscription(workspaceId);
   const { invoices, isLoading: invoicesLoading, markAsPaid, cancelInvoice } = useWorkspaceInvoices(workspaceId);
+  const { data: currentOffer } = useWorkspaceOffer(workspaceId);
   
   const [changePlanModalOpen, setChangePlanModalOpen] = useState(false);
   const [addCreditsModalOpen, setAddCreditsModalOpen] = useState(false);
@@ -114,10 +116,11 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
               {plan?.plan_name || 'Plano Gratuito'}
             </h3>
             <div className="flex items-center gap-3">
-              <Badge variant="secondary">
-                {subscription?.billing_cycle === 'monthly' ? 'Mensal' : 
-                 subscription?.billing_cycle === 'annual' ? 'Anual' : 'Gratuito'}
-              </Badge>
+              {currentOffer && (
+                <Badge variant="secondary">
+                  {currentOffer.name}
+                </Badge>
+              )}
               <Badge variant={subscription?.status === 'active' ? 'default' : 'secondary'}>
                 {subscription?.status === 'active' ? 'Ativo' : 'Inativo'}
               </Badge>
@@ -125,15 +128,16 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold">
-              {subscription?.billing_cycle === 'monthly' 
-                ? formatCurrency(subscription.plan?.monthly_price || 0)
-                : subscription?.billing_cycle === 'annual'
-                ? formatCurrency(subscription.plan?.annual_price || 0)
+              {currentOffer 
+                ? formatCurrency(currentOffer.price)
                 : 'R$ 0,00'}
             </p>
             <p className="text-sm text-muted-foreground">
-              {subscription?.billing_cycle === 'monthly' ? '/mês' : 
-               subscription?.billing_cycle === 'annual' ? '/ano' : ''}
+              {currentOffer && `/${currentOffer.billing_period_value} ${
+                currentOffer.billing_period_unit === 'months' ? 'mês(es)' :
+                currentOffer.billing_period_unit === 'years' ? 'ano(s)' : 
+                currentOffer.billing_period_unit
+              }`}
             </p>
           </div>
         </div>

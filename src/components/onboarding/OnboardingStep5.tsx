@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useChangePlan } from "@/hooks/useChangePlan";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -20,35 +21,48 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   const { plans, isLoading: plansLoading } = useSubscriptionPlans();
   const { data: currentPlan } = useWorkspacePlan(workspaceId);
   const { changePlan, isChanging } = useChangePlan();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
 
   const activePlans = plans?.filter(plan => plan.is_active) || [];
   const currentPlanSlug = currentPlan?.plan_slug || 'free';
 
-  const handleSelectPlan = async (planId: string, planSlug: string, firstOfferId?: string) => {
+  const planIds = activePlans.map(p => p.id);
+  const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
+
+  // Auto-select first offer for each plan
+  useEffect(() => {
+    const initialOffers: Record<string, string> = {};
+    activePlans.forEach(plan => {
+      const planOffers = offersByPlan[plan.id];
+      if (planOffers && planOffers.length > 0) {
+        initialOffers[plan.id] = planOffers[0].id;
+      }
+    });
+    if (Object.keys(initialOffers).length > 0) {
+      setSelectedOffers(initialOffers);
+    }
+  }, [offersByPlan, activePlans]);
+
+  const handleSelectPlan = async (planId: string, planSlug: string, offerId?: string) => {
     if (planSlug === 'free') {
-      // Se escolher FREE, apenas completa onboarding
       onComplete(planSlug);
       return;
     }
 
-    // Para planos pagos, se não tem offerId, mostra aviso
-    if (!firstOfferId) {
+    if (!offerId) {
       toast.error("Este plano não possui ofertas disponíveis no momento.");
       return;
     }
 
-    // Para planos pagos, mostra estrutura preparada para pagamento
     toast.info(
       "Estrutura de pagamento preparada. Em breve você poderá processar pagamentos aqui.",
       { duration: 5000 }
     );
 
-    // Por enquanto, permite upgrade sem pagamento
     try {
       await changePlan({
         workspaceId,
-        planOfferId: firstOfferId,
+        planOfferId: offerId,
       });
       
       onComplete(planSlug);
@@ -60,7 +74,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   if (plansLoading) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto" />
         <p className="mt-4 text-muted-foreground">Carregando planos...</p>
       </div>
     );
@@ -68,7 +82,6 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
 
   return (
     <div className="animate-fade-in pb-28 md:pb-0">
-      {/* Header */}
       <div className="text-center mb-4 md:mb-6 px-4">
         <h1 className="text-xl md:text-2xl font-bold mb-2">
           Escolha seu plano
@@ -76,42 +89,16 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
         <p className="text-xs md:text-sm text-muted-foreground mb-4">
           Comece grátis e faça upgrade quando precisar
         </p>
-
-        {/* Billing Cycle Toggle */}
-        <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/50 backdrop-blur-sm">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={`px-4 py-1.5 rounded-md transition-all text-xs font-medium ${
-              billingCycle === 'monthly'
-                ? 'bg-background shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Mensal
-          </button>
-          <button
-            onClick={() => setBillingCycle('annual')}
-            className={`px-4 py-1.5 rounded-md transition-all text-xs font-medium flex items-center gap-1.5 ${
-              billingCycle === 'annual'
-                ? 'bg-background shadow-md'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Anual
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-0">
-              -20%
-            </Badge>
-          </button>
-        </div>
       </div>
 
-      {/* Plans - Vertical Stack */}
       <div className="mb-6 space-y-3 px-4 max-w-2xl mx-auto">
         {/* Paid Plans */}
         {activePlans.filter(plan => plan.slug !== 'free').map((plan) => {
-          const price = billingCycle === 'monthly' ? plan.monthly_price : plan.annual_price;
           const isCurrentPlan = plan.slug === currentPlanSlug;
           const isPopular = plan.slug === 'pro';
+          const planOffers = offersByPlan[plan.id] || [];
+          const selectedOfferId = selectedOffers[plan.id];
+          const selectedOffer = planOffers.find(o => o.id === selectedOfferId);
 
           return (
             <Card 
@@ -139,19 +126,33 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
                     )}
                   </div>
                   
-                  <div className="flex items-baseline gap-1 mb-3">
-                    {billingCycle === 'monthly' ? (
-                      <>
-                        <span className="text-2xl font-bold">{formatCurrency(Math.floor(price))}</span>
-                        <span className="text-xs text-muted-foreground">/mês</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-2xl font-bold">{formatCurrency(Math.floor(price / 12))}</span>
-                        <span className="text-xs text-muted-foreground">/mês</span>
-                      </>
-                    )}
-                  </div>
+                  {planOffers.length > 0 && (
+                    <div className="mb-3 space-y-1">
+                      {planOffers.map(offer => (
+                        <button
+                          key={offer.id}
+                          onClick={() => setSelectedOffers(prev => ({ ...prev, [plan.id]: offer.id }))}
+                          className={`w-full p-2 rounded text-left transition-all text-xs ${
+                            selectedOfferId === offer.id 
+                              ? 'bg-primary/10 border border-primary' 
+                              : 'bg-muted/50 border border-transparent hover:border-primary/30'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{offer.name}</span>
+                            <span className="font-bold">{formatCurrency(offer.price)}</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {offer.billing_period_value} {
+                              offer.billing_period_unit === 'months' ? 'mês(es)' :
+                              offer.billing_period_unit === 'years' ? 'ano(s)' : 
+                              offer.billing_period_unit
+                            }
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
@@ -181,12 +182,12 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
 
                 <div className="ml-4">
                   <Button
-                    onClick={() => handleSelectPlan(plan.id, plan.slug, undefined)}
-                    disabled={isCurrentPlan || isChanging || loading}
+                    onClick={() => handleSelectPlan(plan.id, plan.slug, selectedOfferId)}
+                    disabled={isCurrentPlan || isChanging || loading || !selectedOfferId}
                     className="h-9 px-4 text-xs font-medium whitespace-nowrap"
                     variant={isPopular ? 'default' : 'outline'}
                   >
-                    {isCurrentPlan ? 'Plano Atual' : 'Escolher'}
+                    {isChanging ? <Loader2 className="h-3 w-3 animate-spin" /> : (isCurrentPlan ? 'Atual' : 'Escolher')}
                   </Button>
                 </div>
               </div>
@@ -194,7 +195,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
           );
         })}
 
-        {/* Free Plan - Smaller */}
+        {/* Free Plan */}
         {activePlans.filter(plan => plan.slug === 'free').map((plan) => {
           const isCurrentPlan = plan.slug === currentPlanSlug;
 
@@ -246,7 +247,6 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
         })}
       </div>
 
-      {/* Footer Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border md:relative md:border-t-0 md:p-0 md:bg-transparent">
         <div className="max-w-2xl mx-auto">
           <Button 
