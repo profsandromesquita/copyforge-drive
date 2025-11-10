@@ -197,7 +197,6 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      toast.success('Pasta criada com sucesso!');
       await fetchDriveContent(currentFolder?.id || null);
     } catch (error) {
       console.error('Error creating folder:', error);
