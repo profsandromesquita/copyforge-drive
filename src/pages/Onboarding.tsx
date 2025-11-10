@@ -80,6 +80,36 @@ const Onboarding = () => {
         return;
       }
 
+      // Garantir que o profile existe antes de criar workspace
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Erro ao verificar profile:", profileError);
+        toast.error("Erro ao verificar perfil. Tente novamente.");
+        return;
+      }
+
+      // Se profile não existe, criar
+      if (!profile) {
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.email?.split('@')[0]
+          });
+
+        if (createProfileError) {
+          console.error("Erro ao criar profile:", createProfileError);
+          toast.error("Erro ao criar perfil. Tente novamente.");
+          return;
+        }
+      }
+
       // CRIAR novo workspace (não atualizar)
       const { data: newWorkspace, error: workspaceError } = await supabase
         .from('workspaces')
