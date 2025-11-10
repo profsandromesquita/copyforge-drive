@@ -203,13 +203,19 @@ serve(async (req) => {
 
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Limite de uso excedido. Tente novamente mais tarde." }),
+          JSON.stringify({ 
+            error: "rate_limit_exceeded",
+            message: "Limite de requisições excedido. Tente novamente mais tarde." 
+          }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos em Configurações." }),
+          JSON.stringify({ 
+            error: "lovable_ai_credits_required",
+            message: "Seus créditos do Lovable AI acabaram. Acesse Configurações > Workspace > Uso para adicionar créditos." 
+          }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

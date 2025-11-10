@@ -218,13 +218,34 @@ export const CopyAITab = () => {
       });
 
       if (error) {
-        if (error.message?.includes('rate_limit') || error.message?.includes('429')) {
+        console.error('Error generating copy:', error);
+        
+        // Try to parse error details from FunctionsHttpError
+        let errorDetails = null;
+        try {
+          if (error.context?.body) {
+            errorDetails = typeof error.context.body === 'string' 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+          }
+        } catch (e) {
+          console.error('Failed to parse error details:', e);
+        }
+
+        if (error.message?.includes('rate_limit') || error.message?.includes('429') || errorDetails?.error === 'rate_limit_exceeded') {
           toast({
             title: 'Limite de requisições atingido',
             description: 'Tente novamente em alguns instantes.',
             variant: 'destructive',
           });
-        } else if (error.message?.includes('insufficient_credits') || error.message?.includes('402')) {
+        } else if (error.message?.includes('402') || errorDetails?.error === 'lovable_ai_credits_required') {
+          toast({
+            title: 'Créditos do Lovable AI Insuficientes',
+            description: errorDetails?.message || 'Acesse Configurações > Workspace > Uso para adicionar créditos ao Lovable AI.',
+            variant: 'destructive',
+            duration: 8000,
+          });
+        } else if (error.message?.includes('insufficient_credits')) {
           toast({
             title: 'Créditos insuficientes',
             description: 'Adicione mais créditos para continuar.',
