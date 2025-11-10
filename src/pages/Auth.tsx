@@ -51,12 +51,8 @@ const Auth = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      // Redirect to the specified path or dashboard
-      navigate(redirectPath || '/dashboard');
-    }
-  }, [user, navigate, redirectPath]);
+  // useAuth.tsx handles all redirects based on onboarding status
+  // No need to redirect here
 
   const formatPhone = (value: string) => {
     // Remove tudo que não é número
