@@ -6,19 +6,148 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ticto-signature',
 };
 
+// Interface baseada na documentação oficial da Ticto v2.0
 interface TictoWebhookPayload {
-  event: string;
-  data: {
-    id: string;
-    offer_id: string;
-    customer: {
-      email: string;
-      name: string;
-    };
-    amount: number;
-    status: string;
-    created_at?: string;
+  version: string;
+  commission_type: string;
+  status: string; // Campo principal para identificar o tipo de evento
+  status_date: string;
+  token: string;
+  payment_method: string;
+  url_params?: any;
+  tracking?: any;
+  checkout_url?: string;
+  order: {
+    id: number;
+    hash: string;
+    transaction_hash: string;
+    paid_amount: number;
+    installments: number;
+    order_date: string;
   };
+  shipping?: {
+    amount: number;
+    type: string;
+    method: string;
+    delivery_days: number;
+  };
+  item: {
+    product_name: string;
+    product_id: number;
+    refund_deadline?: number;
+    offer_name: string;
+    offer_id: number;
+    offer_code: string;
+    coupon_id?: number | null;
+    coupon_name?: string | null;
+    quantity: number;
+    amount: number;
+    members_portal_id?: number | null;
+    members_classroom_id?: number | null;
+    days_of_access?: number | null;
+    trial_days?: number | null;
+  };
+  subscriptions?: Array<{
+    id: number;
+    interval: number;
+    successful_charges: number;
+    failed_charges: number;
+    change_card_url: string;
+    max_charges: number | null;
+    next_charge: string | null;
+    canceled_at: string | null;
+  }>;
+  bumps?: Array<any>;
+  transaction: {
+    hash: string;
+    cards?: Array<{
+      brand: string;
+      holder: string;
+      first_digits: string;
+      last_digits: string;
+    }>;
+    bank_slip_code?: string;
+    bank_slip_url?: string;
+    bank_slip_pdf?: string;
+    pix_qr_code?: string;
+  };
+  customer: {
+    cpf?: string;
+    cnpj?: string;
+    name: string;
+    type: string;
+    email: string;
+    phone?: {
+      ddd: string;
+      ddi: string;
+      number: string;
+    };
+    address?: {
+      city?: string;
+      state?: string;
+      street?: string;
+      country?: string;
+      zip_code?: string;
+      complement?: string;
+      neighborhood?: string;
+      street_number?: string;
+    };
+    is_foreign?: boolean;
+    code: string;
+  };
+  producer?: any;
+  affiliates?: Array<any>;
+  coproducers?: Array<any>;
+  marketplace_commission?: number;
+  direct_login_url?: string;
+}
+
+interface EventResult {
+  status: string;
+  event_type: string;
+  event_category: string;
+  workspace_id?: string;
+  message?: string;
+  [key: string]: any;
+}
+
+// Função para identificar o tipo de evento baseado no status
+function identifyEventType(payload: TictoWebhookPayload): { type: string; category: string } {
+  const status = payload.status;
+  
+  // Mapeamento de status -> tipo de evento e categoria
+  const eventMap: Record<string, { type: string; category: string }> = {
+    // Pagamentos
+    'authorized': { type: 'purchase.approved', category: 'payment' },
+    'waiting_payment': { type: 'payment.pending', category: 'payment' },
+    'refused': { type: 'payment.refused', category: 'payment' },
+    'bank_slip_created': { type: 'bank_slip.created', category: 'payment' },
+    'bank_slip_delayed': { type: 'bank_slip.delayed', category: 'payment' },
+    'pix_created': { type: 'pix.created', category: 'payment' },
+    'pix_expired': { type: 'pix.expired', category: 'payment' },
+    
+    // Reembolsos e problemas
+    'chargeback': { type: 'payment.chargeback', category: 'refund' },
+    'refunded': { type: 'payment.refunded', category: 'refund' },
+    'claimed': { type: 'payment.claimed', category: 'refund' },
+    
+    // Assinaturas
+    'subscription_canceled': { type: 'subscription.cancelled', category: 'subscription' },
+    'card_exchanged': { type: 'subscription.card_updated', category: 'subscription' },
+    'trial_started': { type: 'subscription.trial_started', category: 'subscription' },
+    'trial_ended': { type: 'subscription.trial_ended', category: 'subscription' },
+    'uncanceled': { type: 'subscription.resumed', category: 'subscription' },
+    'subscription_delayed': { type: 'subscription.past_due', category: 'subscription' },
+    'extended': { type: 'subscription.extended', category: 'subscription' },
+    'all_charges_paid': { type: 'subscription.ended', category: 'subscription' },
+    
+    // Outros
+    'abandoned_cart': { type: 'cart.abandoned', category: 'tracking' },
+    'trial': { type: 'trial.active', category: 'trial' },
+    'close': { type: 'order.closed', category: 'order' },
+  };
+  
+  return eventMap[status] || { type: status, category: 'unknown' };
 }
 
 serve(async (req) => {
@@ -26,12 +155,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Responder a requisições GET (validação de URL pela Ticto)
   if (req.method === 'GET') {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Webhook Ticto ativo e pronto para receber eventos',
+        message: 'Webhook Ticto ativo - Versão 2.0',
         timestamp: new Date().toISOString(),
         status: 'ready'
       }),
@@ -47,56 +175,28 @@ serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    // Tentar parsear o body - se falhar, ainda processar a requisição
-    let payload: TictoWebhookPayload;
-    let headers: Record<string, string>;
+    const bodyText = await req.text();
+    const headers = Object.fromEntries(req.headers.entries());
     
-    try {
-      const bodyText = await req.text();
-      headers = Object.fromEntries(req.headers.entries());
-      
-      console.log('Webhook recebido - Body:', bodyText);
-      console.log('Webhook recebido - Headers:', headers);
-      
-      // Se não houver body, criar um payload vazio de validação
-      if (!bodyText || bodyText.trim() === '') {
-        payload = {
-          event: 'validation',
-          data: {
-            id: 'validation',
-            offer_id: '',
-            customer: { email: '', name: '' },
-            amount: 0,
-            status: 'validation'
-          }
-        };
-      } else {
-        payload = JSON.parse(bodyText);
-      }
-    } catch (parseError) {
-      console.error('Erro ao parsear payload:', parseError);
-      // Se falhar ao parsear, criar payload de validação
-      headers = Object.fromEntries(req.headers.entries());
-      payload = {
-        event: 'validation',
-        data: {
-          id: 'validation',
-          offer_id: '',
-          customer: { email: '', name: '' },
-          amount: 0,
-          status: 'validation'
-        }
-      };
+    console.log('📥 Webhook recebido da Ticto');
+    console.log('Body:', bodyText);
+    
+    if (!bodyText || bodyText.trim() === '') {
+      throw new Error('Payload vazio recebido');
     }
+
+    const payload: TictoWebhookPayload = JSON.parse(bodyText);
+    const { type: eventType, category: eventCategory } = identifyEventType(payload);
     
-    console.log('Webhook recebido:', payload.event);
+    console.log(`📋 Evento identificado: ${eventType} (${eventCategory})`);
     
     // Log inicial do webhook
     const { data: logData, error: logError } = await supabase
       .from('webhook_logs')
       .insert({
         integration_slug: 'ticto',
-        event_type: payload.event,
+        event_type: eventType,
+        event_category: eventCategory,
         payload: payload,
         headers: headers,
         status: 'received'
@@ -105,33 +205,14 @@ serve(async (req) => {
       .single();
 
     if (logError) {
-      console.error('Erro ao criar log:', logError);
+      console.error('❌ Erro ao criar log:', logError);
     } else {
       logId = logData?.id;
+      console.log(`✅ Log criado: ${logId}`);
     }
 
-    // Se for um evento de teste/validação, retornar sucesso sem verificar configuração
-    console.log('Verificando tipo de evento:', payload.event);
-    if (payload.event === 'test' || payload.event === 'ping' || payload.event === 'webhook.test' || payload.event === 'validation') {
-      console.log('Evento de teste/validação detectado, retornando sucesso');
-      if (logId) {
-        await supabase
-          .from('webhook_logs')
-          .update({ 
-            status: 'success',
-            processed_at: new Date().toISOString()
-          })
-          .eq('id', logId);
-      }
-      
-      return new Response(
-        JSON.stringify({ success: true, message: 'Webhook endpoint is working', event: payload.event }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    // Buscar configuração da Ticto para eventos reais
-    console.log('Buscando configuração da Ticto');
+    // Buscar configuração da Ticto
+    console.log('🔍 Buscando configuração da Ticto...');
     const { data: integration } = await supabase
       .from('integrations')
       .select('id')
@@ -148,8 +229,6 @@ serve(async (req) => {
       .eq('integration_id', integration.id)
       .is('workspace_id', null)
       .single();
-
-    console.log('Gateway encontrado:', gateway ? 'sim' : 'não', 'Ativo:', gateway?.is_active);
 
     if (!gateway || !gateway.is_active) {
       throw new Error('Gateway Ticto não está configurado ou ativo');
@@ -169,20 +248,62 @@ serve(async (req) => {
         .eq('id', logId);
     }
 
-    // Processar evento
-    let result;
-    switch (payload.event) {
+    // Processar evento baseado no tipo identificado
+    let result: EventResult;
+    
+    switch (eventType) {
       case 'purchase.approved':
-      case 'subscription.created':
-        result = await handleSubscriptionCreated(supabase, payload, gateway.config);
+        result = await handlePurchaseApproved(supabase, payload, gateway.config);
         break;
-      case 'subscription.canceled':
+        
+      case 'payment.chargeback':
+        result = await handleChargeback(supabase, payload);
+        break;
+        
+      case 'payment.refunded':
+        result = await handleRefund(supabase, payload);
+        break;
+        
       case 'subscription.cancelled':
-        result = await handleSubscriptionCanceled(supabase, payload);
+        result = await handleSubscriptionCancelled(supabase, payload);
         break;
+        
+      case 'subscription.card_updated':
+        result = await handleCardUpdated(supabase, payload);
+        break;
+        
+      case 'subscription.trial_started':
+        result = await handleTrialStarted(supabase, payload, gateway.config);
+        break;
+        
+      case 'subscription.trial_ended':
+        result = await handleTrialEnded(supabase, payload, gateway.config);
+        break;
+        
+      case 'subscription.resumed':
+        result = await handleSubscriptionResumed(supabase, payload, gateway.config);
+        break;
+        
+      case 'subscription.past_due':
+        result = await handleSubscriptionPastDue(supabase, payload);
+        break;
+        
+      case 'subscription.extended':
+        result = await handleSubscriptionExtended(supabase, payload, gateway.config);
+        break;
+        
+      case 'subscription.ended':
+        result = await handleSubscriptionEnded(supabase, payload);
+        break;
+        
       default:
-        console.log(`Evento não tratado: ${payload.event}`);
-        result = { status: 'ignored', event: payload.event };
+        console.log(`⚠️ Evento não tratado: ${eventType}`);
+        result = {
+          status: 'ignored',
+          event_type: eventType,
+          event_category: eventCategory,
+          message: 'Evento recebido mas não processado'
+        };
     }
 
     // Atualizar log como sucesso
@@ -196,6 +317,7 @@ serve(async (req) => {
         .eq('id', logId);
     }
 
+    console.log('✅ Webhook processado com sucesso');
     return new Response(
       JSON.stringify({ success: true, result }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -203,7 +325,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('Erro ao processar webhook:', error);
+    console.error('❌ Erro ao processar webhook:', error);
     
     if (logId) {
       await supabase
@@ -223,32 +345,37 @@ serve(async (req) => {
   }
 });
 
-async function handleSubscriptionCreated(supabase: any, payload: TictoWebhookPayload, config: any) {
-  const offerId = payload.data.offer_id;
+// ========== HANDLERS DE EVENTOS ==========
+
+// 1. Venda Aprovada / Pagamento Confirmado
+async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
+  console.log('💰 Processando venda aprovada...');
+  
+  const offerId = payload.item.offer_id;
   const planId = config.offer_mappings?.[offerId];
   
   if (!planId) {
     throw new Error(`Oferta ${offerId} não mapeada para nenhum plano`);
   }
 
-  const { data: plan, error: planError } = await supabase
+  const { data: plan } = await supabase
     .from('subscription_plans')
     .select('*')
     .eq('id', planId)
     .single();
 
-  if (planError || !plan) {
+  if (!plan) {
     throw new Error(`Plano ${planId} não encontrado`);
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('email', payload.data.customer.email)
+    .eq('email', payload.customer.email)
     .single();
 
   if (!profile) {
-    throw new Error(`Usuário ${payload.data.customer.email} não encontrado no sistema`);
+    throw new Error(`Usuário ${payload.customer.email} não encontrado`);
   }
 
   const { data: member } = await supabase
@@ -259,33 +386,22 @@ async function handleSubscriptionCreated(supabase: any, payload: TictoWebhookPay
     .single();
 
   if (!member) {
-    throw new Error(`Workspace não encontrado para usuário ${profile.id}`);
+    throw new Error(`Workspace não encontrado para usuário`);
   }
 
   // Cancelar assinatura antiga se existir
-  const { data: existingSubscription } = await supabase
+  await supabase
     .from('workspace_subscriptions')
-    .select('id')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
     .eq('workspace_id', member.workspace_id)
-    .eq('status', 'active')
-    .single();
-
-  if (existingSubscription) {
-    await supabase
-      .from('workspace_subscriptions')
-      .update({ 
-        status: 'cancelled', 
-        cancelled_at: new Date().toISOString() 
-      })
-      .eq('id', existingSubscription.id);
-  }
+    .eq('status', 'active');
 
   // Determinar ciclo de cobrança
-  const billingCycle = payload.data.amount === plan.monthly_price ? 'monthly' : 'annual';
+  const billingCycle = payload.order.paid_amount === plan.monthly_price ? 'monthly' : 'annual';
   const periodMonths = billingCycle === 'monthly' ? 1 : 12;
   
   // Criar nova assinatura
-  await supabase
+  const { data: newSubscription } = await supabase
     .from('workspace_subscriptions')
     .insert({
       workspace_id: member.workspace_id,
@@ -298,27 +414,58 @@ async function handleSubscriptionCreated(supabase: any, payload: TictoWebhookPay
       current_period_start: new Date().toISOString(),
       current_period_end: new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
       payment_gateway: 'ticto',
-      external_subscription_id: payload.data.id
+      external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
+    })
+    .select()
+    .single();
+
+  // Criar invoice
+  await supabase
+    .from('workspace_invoices')
+    .insert({
+      workspace_id: member.workspace_id,
+      subscription_id: newSubscription.id,
+      invoice_number: await generateInvoiceNumber(supabase),
+      amount: payload.order.paid_amount / 100,
+      currency: 'BRL',
+      status: 'paid',
+      payment_method: payload.payment_method,
+      payment_id: payload.order.hash,
+      external_payment_id: payload.order.hash,
+      paid_at: new Date(payload.status_date).toISOString(),
+      billing_period_start: new Date().toISOString(),
+      billing_period_end: new Date(Date.now() + periodMonths * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      due_date: new Date().toISOString(),
+      line_items: [{
+        description: `${plan.name} - ${billingCycle === 'monthly' ? 'Mensal' : 'Anual'}`,
+        amount: payload.order.paid_amount / 100,
+        quantity: 1
+      }],
+      metadata: {
+        ticto_order_id: payload.order.id,
+        ticto_transaction_hash: payload.order.transaction_hash,
+        installments: payload.order.installments
+      }
     });
 
-  // Adicionar créditos do plano
+  // Adicionar créditos
   const { data: credits } = await supabase
     .from('workspace_credits')
     .select('balance')
     .eq('workspace_id', member.workspace_id)
     .single();
 
-  if (credits) {
-    await supabase
-      .from('workspace_credits')
-      .update({
-        balance: credits.balance + plan.credits_per_month,
-        total_added: credits.balance + plan.credits_per_month
-      })
-      .eq('workspace_id', member.workspace_id);
-  }
+  const newBalance = (credits?.balance || 0) + plan.credits_per_month;
 
-  // Registrar transação de crédito
+  await supabase
+    .from('workspace_credits')
+    .update({
+      balance: newBalance,
+      total_added: (credits?.balance || 0) + plan.credits_per_month
+    })
+    .eq('workspace_id', member.workspace_id);
+
+  // Registrar transação
   await supabase
     .from('credit_transactions')
     .insert({
@@ -327,40 +474,420 @@ async function handleSubscriptionCreated(supabase: any, payload: TictoWebhookPay
       transaction_type: 'credit',
       amount: plan.credits_per_month,
       balance_before: credits?.balance || 0,
-      balance_after: (credits?.balance || 0) + plan.credits_per_month,
-      description: `Créditos do plano ${plan.name} - Pagamento Ticto`
+      balance_after: newBalance,
+      description: `Créditos do plano ${plan.name} - Pagamento Ticto aprovado`
     });
 
-  return { 
-    status: 'subscription_created', 
+  return {
+    status: 'success',
+    event_type: 'purchase.approved',
+    event_category: 'payment',
     workspace_id: member.workspace_id,
-    plan: plan.name,
-    credits_added: plan.credits_per_month
+    plan_name: plan.name,
+    credits_added: plan.credits_per_month,
+    message: 'Venda aprovada e assinatura ativada'
   };
 }
 
-async function handleSubscriptionCanceled(supabase: any, payload: TictoWebhookPayload) {
-  const { data: subscription } = await supabase
-    .from('workspace_subscriptions')
-    .select('id, workspace_id')
-    .eq('external_subscription_id', payload.data.id)
-    .eq('payment_gateway', 'ticto')
+// 2. Chargeback
+async function handleChargeback(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('⚠️ Processando chargeback...');
+  
+  // Atualizar invoice para chargeback
+  const { data: invoice } = await supabase
+    .from('workspace_invoices')
+    .update({ status: 'chargeback' })
+    .eq('external_payment_id', payload.order.hash)
+    .select()
     .single();
 
-  if (subscription) {
-    await supabase
-      .from('workspace_subscriptions')
-      .update({ 
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString()
-      })
-      .eq('id', subscription.id);
-
-    return { 
-      status: 'subscription_cancelled', 
-      workspace_id: subscription.workspace_id 
-    };
+  if (!invoice) {
+    throw new Error('Invoice não encontrada');
   }
 
-  return { status: 'subscription_not_found' };
+  // Remover créditos proporcionalmente
+  const { data: credits } = await supabase
+    .from('workspace_credits')
+    .select('balance')
+    .eq('workspace_id', invoice.workspace_id)
+    .single();
+
+  const debitAmount = invoice.amount * 0.1; // Exemplo: debitar 10% como penalidade
+  const newBalance = Math.max(0, (credits?.balance || 0) - debitAmount);
+
+  await supabase
+    .from('workspace_credits')
+    .update({
+      balance: newBalance,
+      total_used: (credits?.balance || 0) - newBalance
+    })
+    .eq('workspace_id', invoice.workspace_id);
+
+  // Suspender assinatura
+  await supabase
+    .from('workspace_subscriptions')
+    .update({ status: 'past_due' })
+    .eq('id', invoice.subscription_id);
+
+  return {
+    status: 'success',
+    event_type: 'payment.chargeback',
+    event_category: 'refund',
+    workspace_id: invoice.workspace_id,
+    credits_debited: debitAmount,
+    message: 'Chargeback processado e créditos ajustados'
+  };
+}
+
+// 3. Reembolso
+async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('💸 Processando reembolso...');
+  
+  const { data: invoice } = await supabase
+    .from('workspace_invoices')
+    .update({ status: 'refunded' })
+    .eq('external_payment_id', payload.order.hash)
+    .select()
+    .single();
+
+  if (!invoice) {
+    throw new Error('Invoice não encontrada');
+  }
+
+  // Remover créditos proporcionalmente
+  const { data: credits } = await supabase
+    .from('workspace_credits')
+    .select('balance')
+    .eq('workspace_id', invoice.workspace_id)
+    .single();
+
+  const refundAmount = invoice.amount * 0.5; // Exemplo: remover 50% dos créditos
+  const newBalance = Math.max(0, (credits?.balance || 0) - refundAmount);
+
+  await supabase
+    .from('workspace_credits')
+    .update({ balance: newBalance })
+    .eq('workspace_id', invoice.workspace_id);
+
+  return {
+    status: 'success',
+    event_type: 'payment.refunded',
+    event_category: 'refund',
+    workspace_id: invoice.workspace_id,
+    credits_removed: refundAmount,
+    message: 'Reembolso processado'
+  };
+}
+
+// 4. Assinatura Cancelada
+async function handleSubscriptionCancelled(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('❌ Processando cancelamento de assinatura...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString() || payload.order.hash;
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString()
+    })
+    .eq('external_subscription_id', subscriptionId)
+    .select()
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  return {
+    status: 'success',
+    event_type: 'subscription.cancelled',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    message: 'Assinatura cancelada'
+  };
+}
+
+// 5. Cartão Atualizado
+async function handleCardUpdated(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('💳 Processando atualização de cartão...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  if (!subscriptionId) {
+    throw new Error('ID da assinatura não encontrado');
+  }
+
+  // Apenas registrar o evento - não mexer em créditos
+  return {
+    status: 'success',
+    event_type: 'subscription.card_updated',
+    event_category: 'subscription',
+    message: 'Cartão atualizado'
+  };
+}
+
+// 6. Trial Iniciado
+async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
+  console.log('🆓 Processando início de trial...');
+  
+  const offerId = payload.item.offer_id;
+  const planId = config.offer_mappings?.[offerId];
+  
+  if (!planId) {
+    throw new Error(`Oferta ${offerId} não mapeada`);
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', payload.customer.email)
+    .single();
+
+  if (!profile) {
+    throw new Error('Usuário não encontrado');
+  }
+
+  const { data: member } = await supabase
+    .from('workspace_members')
+    .select('workspace_id')
+    .eq('user_id', profile.id)
+    .eq('role', 'owner')
+    .single();
+
+  if (!member) {
+    throw new Error('Workspace não encontrado');
+  }
+
+  // Criar assinatura em trial
+  await supabase
+    .from('workspace_subscriptions')
+    .insert({
+      workspace_id: member.workspace_id,
+      plan_id: planId,
+      billing_cycle: 'monthly',
+      status: 'trialing',
+      payment_gateway: 'ticto',
+      external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
+    });
+
+  return {
+    status: 'success',
+    event_type: 'subscription.trial_started',
+    event_category: 'subscription',
+    workspace_id: member.workspace_id,
+    message: 'Trial iniciado'
+  };
+}
+
+// 7. Trial Encerrado
+async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
+  console.log('🔚 Processando fim de trial...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ status: 'active' })
+    .eq('external_subscription_id', subscriptionId)
+    .select()
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  return {
+    status: 'success',
+    event_type: 'subscription.trial_ended',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    message: 'Trial encerrado e assinatura ativada'
+  };
+}
+
+// 8. Assinatura Retomada
+async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
+  console.log('▶️ Processando retomada de assinatura...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      status: 'active',
+      current_period_start: new Date().toISOString(),
+      current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    })
+    .eq('external_subscription_id', subscriptionId)
+    .select('*, subscription_plans(*)')
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  // Adicionar créditos do período
+  const plan = subscription.subscription_plans;
+  const { data: credits } = await supabase
+    .from('workspace_credits')
+    .select('balance')
+    .eq('workspace_id', subscription.workspace_id)
+    .single();
+
+  const newBalance = (credits?.balance || 0) + plan.credits_per_month;
+
+  await supabase
+    .from('workspace_credits')
+    .update({ 
+      balance: newBalance,
+      total_added: (credits?.balance || 0) + plan.credits_per_month
+    })
+    .eq('workspace_id', subscription.workspace_id);
+
+  return {
+    status: 'success',
+    event_type: 'subscription.resumed',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    credits_added: plan.credits_per_month,
+    message: 'Assinatura retomada'
+  };
+}
+
+// 9. Assinatura Atrasada
+async function handleSubscriptionPastDue(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('⏰ Processando atraso de assinatura...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ status: 'past_due' })
+    .eq('external_subscription_id', subscriptionId)
+    .select()
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  // Criar invoice pendente
+  await supabase
+    .from('workspace_invoices')
+    .insert({
+      workspace_id: subscription.workspace_id,
+      subscription_id: subscription.id,
+      invoice_number: await generateInvoiceNumber(supabase),
+      amount: payload.order.paid_amount / 100,
+      currency: 'BRL',
+      status: 'pending',
+      payment_method: payload.payment_method,
+      external_payment_id: payload.order.hash,
+      due_date: new Date().toISOString(),
+      billing_period_start: new Date().toISOString(),
+      billing_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      metadata: { reason: 'past_due' }
+    });
+
+  return {
+    status: 'success',
+    event_type: 'subscription.past_due',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    message: 'Assinatura marcada como atrasada'
+  };
+}
+
+// 10. Assinatura Extendida
+async function handleSubscriptionExtended(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
+  console.log('⏳ Processando extensão de assinatura...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  const nextCharge = payload.subscriptions?.[0]?.next_charge;
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      current_period_end: nextCharge ? new Date(nextCharge).toISOString() : null
+    })
+    .eq('external_subscription_id', subscriptionId)
+    .select('*, subscription_plans(*)')
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  // Adicionar créditos proporcionais
+  const plan = subscription.subscription_plans;
+  const extensionCredits = plan.credits_per_month * 0.5; // 50% dos créditos do mês
+  
+  const { data: credits } = await supabase
+    .from('workspace_credits')
+    .select('balance')
+    .eq('workspace_id', subscription.workspace_id)
+    .single();
+
+  const newBalance = (credits?.balance || 0) + extensionCredits;
+
+  await supabase
+    .from('workspace_credits')
+    .update({ 
+      balance: newBalance,
+      total_added: (credits?.balance || 0) + extensionCredits
+    })
+    .eq('workspace_id', subscription.workspace_id);
+
+  return {
+    status: 'success',
+    event_type: 'subscription.extended',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    credits_added: extensionCredits,
+    message: 'Assinatura extendida'
+  };
+}
+
+// 11. Assinatura Encerrada
+async function handleSubscriptionEnded(supabase: any, payload: TictoWebhookPayload): Promise<EventResult> {
+  console.log('🏁 Processando encerramento de assinatura...');
+  
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  const { data: subscription } = await supabase
+    .from('workspace_subscriptions')
+    .update({ 
+      status: 'expired',
+      cancelled_at: new Date().toISOString()
+    })
+    .eq('external_subscription_id', subscriptionId)
+    .select()
+    .single();
+
+  if (!subscription) {
+    throw new Error('Assinatura não encontrada');
+  }
+
+  return {
+    status: 'success',
+    event_type: 'subscription.ended',
+    event_category: 'subscription',
+    workspace_id: subscription.workspace_id,
+    message: 'Assinatura encerrada - todas as cobranças finalizadas'
+  };
+}
+
+// Função auxiliar para gerar número de invoice
+async function generateInvoiceNumber(supabase: any): Promise<string> {
+  const year = new Date().getFullYear();
+  const month = String(new Date().getMonth() + 1).padStart(2, '0');
+  
+  const { count } = await supabase
+    .from('workspace_invoices')
+    .select('*', { count: 'exact', head: true })
+    .like('invoice_number', `INV-${year}${month}%`);
+  
+  const sequence = String((count || 0) + 1).padStart(6, '0');
+  return `INV-${year}${month}-${sequence}`;
 }

@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, RefreshCw } from "lucide-react";
+import { Eye, RefreshCw, Loader2 } from "lucide-react";
 import { usePaymentGateway } from "@/hooks/usePaymentGateway";
+import { useWebhookEvents, getEventDisplayName, getCategoryColor, getStatusColor } from "@/hooks/useWebhookEvents";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -89,24 +90,14 @@ function LogDetailsModal({ open, onOpenChange, log }: LogDetailsModalProps) {
 }
 
 export function WebhookLogsModal({ open, onOpenChange, integrationSlug }: WebhookLogsModalProps) {
-  const { logs, logsLoading } = usePaymentGateway(integrationSlug);
+  const { data: detailedLogs, isLoading } = useWebhookEvents({ integrationSlug, limit: 100 });
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [selectedLog, setSelectedLog] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const filteredLogs = logs?.filter(log => 
+  const filteredLogs = (detailedLogs || []).filter(log => 
     !statusFilter || log.status === statusFilter
-  ) || [];
-
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      success: "default",
-      failed: "destructive",
-      processing: "secondary",
-      received: "secondary",
-    };
-    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
-  };
+  );
 
   const handleViewDetails = (log: any) => {
     setSelectedLog(log);
@@ -141,22 +132,23 @@ export function WebhookLogsModal({ open, onOpenChange, integrationSlug }: Webhoo
               <TableHeader>
                 <TableRow>
                   <TableHead>Data/Hora</TableHead>
+                  <TableHead>Categoria</TableHead>
                   <TableHead>Evento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {logsLoading ? (
+                {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
-                      <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+                    <TableCell colSpan={5} className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                       Carregando logs...
                     </TableCell>
                   </TableRow>
                 ) : filteredLogs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       Nenhum log encontrado
                     </TableCell>
                   </TableRow>
@@ -166,8 +158,30 @@ export function WebhookLogsModal({ open, onOpenChange, integrationSlug }: Webhoo
                       <TableCell className="font-mono text-xs">
                         {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
                       </TableCell>
-                      <TableCell>{log.event_type}</TableCell>
-                      <TableCell>{getStatusBadge(log.status)}</TableCell>
+                      <TableCell>
+                        {log.event_category && (
+                          <Badge className={`${getCategoryColor(log.event_category)} text-white text-xs`}>
+                            {log.event_category}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-medium">
+                            {log.event_category ? getEventDisplayName(log.event_type) : log.event_type}
+                          </span>
+                          {log.event_category && (
+                            <code className="text-xs text-muted-foreground">
+                              {log.event_type}
+                            </code>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(log.status)}>
+                          {log.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
