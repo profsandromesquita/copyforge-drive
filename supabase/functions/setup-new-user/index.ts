@@ -18,10 +18,6 @@ interface SetupResponse {
     email: string;
     name: string;
   };
-  workspace?: {
-    id: string;
-    name: string;
-  };
   error?: string;
   details?: string;
 }
@@ -34,7 +30,6 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[setup-new-user] Request received');
-    console.log('[setup-new-user] Request headers:', Object.fromEntries(req.headers.entries()));
 
     // Parse request body
     const { userId, email, name }: SetupRequest = await req.json();
@@ -78,7 +73,7 @@ Deno.serve(async (req) => {
     
     console.log('[setup-new-user] Supabase admin client created');
 
-    // Step 1: Create or verify profile
+    // Create or verify profile ONLY
     console.log('[setup-new-user] Creating profile...');
     const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
       .from('profiles')
@@ -133,200 +128,10 @@ Deno.serve(async (req) => {
       console.log('[setup-new-user] Profile already exists');
     }
 
-    // Step 2: Check if user already has a workspace
-    console.log('[setup-new-user] Checking for existing workspace...');
-    const { data: existingMemberships, error: membershipCheckError } = await supabaseAdmin
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', userId)
-      .limit(1);
-
-    const existingMembership = existingMemberships?.[0];
-
-    if (membershipCheckError) {
-      console.error('[setup-new-user] Error checking workspace membership:', membershipCheckError);
-    }
-
-    let workspaceData: { id: string; name: string } | null = null;
-
-    if (existingMembership?.workspace_id) {
-      // Fetch workspace details
-      const { data: workspace, error: workspaceError } = await supabaseAdmin
-        .from('workspaces')
-        .select('id, name')
-        .eq('id', existingMembership.workspace_id)
-        .single();
-      
-      if (!workspaceError && workspace) {
-        workspaceData = workspace;
-        console.log('[setup-new-user] User already has workspace:', workspaceData);
-      }
-    } else {
-      // Check if user already has a workspace by created_by
-      console.log('[setup-new-user] Checking for workspace created by user...');
-      const { data: ownedWorkspace } = await supabaseAdmin
-        .from('workspaces')
-        .select('id, name')
-        .eq('created_by', userId)
-        .maybeSingle();
-
-      if (ownedWorkspace) {
-        // Workspace exists but no membership - create membership
-        workspaceData = ownedWorkspace;
-        console.log('[setup-new-user] Found existing workspace without membership:', workspaceData);
-        
-        const { error: memberError } = await supabaseAdmin
-          .from('workspace_members')
-          .insert({
-            workspace_id: ownedWorkspace.id,
-            user_id: userId,
-            role: 'owner',
-            invited_by: userId
-          });
-
-        if (memberError) {
-          // Ignore duplicate errors
-          if (memberError.code === '23505') {
-            console.log('[setup-new-user] Membership already exists (duplicate key), continuing...');
-          } else {
-            console.error('[setup-new-user] Error creating membership:', memberError);
-            throw new Error(`Membership creation failed: ${memberError.message}`);
-          }
-        } else {
-          console.log('[setup-new-user] Membership created for existing workspace');
-        }
-      } else {
-        // Step 3: Create workspace with robust error handling
-        console.log('[setup-new-user] Creating new workspace...');
-        
-        try {
-          const { data: newWorkspace, error: workspaceError } = await supabaseAdmin
-            .from('workspaces')
-            .insert({
-              name: 'Meu Workspace',
-              created_by: userId
-            })
-            .select('id, name')
-            .single();
-
-          if (workspaceError) {
-            console.log('[setup-new-user] Workspace creation error:', workspaceError);
-            
-            // If duplicate error, workspace might exist, try to fetch it
-            if (workspaceError.code === '23505') {
-              console.log('[setup-new-user] Duplicate key conflict, searching for existing workspace...');
-              
-              // Try multiple queries to find the workspace
-              let existingWs = null;
-              
-              // First try: search by created_by
-              const { data: wsByCreator } = await supabaseAdmin
-                .from('workspaces')
-                .select('id, name')
-                .eq('created_by', userId)
-                .maybeSingle();
-              
-              if (wsByCreator) {
-                existingWs = wsByCreator;
-                console.log('[setup-new-user] Found workspace by creator:', existingWs);
-              } else {
-                // Second try: check if there's a membership (maybe workspace was created but trigger failed)
-                console.log('[setup-new-user] No workspace found by creator, checking memberships...');
-                const { data: membershipData } = await supabaseAdmin
-                  .from('workspace_members')
-                  .select('workspace_id, workspaces(id, name)')
-                  .eq('user_id', userId)
-                  .maybeSingle();
-                
-                if (membershipData?.workspaces) {
-                  const ws = Array.isArray(membershipData.workspaces) 
-                    ? membershipData.workspaces[0] 
-                    : membershipData.workspaces;
-                  existingWs = ws as { id: string; name: string };
-                  console.log('[setup-new-user] Found workspace through membership:', existingWs);
-                }
-              }
-              
-              if (existingWs) {
-                workspaceData = existingWs;
-                console.log('[setup-new-user] Using existing workspace:', workspaceData);
-              } else {
-                // Last resort: create workspace with unique name
-                console.log('[setup-new-user] No workspace found after conflict, creating with unique name...');
-                const uniqueName = `Meu Workspace ${Date.now()}`;
-                const { data: retryWorkspace, error: retryError } = await supabaseAdmin
-                  .from('workspaces')
-                  .insert({
-                    name: uniqueName,
-                    created_by: userId
-                  })
-                  .select('id, name')
-                  .single();
-                
-                if (retryError) {
-                  console.error('[setup-new-user] Failed to create workspace even with unique name:', retryError);
-                  throw new Error(`Workspace creation failed after retry: ${retryError.message}`);
-                }
-                
-                workspaceData = retryWorkspace;
-                console.log('[setup-new-user] Created workspace with unique name:', workspaceData);
-              }
-            } else {
-              console.error('[setup-new-user] Non-duplicate workspace creation error:', workspaceError);
-              throw new Error(`Workspace creation failed: ${workspaceError.message}`);
-            }
-          } else {
-            workspaceData = newWorkspace;
-            console.log('[setup-new-user] Workspace created successfully:', workspaceData);
-          }
-
-          // Step 4: Add user as owner (only if workspace was just created)
-          if (workspaceData) {
-            console.log('[setup-new-user] Adding user as workspace owner...');
-            const { error: memberError } = await supabaseAdmin
-              .from('workspace_members')
-              .insert({
-                workspace_id: workspaceData.id,
-                user_id: userId,
-                role: 'owner',
-                invited_by: userId
-              });
-
-            if (memberError) {
-              // Ignore duplicate errors
-              if (memberError.code === '23505') {
-                console.log('[setup-new-user] Membership already exists (duplicate key), continuing...');
-              } else {
-                console.error('[setup-new-user] Error creating workspace membership:', memberError);
-                throw new Error(`Membership creation failed: ${memberError.message}`);
-              }
-            } else {
-              console.log('[setup-new-user] Workspace membership created successfully');
-            }
-          }
-        } catch (error) {
-          console.error('[setup-new-user] Error in workspace creation flow:', error);
-          throw error;
-        }
-      }
-    }
-    
-    // Verify subscription was created by trigger
-    if (workspaceData) {
-      const { data: subscription } = await supabaseAdmin
-        .from('workspace_subscriptions')
-        .select('id')
-        .eq('workspace_id', workspaceData.id)
-        .maybeSingle();
-      
-      console.log('[setup-new-user] Subscription check:', subscription ? 'exists' : 'not found');
-    }
-
     // Success response
     const response: SetupResponse = {
       success: true,
-      profile: profileData || undefined,
-      workspace: workspaceData || undefined
+      profile: profileData || undefined
     };
 
     console.log('[setup-new-user] Setup completed successfully:', response);

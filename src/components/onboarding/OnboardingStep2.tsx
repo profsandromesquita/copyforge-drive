@@ -11,6 +11,7 @@ interface OnboardingStep2Props {
 
 const OnboardingStep2 = ({ firstName, onComplete, onBack }: OnboardingStep2Props) => {
   const [workspaceName, setWorkspaceName] = useState(`Workspace de ${firstName}`);
+  
   const handleContinue = () => {
     if (workspaceName.trim()) {
       onComplete(workspaceName.trim());

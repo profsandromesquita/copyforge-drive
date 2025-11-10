@@ -25,7 +25,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchWorkspaces = async (retryCount = 0) => {
+  const fetchWorkspaces = async () => {
     if (!user) {
       setWorkspaces([]);
       setActiveWorkspaceState(null);
@@ -48,7 +48,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error fetching workspaces:', error);
+      console.error('[Workspace] Error fetching workspaces:', error);
       setLoading(false);
       return;
     }
@@ -60,14 +60,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       role: item.role
     })) || [];
 
-    // Retry mechanism for new users - workspace might still be creating
-    if (workspaceList.length === 0 && retryCount < 3) {
-      console.log(`[Workspace] No workspaces found, retrying in ${(retryCount + 1) * 1000}ms...`);
-      setTimeout(() => {
-        fetchWorkspaces(retryCount + 1);
-      }, (retryCount + 1) * 1000);
-      return;
-    }
+    console.log('[Workspace] Fetched workspaces:', workspaceList.length);
 
     setWorkspaces(workspaceList);
     
@@ -87,6 +80,8 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
           : workspaceList[0];
         setActiveWorkspaceState(workspace);
       }
+    } else {
+      console.log('[Workspace] No workspaces found - user needs to complete onboarding');
     }
     
     setLoading(false);

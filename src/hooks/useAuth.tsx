@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[useAuth] User signed in:', session.user.email);
           
-          // Check onboarding status and redirect - with delay to allow profile creation
+          // Check onboarding status and redirect
           const currentPath = window.location.pathname;
           console.log('[useAuth] Signed in, current path:', currentPath);
           
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   .from('profiles')
                   .select('onboarding_completed')
                   .eq('id', session.user.id)
-                  .single();
+                  .maybeSingle();
                 
                 console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
                 
@@ -66,51 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 console.log('[useAuth] Redirecting to onboarding (error fallback)');
                 navigate('/onboarding');
               }
-            }, 800); // Wait 800ms for profile creation
+            }, 500); // Wait for profile creation
           }
-          
-          // Check workspace separately (no blocking)
-          setTimeout(async () => {
-            try {
-              const { data: memberships, error: membershipError } = await supabase
-                .from('workspace_members')
-                .select('workspace_id')
-                .eq('user_id', session.user.id)
-                .limit(1);
-
-              if (membershipError) {
-                console.error('[useAuth] Error checking membership:', membershipError);
-              }
-
-              const membership = memberships?.[0];
-
-              if (!membership) {
-                console.log('[useAuth] No workspace found, calling setup...');
-                
-                const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
-                  body: {
-                    userId: session.user.id,
-                    email: session.user.email,
-                    name: session.user.user_metadata?.name || 
-                          session.user.user_metadata?.full_name ||
-                          session.user.email?.split('@')[0]
-                  }
-                });
-
-                if (setupError) {
-                  console.error('[useAuth] Setup error:', setupError);
-                } else if (!setupData?.success) {
-                  console.warn('[useAuth] Setup returned non-success:', setupData);
-                } else {
-                  console.log('[useAuth] Setup completed successfully');
-                }
-              } else {
-                console.log('[useAuth] User has workspace:', membership.workspace_id);
-              }
-            } catch (error) {
-              console.error('[useAuth] Workspace check failed:', error);
-            }
-          }, 500);
         } else if (event === 'SIGNED_OUT') {
           console.log('Signed out, redirecting to auth');
           navigate('/auth');
@@ -147,29 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
-    // Se signup foi bem-sucedido, chamar Edge Function para setup
+    // Profile será criado pelo trigger - workspace será criado no onboarding
     if (!error && data.user) {
-      console.log('[useAuth] Signup successful, calling setup-new-user...');
-      
-      try {
-        const { data: setupData, error: setupError } = await supabase.functions.invoke('setup-new-user', {
-          body: {
-            userId: data.user.id,
-            email: data.user.email,
-            name: name
-          }
-        });
-
-        if (setupError) {
-          console.error('[useAuth] Setup function error:', setupError);
-        } else if (setupData && !setupData.success) {
-          console.error('[useAuth] Setup failed:', setupData.error, setupData.details);
-        } else {
-          console.log('[useAuth] User setup completed successfully:', setupData);
-        }
-      } catch (setupError) {
-        console.error('[useAuth] Failed to call setup function:', setupError);
-      }
+      console.log('[useAuth] Signup successful, profile will be created by trigger');
     }
     
     return { error };

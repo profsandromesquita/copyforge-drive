@@ -75,18 +75,45 @@ const Onboarding = () => {
   const handleStep2Complete = async (workspaceName: string) => {
     setLoading(true);
     try {
-      if (!activeWorkspace?.id) {
-        toast.error("Workspace não encontrado");
+      if (!user?.id) {
+        toast.error("Usuário não autenticado");
         return;
       }
 
-      // Atualizar nome do workspace
-      const { error } = await supabase
+      // CRIAR novo workspace (não atualizar)
+      const { data: newWorkspace, error: workspaceError } = await supabase
         .from('workspaces')
-        .update({ name: workspaceName })
-        .eq('id', activeWorkspace.id);
+        .insert({ 
+          name: workspaceName,
+          created_by: user.id 
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (workspaceError) {
+        console.error("Erro ao criar workspace:", workspaceError);
+        throw workspaceError;
+      }
+
+      // Criar membership como owner
+      const { error: memberError } = await supabase
+        .from('workspace_members')
+        .insert({
+          workspace_id: newWorkspace.id,
+          user_id: user.id,
+          role: 'owner',
+          invited_by: user.id
+        });
+
+      if (memberError) {
+        console.error("Erro ao criar membership:", memberError);
+        throw memberError;
+      }
+
+      console.log("Workspace criado com sucesso:", newWorkspace);
+
+      // Aguardar um momento para garantir que o RLS processe
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       saveProgress({ 
         currentStep: 3,
@@ -95,8 +122,8 @@ const Onboarding = () => {
       });
       setCurrentStep(3);
     } catch (error: any) {
-      console.error("Erro ao atualizar workspace:", error);
-      toast.error("Erro ao configurar workspace. Tente novamente.");
+      console.error("Erro ao criar workspace:", error);
+      toast.error("Erro ao criar workspace. Tente novamente.");
     } finally {
       setLoading(false);
     }
