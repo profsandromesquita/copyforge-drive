@@ -22,6 +22,7 @@ export interface CopyGeneration {
   input_tokens: number;
   output_tokens: number;
   total_tokens: number;
+  credits_debited: number;
   profiles: {
     name: string;
     email: string;

@@ -233,6 +233,7 @@ export default function AdminCopies() {
                   <TableHead className="text-right">Tokens IN</TableHead>
                   <TableHead className="text-right">Tokens OUT</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Créditos</TableHead>
                   <TableHead className="text-right">Custo</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
@@ -241,7 +242,7 @@ export default function AdminCopies() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 10 }).map((_, j) => (
+                      {Array.from({ length: 11 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-6 w-full" />
                         </TableCell>
@@ -250,7 +251,7 @@ export default function AdminCopies() {
                   ))
                 ) : data?.generations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       Nenhuma geração encontrada
                     </TableCell>
                   </TableRow>
@@ -322,6 +323,11 @@ export default function AdminCopies() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm font-semibold">
                         {formatTokens(generation.total_tokens)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="font-mono text-sm font-semibold text-orange-600 dark:text-orange-400">
+                          {generation.credits_debited ? generation.credits_debited.toFixed(2) : '0.00'}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex flex-col items-end">
