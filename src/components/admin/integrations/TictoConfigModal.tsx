@@ -27,7 +27,9 @@ export function TictoConfigModal({ open, onOpenChange, onViewLogs }: TictoConfig
     business_offer_id: '',
   });
 
-  const webhookUrl = `${window.location.origin.replace('lovableproject.com', 'supabase.co')}/functions/v1/webhook-ticto`;
+  // Construir URL correta do webhook
+  const projectId = 'fnebftywudiyjguzrofg'; // ID do projeto Supabase
+  const webhookUrl = `https://${projectId}.supabase.co/functions/v1/webhook-ticto`;
 
   useEffect(() => {
     if (config) {

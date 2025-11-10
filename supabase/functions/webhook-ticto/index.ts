@@ -26,13 +26,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Responder a requisições GET (validação de URL)
+  // Responder a requisições GET (validação de URL pela Ticto)
   if (req.method === 'GET') {
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Webhook Ticto ativo e pronto para receber eventos',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        status: 'ready'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
@@ -46,8 +47,47 @@ serve(async (req) => {
   let logId: string | null = null;
 
   try {
-    const payload = await req.json() as TictoWebhookPayload;
-    const headers = Object.fromEntries(req.headers.entries());
+    // Tentar parsear o body - se falhar, ainda processar a requisição
+    let payload: TictoWebhookPayload;
+    let headers: Record<string, string>;
+    
+    try {
+      const bodyText = await req.text();
+      headers = Object.fromEntries(req.headers.entries());
+      
+      console.log('Webhook recebido - Body:', bodyText);
+      console.log('Webhook recebido - Headers:', headers);
+      
+      // Se não houver body, criar um payload vazio de validação
+      if (!bodyText || bodyText.trim() === '') {
+        payload = {
+          event: 'validation',
+          data: {
+            id: 'validation',
+            offer_id: '',
+            customer: { email: '', name: '' },
+            amount: 0,
+            status: 'validation'
+          }
+        };
+      } else {
+        payload = JSON.parse(bodyText);
+      }
+    } catch (parseError) {
+      console.error('Erro ao parsear payload:', parseError);
+      // Se falhar ao parsear, criar payload de validação
+      headers = Object.fromEntries(req.headers.entries());
+      payload = {
+        event: 'validation',
+        data: {
+          id: 'validation',
+          offer_id: '',
+          customer: { email: '', name: '' },
+          amount: 0,
+          status: 'validation'
+        }
+      };
+    }
     
     console.log('Webhook recebido:', payload.event);
     
@@ -72,8 +112,8 @@ serve(async (req) => {
 
     // Se for um evento de teste/validação, retornar sucesso sem verificar configuração
     console.log('Verificando tipo de evento:', payload.event);
-    if (payload.event === 'test' || payload.event === 'ping' || payload.event === 'webhook.test') {
-      console.log('Evento de teste detectado, retornando sucesso');
+    if (payload.event === 'test' || payload.event === 'ping' || payload.event === 'webhook.test' || payload.event === 'validation') {
+      console.log('Evento de teste/validação detectado, retornando sucesso');
       if (logId) {
         await supabase
           .from('webhook_logs')
