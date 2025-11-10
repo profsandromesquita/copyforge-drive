@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,20 +10,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, CreditCard, Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Loader2, CreditCard, Plus, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
 import { useWorkspaceInvoices } from "@/hooks/useWorkspaceInvoices";
+import { AdminChangePlanModal } from "./AdminChangePlanModal";
+import { AdminAddCreditsModal } from "./AdminAddCreditsModal";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface WorkspacePlanBillingTabProps {
   workspaceId: string;
 }
 
 export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTabProps) => {
+  const queryClient = useQueryClient();
   const { data: plan, isLoading: planLoading } = useWorkspacePlan(workspaceId);
   const { data: subscription, isLoading: subscriptionLoading } = useWorkspaceSubscription(workspaceId);
   const { invoices, isLoading: invoicesLoading, markAsPaid, cancelInvoice } = useWorkspaceInvoices(workspaceId);
+  
+  const [changePlanModalOpen, setChangePlanModalOpen] = useState(false);
+  const [addCreditsModalOpen, setAddCreditsModalOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -46,6 +68,32 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
       style: 'currency',
       currency: 'BRL',
     }).format(amount);
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!subscription?.id) return;
+
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase
+        .from("workspace_subscriptions")
+        .update({
+          status: "cancelled",
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq("id", subscription.id);
+
+      if (error) throw error;
+
+      toast.success("Assinatura cancelada com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["workspace-subscription", workspaceId] });
+      setCancelDialogOpen(false);
+    } catch (error) {
+      console.error("Error cancelling subscription:", error);
+      toast.error("Erro ao cancelar assinatura");
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   if (planLoading || subscriptionLoading) {
@@ -130,16 +178,17 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
 
         {/* Admin Actions */}
         <div className="flex gap-3 mt-6 pt-6 border-t">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setChangePlanModalOpen(true)}>
             <CreditCard className="h-4 w-4 mr-2" />
             Alterar Plano
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setAddCreditsModalOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Créditos
           </Button>
           {subscription?.status === 'active' && (
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(true)}>
+              <XCircle className="h-4 w-4 mr-2" />
               Cancelar Assinatura
             </Button>
           )}
@@ -221,6 +270,45 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
           </Card>
         )}
       </div>
+
+      {/* Modals */}
+      <AdminChangePlanModal
+        open={changePlanModalOpen}
+        onOpenChange={setChangePlanModalOpen}
+        workspaceId={workspaceId}
+        currentPlanId={subscription?.plan?.id}
+      />
+
+      <AdminAddCreditsModal
+        open={addCreditsModalOpen}
+        onOpenChange={setAddCreditsModalOpen}
+        workspaceId={workspaceId}
+      />
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Assinatura</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar a assinatura deste workspace? O plano será alterado para Free e os limites serão reduzidos.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelSubscription} disabled={isCancelling}>
+              {isCancelling ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Cancelando...
+                </>
+              ) : (
+                "Confirmar Cancelamento"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
