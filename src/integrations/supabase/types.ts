@@ -978,6 +978,7 @@ export type Database = {
         Row: {
           created_at: string
           error_message: string | null
+          event_category: string | null
           event_type: string
           headers: Json | null
           id: string
@@ -989,6 +990,7 @@ export type Database = {
         Insert: {
           created_at?: string
           error_message?: string | null
+          event_category?: string | null
           event_type: string
           headers?: Json | null
           id?: string
@@ -1000,6 +1002,7 @@ export type Database = {
         Update: {
           created_at?: string
           error_message?: string | null
+          event_category?: string | null
           event_type?: string
           headers?: Json | null
           id?: string
@@ -1113,6 +1116,7 @@ export type Database = {
           created_at: string
           currency: string
           due_date: string
+          external_payment_id: string | null
           id: string
           invoice_number: string
           line_items: Json
@@ -1132,6 +1136,7 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date: string
+          external_payment_id?: string | null
           id?: string
           invoice_number: string
           line_items?: Json
@@ -1151,6 +1156,7 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string
+          external_payment_id?: string | null
           id?: string
           invoice_number?: string
           line_items?: Json
@@ -1344,7 +1350,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      webhook_events_summary: {
+        Row: {
+          event_category: string | null
+          event_type: string | null
+          failed_events: number | null
+          integration_slug: string | null
+          last_event_at: string | null
+          status: string | null
+          successful_events: number | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_workspace_credits: {
