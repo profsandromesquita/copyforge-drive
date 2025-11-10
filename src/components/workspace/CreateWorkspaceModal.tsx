@@ -13,6 +13,12 @@ interface CreateWorkspaceModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface WorkspaceLimitCheck {
+  can_create: boolean;
+  current_count: number;
+  max_allowed: number;
+}
+
 export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModalProps) => {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,6 +38,24 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
 
     setLoading(true);
     try {
+      // Verificar limite de workspaces free
+      const { data: limitCheck, error: limitError } = await supabase
+        .rpc('can_create_free_workspace', { _user_id: user.id });
+
+      if (limitError) throw limitError;
+
+      const limitData = limitCheck as unknown as WorkspaceLimitCheck;
+
+      if (!limitData.can_create) {
+        toast.error(
+          `Você atingiu o limite de ${limitData.max_allowed} workspace(s) gratuito(s). ` +
+          'Faça upgrade de um workspace existente para criar mais.',
+          { duration: 5000 }
+        );
+        setLoading(false);
+        return;
+      }
+
       // Create workspace
       const { data: workspace, error: workspaceError } = await supabase
         .from('workspaces')

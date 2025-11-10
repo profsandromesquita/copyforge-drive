@@ -6,6 +6,7 @@ import { UsersSettings } from "@/components/admin/settings/UsersSettings";
 import { AISettings } from "@/components/admin/settings/AISettings";
 import { CreditSettings } from "@/components/admin/settings/CreditSettings";
 import { PlanSettings } from "@/components/admin/settings/PlanSettings";
+import { WorkspaceSettings } from "@/components/admin/settings/WorkspaceSettings";
 import { SettingsSidebar } from "@/components/admin/settings/SettingsSidebar";
 
 export default function AdminSettings() {
@@ -25,6 +26,8 @@ export default function AdminSettings() {
         return <CreditSettings />;
       case "planos":
         return <PlanSettings />;
+      case "workspace":
+        return <WorkspaceSettings />;
       default:
         return <GeneralSettings />;
     }

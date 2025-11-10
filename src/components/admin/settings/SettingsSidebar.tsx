@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Gear, Plug, Users, Robot, Coins, Package } from "phosphor-react";
+import { Gear, Plug, Users, Robot, Coins, Package, Buildings } from "phosphor-react";
 
 interface SettingsSidebarProps {
   activeTab: string;
@@ -13,6 +13,7 @@ const menuItems = [
   { id: "ia", label: "IA", icon: Robot },
   { id: "creditos", label: "Créditos", icon: Coins },
   { id: "planos", label: "Planos", icon: Package },
+  { id: "workspace", label: "Workspace", icon: Buildings },
 ];
 
 export const SettingsSidebar = ({ activeTab, onTabChange }: SettingsSidebarProps) => {

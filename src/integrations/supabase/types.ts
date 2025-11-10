@@ -853,6 +853,7 @@ export type Database = {
           logo_dark_url: string | null
           logo_light_url: string | null
           maintenance_mode: boolean
+          max_free_workspaces_per_user: number
           system_description: string | null
           system_name: string
           updated_at: string | null
@@ -865,6 +866,7 @@ export type Database = {
           logo_dark_url?: string | null
           logo_light_url?: string | null
           maintenance_mode?: boolean
+          max_free_workspaces_per_user?: number
           system_description?: string | null
           system_name?: string
           updated_at?: string | null
@@ -877,6 +879,7 @@ export type Database = {
           logo_dark_url?: string | null
           logo_light_url?: string | null
           maintenance_mode?: boolean
+          max_free_workspaces_per_user?: number
           system_description?: string | null
           system_name?: string
           updated_at?: string | null
@@ -1190,6 +1193,7 @@ export type Database = {
         Args: { cost_limit_pct: number; p_model_name: string }
         Returns: number
       }
+      can_create_free_workspace: { Args: { _user_id: string }; Returns: Json }
       change_workspace_plan: {
         Args: {
           p_new_billing_cycle: Database["public"]["Enums"]["billing_cycle_type"]
