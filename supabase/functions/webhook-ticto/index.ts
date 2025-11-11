@@ -432,6 +432,39 @@ function determineBillingCycle(offer: any): string {
 async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
   console.log('💰 Processando venda aprovada...');
   
+  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  // Verificar se este pagamento já foi processado antes
+  const orderHash = payload.order.hash;
+  const transactionHash = payload.order.transaction_hash;
+  
+  console.log('🔍 Verificando idempotência:', { orderHash, transactionHash });
+  
+  const { data: existingInvoice } = await supabase
+    .from('workspace_invoices')
+    .select('id, workspace_id, status')
+    .eq('payment_id', orderHash)
+    .single();
+  
+  if (existingInvoice) {
+    console.log('⚠️ Pagamento já processado anteriormente:', {
+      invoice_id: existingInvoice.id,
+      workspace_id: existingInvoice.workspace_id,
+      status: existingInvoice.status
+    });
+    
+    return {
+      status: 'success',
+      event_type: 'purchase.approved',
+      event_category: 'payment',
+      workspace_id: existingInvoice.workspace_id,
+      message: 'Pagamento já processado anteriormente (idempotente)',
+      idempotent: true
+    };
+  }
+  
+  console.log('✅ Pagamento não processado anteriormente, prosseguindo...');
+  // ============= FIM VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  
   // Buscar gateway da Ticto
   const { data: integration, error: integrationError } = await supabase
     .from('integrations')
@@ -942,6 +975,41 @@ async function handleCardUpdated(supabase: any, payload: TictoWebhookPayload): P
 async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
   console.log('🆓 Processando início de trial...');
   
+  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  // Verificar se este trial já foi processado antes
+  const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  console.log('🔍 Verificando idempotência (trial):', { subscriptionId });
+  
+  if (subscriptionId) {
+    const { data: existingSubscription } = await supabase
+      .from('workspace_subscriptions')
+      .select('id, workspace_id, status')
+      .eq('external_subscription_id', subscriptionId)
+      .eq('status', 'trialing')
+      .single();
+    
+    if (existingSubscription) {
+      console.log('⚠️ Trial já processado anteriormente:', {
+        subscription_id: existingSubscription.id,
+        workspace_id: existingSubscription.workspace_id,
+        status: existingSubscription.status
+      });
+      
+      return {
+        status: 'success',
+        event_type: 'subscription.trial_started',
+        event_category: 'subscription',
+        workspace_id: existingSubscription.workspace_id,
+        message: 'Trial já processado anteriormente (idempotente)',
+        idempotent: true
+      };
+    }
+  }
+  
+  console.log('✅ Trial não processado anteriormente, prosseguindo...');
+  // ============= FIM VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  
   // Buscar gateway da Ticto
   const { data: integration, error: integrationError } = await supabase
     .from('integrations')
@@ -1154,6 +1222,47 @@ async function handleTrialEnded(supabase: any, payload: TictoWebhookPayload, con
   const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
   const subscriptionData = payload.subscriptions?.[0];
   
+  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  console.log('🔍 Verificando idempotência (trial ended):', { subscriptionId });
+  
+  // Verificar se já processamos esse fim de trial (se subscription já está active)
+  if (subscriptionId) {
+    const { data: existingActiveSubscription } = await supabase
+      .from('workspace_subscriptions')
+      .select('id, workspace_id, status, current_period_start')
+      .eq('external_subscription_id', subscriptionId)
+      .eq('status', 'active')
+      .single();
+    
+    if (existingActiveSubscription && existingActiveSubscription.current_period_start) {
+      // Já foi convertido antes
+      const periodStart = new Date(existingActiveSubscription.current_period_start);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - periodStart.getTime()) / (1000 * 60 * 60);
+      
+      // Se foi ativado há menos de 24h, considera como já processado
+      if (hoursDiff < 24) {
+        console.log('⚠️ Trial ended já processado anteriormente:', {
+          subscription_id: existingActiveSubscription.id,
+          workspace_id: existingActiveSubscription.workspace_id,
+          activated_hours_ago: hoursDiff.toFixed(2)
+        });
+        
+        return {
+          status: 'success',
+          event_type: 'subscription.trial_ended',
+          event_category: 'subscription',
+          workspace_id: existingActiveSubscription.workspace_id,
+          message: 'Trial ended já processado anteriormente (idempotente)',
+          idempotent: true
+        };
+      }
+    }
+  }
+  
+  console.log('✅ Trial ended não processado recentemente, prosseguindo...');
+  // ============= FIM VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
     .select('*, subscription_plans(*), plan_offers(*)')
@@ -1289,6 +1398,47 @@ async function handleSubscriptionResumed(supabase: any, payload: TictoWebhookPay
   console.log('▶️ Processando retomada de assinatura...');
   
   const subscriptionId = payload.subscriptions?.[0]?.id?.toString();
+  
+  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  console.log('🔍 Verificando idempotência (subscription resumed):', { subscriptionId });
+  
+  // Verificar se já processamos recentemente pela última transação de crédito
+  if (subscriptionId) {
+    const { data: recentTransaction } = await supabase
+      .from('credit_transactions')
+      .select('id, workspace_id, created_at, description')
+      .ilike('description', '%Assinatura retomada%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (recentTransaction) {
+      const transactionDate = new Date(recentTransaction.created_at);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - transactionDate.getTime()) / (1000 * 60 * 60);
+      
+      // Se já adicionou créditos de retomada há menos de 1h, considera idempotente
+      if (hoursDiff < 1) {
+        console.log('⚠️ Subscription resumed já processado anteriormente:', {
+          transaction_id: recentTransaction.id,
+          workspace_id: recentTransaction.workspace_id,
+          processed_hours_ago: hoursDiff.toFixed(2)
+        });
+        
+        return {
+          status: 'success',
+          event_type: 'subscription.resumed',
+          event_category: 'subscription',
+          workspace_id: recentTransaction.workspace_id,
+          message: 'Subscription resumed já processado anteriormente (idempotente)',
+          idempotent: true
+        };
+      }
+    }
+  }
+  
+  console.log('✅ Subscription resumed não processado recentemente, prosseguindo...');
+  // ============= FIM VERIFICAÇÃO DE IDEMPOTÊNCIA =============
   
   const { data: subscription } = await supabase
     .from('workspace_subscriptions')
