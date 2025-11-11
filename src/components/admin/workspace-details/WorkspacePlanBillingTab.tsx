@@ -20,14 +20,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, CreditCard, Plus, XCircle } from "lucide-react";
+import { Loader2, CreditCard, Plus, XCircle, Coins, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
 import { useWorkspaceInvoices } from "@/hooks/useWorkspaceInvoices";
 import { useWorkspaceOffer } from "@/hooks/useWorkspaceOffer";
+import { useQuery } from "@tanstack/react-query";
 import { AdminChangePlanModal } from "./AdminChangePlanModal";
 import { AdminAddCreditsModal } from "./AdminAddCreditsModal";
+import { EditCreditsModal } from "./EditCreditsModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,8 +45,24 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
   const { invoices, isLoading: invoicesLoading, markAsPaid, cancelInvoice } = useWorkspaceInvoices(workspaceId);
   const { data: currentOffer } = useWorkspaceOffer(workspaceId);
   
+  // Buscar créditos do workspace
+  const { data: credits, isLoading: creditsLoading } = useQuery({
+    queryKey: ['workspace-credits', workspaceId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workspace_credits')
+        .select('balance, total_added, total_used')
+        .eq('workspace_id', workspaceId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+  });
+  
   const [changePlanModalOpen, setChangePlanModalOpen] = useState(false);
   const [addCreditsModalOpen, setAddCreditsModalOpen] = useState(false);
+  const [editCreditsModalOpen, setEditCreditsModalOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -98,7 +116,7 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
     }
   };
 
-  if (planLoading || subscriptionLoading) {
+  if (planLoading || subscriptionLoading || creditsLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -143,7 +161,7 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
         </div>
 
         {/* Usage Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Projetos</p>
             <p className="text-2xl font-semibold">
@@ -165,6 +183,22 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
                 </span>
               )}
             </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Créditos</p>
+            <div className="flex items-center gap-2">
+              <p className="text-2xl font-semibold">
+                {credits?.balance?.toFixed(2) || '0.00'}
+              </p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setEditCreditsModalOpen(true)}
+              >
+                <Edit className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">IA de Copy</p>
@@ -287,6 +321,13 @@ export const WorkspacePlanBillingTab = ({ workspaceId }: WorkspacePlanBillingTab
         open={addCreditsModalOpen}
         onOpenChange={setAddCreditsModalOpen}
         workspaceId={workspaceId}
+      />
+
+      <EditCreditsModal
+        open={editCreditsModalOpen}
+        onOpenChange={setEditCreditsModalOpen}
+        workspaceId={workspaceId}
+        currentBalance={credits?.balance || 0}
       />
 
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
