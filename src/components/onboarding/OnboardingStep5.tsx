@@ -27,7 +27,7 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   const { changePlan, isChanging } = useChangePlan();
   const { user } = useAuth();
   const { profile } = useUserProfile();
-  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>("monthly");
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>("");
 
   const activePlans = plans?.filter(plan => plan.is_active) || [];
   const currentPlanSlug = currentPlan?.plan_slug || 'free';
