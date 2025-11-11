@@ -39,35 +39,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const currentPath = window.location.pathname;
           console.log('[useAuth] Signed in, current path:', currentPath);
           
-          // Only redirect if on auth page or root
-          if (currentPath === '/auth' || currentPath === '/') {
-            // Wait a bit for profile to be created
-            setTimeout(async () => {
-              try {
-                console.log('[useAuth] Checking onboarding status...');
-                const { data: profile, error: profileError } = await supabase
-                  .from('profiles')
-                  .select('onboarding_completed')
-                  .eq('id', session.user.id)
-                  .maybeSingle();
-                
-                console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
-                
-                if (profile?.onboarding_completed) {
-                  console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
-                  navigate('/dashboard');
-                } else {
-                  console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
+            // Only redirect if on auth page or root
+            if (currentPath === '/auth' || currentPath === '/') {
+              // Wait a bit for profile to be created (Google login needs more time)
+              setTimeout(async () => {
+                try {
+                  console.log('[useAuth] Checking onboarding status...');
+                  const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('onboarding_completed')
+                    .eq('id', session.user.id)
+                    .maybeSingle();
+                  
+                  console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
+                  
+                  if (profile?.onboarding_completed) {
+                    console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
+                    navigate('/dashboard');
+                  } else {
+                    console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
+                    navigate('/onboarding');
+                  }
+                } catch (error) {
+                  console.error('[useAuth] Error checking onboarding:', error);
+                  // Default to onboarding if there's an error
+                  console.log('[useAuth] Redirecting to onboarding (error fallback)');
                   navigate('/onboarding');
                 }
-              } catch (error) {
-                console.error('[useAuth] Error checking onboarding:', error);
-                // Default to onboarding if there's an error
-                console.log('[useAuth] Redirecting to onboarding (error fallback)');
-                navigate('/onboarding');
-              }
-            }, 500); // Wait for profile creation
-          }
+              }, 1000); // Increased timeout for Google login profile creation
+            }
         } else if (event === 'SIGNED_OUT') {
           console.log('Signed out, redirecting to auth');
           navigate('/auth');

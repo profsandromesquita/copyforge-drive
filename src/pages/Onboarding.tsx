@@ -23,6 +23,7 @@ const Onboarding = () => {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [occupation, setOccupation] = useState("");
   const [customOccupation, setCustomOccupation] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -40,30 +41,42 @@ const Onboarding = () => {
       return;
     }
 
+    // Aguardar user estar disponível antes de carregar progresso
+    if (!user) {
+      setInitialLoading(true);
+      return;
+    }
+
     // Carrega progresso salvo do banco de dados
     const loadSavedProgress = async () => {
-      const saved = await loadProgress();
-      if (saved) {
-        if (saved.currentStep) {
-          setCurrentStep(saved.currentStep);
+      try {
+        const saved = await loadProgress();
+        if (saved) {
+          if (saved.currentStep) {
+            setCurrentStep(saved.currentStep);
+          }
+          if (saved.occupation) {
+            setOccupation(saved.occupation);
+          }
+          if (saved.customOccupation) {
+            setCustomOccupation(saved.customOccupation);
+          }
+          if (saved.projectData) {
+            setProjectData(saved.projectData);
+          }
+          if (saved.projectId) {
+            setProjectId(saved.projectId);
+          }
         }
-        if (saved.occupation) {
-          setOccupation(saved.occupation);
-        }
-        if (saved.customOccupation) {
-          setCustomOccupation(saved.customOccupation);
-        }
-        if (saved.projectData) {
-          setProjectData(saved.projectData);
-        }
-        if (saved.projectId) {
-          setProjectId(saved.projectId);
-        }
+      } catch (error) {
+        console.error('Erro ao carregar progresso:', error);
+      } finally {
+        setInitialLoading(false);
       }
     };
 
     loadSavedProgress();
-  }, [isCompleted, navigate, loadProgress]);
+  }, [isCompleted, navigate, user]);
 
   const handleStep1Complete = (selectedOccupation: string, custom?: string) => {
     setOccupation(selectedOccupation);
@@ -252,12 +265,13 @@ const Onboarding = () => {
   const progress = (currentStep / 5) * 100;
   const firstName = user?.user_metadata?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'Usuário';
 
-  if (workspaceLoading) {
+  // Mostrar loading enquanto carrega dados iniciais
+  if (workspaceLoading || initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">Preparando seu onboarding...</p>
         </div>
       </div>
     );
