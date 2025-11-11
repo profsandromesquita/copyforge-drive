@@ -171,15 +171,35 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
                       )}
                     </div>
                     
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-3xl font-bold">{formatCurrency(offer.price)}</span>
-                      <span className="text-sm text-muted-foreground">
-                        / {offer.billing_period_value} {
-                          offer.billing_period_unit === 'months' ? 'mês' :
-                          offer.billing_period_unit === 'years' ? 'ano' : 
-                          offer.billing_period_unit
-                        }
-                      </span>
+                    <div className="mb-4">
+                      {(() => {
+                        const isMonthly = offer.billing_period_unit === 'months' && offer.billing_period_value === 1;
+                        const monthlyPrice = isMonthly 
+                          ? offer.price 
+                          : offer.billing_period_unit === 'months'
+                            ? offer.price / offer.billing_period_value
+                            : offer.billing_period_unit === 'years'
+                              ? offer.price / (offer.billing_period_value * 12)
+                              : offer.price;
+
+                        return (
+                          <>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-bold">{formatCurrency(monthlyPrice)}</span>
+                              <span className="text-sm text-muted-foreground">/mês</span>
+                            </div>
+                            {!isMonthly && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {formatCurrency(offer.price)} total por {offer.billing_period_value} {
+                                  offer.billing_period_unit === 'months' ? 'meses' :
+                                  offer.billing_period_unit === 'years' ? (offer.billing_period_value > 1 ? 'anos' : 'ano') : 
+                                  offer.billing_period_unit
+                                }
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
