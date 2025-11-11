@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 interface Cliente {
   id: string;
@@ -36,7 +37,9 @@ interface Cliente {
 export default function AdminClientes() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -96,11 +99,69 @@ export default function AdminClientes() {
       .slice(0, 2);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+  const handleDelete = async (cliente: Cliente) => {
+    if (cliente.workspaces_count > 0 || cliente.copies_count > 0) {
+      toast({
+        title: "Não é possível excluir",
+        description: `Este usuário possui ${cliente.workspaces_count} workspace(s) e ${cliente.copies_count} copy(ies). Apenas usuários sem workspaces e copies podem ser removidos.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir ${cliente.name}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
     
-    // TODO: Implementar deleção
-    console.log('Delete cliente:', id);
+    setDeleting(cliente.id);
+    
+    try {
+      const { data, error } = await supabase.rpc('delete_user_admin', {
+        p_user_id: cliente.id
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        let message = "Erro ao excluir usuário";
+        
+        if (result.error === 'unauthorized') {
+          message = "Você não tem permissão para excluir usuários";
+        } else if (result.error === 'user_not_found') {
+          message = "Usuário não encontrado";
+        } else if (result.error === 'user_has_workspaces') {
+          message = "Usuário possui workspaces e não pode ser excluído";
+        } else if (result.error === 'user_has_copies') {
+          message = "Usuário possui copies e não pode ser excluído";
+        }
+        
+        toast({
+          title: "Erro",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Remover da lista local
+      setClientes(prev => prev.filter(c => c.id !== cliente.id));
+      
+      toast({
+        title: "Sucesso",
+        description: "Usuário excluído com sucesso",
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir usuário. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(null);
+    }
   };
 
   return (
@@ -177,11 +238,12 @@ export default function AdminClientes() {
                             Ver
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            onClick={() => handleDelete(cliente.id)}
-                            className="text-destructive"
+                            onClick={() => handleDelete(cliente)}
+                            disabled={deleting === cliente.id || cliente.workspaces_count > 0 || cliente.copies_count > 0}
+                            className={cliente.workspaces_count === 0 && cliente.copies_count === 0 ? "text-destructive" : "text-muted-foreground"}
                           >
                             <Trash size={16} className="mr-2" />
-                            Excluir
+                            {deleting === cliente.id ? "Excluindo..." : "Excluir"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

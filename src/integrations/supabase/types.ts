@@ -1503,6 +1503,7 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_user_admin: { Args: { p_user_id: string }; Returns: Json }
       delete_workspace_admin: {
         Args: { p_workspace_id: string }
         Returns: Json
