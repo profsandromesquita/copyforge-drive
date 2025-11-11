@@ -85,8 +85,7 @@ export const ProjectSelector = () => {
             <SelectSeparator />
             <SelectItem 
               value="__new__" 
-              className={limitReached ? "text-muted-foreground opacity-60" : "text-primary font-medium"}
-              disabled={limitReached}
+              className={limitReached ? "text-muted-foreground" : "text-primary font-medium"}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center">
@@ -94,25 +93,7 @@ export const ProjectSelector = () => {
                   Novo Projeto
                 </div>
                 {limitReached && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowUpgradeModal(true);
-                          }}
-                          className="ml-2 p-1 hover:bg-accent rounded transition-colors"
-                        >
-                          <Crown size={16} className="text-primary" weight="fill" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Fazer upgrade</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Crown size={16} className="text-primary ml-2" weight="fill" />
                 )}
               </div>
             </SelectItem>
