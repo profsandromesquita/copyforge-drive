@@ -72,6 +72,8 @@ const AdminTransactions = () => {
 
   const { start, end } = getDateRange();
 
+  console.log('Date range:', { start, end, startISO: start.toISOString(), endISO: end.toISOString() });
+
   const { data: transactions, isLoading } = usePaymentTransactions({
     gateway: gatewayFilter !== "all" ? gatewayFilter : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
@@ -83,6 +85,8 @@ const AdminTransactions = () => {
     startDate: start.toISOString(),
     endDate: end.toISOString(),
   });
+
+  console.log('Transactions query:', { isLoading, transactionsCount: transactions?.length });
 
   const handleViewDetails = (transaction: PaymentTransaction) => {
     setSelectedTransaction(transaction);
