@@ -37,15 +37,15 @@ export const AdminSidebar = () => {
   return (
     <Sidebar
       className={cn(
-        "hidden lg:flex transition-all duration-300",
-        open ? "w-64" : "w-16"
+        "hidden lg:flex transition-all duration-300 border-r z-30",
+        open ? "w-64" : "w-20"
       )}
       collapsible="icon"
     >
-      <SidebarContent>
+      <SidebarContent className="pt-4">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {menuItems.map((item) => {
                 const isActive = item.path === "/painel/admin" 
                   ? location.pathname === item.path
@@ -57,16 +57,18 @@ export const AdminSidebar = () => {
                       asChild
                       tooltip={item.label}
                       className={cn(
-                        "transition-colors",
+                        "transition-colors h-14",
+                        open ? "px-4" : "px-0 justify-center",
                         isActive && "bg-primary/10 text-primary font-medium hover:bg-primary/20"
                       )}
                     >
                       <NavLink
                         to={item.path}
                         end={item.path === "/painel/admin"}
+                        className="flex items-center gap-3"
                       >
-                        <item.icon className="h-5 w-5" />
-                        {open && <span>{item.label}</span>}
+                        <item.icon className="h-6 w-6 flex-shrink-0" />
+                        {open && <span className="text-base">{item.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
