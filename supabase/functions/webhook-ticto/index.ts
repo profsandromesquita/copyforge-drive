@@ -591,61 +591,86 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   
   console.log('✅ Workspace validado:', workspaceExists.name);
 
-  // Cancelar assinatura antiga se existir
-  await supabase
-    .from('workspace_subscriptions')
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
-    .eq('workspace_id', targetWorkspaceId)
-    .eq('status', 'active');
-
   // Calcular períodos baseado na oferta flexível
   const billingCycle = determineBillingCycle(offer);
   const periodEnd = calculatePeriodEnd(offer);
   
-  // Preparar dados para criar subscription
-  const subscriptionData = {
-    workspace_id: targetWorkspaceId,
-    plan_id: plan.id,
-    plan_offer_id: offer.id,
-    billing_cycle: billingCycle,
-    status: 'active' as const,
-    current_max_projects: plan.max_projects,
-    current_max_copies: plan.max_copies,
-    current_copy_ai_enabled: plan.copy_ai_enabled,
-    current_period_start: new Date().toISOString(),
-    current_period_end: periodEnd?.toISOString() || null,
-    payment_gateway: 'ticto',
-    external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
-  };
-  
-  console.log('📝 Dados para criar subscription:', {
-    workspace_id: targetWorkspaceId,
-    plan_id: plan.id,
-    plan_name: plan.name,
-    offer_id: offer.id,
-    offer_name: offer.name,
-    billing_cycle: billingCycle,
-    has_period_end: !!periodEnd
-  });
-  
-  // Criar nova assinatura com oferta flexível
-  const { data: newSubscription, error: subscriptionError } = await supabase
+  // Buscar subscription existente para decidir entre UPDATE ou INSERT
+  const { data: existingSubscription } = await supabase
     .from('workspace_subscriptions')
-    .insert(subscriptionData)
-    .select()
+    .select('id, status')
+    .eq('workspace_id', targetWorkspaceId)
     .single();
 
-  console.log('📊 Resultado do insert de subscription:', { 
+  console.log('🔍 Subscription existente:', existingSubscription);
+
+  let newSubscription;
+  let subscriptionError;
+
+  if (existingSubscription) {
+    // ATUALIZAR subscription existente
+    console.log('🔄 Atualizando subscription existente:', existingSubscription.id);
+    
+    const { data, error } = await supabase
+      .from('workspace_subscriptions')
+      .update({
+        plan_id: plan.id,
+        plan_offer_id: offer.id,
+        billing_cycle: billingCycle,
+        status: 'active',
+        current_max_projects: plan.max_projects,
+        current_max_copies: plan.max_copies,
+        current_copy_ai_enabled: plan.copy_ai_enabled,
+        current_period_start: new Date().toISOString(),
+        current_period_end: periodEnd?.toISOString() || null,
+        payment_gateway: 'ticto',
+        external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash,
+        cancelled_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSubscription.id)
+      .select()
+      .single();
+    
+    newSubscription = data;
+    subscriptionError = error;
+  } else {
+    // CRIAR nova subscription
+    console.log('➕ Criando nova subscription');
+    
+    const subscriptionData = {
+      workspace_id: targetWorkspaceId,
+      plan_id: plan.id,
+      plan_offer_id: offer.id,
+      billing_cycle: billingCycle,
+      status: 'active' as const,
+      current_max_projects: plan.max_projects,
+      current_max_copies: plan.max_copies,
+      current_copy_ai_enabled: plan.copy_ai_enabled,
+      current_period_start: new Date().toISOString(),
+      current_period_end: periodEnd?.toISOString() || null,
+      payment_gateway: 'ticto',
+      external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
+    };
+    
+    const { data, error } = await supabase
+      .from('workspace_subscriptions')
+      .insert(subscriptionData)
+      .select()
+      .single();
+    
+    newSubscription = data;
+    subscriptionError = error;
+  }
+
+  console.log('📊 Resultado da operação de subscription:', { 
     success: !!newSubscription, 
     subscription_id: newSubscription?.id,
     error: subscriptionError?.message 
   });
 
   if (subscriptionError || !newSubscription) {
-    throw new Error(`Erro ao criar subscription: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify({
-      error: subscriptionError,
-      data_sent: subscriptionData
-    })}`);
+    throw new Error(`Erro ao criar/atualizar subscription: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify(subscriptionError)}`);
   }
 
   // Criar invoice com informações da oferta e tracking
@@ -1032,51 +1057,84 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
   const trialEndDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
   const billingCycle = determineBillingCycle(offer);
 
-  // Preparar dados para criar subscription em trial
-  const subscriptionData = {
-    workspace_id: member.workspace_id,
-    plan_id: plan.id,
-    plan_offer_id: offer.id,
-    billing_cycle: billingCycle,
-    status: 'trialing' as const,
-    current_max_projects: plan.max_projects,
-    current_max_copies: plan.max_copies,
-    current_copy_ai_enabled: plan.copy_ai_enabled,
-    started_at: new Date().toISOString(),
-    current_period_start: new Date().toISOString(),
-    current_period_end: trialEndDate.toISOString(),
-    payment_gateway: 'ticto',
-    external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
-  };
-
-  console.log('📝 Dados para criar subscription (trial):', {
-    workspace_id: member.workspace_id,
-    plan_id: plan.id,
-    plan_name: plan.name,
-    offer_id: offer.id,
-    offer_name: offer.name,
-    billing_cycle: billingCycle,
-    trial_days: trialDays
-  });
-
-  // Criar assinatura em trial com oferta flexível
-  const { data: newSubscription, error: subscriptionError } = await supabase
+  // Buscar subscription existente para decidir entre UPDATE ou INSERT
+  const { data: existingSubscription } = await supabase
     .from('workspace_subscriptions')
-    .insert(subscriptionData)
-    .select()
+    .select('id, status')
+    .eq('workspace_id', member.workspace_id)
     .single();
 
-  console.log('📊 Resultado do insert de subscription (trial):', { 
+  console.log('🔍 Subscription existente (trial):', existingSubscription);
+
+  let newSubscription;
+  let subscriptionError;
+
+  if (existingSubscription) {
+    // ATUALIZAR subscription existente
+    console.log('🔄 Atualizando subscription existente para trial:', existingSubscription.id);
+    
+    const { data, error } = await supabase
+      .from('workspace_subscriptions')
+      .update({
+        plan_id: plan.id,
+        plan_offer_id: offer.id,
+        billing_cycle: billingCycle,
+        status: 'trialing',
+        current_max_projects: plan.max_projects,
+        current_max_copies: plan.max_copies,
+        current_copy_ai_enabled: plan.copy_ai_enabled,
+        started_at: new Date().toISOString(),
+        current_period_start: new Date().toISOString(),
+        current_period_end: trialEndDate.toISOString(),
+        payment_gateway: 'ticto',
+        external_subscription_id: payload.subscriptions?.[0]?.id?.toString(),
+        cancelled_at: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSubscription.id)
+      .select()
+      .single();
+    
+    newSubscription = data;
+    subscriptionError = error;
+  } else {
+    // CRIAR nova subscription
+    console.log('➕ Criando nova subscription em trial');
+    
+    const subscriptionData = {
+      workspace_id: member.workspace_id,
+      plan_id: plan.id,
+      plan_offer_id: offer.id,
+      billing_cycle: billingCycle,
+      status: 'trialing' as const,
+      current_max_projects: plan.max_projects,
+      current_max_copies: plan.max_copies,
+      current_copy_ai_enabled: plan.copy_ai_enabled,
+      started_at: new Date().toISOString(),
+      current_period_start: new Date().toISOString(),
+      current_period_end: trialEndDate.toISOString(),
+      payment_gateway: 'ticto',
+      external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
+    };
+    
+    const { data, error } = await supabase
+      .from('workspace_subscriptions')
+      .insert(subscriptionData)
+      .select()
+      .single();
+    
+    newSubscription = data;
+    subscriptionError = error;
+  }
+
+  console.log('📊 Resultado da operação de subscription (trial):', { 
     success: !!newSubscription, 
     subscription_id: newSubscription?.id,
     error: subscriptionError?.message 
   });
 
   if (subscriptionError || !newSubscription) {
-    throw new Error(`Erro ao criar subscription em trial: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify({
-      error: subscriptionError,
-      data_sent: subscriptionData
-    })}`);
+    throw new Error(`Erro ao criar/atualizar subscription em trial: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify(subscriptionError)}`);
   }
 
   return {
