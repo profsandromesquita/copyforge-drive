@@ -73,89 +73,77 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
           return [];
         }
 
-      // Enriquecer dados com informações de workspace e proprietário
-      const enrichedData = await Promise.all(
-        data.map(async (log) => {
-          try {
+      // Extrair todos os workspace_ids únicos
+      const workspaceIds = [...new Set(
+        data
+          .map(log => {
             const payload = log.payload as any;
-            // Ticto envia em query_params (v2.0) ou url_params (legado)
-            const workspaceIdFromPayload = payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
-            
-            let workspaceName, ownerName, ownerEmail;
+            return payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
+          })
+          .filter(Boolean)
+      )];
 
-            if (workspaceIdFromPayload) {
-              // Buscar workspace
-              const { data: workspace } = await supabase
-                .from('workspaces')
-                .select('name')
-                .eq('id', workspaceIdFromPayload)
-                .single();
+      // Buscar todos os workspaces de uma vez (batch query)
+      const { data: workspacesData } = await supabase
+        .from('workspaces')
+        .select('id, name')
+        .in('id', workspaceIds);
 
-              workspaceName = workspace?.name;
+      // Buscar todos os owners de uma vez (batch query)
+      const { data: membersData } = await supabase
+        .from('workspace_members')
+        .select(`
+          workspace_id,
+          profiles!workspace_members_user_id_fkey(
+            name,
+            email
+          )
+        `)
+        .in('workspace_id', workspaceIds)
+        .eq('role', 'owner');
 
-              // Buscar owner do workspace
-              const { data: member } = await supabase
-                .from('workspace_members')
-                .select(`
-                  profiles!workspace_members_user_id_fkey(
-                    name,
-                    email
-                  )
-                `)
-                .eq('workspace_id', workspaceIdFromPayload)
-                .eq('role', 'owner')
-                .single();
-
-              if (member && member.profiles) {
-                const profile = Array.isArray(member.profiles) ? member.profiles[0] : member.profiles;
-                ownerName = profile?.name;
-                ownerEmail = profile?.email;
-              }
-            }
-
-            return {
-              id: log.id,
-              integration_slug: log.integration_slug,
-              event_type: log.event_type,
-              status: log.status as 'success' | 'failed' | 'processing' | 'received',
-              created_at: log.created_at,
-              processed_at: log.processed_at,
-              paid_amount: parseFloat(payload?.order?.paid_amount || '0') / 100, // Converter centavos para reais
-              offer_id: payload?.item?.offer_id || '',
-              offer_name: payload?.item?.offer_name || '',
-              workspace_id: workspaceIdFromPayload,
-              workspace_name: workspaceName,
-              owner_name: ownerName,
-              owner_email: ownerEmail,
-              payload: log.payload,
-              headers: log.headers,
-              error_message: log.error_message,
-            };
-          } catch (error) {
-            console.error('Error enriching transaction data:', error);
-            // Retornar dados básicos se houver erro
-            const payload = log.payload as any;
-            return {
-              id: log.id,
-              integration_slug: log.integration_slug,
-              event_type: log.event_type,
-              status: log.status as 'success' | 'failed' | 'processing' | 'received',
-              created_at: log.created_at,
-              processed_at: log.processed_at,
-              paid_amount: parseFloat(payload?.order?.paid_amount || '0') / 100,
-              offer_id: payload?.item?.offer_id || '',
-              offer_name: payload?.item?.offer_name || '',
-              workspace_id: undefined,
-              workspace_name: undefined,
-              owner_name: undefined,
-              owner_email: undefined,
-              payload: log.payload,
-              headers: log.headers,
-              error_message: log.error_message,
-            };
-          }
-        })
+      // Criar mapas para lookup rápido
+      const workspaceMap = new Map(
+        workspacesData?.map(w => [w.id, w.name]) || []
       );
+
+      const ownerMap = new Map(
+        membersData?.map(m => {
+          const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          return [
+            m.workspace_id,
+            { name: profile?.name, email: profile?.email }
+          ];
+        }) || []
+      );
+
+      // Enriquecer dados usando os mapas (muito mais rápido)
+      const enrichedData = data.map((log) => {
+        const payload = log.payload as any;
+        const workspaceIdFromPayload = payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
+        
+        const workspaceName = workspaceIdFromPayload ? workspaceMap.get(workspaceIdFromPayload) : undefined;
+        const owner = workspaceIdFromPayload ? ownerMap.get(workspaceIdFromPayload) : undefined;
+
+        return {
+          id: log.id,
+          integration_slug: log.integration_slug,
+          event_type: log.event_type,
+          status: log.status as 'success' | 'failed' | 'processing' | 'received',
+          created_at: log.created_at,
+          processed_at: log.processed_at,
+          paid_amount: parseFloat(payload?.order?.paid_amount || '0') / 100,
+          offer_id: payload?.item?.offer_id || '',
+          offer_name: payload?.item?.offer_name || '',
+          workspace_id: workspaceIdFromPayload,
+          workspace_name: workspaceName,
+          owner_name: owner?.name,
+          owner_email: owner?.email,
+          payload: log.payload,
+          headers: log.headers,
+          error_message: log.error_message,
+        };
+      });
 
       // Filtrar por workspace se especificado
       if (workspaceId) {
