@@ -439,11 +439,17 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   
   console.log('🔍 Verificando idempotência:', { orderHash, transactionHash });
   
-  const { data: existingInvoice } = await supabase
+  // Usar maybeSingle() para evitar erro se não encontrar
+  const { data: existingInvoice, error: invoiceCheckError } = await supabase
     .from('workspace_invoices')
     .select('id, workspace_id, status')
     .eq('payment_id', orderHash)
-    .single();
+    .maybeSingle();
+  
+  if (invoiceCheckError) {
+    console.error('❌ Erro ao verificar invoice existente:', invoiceCheckError);
+    throw new Error(`Erro na verificação de idempotência: ${invoiceCheckError.message}`);
+  }
   
   if (existingInvoice) {
     console.log('⚠️ Pagamento já processado anteriormente:', {
