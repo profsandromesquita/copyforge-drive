@@ -18,13 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 import { usePaymentTransactions, usePaymentTransactionsSummary, PaymentTransaction } from "@/hooks/usePaymentTransactions";
 import { GatewayBadge } from "@/components/admin/transactions/GatewayBadge";
 import { StatusBadge } from "@/components/admin/transactions/StatusBadge";
 import { TransactionDetailsModal } from "@/components/admin/transactions/TransactionDetailsModal";
 import { formatCurrency } from "@/lib/utils";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, subDays, startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRange } from "react-day-picker";
 import { Eye, CurrencyDollar, CheckCircle, XCircle, Clock } from "phosphor-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
@@ -34,14 +37,52 @@ const AdminTransactions = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [gatewayFilter, setGatewayFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState("last-7-days");
+  const [customDateOpen, setCustomDateOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const navigate = useNavigate();
+
+  const getDateRange = () => {
+    const now = new Date();
+    
+    switch (periodFilter) {
+      case "today":
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case "yesterday":
+        const yesterday = subDays(now, 1);
+        return { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+      case "last-7-days":
+        return { start: subDays(now, 7), end: now };
+      case "last-15-days":
+        return { start: subDays(now, 15), end: now };
+      case "last-month":
+        return { start: subDays(now, 30), end: now };
+      case "previous-month":
+        const prevMonth = subDays(startOfMonth(now), 1);
+        return { start: startOfMonth(prevMonth), end: endOfMonth(prevMonth) };
+      case "custom":
+        if (dateRange?.from && dateRange?.to) {
+          return { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) };
+        }
+        return { start: subDays(now, 7), end: now };
+      default:
+        return { start: subDays(now, 7), end: now };
+    }
+  };
+
+  const { start, end } = getDateRange();
 
   const { data: transactions, isLoading } = usePaymentTransactions({
     gateway: gatewayFilter !== "all" ? gatewayFilter : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
   });
 
-  const { data: summary } = usePaymentTransactionsSummary();
+  const { data: summary } = usePaymentTransactionsSummary({
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+  });
 
   const handleViewDetails = (transaction: PaymentTransaction) => {
     setSelectedTransaction(transaction);
@@ -51,6 +92,16 @@ const AdminTransactions = () => {
   const handleViewWorkspace = (workspaceId: string) => {
     navigate(`/painel/admin/workspaces/${workspaceId}`);
   };
+
+  const periodOptions = [
+    { value: "today", label: "Hoje" },
+    { value: "yesterday", label: "Ontem" },
+    { value: "last-7-days", label: "Últimos 7 dias" },
+    { value: "last-15-days", label: "Últimos 15 dias" },
+    { value: "last-month", label: "Último mês" },
+    { value: "previous-month", label: "Mês anterior" },
+    { value: "custom", label: "Período personalizado" },
+  ];
 
   return (
     <AdminLayout>
@@ -109,6 +160,24 @@ const AdminTransactions = () => {
         {/* Filters */}
         <Card className="p-4">
           <div className="flex gap-4">
+            <Select value={periodFilter} onValueChange={(value) => {
+              setPeriodFilter(value);
+              if (value === "custom") {
+                setCustomDateOpen(true);
+              }
+            }}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                {periodOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={gatewayFilter} onValueChange={setGatewayFilter}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Todos os gateways" />
@@ -134,6 +203,25 @@ const AdminTransactions = () => {
             </Select>
           </div>
         </Card>
+
+        {/* Custom Date Range Dialog */}
+        <Dialog open={customDateOpen} onOpenChange={setCustomDateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Selecionar Período</DialogTitle>
+            </DialogHeader>
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              locale={ptBR}
+              className="rounded-md border"
+            />
+            <Button onClick={() => setCustomDateOpen(false)}>
+              Aplicar
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* Table */}
         <Card>

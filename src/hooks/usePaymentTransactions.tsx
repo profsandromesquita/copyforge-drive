@@ -25,13 +25,15 @@ interface UsePaymentTransactionsParams {
   status?: string;
   workspaceId?: string;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) => {
-  const { gateway, status, workspaceId, limit = 100 } = params || {};
+  const { gateway, status, workspaceId, limit = 100, startDate, endDate } = params || {};
 
   return useQuery({
-    queryKey: ['payment-transactions', gateway, status, workspaceId, limit],
+    queryKey: ['payment-transactions', gateway, status, workspaceId, limit, startDate, endDate],
     queryFn: async (): Promise<PaymentTransaction[]> => {
       let query = supabase
         .from('webhook_logs')
@@ -46,6 +48,14 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
 
       if (status) {
         query = query.eq('status', status);
+      }
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+
+      if (endDate) {
+        query = query.lte('created_at', endDate);
       }
 
       const { data, error } = await query;
@@ -125,14 +135,26 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
   });
 };
 
-export const usePaymentTransactionsSummary = () => {
+export const usePaymentTransactionsSummary = (params?: { startDate?: string; endDate?: string }) => {
+  const { startDate, endDate } = params || {};
+  
   return useQuery({
-    queryKey: ['payment-transactions-summary'],
+    queryKey: ['payment-transactions-summary', startDate, endDate],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('webhook_logs')
         .select('status, payload')
         .eq('event_category', 'payment');
+
+      if (startDate) {
+        query = query.gte('created_at', startDate);
+      }
+
+      if (endDate) {
+        query = query.lte('created_at', endDate);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching summary:', error);
