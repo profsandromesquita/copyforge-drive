@@ -9,6 +9,7 @@ import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { UserProfileModal } from "@/components/user-profile/UserProfileModal";
+import { UpgradeModal } from "@/components/workspace/UpgradeModal";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -84,6 +85,8 @@ export const UserMenu = () => {
   const [settingsTab, setSettingsTab] = useState<string>("general");
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [selectedInactiveWorkspaceId, setSelectedInactiveWorkspaceId] = useState<string | undefined>(undefined);
 
   const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
@@ -97,6 +100,12 @@ export const UserMenu = () => {
       />
       <CreateWorkspaceModal open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen} />
       <UserProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
+      <UpgradeModal 
+        open={upgradeModalOpen} 
+        onOpenChange={setUpgradeModalOpen}
+        limitType="general"
+        workspaceId={selectedInactiveWorkspaceId}
+      />
       
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
@@ -178,7 +187,14 @@ export const UserMenu = () => {
                 workspace={workspace}
                 isActive={activeWorkspace?.id === workspace.id}
                 disabled={!workspace.is_active}
-                onClick={() => workspace.is_active && setActiveWorkspace(workspace)}
+                onClick={() => {
+                  if (!workspace.is_active) {
+                    setSelectedInactiveWorkspaceId(workspace.id);
+                    setUpgradeModalOpen(true);
+                  } else {
+                    setActiveWorkspace(workspace);
+                  }
+                }}
               />
             ))}
             <DropdownMenuItem 
