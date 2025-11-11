@@ -189,7 +189,7 @@ export const WorkspaceBilling = () => {
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activePlans.map((plan) => {
+          {activePlans.filter(plan => plan.slug !== 'free').map((plan) => {
             const isCurrent = plan.id === subscription.plan.id;
             const offer = getOfferForPlan(plan.id);
             const isPopular = plan.slug === 'pro';
