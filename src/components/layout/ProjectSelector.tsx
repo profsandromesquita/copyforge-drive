@@ -1,17 +1,43 @@
 import { useNavigate } from 'react-router-dom';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Gear } from 'phosphor-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Gear, Crown } from 'phosphor-react';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { UpgradeModal } from '@/components/workspace/UpgradeModal';
+import { useState, useEffect } from 'react';
 
 export const ProjectSelector = () => {
   const { projects, activeProject, setActiveProject, loading } = useProject();
   const navigate = useNavigate();
+  const { checkProjectLimit } = usePlanLimits();
+  const [limitReached, setLimitReached] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<{ current?: number; limit?: number }>({});
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  useEffect(() => {
+    const checkLimit = async () => {
+      const result = await checkProjectLimit();
+      setLimitReached(!result.allowed);
+      setLimitInfo({
+        current: result.current,
+        limit: result.limit,
+      });
+    };
+    
+    if (!loading) {
+      checkLimit();
+    }
+  }, [loading, projects.length, checkProjectLimit]);
 
   const handleValueChange = (value: string) => {
     if (value === '__new__') {
+      if (limitReached) {
+        setShowUpgradeModal(true);
+        return;
+      }
       navigate('/project/new');
     } else {
       const project = projects.find(p => p.id === value);
@@ -44,7 +70,6 @@ export const ProjectSelector = () => {
           </SelectTrigger>
           <SelectContent className="z-50 bg-popover border-border">
             <SelectGroup>
-              <SelectLabel>Projetos</SelectLabel>
               {projects.length === 0 ? (
                 <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                   Nenhum projeto criado
@@ -58,10 +83,37 @@ export const ProjectSelector = () => {
               )}
             </SelectGroup>
             <SelectSeparator />
-            <SelectItem value="__new__" className="text-primary font-medium">
-              <div className="flex items-center">
-                <Plus size={16} className="mr-2" />
-                Novo Projeto
+            <SelectItem 
+              value="__new__" 
+              className={limitReached ? "text-muted-foreground opacity-60" : "text-primary font-medium"}
+              disabled={limitReached}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <Plus size={16} className="mr-2" />
+                  Novo Projeto
+                </div>
+                {limitReached && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowUpgradeModal(true);
+                          }}
+                          className="ml-2 p-1 hover:bg-accent rounded transition-colors"
+                        >
+                          <Crown size={16} className="text-primary" weight="fill" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Fazer upgrade</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </SelectItem>
           </SelectContent>
@@ -87,6 +139,14 @@ export const ProjectSelector = () => {
           </TooltipProvider>
         )}
       </div>
+      
+      <UpgradeModal
+        open={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+        limitType="projects"
+        currentLimit={limitInfo.limit}
+        currentUsage={limitInfo.current}
+      />
     </div>
   );
 };
