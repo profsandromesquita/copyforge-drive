@@ -93,11 +93,13 @@ export default function AdminDashboard() {
     try {
       const { start, end } = getDateRange();
       
-      // MRR e Assinaturas
+      // MRR e Assinaturas (filtrado por período de criação)
       let subscriptionsQuery = supabase
         .from('workspace_subscriptions')
         .select('*, subscription_plans!inner(*), plan_offers(price)')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
       
       if (planFilter !== 'all') {
         subscriptionsQuery = subscriptionsQuery.eq('subscription_plans.slug', planFilter);
@@ -110,32 +112,42 @@ export default function AdminDashboard() {
         return sum + (sub.billing_cycle === 'annual' ? price / 12 : price);
       }, 0) || 0;
 
-      // Clientes
+      // Clientes (filtrado por período de criação)
       const { count: clientesCount } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
 
-      // Workspaces
+      // Workspaces (filtrado por período de criação)
       const { count: workspacesCount } = await supabase
         .from('workspaces')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
 
-      // Projetos
+      // Projetos (filtrado por período de criação)
       const { count: projetosCount } = await supabase
         .from('projects')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
 
-      // Copies
+      // Copies (filtrado por período de criação)
       const { count: copiesCount } = await supabase
         .from('copies')
         .select('id', { count: 'exact', head: true })
-        .eq('is_template', false);
+        .eq('is_template', false)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
 
-      // Copies por tipo
+      // Copies por tipo (filtrado por período de criação)
       const { data: copiesByTypeData } = await supabase
         .from('copies')
         .select('copy_type')
-        .eq('is_template', false);
+        .eq('is_template', false)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
       
       const typeCounts = copiesByTypeData?.reduce((acc, copy) => {
         const type = copy.copy_type || 'outro';
