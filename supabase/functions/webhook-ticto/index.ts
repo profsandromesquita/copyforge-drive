@@ -471,14 +471,19 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   console.log('✅ Oferta encontrada:', {
     offer_id: offer?.id,
     offer_name: offer?.name,
-    has_subscription_plan: !!offer?.subscription_plans
+    subscription_plans: offer?.subscription_plans
   });
   
-  if (!offer.subscription_plans) {
-    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura associado`);
+  if (!offer.subscription_plans || !offer.subscription_plans.id) {
+    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura válido associado. Plan: ${JSON.stringify(offer.subscription_plans)}`);
   }
   
   const plan = offer.subscription_plans;
+  
+  console.log('📋 Plano identificado:', {
+    plan_id: plan.id,
+    plan_name: plan.name
+  });
 
   // Extrair parâmetros de tracking da URL (Ticto envia em query_params)
   const urlParams = payload.query_params || payload.url_params || {};
@@ -888,14 +893,19 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
   console.log('✅ Oferta encontrada (trial):', {
     offer_id: offer?.id,
     offer_name: offer?.name,
-    has_subscription_plan: !!offer?.subscription_plans
+    subscription_plans: offer?.subscription_plans
   });
   
-  if (!offer.subscription_plans) {
-    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura associado`);
+  if (!offer.subscription_plans || !offer.subscription_plans.id) {
+    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura válido associado. Plan: ${JSON.stringify(offer.subscription_plans)}`);
   }
   
   const plan = offer.subscription_plans;
+  
+  console.log('📋 Plano identificado (trial):', {
+    plan_id: plan.id,
+    plan_name: plan.name
+  });
 
   const { data: profile } = await supabase
     .from('profiles')
