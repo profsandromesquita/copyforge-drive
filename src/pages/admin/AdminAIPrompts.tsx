@@ -41,7 +41,7 @@ const AdminAIPrompts = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Brain size={32} weight="duotone" className="text-primary" />
           <div>
