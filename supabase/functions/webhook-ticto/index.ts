@@ -711,15 +711,19 @@ function determineBillingCycle(offer: any): string {
 async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayload, config: any): Promise<EventResult> {
   console.log('💰 Processando venda aprovada...');
   
-  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
+  // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA REFORÇADA =============
   const orderHash = payload.order.hash;
   const transactionHash = payload.order.transaction_hash;
   
-  console.log('🔍 Verificando idempotência:', { orderHash, transactionHash });
+  console.log('🔍 IDEMPOTÊNCIA: Verificando se pagamento já foi processado:', { 
+    orderHash, 
+    transactionHash 
+  });
   
+  // VERIFICAÇÃO 1: Buscar invoice pelo payment_id
   const { data: existingInvoice, error: invoiceCheckError } = await supabase
     .from('workspace_invoices')
-    .select('id, workspace_id, status')
+    .select('id, workspace_id, status, created_at')
     .eq('payment_id', orderHash)
     .maybeSingle();
   
@@ -729,10 +733,11 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   }
   
   if (existingInvoice) {
-    console.log('⚠️ Pagamento já processado anteriormente:', {
+    console.log('🚫 IDEMPOTÊNCIA: Invoice já existe - Pagamento já processado:', {
       invoice_id: existingInvoice.id,
       workspace_id: existingInvoice.workspace_id,
-      status: existingInvoice.status
+      status: existingInvoice.status,
+      created_at: existingInvoice.created_at
     });
     
     return {
@@ -740,12 +745,46 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
       event_type: 'purchase.approved',
       event_category: 'payment',
       workspace_id: existingInvoice.workspace_id,
-      message: 'Pagamento já processado anteriormente (idempotente)',
-      idempotent: true
+      message: 'Pagamento já processado anteriormente (idempotente - invoice encontrada)',
+      idempotent: true,
+      duplicate_prevention: 'invoice_check'
     };
   }
   
-  console.log('✅ Pagamento não processado anteriormente, prosseguindo...');
+  // VERIFICAÇÃO 2: Buscar transação de crédito com o mesmo order hash na descrição
+  // Isso previne duplicação caso a invoice tenha sido criada mas a transação falhou
+  const { data: existingCreditTransaction, error: creditCheckError } = await supabase
+    .from('credit_transactions')
+    .select('id, workspace_id, amount, created_at')
+    .eq('transaction_type', 'credit')
+    .ilike('description', `%${orderHash}%`)
+    .maybeSingle();
+  
+  if (creditCheckError) {
+    console.error('⚠️ Erro ao verificar transação de crédito:', creditCheckError);
+    // Não lançar erro aqui, pois é uma verificação secundária
+  }
+  
+  if (existingCreditTransaction) {
+    console.log('🚫 IDEMPOTÊNCIA: Transação de crédito já existe - Créditos já adicionados:', {
+      transaction_id: existingCreditTransaction.id,
+      workspace_id: existingCreditTransaction.workspace_id,
+      amount: existingCreditTransaction.amount,
+      created_at: existingCreditTransaction.created_at
+    });
+    
+    return {
+      status: 'success',
+      event_type: 'purchase.approved',
+      event_category: 'payment',
+      workspace_id: existingCreditTransaction.workspace_id,
+      message: 'Pagamento já processado anteriormente (idempotente - créditos já adicionados)',
+      idempotent: true,
+      duplicate_prevention: 'credit_transaction_check'
+    };
+  }
+  
+  console.log('✅ IDEMPOTÊNCIA: Pagamento não processado anteriormente - prosseguindo com processamento');
   // ============= FIM VERIFICAÇÃO DE IDEMPOTÊNCIA =============
   
   // Buscar gateway da Ticto
@@ -1057,7 +1096,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     })
     .eq('workspace_id', targetWorkspaceId);
 
-  // Registrar transação
+  // Registrar transação com order hash para idempotência
   await supabase
     .from('credit_transactions')
     .insert({
@@ -1067,7 +1106,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
       amount: plan.credits_per_month,
       balance_before: credits?.balance || 0,
       balance_after: newBalance,
-      description: `Créditos do plano ${plan.name} - Pagamento Ticto aprovado`
+      description: `Créditos do plano ${plan.name} - Pagamento Ticto aprovado - Order: ${orderHash}`
     });
 
   return {
