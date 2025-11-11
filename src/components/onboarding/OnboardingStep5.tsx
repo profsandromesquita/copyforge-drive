@@ -182,10 +182,20 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
                               ? offer.price / (offer.billing_period_value * 12)
                               : offer.price;
 
+                        // Separar parte inteira e decimal
+                        const priceStr = monthlyPrice.toFixed(2);
+                        const [integerPart, decimalPart] = priceStr.split('.');
+                        const hasDecimals = decimalPart && decimalPart !== '00';
+
                         return (
                           <>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-3xl font-bold">{formatCurrency(monthlyPrice)}</span>
+                              <span className="text-3xl font-bold">
+                                R$ {parseInt(integerPart).toLocaleString('pt-BR')}
+                                {hasDecimals && (
+                                  <span className="text-xl">,{decimalPart}</span>
+                                )}
+                              </span>
                               <span className="text-sm text-muted-foreground">/mês</span>
                             </div>
                             {!isMonthly && (
