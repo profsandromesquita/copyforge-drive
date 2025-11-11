@@ -101,7 +101,7 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
             status: log.status as 'success' | 'failed' | 'processing' | 'received',
             created_at: log.created_at,
             processed_at: log.processed_at,
-            paid_amount: parseFloat(payload?.order?.paid_amount || '0'),
+            paid_amount: parseFloat(payload?.order?.paid_amount || '0') / 100, // Converter centavos para reais
             offer_id: payload?.item?.offer_id || '',
             offer_name: payload?.item?.offer_name || '',
             workspace_id: workspaceIdFromPayload,
@@ -148,7 +148,7 @@ export const usePaymentTransactionsSummary = () => {
         .filter(d => d.status === 'success')
         .reduce((acc, curr) => {
           const payload = curr.payload as any;
-          const amount = parseFloat(payload?.order?.paid_amount || '0');
+          const amount = parseFloat(payload?.order?.paid_amount || '0') / 100; // Converter centavos para reais
           return acc + amount;
         }, 0);
 
