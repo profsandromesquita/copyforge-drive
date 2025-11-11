@@ -8,16 +8,6 @@ import {
   Brain,
   CreditCard
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -31,53 +21,39 @@ const menuItems = [
 ];
 
 export const AdminSidebar = () => {
-  const { open } = useSidebar();
   const location = useLocation();
 
   return (
-    <Sidebar
-      className={cn(
-        "hidden lg:flex transition-all duration-300 border-r z-30",
-        open ? "w-64" : "w-20"
-      )}
-      collapsible="icon"
-    >
-      <SidebarContent className="pt-4">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-2">
-              {menuItems.map((item) => {
-                const isActive = item.path === "/painel/admin" 
-                  ? location.pathname === item.path
-                  : location.pathname.startsWith(item.path);
+    <aside className="hidden lg:flex w-20 border-r z-30 bg-background">
+      <nav className="pt-4 w-full">
+        <ul className="space-y-2">
+          {menuItems.map((item) => {
+            const isActive = item.path === "/painel/admin" 
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path);
 
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.label}
-                      className={cn(
-                        "transition-colors h-14",
-                        open ? "px-4" : "px-0 justify-center",
-                        isActive && "bg-primary/10 text-primary font-medium hover:bg-primary/20"
-                      )}
-                    >
-                      <NavLink
-                        to={item.path}
-                        end={item.path === "/painel/admin"}
-                        className="flex items-center gap-3"
-                      >
-                        <item.icon className="h-6 w-6 flex-shrink-0" />
-                        {open && <span className="text-base">{item.label}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+            return (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  end={item.path === "/painel/admin"}
+                  className={cn(
+                    "flex items-center justify-center h-14 transition-colors relative group",
+                    isActive && "bg-primary/10 text-primary font-medium"
+                  )}
+                >
+                  <item.icon className="h-6 w-6 flex-shrink-0" />
+                  
+                  {/* Tooltip on hover */}
+                  <span className="absolute left-full ml-2 px-3 py-2 bg-popover text-popover-foreground text-sm rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50">
+                    {item.label}
+                  </span>
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </aside>
   );
 };

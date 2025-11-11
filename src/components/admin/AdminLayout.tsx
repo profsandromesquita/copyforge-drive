@@ -1,6 +1,6 @@
 import { AdminHeader } from "./AdminHeader";
 import { AdminSidebar } from "./AdminSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -14,7 +14,6 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="flex-1 flex flex-col">
           <div className="sticky top-0 z-40 border-b bg-background">
             <div className="flex items-center gap-4 px-6 h-16">
-              <SidebarTrigger />
               <AdminHeader />
             </div>
           </div>
