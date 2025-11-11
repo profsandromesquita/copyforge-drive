@@ -380,12 +380,6 @@ export const UpgradeModal = ({
             </>
           )}
         </div>
-
-        <div className="text-center pt-4">
-          <Button variant="link" onClick={() => window.location.href = '/plans'}>
-            Ver comparação completa de planos
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
