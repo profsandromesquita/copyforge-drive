@@ -35,16 +35,34 @@ const OnboardingStep5 = ({ workspaceId, onComplete, onBack, loading }: Onboardin
   const planIds = activePlans.map(p => p.id);
   const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
 
-  // Consolidar ofertas únicas por nome
+  // Consolidar ofertas únicas por nome e ordenar por período (maior primeiro)
   const uniqueOfferTypes = useMemo(() => {
-    const offerNames = new Set<string>();
+    const offerNamesWithPeriod = new Map<string, { name: string; value: number; unit: string }>();
+    
     Object.values(offersByPlan).forEach((offers: any[]) => {
-      offers.forEach(offer => offerNames.add(offer.name));
+      offers.forEach(offer => {
+        if (!offerNamesWithPeriod.has(offer.name)) {
+          offerNamesWithPeriod.set(offer.name, {
+            name: offer.name,
+            value: offer.billing_period_value,
+            unit: offer.billing_period_unit
+          });
+        }
+      });
     });
-    return Array.from(offerNames).sort();
+    
+    // Ordenar por período (maior primeiro)
+    return Array.from(offerNamesWithPeriod.values())
+      .sort((a, b) => {
+        // Converter para meses para comparação
+        const aMonths = a.unit === 'years' ? a.value * 12 : a.value;
+        const bMonths = b.unit === 'years' ? b.value * 12 : b.value;
+        return bMonths - aMonths; // Maior primeiro
+      })
+      .map(o => o.name);
   }, [offersByPlan]);
 
-  // Auto-selecionar primeira oferta disponível
+  // Auto-selecionar primeira oferta disponível (maior período)
   useEffect(() => {
     if (uniqueOfferTypes.length > 0 && !selectedBillingPeriod) {
       setSelectedBillingPeriod(uniqueOfferTypes[0]);
