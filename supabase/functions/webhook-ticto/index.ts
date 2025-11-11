@@ -577,6 +577,20 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     throw new Error(`Workspace não identificado`);
   }
 
+  // Validar se workspace existe no banco antes de continuar
+  console.log('🔍 Validando workspace:', targetWorkspaceId);
+  const { data: workspaceExists, error: workspaceError } = await supabase
+    .from('workspaces')
+    .select('id, name')
+    .eq('id', targetWorkspaceId)
+    .single();
+
+  if (workspaceError || !workspaceExists) {
+    throw new Error(`Workspace ${targetWorkspaceId} não existe no banco de dados. Erro: ${workspaceError?.message}`);
+  }
+  
+  console.log('✅ Workspace validado:', workspaceExists.name);
+
   // Cancelar assinatura antiga se existir
   await supabase
     .from('workspace_subscriptions')
@@ -588,25 +602,51 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   const billingCycle = determineBillingCycle(offer);
   const periodEnd = calculatePeriodEnd(offer);
   
+  // Preparar dados para criar subscription
+  const subscriptionData = {
+    workspace_id: targetWorkspaceId,
+    plan_id: plan.id,
+    plan_offer_id: offer.id,
+    billing_cycle: billingCycle,
+    status: 'active' as const,
+    current_max_projects: plan.max_projects,
+    current_max_copies: plan.max_copies,
+    current_copy_ai_enabled: plan.copy_ai_enabled,
+    current_period_start: new Date().toISOString(),
+    current_period_end: periodEnd?.toISOString() || null,
+    payment_gateway: 'ticto',
+    external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
+  };
+  
+  console.log('📝 Dados para criar subscription:', {
+    workspace_id: targetWorkspaceId,
+    plan_id: plan.id,
+    plan_name: plan.name,
+    offer_id: offer.id,
+    offer_name: offer.name,
+    billing_cycle: billingCycle,
+    has_period_end: !!periodEnd
+  });
+  
   // Criar nova assinatura com oferta flexível
-  const { data: newSubscription } = await supabase
+  const { data: newSubscription, error: subscriptionError } = await supabase
     .from('workspace_subscriptions')
-    .insert({
-      workspace_id: targetWorkspaceId,
-      plan_id: plan.id,
-      plan_offer_id: offer.id,
-      billing_cycle: billingCycle,
-      status: 'active',
-      current_max_projects: plan.max_projects,
-      current_max_copies: plan.max_copies,
-      current_copy_ai_enabled: plan.copy_ai_enabled,
-      current_period_start: new Date().toISOString(),
-      current_period_end: periodEnd?.toISOString() || null,
-      payment_gateway: 'ticto',
-      external_subscription_id: payload.subscriptions?.[0]?.id?.toString() || payload.order.hash
-    })
+    .insert(subscriptionData)
     .select()
     .single();
+
+  console.log('📊 Resultado do insert de subscription:', { 
+    success: !!newSubscription, 
+    subscription_id: newSubscription?.id,
+    error: subscriptionError?.message 
+  });
+
+  if (subscriptionError || !newSubscription) {
+    throw new Error(`Erro ao criar subscription: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify({
+      error: subscriptionError,
+      data_sent: subscriptionData
+    })}`);
+  }
 
   // Criar invoice com informações da oferta e tracking
   await supabase
@@ -974,28 +1014,70 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
     throw new Error('Workspace não encontrado');
   }
 
+  // Validar se workspace existe no banco antes de continuar
+  console.log('🔍 Validando workspace (trial):', member.workspace_id);
+  const { data: workspaceExists, error: workspaceError } = await supabase
+    .from('workspaces')
+    .select('id, name')
+    .eq('id', member.workspace_id)
+    .single();
+
+  if (workspaceError || !workspaceExists) {
+    throw new Error(`Workspace ${member.workspace_id} não existe no banco de dados. Erro: ${workspaceError?.message}`);
+  }
+  
+  console.log('✅ Workspace validado (trial):', workspaceExists.name);
+
   const trialDays = payload.item.trial_days || 7;
   const trialEndDate = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
   const billingCycle = determineBillingCycle(offer);
 
+  // Preparar dados para criar subscription em trial
+  const subscriptionData = {
+    workspace_id: member.workspace_id,
+    plan_id: plan.id,
+    plan_offer_id: offer.id,
+    billing_cycle: billingCycle,
+    status: 'trialing' as const,
+    current_max_projects: plan.max_projects,
+    current_max_copies: plan.max_copies,
+    current_copy_ai_enabled: plan.copy_ai_enabled,
+    started_at: new Date().toISOString(),
+    current_period_start: new Date().toISOString(),
+    current_period_end: trialEndDate.toISOString(),
+    payment_gateway: 'ticto',
+    external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
+  };
+
+  console.log('📝 Dados para criar subscription (trial):', {
+    workspace_id: member.workspace_id,
+    plan_id: plan.id,
+    plan_name: plan.name,
+    offer_id: offer.id,
+    offer_name: offer.name,
+    billing_cycle: billingCycle,
+    trial_days: trialDays
+  });
+
   // Criar assinatura em trial com oferta flexível
-  await supabase
+  const { data: newSubscription, error: subscriptionError } = await supabase
     .from('workspace_subscriptions')
-    .insert({
-      workspace_id: member.workspace_id,
-      plan_id: plan.id,
-      plan_offer_id: offer.id,
-      billing_cycle: billingCycle,
-      status: 'trialing',
-      current_max_projects: plan.max_projects,
-      current_max_copies: plan.max_copies,
-      current_copy_ai_enabled: plan.copy_ai_enabled,
-      started_at: new Date().toISOString(),
-      current_period_start: new Date().toISOString(),
-      current_period_end: trialEndDate.toISOString(),
-      payment_gateway: 'ticto',
-      external_subscription_id: payload.subscriptions?.[0]?.id?.toString()
-    });
+    .insert(subscriptionData)
+    .select()
+    .single();
+
+  console.log('📊 Resultado do insert de subscription (trial):', { 
+    success: !!newSubscription, 
+    subscription_id: newSubscription?.id,
+    error: subscriptionError?.message 
+  });
+
+  if (subscriptionError || !newSubscription) {
+    throw new Error(`Erro ao criar subscription em trial: ${subscriptionError?.message || 'Dados não retornados'}. Details: ${JSON.stringify({
+      error: subscriptionError,
+      data_sent: subscriptionData
+    })}`);
+  }
 
   return {
     status: 'success',
