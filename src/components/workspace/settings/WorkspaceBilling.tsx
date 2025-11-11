@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useWorkspaceSubscription } from "@/hooks/useWorkspaceSubscription";
 import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Calendar, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CreditCard, Calendar, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlanCard } from "@/components/plans/PlanCard";
 import { PlanChangeModal } from "./PlanChangeModal";
 import { formatCurrency } from "@/lib/utils";
 
@@ -21,8 +22,47 @@ export const WorkspaceBilling = () => {
   const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
   
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
-  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Consolidar ofertas únicas por nome e ordenar por período (maior primeiro)
+  const uniqueOfferTypes = useMemo(() => {
+    const offerNamesWithPeriod = new Map<string, { name: string; value: number; unit: string }>();
+    
+    Object.values(offersByPlan).forEach((offers: any[]) => {
+      offers.forEach(offer => {
+        if (!offerNamesWithPeriod.has(offer.name)) {
+          offerNamesWithPeriod.set(offer.name, {
+            name: offer.name,
+            value: offer.billing_period_value,
+            unit: offer.billing_period_unit
+          });
+        }
+      });
+    });
+    
+    // Ordenar por período (maior primeiro)
+    return Array.from(offerNamesWithPeriod.values())
+      .sort((a, b) => {
+        const aMonths = a.unit === 'years' ? a.value * 12 : a.value;
+        const bMonths = b.unit === 'years' ? b.value * 12 : b.value;
+        return bMonths - aMonths;
+      })
+      .map(o => o.name);
+  }, [offersByPlan]);
+
+  // Auto-selecionar primeira oferta disponível (maior período)
+  useEffect(() => {
+    if (uniqueOfferTypes.length > 0 && !selectedBillingPeriod) {
+      setSelectedBillingPeriod(uniqueOfferTypes[0]);
+    }
+  }, [uniqueOfferTypes]);
+
+  // Mapear ofertas por plano para o período selecionado
+  const getOfferForPlan = (planId: string) => {
+    const planOffers = offersByPlan[planId] || [];
+    return planOffers.find(offer => offer.name === selectedBillingPeriod);
+  };
 
   const handleSelectPlan = (plan: any) => {
     if (!subscription) return;
@@ -132,31 +172,168 @@ export const WorkspaceBilling = () => {
       {/* Available Plans */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Planos Disponíveis</h3>
+        
+        {/* Tabs para escolher período de cobrança */}
+        {uniqueOfferTypes.length > 0 && (
+          <div className="flex justify-center mb-6">
+            <Tabs value={selectedBillingPeriod} onValueChange={setSelectedBillingPeriod}>
+              <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: `repeat(${uniqueOfferTypes.length}, 1fr)` }}>
+                {uniqueOfferTypes.map(offerType => (
+                  <TabsTrigger key={offerType} value={offerType}>
+                    {offerType}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activePlans.map((plan) => {
             const isCurrent = plan.id === subscription.plan.id;
-            const planOffers = offersByPlan[plan.id] || [];
-            const selectedOfferId = selectedOffers[plan.id] || planOffers[0]?.id;
+            const offer = getOfferForPlan(plan.id);
+            const isPopular = plan.slug === 'pro';
+
+            if (!offer) {
+              return (
+                <Card key={plan.id} className="relative">
+                  {isCurrent && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                      <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1">
+                        Seu Plano
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground">Nenhuma oferta disponível</p>
+                  </div>
+                </Card>
+              );
+            }
+
+            // Calcular preço mensal
+            const isMonthly = offer.billing_period_unit === 'months' && offer.billing_period_value === 1;
+            const monthlyPrice = isMonthly 
+              ? offer.price 
+              : offer.billing_period_unit === 'months'
+                ? offer.price / offer.billing_period_value
+                : offer.billing_period_unit === 'years'
+                  ? offer.price / (offer.billing_period_value * 12)
+                  : offer.price;
+
+            // Separar parte inteira e decimal
+            const priceStr = monthlyPrice.toFixed(2);
+            const [integerPart, decimalPart] = priceStr.split('.');
+            const hasDecimals = decimalPart && decimalPart !== '00';
 
             return (
-              <div key={plan.id} className="relative">
-                {!isCurrent && (
-                  <div className="absolute -top-3 right-4 z-10">
-                    <Badge variant="default" className="gap-1">
-                      <TrendingUp className="h-3 w-3" />
-                      Mudar
+              <Card 
+                key={plan.id}
+                className={`relative transition-all hover:shadow-lg ${
+                  isCurrent 
+                    ? 'border-2 border-primary ring-2 ring-primary/20' 
+                    : isPopular 
+                      ? 'border-2 border-primary shadow-md' 
+                      : 'border border-border'
+                }`}
+              >
+                {isCurrent ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 shadow-md">
+                      Seu Plano
                     </Badge>
                   </div>
-                )}
-                <PlanCard
-                  plan={plan}
-                  offers={planOffers}
-                  selectedOfferId={selectedOfferId}
-                  isCurrentPlan={isCurrent}
-                  onSelect={() => handleSelectPlan(plan)}
-                  onOfferChange={(offerId) => setSelectedOffers(prev => ({ ...prev, [plan.id]: offerId }))}
-                />
-              </div>
+                ) : isPopular ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 shadow-md">
+                      Mais Popular
+                    </Badge>
+                  </div>
+                ) : null}
+
+                <div className="p-6">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{plan.description || 'Plano personalizado'}</p>
+                    
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">
+                          R$ {parseInt(integerPart).toLocaleString('pt-BR')}
+                          {hasDecimals && (
+                            <span className="text-xl">,{decimalPart}</span>
+                          )}
+                        </span>
+                        <span className="text-sm text-muted-foreground">/mês</span>
+                      </div>
+                      {!isMonthly && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatCurrency(offer.price)} total por {offer.billing_period_value} {
+                            offer.billing_period_unit === 'months' ? 'meses' :
+                            offer.billing_period_unit === 'years' ? (offer.billing_period_value > 1 ? 'anos' : 'ano') : 
+                            offer.billing_period_unit
+                          }
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
+                      <span className="text-sm">
+                        {plan.max_projects === null 
+                          ? 'Projetos Ilimitados' 
+                          : `${plan.max_projects} Projeto${plan.max_projects > 1 ? 's' : ''}`}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
+                      <span className="text-sm">
+                        {plan.max_copies === null 
+                          ? 'Copies Ilimitadas' 
+                          : `${plan.max_copies} Cop${plan.max_copies > 1 ? 'ies' : 'y'}`}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
+                      <span className="text-sm">{plan.credits_per_month} Créditos/mês</span>
+                    </div>
+                    {plan.copy_ai_enabled && (
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                          <Check className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-sm font-semibold">Copy IA Habilitada</span>
+                      </div>
+                    )}
+                    {plan.rollover_enabled && (
+                      <div className="flex items-start gap-2">
+                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                          <Check className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-sm">Rollover de {plan.rollover_percentage}% dos créditos</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    variant={isCurrent ? "outline" : isPopular ? "default" : "outline"}
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={isCurrent}
+                  >
+                    {isCurrent ? 'Plano Atual' : 'Selecionar Plano'}
+                  </Button>
+                </div>
+              </Card>
             );
           })}
         </div>
