@@ -185,7 +185,17 @@ const AdminWorkspaces = () => {
                             <p className="font-medium">{workspace.name}</p>
                             <WorkspacePlanBadge workspaceId={workspace.id} />
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p 
+                            className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
+                            onClick={() => {
+                              navigator.clipboard.writeText(workspace.id);
+                              toast({
+                                title: "ID copiado!",
+                                description: "O ID do workspace foi copiado para a área de transferência.",
+                              });
+                            }}
+                            title="Clique para copiar o ID completo"
+                          >
                             {workspace.id.substring(0, 8)}...
                           </p>
                         </div>
