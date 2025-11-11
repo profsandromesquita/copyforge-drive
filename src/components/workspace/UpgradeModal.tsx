@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -6,10 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePlanOffersPublic } from "@/hooks/usePlanOffersPublic";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Check, TrendingUp, Users, FileText, Brain } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import { buildCheckoutUrl } from "@/lib/checkout-utils";
@@ -66,10 +67,49 @@ export const UpgradeModal = ({
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedOffers, setSelectedOffers] = useState<Record<string, string>>({});
+  const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>("");
   
   const planIds = plans.map(p => p.id);
   const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
+
+  // Consolidar ofertas únicas por nome e ordenar por período (maior primeiro)
+  const uniqueOfferTypes = useMemo(() => {
+    const offerNamesWithPeriod = new Map<string, { name: string; value: number; unit: string }>();
+    
+    Object.values(offersByPlan).forEach((offers: any[]) => {
+      offers.forEach(offer => {
+        if (!offerNamesWithPeriod.has(offer.name)) {
+          offerNamesWithPeriod.set(offer.name, {
+            name: offer.name,
+            value: offer.billing_period_value,
+            unit: offer.billing_period_unit
+          });
+        }
+      });
+    });
+    
+    // Ordenar por período (maior primeiro)
+    return Array.from(offerNamesWithPeriod.values())
+      .sort((a, b) => {
+        const aMonths = a.unit === 'years' ? a.value * 12 : a.value;
+        const bMonths = b.unit === 'years' ? b.value * 12 : b.value;
+        return bMonths - aMonths;
+      })
+      .map(o => o.name);
+  }, [offersByPlan]);
+
+  // Auto-selecionar primeira oferta disponível (maior período)
+  useEffect(() => {
+    if (uniqueOfferTypes.length > 0 && !selectedBillingPeriod) {
+      setSelectedBillingPeriod(uniqueOfferTypes[0]);
+    }
+  }, [uniqueOfferTypes]);
+
+  // Mapear ofertas por plano para o período selecionado
+  const getOfferForPlan = (planId: string) => {
+    const planOffers = offersByPlan[planId] || [];
+    return planOffers.find(offer => offer.name === selectedBillingPeriod);
+  };
 
   useEffect(() => {
     if (open && activeWorkspace) {
@@ -156,11 +196,14 @@ export const UpgradeModal = ({
 
   const recommendedPlan = getRecommendedPlan();
 
-  const handleSelectOffer = (planId: string, offerId: string) => {
-    setSelectedOffers(prev => ({ ...prev, [planId]: offerId }));
-  };
+  const handleUpgrade = (planId: string) => {
+    const offer = getOfferForPlan(planId);
+    
+    if (!offer) {
+      toast.error("Oferta não disponível para o período selecionado");
+      return;
+    }
 
-  const handleUpgrade = (offer: PlanOffer) => {
     if (!offer.checkout_url) {
       toast.error("Link de checkout não disponível");
       return;
@@ -171,7 +214,6 @@ export const UpgradeModal = ({
       return;
     }
 
-    // Construir URL com tracking e pré-preenchimento
     const enrichedUrl = buildCheckoutUrl(offer.checkout_url, {
       workspace_id: activeWorkspace.id,
       user_id: user.id,
@@ -196,13 +238,28 @@ export const UpgradeModal = ({
         </DialogHeader>
 
         {currentLimit !== undefined && currentUsage !== undefined && (
-          <div className="bg-muted p-4 rounded-lg">
+          <div className="bg-muted p-4 rounded-lg mb-6">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Uso Atual</span>
               <span className="font-semibold">
                 {currentUsage} / {currentLimit}
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Tabs para escolher período de cobrança */}
+        {uniqueOfferTypes.length > 0 && (
+          <div className="flex justify-center mb-6">
+            <Tabs value={selectedBillingPeriod} onValueChange={setSelectedBillingPeriod}>
+              <TabsList className="grid w-full max-w-md" style={{ gridTemplateColumns: `repeat(${uniqueOfferTypes.length}, 1fr)` }}>
+                {uniqueOfferTypes.map(offerType => (
+                  <TabsTrigger key={offerType} value={offerType}>
+                    {offerType}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
         )}
 
@@ -216,101 +273,107 @@ export const UpgradeModal = ({
           ) : (
             <>
               {plans.filter(isPlanBetter).map((plan) => {
-                const planOffers = offersByPlan[plan.id] || [];
-                const selectedOfferId = selectedOffers[plan.id] || planOffers[0]?.id;
-                const selectedOffer = planOffers.find(o => o.id === selectedOfferId);
+                const offer = getOfferForPlan(plan.id);
+                const isRecommended = recommendedPlan?.id === plan.id;
+
+                if (!offer) return null;
+
+                // Calcular preço mensal
+                const isMonthly = offer.billing_period_unit === 'months' && offer.billing_period_value === 1;
+                const monthlyPrice = isMonthly 
+                  ? offer.price 
+                  : offer.billing_period_unit === 'months'
+                    ? offer.price / offer.billing_period_value
+                    : offer.billing_period_unit === 'years'
+                      ? offer.price / (offer.billing_period_value * 12)
+                      : offer.price;
+
+                // Separar parte inteira e decimal
+                const priceStr = monthlyPrice.toFixed(2);
+                const [integerPart, decimalPart] = priceStr.split('.');
+                const hasDecimals = decimalPart && decimalPart !== '00';
 
                 return (
                   <Card 
                     key={plan.id}
-                    className={recommendedPlan?.id === plan.id ? "border-primary shadow-lg" : ""}
+                    className={`relative transition-all hover:shadow-lg ${
+                      isRecommended ? 'border-2 border-primary shadow-md' : 'border border-border'
+                    }`}
                   >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl">{plan.name}</CardTitle>
-                        {recommendedPlan?.id === plan.id && (
-                          <Badge className="ml-2">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            Recomendado
-                          </Badge>
-                        )}
+                    {isRecommended && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                        <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 shadow-md">
+                          Recomendado
+                        </Badge>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">{plan.description}</p>
-                      
-                      {planOffers.length > 0 && (
-                        <div className="space-y-3">
-                          <p className="text-sm font-medium">Escolha o período:</p>
-                          <div className="grid gap-2">
-                            {planOffers.map(offer => (
-                              <button
-                                key={offer.id}
-                                onClick={() => handleSelectOffer(plan.id, offer.id)}
-                                className={`p-3 rounded-lg border-2 text-left transition-all ${
-                                  selectedOfferId === offer.id 
-                                    ? 'border-primary bg-primary/5' 
-                                    : 'border-border hover:border-primary/50'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-medium">{offer.name}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {offer.billing_period_value} {
-                                        offer.billing_period_unit === 'months' ? 'mês(es)' :
-                                        offer.billing_period_unit === 'years' ? 'ano(s)' : 
-                                        offer.billing_period_unit
-                                      }
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-xl font-bold">{formatCurrency(offer.price)}</p>
-                                    <p className="text-xs text-muted-foreground">total</p>
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    )}
 
-                      <div className="space-y-2 pt-4 border-t">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                        
+                        <div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-bold">
+                              R$ {parseInt(integerPart).toLocaleString('pt-BR')}
+                              {hasDecimals && (
+                                <span className="text-xl">,{decimalPart}</span>
+                              )}
+                            </span>
+                            <span className="text-sm text-muted-foreground">/mês</span>
+                          </div>
+                          {!isMonthly && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatCurrency(offer.price)} total por {offer.billing_period_value} {
+                                offer.billing_period_unit === 'months' ? 'meses' :
+                                offer.billing_period_unit === 'years' ? (offer.billing_period_value > 1 ? 'anos' : 'ano') : 
+                                offer.billing_period_unit
+                              }
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                            <Check className="w-3 h-3 text-primary" />
+                          </div>
                           <span className="text-sm">
                             {plan.max_projects === null 
                               ? 'Projetos ilimitados' 
-                              : `Até ${plan.max_projects} projetos`}
+                              : `Até ${plan.max_projects} projeto${plan.max_projects > 1 ? 's' : ''}`}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-start gap-2">
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                            <Check className="w-3 h-3 text-primary" />
+                          </div>
                           <span className="text-sm">
                             {plan.max_copies === null 
                               ? 'Copies ilimitadas' 
-                              : `Até ${plan.max_copies} copies`}
+                              : `Até ${plan.max_copies} cop${plan.max_copies > 1 ? 'ies' : 'y'}`}
                           </span>
                         </div>
                         {plan.copy_ai_enabled && (
-                          <div className="flex items-center gap-2">
-                            <Brain className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">IA para geração de copies</span>
-                            <Check className="h-4 w-4 text-primary" />
+                          <div className="flex items-start gap-2">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                              <Check className="w-3 h-3 text-primary" />
+                            </div>
+                            <span className="text-sm font-semibold">IA para geração de copies</span>
                           </div>
                         )}
                       </div>
 
                       <Button 
                         className="w-full" 
-                        size="lg"
-                        variant={recommendedPlan?.id === plan.id ? "default" : "outline"}
-                        onClick={() => selectedOffer && handleUpgrade(selectedOffer)}
-                        disabled={!selectedOffer}
+                        variant={isRecommended ? "default" : "outline"}
+                        onClick={() => handleUpgrade(plan.id)}
                       >
                         Selecionar Plano
                       </Button>
-                    </CardContent>
+                    </div>
                   </Card>
                 );
               })}
