@@ -51,7 +51,6 @@ import AdminCopies from "./pages/admin/AdminCopies";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminWorkspaces from "./pages/admin/AdminWorkspaces";
 import AdminWorkspaceDetalhes from "./pages/admin/AdminWorkspaceDetalhes";
-import AdminAIPrompts from "./pages/admin/AdminAIPrompts";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import Plans from "./pages/Plans";
 import Onboarding from "./pages/Onboarding";
@@ -80,7 +79,6 @@ const AppContent = () => {
       <Route path="/painel/admin/workspaces" element={<AdminRoute><AdminWorkspaces /></AdminRoute>} />
       <Route path="/painel/admin/workspaces/:id" element={<AdminRoute><AdminWorkspaceDetalhes /></AdminRoute>} />
       <Route path="/painel/admin/transacoes" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
-      <Route path="/painel/admin/ai-prompts" element={<AdminRoute><AdminAIPrompts /></AdminRoute>} />
       <Route path="/painel/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
       <Route path="/planos" element={<Plans />} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />

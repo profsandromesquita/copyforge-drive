@@ -4,6 +4,7 @@ import { GeneralSettings } from "@/components/admin/settings/GeneralSettings";
 import { PaymentSettings } from "@/components/admin/settings/PaymentSettings";
 import { UsersSettings } from "@/components/admin/settings/UsersSettings";
 import { AISettings } from "@/components/admin/settings/AISettings";
+import { PromptsSettings } from "@/components/admin/settings/PromptsSettings";
 import { CreditSettings } from "@/components/admin/settings/CreditSettings";
 import { PlanSettings } from "@/components/admin/settings/PlanSettings";
 import { WorkspaceSettings } from "@/components/admin/settings/WorkspaceSettings";
@@ -22,6 +23,8 @@ export default function AdminSettings() {
         return <UsersSettings />;
       case "ia":
         return <AISettings />;
+      case "prompts":
+        return <PromptsSettings />;
       case "creditos":
         return <CreditSettings />;
       case "planos":
