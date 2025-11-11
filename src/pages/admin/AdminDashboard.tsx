@@ -349,75 +349,73 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Compact Stats + Copies by Type */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Compact Stats Card */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Workspaces
-              </CardTitle>
-              <FolderOpen className="h-5 w-5 text-purple-600" />
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Visão Geral</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? <Skeleton className="h-8 w-20" /> : (
-                <div className="text-2xl font-bold">{stats.workspaces}</div>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <FolderOpen className="h-5 w-5 text-purple-600" />
+                      <span className="font-medium">Workspaces</span>
+                    </div>
+                    <span className="text-2xl font-bold">{stats.workspaces}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-orange-600" />
+                      <span className="font-medium">Projetos</span>
+                    </div>
+                    <span className="text-2xl font-bold">{stats.projetos}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-green-600" />
+                      <span className="font-medium">Copies</span>
+                    </div>
+                    <span className="text-2xl font-bold">{stats.copies}</span>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Copies by Type Card */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Projetos
-              </CardTitle>
-              <FileText className="h-5 w-5 text-orange-600" />
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Copies por Tipo</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? <Skeleton className="h-8 w-20" /> : (
-                <div className="text-2xl font-bold">{stats.projetos}</div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Copies
-              </CardTitle>
-              <FileText className="h-5 w-5 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              {loading ? <Skeleton className="h-8 w-20" /> : (
-                <div className="text-2xl font-bold">{stats.copies}</div>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+                </div>
+              ) : copiesByType.length > 0 ? (
+                <div className="space-y-3">
+                  {copiesByType.map((item) => (
+                    <div key={item.copy_type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <span className="font-medium capitalize">{item.copy_type}</span>
+                      <span className="text-2xl font-bold">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">Nenhuma copy criada no período</p>
               )}
             </CardContent>
           </Card>
         </div>
-
-        {/* Copies by Type - Large Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Copies por Tipo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
-              </div>
-            ) : copiesByType.length > 0 ? (
-              <div className="space-y-3">
-                {copiesByType.map((item) => (
-                  <div key={item.copy_type} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <span className="font-medium capitalize">{item.copy_type}</span>
-                    <span className="text-2xl font-bold">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">Nenhuma copy criada no período</p>
-            )}
-          </CardContent>
-        </Card>
 
         {/* Credits and AI Cost */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
