@@ -29,6 +29,20 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
+
+const WorkspacePlanBadge = ({ workspaceId }: { workspaceId: string }) => {
+  const { data: plan } = useWorkspacePlan(workspaceId);
+  
+  if (!plan) return null;
+  
+  return (
+    <Badge variant="outline" className="ml-2 text-xs font-normal text-muted-foreground border-border/50">
+      {plan.plan_name}
+    </Badge>
+  );
+};
 
 const AdminWorkspaces = () => {
   const navigate = useNavigate();
@@ -167,7 +181,10 @@ const AdminWorkspaces = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium">{workspace.name}</p>
+                          <div className="flex items-center">
+                            <p className="font-medium">{workspace.name}</p>
+                            <WorkspacePlanBadge workspaceId={workspace.id} />
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {workspace.id.substring(0, 8)}...
                           </p>
