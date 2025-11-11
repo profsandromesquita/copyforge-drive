@@ -144,72 +144,49 @@ export default function AdminCopies() {
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Custo Total (USD)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {formatCost(totals.totalCostUSD)}
-                </div>
-              )}
-            </CardContent>
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">Custo Total (USD)</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24 mt-2" />
+            ) : (
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
+                {formatCost(totals.totalCostUSD)}
+              </div>
+            )}
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Custo Total (BRL)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : exchangeRate ? (
-                <>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {formatCurrency(totals.totalCostBRL, "BRL")}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cotação: {formatCurrency(exchangeRate, "BRL")}/USD
-                  </p>
-                </>
-              ) : (
-                <div className="text-sm text-muted-foreground">Carregando...</div>
-              )}
-            </CardContent>
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">Custo Total (BRL)</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24 mt-2" />
+            ) : exchangeRate ? (
+              <>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
+                  {formatCurrency(totals.totalCostBRL, "BRL")}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cotação: {formatCurrency(exchangeRate, "BRL")}/USD
+                </p>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground mt-2">Carregando...</div>
+            )}
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total de Tokens
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold">
-                  {formatTokens(totals.totalTokens)}
-                </div>
-              )}
-            </CardContent>
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">Total de Tokens</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24 mt-2" />
+            ) : (
+              <div className="text-2xl font-bold mt-2">
+                {formatTokens(totals.totalTokens)}
+              </div>
+            )}
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CopyGenerationFilters filters={filters} onFiltersChange={setFilters} />
-          </CardContent>
+        <Card className="p-4">
+          <CopyGenerationFilters filters={filters} onFiltersChange={setFilters} />
         </Card>
 
         <Card>
