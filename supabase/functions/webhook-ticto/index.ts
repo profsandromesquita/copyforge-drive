@@ -461,26 +461,49 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   // Buscar oferta pelo gateway_offer_id da Ticto (usar código, não ID)
   const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
   
+  console.log('📦 Payload offer info:', {
+    item_offer_code: payload.item?.offer_code,
+    offer_code: payload.offer?.code,
+    selected: tictoOfferCode
+  });
+  
   if (!tictoOfferCode) {
     throw new Error('Código da oferta não encontrado no payload');
   }
   
-  console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
-  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
+  console.log('🔍 Buscando oferta pelo código:', tictoOfferCode, 'gateway:', gateway.id);
   
-  console.log('✅ Oferta encontrada:', {
-    offer_id: offer?.id,
-    offer_name: offer?.name,
-    subscription_plans: offer?.subscription_plans
-  });
+  // Buscar oferta e plano separadamente para evitar problemas com relacionamentos
+  const { data: offer, error: offerError } = await supabase
+    .from('plan_offers')
+    .select('*')
+    .eq('gateway_offer_id', tictoOfferCode)
+    .eq('payment_gateway_id', gateway.id)
+    .eq('is_active', true)
+    .single();
   
-  if (!offer.subscription_plans || !offer.subscription_plans.id) {
-    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura válido associado. Plan: ${JSON.stringify(offer.subscription_plans)}`);
+  console.log('🔍 Resultado da busca da oferta:', { offer, offerError });
+  
+  if (offerError || !offer) {
+    throw new Error(`Oferta ${tictoOfferCode} não encontrada ou não está ativa. Erro: ${offerError?.message}`);
   }
   
-  const plan = offer.subscription_plans;
+  // Buscar o plano associado
+  const { data: plan, error: planError } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('id', offer.plan_id)
+    .single();
   
-  console.log('📋 Plano identificado:', {
+  console.log('🔍 Resultado da busca do plano:', { plan, planError });
+  
+  if (planError || !plan) {
+    throw new Error(`Plano ${offer.plan_id} não encontrado. Erro: ${planError?.message}`);
+  }
+  
+  console.log('✅ Oferta e Plano encontrados:', {
+    offer_id: offer.id,
+    offer_name: offer.name,
     plan_id: plan.id,
     plan_name: plan.name
   });
@@ -883,26 +906,49 @@ async function handleTrialStarted(supabase: any, payload: TictoWebhookPayload, c
   // Buscar oferta pelo gateway_offer_id (usar código, não ID)
   const tictoOfferCode = payload.item.offer_code || payload.offer?.code;
   
+  console.log('📦 Payload offer info (trial):', {
+    item_offer_code: payload.item?.offer_code,
+    offer_code: payload.offer?.code,
+    selected: tictoOfferCode
+  });
+  
   if (!tictoOfferCode) {
     throw new Error('Código da oferta não encontrado no payload');
   }
   
-  console.log('🔍 Buscando oferta pelo código:', tictoOfferCode);
-  const offer = await findPlanOfferByGatewayId(supabase, tictoOfferCode, gateway.id);
+  console.log('🔍 Buscando oferta pelo código (trial):', tictoOfferCode, 'gateway:', gateway.id);
   
-  console.log('✅ Oferta encontrada (trial):', {
-    offer_id: offer?.id,
-    offer_name: offer?.name,
-    subscription_plans: offer?.subscription_plans
-  });
+  // Buscar oferta e plano separadamente para evitar problemas com relacionamentos
+  const { data: offer, error: offerError } = await supabase
+    .from('plan_offers')
+    .select('*')
+    .eq('gateway_offer_id', tictoOfferCode)
+    .eq('payment_gateway_id', gateway.id)
+    .eq('is_active', true)
+    .single();
   
-  if (!offer.subscription_plans || !offer.subscription_plans.id) {
-    throw new Error(`Oferta ${tictoOfferCode} não possui plano de assinatura válido associado. Plan: ${JSON.stringify(offer.subscription_plans)}`);
+  console.log('🔍 Resultado da busca da oferta (trial):', { offer, offerError });
+  
+  if (offerError || !offer) {
+    throw new Error(`Oferta ${tictoOfferCode} não encontrada ou não está ativa. Erro: ${offerError?.message}`);
   }
   
-  const plan = offer.subscription_plans;
+  // Buscar o plano associado
+  const { data: plan, error: planError } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('id', offer.plan_id)
+    .single();
   
-  console.log('📋 Plano identificado (trial):', {
+  console.log('🔍 Resultado da busca do plano (trial):', { plan, planError });
+  
+  if (planError || !plan) {
+    throw new Error(`Plano ${offer.plan_id} não encontrado. Erro: ${planError?.message}`);
+  }
+  
+  console.log('✅ Oferta e Plano encontrados (trial):', {
+    offer_id: offer.id,
+    offer_name: offer.name,
     plan_id: plan.id,
     plan_name: plan.name
   });
