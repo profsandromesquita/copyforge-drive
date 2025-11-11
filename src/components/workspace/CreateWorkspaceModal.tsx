@@ -145,9 +145,7 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
             onOpenChange(false);
           }
         }}
-        limitType="projects"
-        currentLimit={limitData?.max_allowed}
-        currentUsage={limitData?.current_count}
+        limitType="general"
       />
     </>
   );
