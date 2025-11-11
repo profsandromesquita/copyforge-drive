@@ -751,33 +751,40 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     };
   }
   
-  // VERIFICAÇÃO 2: Buscar transação de crédito com o mesmo order hash na descrição
-  // Isso previne duplicação caso a invoice tenha sido criada mas a transação falhou
-  const { data: existingCreditTransaction, error: creditCheckError } = await supabase
+  // VERIFICAÇÃO 2: Buscar transação de crédito com o mesmo order hash
+  const { data: existingCreditTransactions, error: creditCheckError } = await supabase
     .from('credit_transactions')
-    .select('id, workspace_id, amount, created_at')
+    .select('id, workspace_id, amount, created_at, description')
     .eq('transaction_type', 'credit')
     .ilike('description', `%${orderHash}%`)
-    .maybeSingle();
+    .limit(1);
+  
+  console.log('🔍 Verificação de transação de crédito:', {
+    found: existingCreditTransactions?.length || 0,
+    error: creditCheckError?.message,
+    searching_for: orderHash
+  });
   
   if (creditCheckError) {
     console.error('⚠️ Erro ao verificar transação de crédito:', creditCheckError);
     // Não lançar erro aqui, pois é uma verificação secundária
   }
   
-  if (existingCreditTransaction) {
+  if (existingCreditTransactions && existingCreditTransactions.length > 0) {
+    const existingTransaction = existingCreditTransactions[0];
     console.log('🚫 IDEMPOTÊNCIA: Transação de crédito já existe - Créditos já adicionados:', {
-      transaction_id: existingCreditTransaction.id,
-      workspace_id: existingCreditTransaction.workspace_id,
-      amount: existingCreditTransaction.amount,
-      created_at: existingCreditTransaction.created_at
+      transaction_id: existingTransaction.id,
+      workspace_id: existingTransaction.workspace_id,
+      amount: existingTransaction.amount,
+      created_at: existingTransaction.created_at,
+      description: existingTransaction.description
     });
     
     return {
       status: 'success',
       event_type: 'purchase.approved',
       event_category: 'payment',
-      workspace_id: existingCreditTransaction.workspace_id,
+      workspace_id: existingTransaction.workspace_id,
       message: 'Pagamento já processado anteriormente (idempotente - créditos já adicionados)',
       idempotent: true,
       duplicate_prevention: 'credit_transaction_check'
@@ -1048,13 +1055,12 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   }
 
   // Criar invoice com informações da oferta e tracking
-  await supabase
+  const { data: newInvoice, error: invoiceError } = await supabase
     .from('workspace_invoices')
     .insert({
       workspace_id: targetWorkspaceId,
       subscription_id: newSubscription.id,
       invoice_number: await generateInvoiceNumber(supabase),
-      notes: sourceFromUrl ? `Origem: ${sourceFromUrl}` : null,
       amount: payload.order.paid_amount / 100,
       currency: 'BRL',
       status: 'paid',
@@ -1075,9 +1081,19 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
         ticto_transaction_hash: payload.order.transaction_hash,
         installments: payload.order.installments,
         offer_id: offer.id,
-        offer_name: offer.name
+        offer_name: offer.name,
+        source: sourceFromUrl || null
       }
-    });
+    })
+    .select()
+    .single();
+
+  if (invoiceError) {
+    console.error('❌ Erro ao criar invoice:', invoiceError);
+    throw new Error(`Erro ao criar invoice: ${invoiceError.message}`);
+  }
+
+  console.log('✅ Invoice criada:', newInvoice.id);
 
   // Adicionar créditos
   const { data: credits } = await supabase
