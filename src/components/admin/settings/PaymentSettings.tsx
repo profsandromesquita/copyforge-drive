@@ -52,13 +52,6 @@ export const PaymentSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Gateways de Pagamento</h2>
-        <p className="text-muted-foreground">
-          Configure e gerencie os gateways de pagamento disponíveis no sistema
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {integrations.map((integration) => (
           <Card key={integration.id} className="relative">

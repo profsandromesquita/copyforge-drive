@@ -89,13 +89,6 @@ const AdminWorkspaces = () => {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Workspaces</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie todos os workspaces do sistema
-          </p>
-        </div>
-
         {/* Statistics Cards */}
         {!isLoading && workspaces && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

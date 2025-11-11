@@ -106,11 +106,6 @@ export default function AdminClientes() {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground">Gerenciar usuários do sistema</p>
-        </div>
-
         <div className="border rounded-lg">
           <Table>
             <TableHeader>

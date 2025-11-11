@@ -55,14 +55,6 @@ const AdminTransactions = () => {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Transações</h1>
-          <p className="text-muted-foreground">
-            Gerenciamento de vendas dos gateways de pagamento
-          </p>
-        </div>
-
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">

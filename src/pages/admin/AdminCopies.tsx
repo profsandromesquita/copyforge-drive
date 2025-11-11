@@ -125,29 +125,21 @@ export default function AdminCopies() {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Copy IA</h1>
-            <p className="text-muted-foreground mt-1">
-              Histórico completo de gerações de IA
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={isLoading}
-            >
-              <ArrowsClockwise size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Atualizar
-            </Button>
-            {data && (
-              <Badge variant="outline" className="text-lg px-4 py-2">
-                {data.totalCount} gerações
-              </Badge>
-            )}
-          </div>
+        <div className="flex items-center justify-end gap-3">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <ArrowsClockwise size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          {data && (
+            <Badge variant="outline" className="text-lg px-4 py-2">
+              {data.totalCount} gerações
+            </Badge>
+          )}
         </div>
 
         {/* Cards de Estatísticas */}

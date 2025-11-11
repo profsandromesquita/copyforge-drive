@@ -42,16 +42,6 @@ const AdminAIPrompts = () => {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Brain size={32} weight="duotone" className="text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Prompts IA</h1>
-            <p className="text-muted-foreground">
-              Gerencie e personalize os prompts dos modelos de IA para melhorar a qualidade das entregas
-            </p>
-          </div>
-        </div>
-
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
