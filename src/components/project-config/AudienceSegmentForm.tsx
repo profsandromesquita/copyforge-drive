@@ -235,8 +235,16 @@ export const AudienceSegmentForm = ({
         .eq('id', activeProject.id);
 
       await refreshProjects();
-      setFormData(updatedFormData);
-      toast.success('Segmento concluído! Agora você pode gerar a análise avançada IA.');
+      
+      // Limpar rascunho do localStorage
+      if (!segment) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      
+      toast.success('Segmento concluído!');
+      
+      // Fechar o formulário e atualizar a lista
+      onSave(updatedSegments);
     } catch (error) {
       console.error('Erro ao concluir segmento:', error);
       toast.error('Erro ao concluir segmento');
