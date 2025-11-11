@@ -8,7 +8,7 @@ interface SettingsSidebarProps {
 
 const menuItems = [
   { id: "geral", label: "Geral", icon: Gear },
-  { id: "integracoes", label: "Integrações", icon: Plug },
+  { id: "pagamentos", label: "Pagamentos", icon: Plug },
   { id: "usuarios", label: "Usuários", icon: Users },
   { id: "ia", label: "IA", icon: Robot },
   { id: "creditos", label: "Créditos", icon: Coins },

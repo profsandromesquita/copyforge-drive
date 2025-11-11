@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plug, Lightning } from "phosphor-react";
+import { CreditCard, Gear } from "phosphor-react";
 import { TictoConfigModal } from "@/components/admin/integrations/TictoConfigModal";
 import { WebhookLogsModal } from "@/components/admin/integrations/WebhookLogsModal";
 import { usePaymentGateway } from "@/hooks/usePaymentGateway";
@@ -18,7 +18,7 @@ interface Integration {
   is_enabled: boolean;
 }
 
-export const IntegrationsSettings = () => {
+export const PaymentSettings = () => {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [tictoConfigOpen, setTictoConfigOpen] = useState(false);
@@ -39,103 +39,70 @@ export const IntegrationsSettings = () => {
       if (error) throw error;
       setIntegrations(data || []);
     } catch (error) {
-      console.error("Erro ao carregar integrações:", error);
-      toast.error("Erro ao carregar integrações");
+      console.error("Erro ao carregar gateways de pagamento:", error);
+      toast.error("Erro ao carregar gateways de pagamento");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleIntegration = async (integrationId: string, currentState: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("integrations")
-        .update({ is_enabled: !currentState })
-        .eq("id", integrationId);
-
-      if (error) throw error;
-
-      setIntegrations(
-        integrations.map((int) =>
-          int.id === integrationId
-            ? { ...int, is_enabled: !currentState }
-            : int
-        )
-      );
-
-      toast.success(
-        !currentState ? "Integração ativada" : "Integração desativada"
-      );
-    } catch (error) {
-      console.error("Erro ao atualizar integração:", error);
-      toast.error("Erro ao atualizar integração");
-    }
-  };
-
   if (loading) {
-    return <div>Carregando integrações...</div>;
+    return <div>Carregando gateways de pagamento...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Integrações Disponíveis</h2>
+        <h2 className="text-2xl font-bold mb-2">Gateways de Pagamento</h2>
         <p className="text-muted-foreground">
-          Conecte e configure integrações com serviços externos
+          Configure e gerencie os gateways de pagamento disponíveis no sistema
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {integrations.map((integration) => (
           <Card key={integration.id} className="relative">
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
+                  <div className="p-3 rounded-lg bg-primary/10">
                     {integration.icon_url ? (
                       <img
                         src={integration.icon_url}
                         alt={integration.name}
-                        className="w-6 h-6"
+                        className="w-8 h-8"
                       />
                     ) : (
-                      <Plug size={24} className="text-primary" />
+                      <CreditCard size={32} className="text-primary" />
                     )}
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{integration.name}</CardTitle>
+                    <CardTitle className="text-xl">{integration.name}</CardTitle>
+                    {tictoConfig?.is_active && integration.slug === 'ticto' && (
+                      <Badge variant="default" className="mt-1">
+                        Configurado
+                      </Badge>
+                    )}
                   </div>
                 </div>
-                {integration.is_enabled && (
-                  <Badge variant="default" className="ml-2">
-                    <Lightning size={12} className="mr-1" />
-                    Ativo
-                  </Badge>
-                )}
               </div>
-              <CardDescription className="mt-2">
-                {integration.description || "Sem descrição"}
+              <CardDescription>
+                {integration.description || "Gateway de pagamento para processar transações"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <Button
-                  variant={integration.is_enabled ? "outline" : "default"}
-                  size="sm"
-                  onClick={() =>
-                    handleToggleIntegration(integration.id, integration.is_enabled)
-                  }
-                  className="flex-1"
-                >
-                  {integration.is_enabled ? "Desativar" : "Ativar"}
-                </Button>
-                <div className="flex gap-2 items-center">
-                  {integration.slug === 'ticto' && tictoConfig?.is_active && (
-                    <Badge variant="default">Configurado</Badge>
-                  )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm font-medium">Status</span>
+                  <Badge variant={tictoConfig?.is_active && integration.slug === 'ticto' ? "default" : "secondary"}>
+                    {tictoConfig?.is_active && integration.slug === 'ticto' ? "Ativo" : "Inativo"}
+                  </Badge>
+                </div>
+                
+                <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    size="sm"
+                    className="flex-1"
                     onClick={() => {
                       if (integration.slug === 'ticto') {
                         setTictoConfigOpen(true);
@@ -143,9 +110,25 @@ export const IntegrationsSettings = () => {
                     }}
                     disabled={integration.slug !== 'ticto'}
                   >
+                    <Gear size={16} className="mr-2" />
                     Configurar
                   </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      if (integration.slug === 'ticto') {
+                        setTictoLogsOpen(true);
+                      }
+                    }}
+                    disabled={integration.slug !== 'ticto'}
+                  >
+                    Ver Logs
+                  </Button>
                 </div>
+
+                <p className="text-xs text-muted-foreground mt-2">
+                  * A ativação do gateway é feita automaticamente ao criar ofertas de planos vinculadas a ele
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -155,9 +138,9 @@ export const IntegrationsSettings = () => {
       {integrations.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
-            <Plug size={48} className="mx-auto text-muted-foreground mb-4" />
+            <CreditCard size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              Nenhuma integração disponível no momento
+              Nenhum gateway de pagamento disponível no momento
             </p>
           </CardContent>
         </Card>

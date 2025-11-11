@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { GeneralSettings } from "@/components/admin/settings/GeneralSettings";
-import { IntegrationsSettings } from "@/components/admin/settings/IntegrationsSettings";
+import { PaymentSettings } from "@/components/admin/settings/PaymentSettings";
 import { UsersSettings } from "@/components/admin/settings/UsersSettings";
 import { AISettings } from "@/components/admin/settings/AISettings";
 import { CreditSettings } from "@/components/admin/settings/CreditSettings";
@@ -16,8 +16,8 @@ export default function AdminSettings() {
     switch (activeTab) {
       case "geral":
         return <GeneralSettings />;
-      case "integracoes":
-        return <IntegrationsSettings />;
+      case "pagamentos":
+        return <PaymentSettings />;
       case "usuarios":
         return <UsersSettings />;
       case "ia":
