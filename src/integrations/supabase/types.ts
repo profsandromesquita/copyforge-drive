@@ -1398,6 +1398,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          is_active: boolean
           name: string
           updated_at: string
         }
@@ -1406,6 +1407,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          is_active?: boolean
           name: string
           updated_at?: string
         }
@@ -1414,6 +1416,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          is_active?: boolean
           name?: string
           updated_at?: string
         }
@@ -1444,6 +1447,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_workspace_after_payment: {
+        Args: { p_workspace_id: string }
+        Returns: Json
+      }
       add_workspace_credits: {
         Args: { amount: number; description?: string; p_workspace_id: string }
         Returns: Json

@@ -24,7 +24,7 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [limitData, setLimitData] = useState<WorkspaceLimitCheck | null>(null);
+  const [createdWorkspaceId, setCreatedWorkspaceId] = useState<string | null>(null);
   const { user } = useAuth();
   const { refreshWorkspaces, setActiveWorkspace } = useWorkspace();
 
@@ -48,18 +48,16 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
       if (limitError) throw limitError;
 
       const limitData = limitCheck as unknown as WorkspaceLimitCheck;
+      const isOverLimit = !limitData.can_create;
 
-      if (!limitData.can_create) {
-        setLimitData(limitData);
-        setShowUpgradeModal(true);
-        setLoading(false);
-        return;
-      }
-
-      // Create workspace
+      // Criar workspace (ativo se dentro do limite, inativo se excedeu)
       const { data: workspace, error: workspaceError } = await supabase
         .from('workspaces')
-        .insert({ name: name.trim(), created_by: user.id })
+        .insert({ 
+          name: name.trim(), 
+          created_by: user.id,
+          is_active: !isOverLimit // Inativo se excedeu o limite
+        })
         .select()
         .single();
 
@@ -76,6 +74,16 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
 
       if (memberError) throw memberError;
 
+      if (isOverLimit) {
+        // Workspace criado mas inativo - mostrar modal de upgrade
+        toast.info('Workspace criado! Escolha um plano para ativá-lo.');
+        setCreatedWorkspaceId(workspace.id);
+        setShowUpgradeModal(true);
+        setLoading(false);
+        return;
+      }
+
+      // Workspace ativo - sucesso normal
       toast.success('Workspace criado com sucesso!');
       await refreshWorkspaces();
       
@@ -93,6 +101,17 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
       toast.error('Erro ao criar workspace');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpgradeModalClose = async (open: boolean) => {
+    setShowUpgradeModal(open);
+    if (!open) {
+      // Refresh workspaces ao fechar o modal
+      await refreshWorkspaces();
+      onOpenChange(false);
+      setName('');
+      setCreatedWorkspaceId(null);
     }
   };
 
@@ -139,13 +158,9 @@ export const CreateWorkspaceModal = ({ open, onOpenChange }: CreateWorkspaceModa
 
       <UpgradeModal
         open={showUpgradeModal}
-        onOpenChange={(open) => {
-          setShowUpgradeModal(open);
-          if (!open) {
-            onOpenChange(false);
-          }
-        }}
+        onOpenChange={handleUpgradeModalClose}
         limitType="general"
+        workspaceId={createdWorkspaceId || undefined}
       />
     </>
   );

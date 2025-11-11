@@ -33,6 +33,7 @@ interface UpgradeModalProps {
   limitType: 'projects' | 'copies' | 'copy_ai' | 'general';
   currentLimit?: number;
   currentUsage?: number;
+  workspaceId?: string; // ID do workspace a ser ativado após pagamento
 }
 
 const MESSAGES = {
@@ -60,6 +61,7 @@ export const UpgradeModal = ({
   limitType,
   currentLimit,
   currentUsage,
+  workspaceId,
 }: UpgradeModalProps) => {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
@@ -68,6 +70,9 @@ export const UpgradeModal = ({
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBillingPeriod, setSelectedBillingPeriod] = useState<string>("");
+  
+  // Usar workspaceId passado ou activeWorkspace
+  const targetWorkspaceId = workspaceId || activeWorkspace?.id;
   
   const planIds = plans.map(p => p.id);
   const { data: offersByPlan = {} } = usePlanOffersPublic(planIds);
@@ -112,10 +117,10 @@ export const UpgradeModal = ({
   };
 
   useEffect(() => {
-    if (open && activeWorkspace) {
+    if (open && targetWorkspaceId) {
       loadPlansAndCurrentPlan();
     }
-  }, [open, activeWorkspace]);
+  }, [open, targetWorkspaceId]);
 
   const loadPlansAndCurrentPlan = async () => {
     try {
@@ -132,7 +137,7 @@ export const UpgradeModal = ({
       setPlans(plansData || []);
 
       // Load current workspace subscription
-      if (!activeWorkspace?.id) return;
+      if (!targetWorkspaceId) return;
       
       const { data: subData, error: subError } = await supabase
         .from('workspace_subscriptions')
@@ -140,7 +145,7 @@ export const UpgradeModal = ({
           *,
           subscription_plans (*)
         `)
-        .eq('workspace_id', activeWorkspace.id)
+        .eq('workspace_id', targetWorkspaceId)
         .eq('status', 'active')
         .single();
 
@@ -209,13 +214,13 @@ export const UpgradeModal = ({
       return;
     }
 
-    if (!activeWorkspace || !user || !profile) {
+    if (!targetWorkspaceId || !user || !profile) {
       toast.error("Informações do usuário não disponíveis");
       return;
     }
 
     const enrichedUrl = buildCheckoutUrl(offer.checkout_url, {
-      workspace_id: activeWorkspace.id,
+      workspace_id: targetWorkspaceId,
       user_id: user.id,
       email: profile.email,
       name: profile.name,

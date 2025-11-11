@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const WorkspaceItem = ({ workspace, isActive, onClick }: any) => {
+const WorkspaceItem = ({ workspace, isActive, onClick, disabled }: any) => {
   const { data: plan } = useWorkspacePlan(workspace.id);
   
   const getPlanColor = (slug: string) => {
@@ -42,15 +42,23 @@ const WorkspaceItem = ({ workspace, isActive, onClick }: any) => {
 
   return (
     <DropdownMenuItem
-      className="cursor-pointer flex items-center justify-between px-2 py-2 rounded-md gap-2"
-      onClick={onClick}
+      className={`flex items-center justify-between px-2 py-2 rounded-md gap-2 ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+      }`}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <Buildings size={16} className="text-muted-foreground shrink-0" />
         <span className="text-sm truncate">{workspace.name}</span>
+        {disabled && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">
+            INATIVO
+          </Badge>
+        )}
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        {plan && (
+        {plan && !disabled && (
           <Badge 
             variant="outline" 
             className={`text-[10px] px-1.5 py-0 h-4 font-medium ${getPlanColor(plan.plan_slug)}`}
@@ -58,7 +66,7 @@ const WorkspaceItem = ({ workspace, isActive, onClick }: any) => {
             {plan.plan_slug.toUpperCase()}
           </Badge>
         )}
-        {isActive && (
+        {isActive && !disabled && (
           <Check size={16} className="text-primary" weight="bold" />
         )}
       </div>
@@ -169,7 +177,8 @@ export const UserMenu = () => {
                 key={workspace.id}
                 workspace={workspace}
                 isActive={activeWorkspace?.id === workspace.id}
-                onClick={() => setActiveWorkspace(workspace)}
+                disabled={!workspace.is_active}
+                onClick={() => workspace.is_active && setActiveWorkspace(workspace)}
               />
             ))}
             <DropdownMenuItem 

@@ -7,10 +7,12 @@ interface Workspace {
   name: string;
   avatar_url?: string | null;
   role: 'owner' | 'admin' | 'editor';
+  is_active?: boolean;
 }
 
 interface WorkspaceContextType {
   workspaces: Workspace[];
+  activeWorkspaces: Workspace[]; // Apenas workspaces ativos (para seleção)
   activeWorkspace: Workspace | null;
   setActiveWorkspace: (workspace: Workspace) => void;
   loading: boolean;
@@ -42,7 +44,8 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
         workspace:workspaces (
           id,
           name,
-          avatar_url
+          avatar_url,
+          is_active
         )
       `)
       .eq('user_id', user.id);
@@ -57,31 +60,39 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       id: item.workspace.id,
       name: item.workspace.name,
       avatar_url: item.workspace.avatar_url,
-      role: item.role
+      role: item.role,
+      is_active: item.workspace.is_active ?? true
     })) || [];
 
     console.log('[Workspace] Fetched workspaces:', workspaceList.length);
 
     setWorkspaces(workspaceList);
     
-    // Update active workspace or set first workspace as active
-    if (workspaceList.length > 0) {
+    // Apenas workspaces ativos podem ser selecionados
+    const activeWorkspacesList = workspaceList.filter(w => w.is_active);
+    
+    // Update active workspace or set first ACTIVE workspace
+    if (activeWorkspacesList.length > 0) {
       if (activeWorkspace) {
-        // Update active workspace with fresh data
-        const updatedActiveWorkspace = workspaceList.find(w => w.id === activeWorkspace.id);
+        // Update active workspace with fresh data se ainda estiver ativo
+        const updatedActiveWorkspace = activeWorkspacesList.find(w => w.id === activeWorkspace.id);
         if (updatedActiveWorkspace) {
           setActiveWorkspaceState(updatedActiveWorkspace);
+        } else {
+          // Se o workspace ativo ficou inativo, selecionar outro
+          setActiveWorkspaceState(activeWorkspacesList[0]);
         }
       } else {
-        // Set first workspace as active if none selected
+        // Set first ACTIVE workspace as active if none selected
         const savedWorkspaceId = localStorage.getItem('activeWorkspaceId');
         const workspace = savedWorkspaceId 
-          ? workspaceList.find(w => w.id === savedWorkspaceId) || workspaceList[0]
-          : workspaceList[0];
+          ? activeWorkspacesList.find(w => w.id === savedWorkspaceId) || activeWorkspacesList[0]
+          : activeWorkspacesList[0];
         setActiveWorkspaceState(workspace);
       }
     } else {
-      console.log('[Workspace] No workspaces found - user needs to complete onboarding');
+      console.log('[Workspace] No active workspaces found');
+      setActiveWorkspaceState(null);
     }
     
     setLoading(false);
@@ -127,6 +138,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   return (
     <WorkspaceContext.Provider value={{ 
       workspaces, 
+      activeWorkspaces: workspaces.filter(w => w.is_active),
       activeWorkspace, 
       setActiveWorkspace, 
       loading,
