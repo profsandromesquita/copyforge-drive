@@ -129,11 +129,22 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Tratar erros específicos da API
+        if (error.message?.includes('insufficient_credits') || error.context?.error === 'insufficient_credits') {
+          toast.error('Créditos insuficientes para gerar análise. Adicione créditos em Configurações > Workspace > Créditos.');
+          throw error;
+        }
+        if (error.message?.includes('rate_limit') || error.context?.error === 'rate_limit') {
+          toast.error('Limite de requisições excedido. Tente novamente em alguns instantes.');
+          throw error;
+        }
+        throw error;
+      }
 
       const updatedSegment: AudienceSegment = {
         ...segment,
-        advanced_analysis: data.analysis, // Já é um objeto estruturado
+        advanced_analysis: data.analysis,
         analysis_generated_at: new Date().toISOString()
       };
 
@@ -152,10 +163,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       toast.success('Análise gerada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao gerar análise:', error);
-      if (error.message?.includes('insufficient_credits')) {
-        toast.error('Créditos insuficientes');
-      } else {
-        toast.error('Erro ao gerar análise');
+      // Mensagem genérica apenas se não foi tratada acima
+      if (!error.message?.includes('insufficient_credits') && !error.message?.includes('rate_limit')) {
+        toast.error('Erro ao gerar análise. Tente novamente.');
       }
     } finally {
       setIsGeneratingAnalysis(false);
@@ -174,7 +184,18 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Tratar erros específicos da API
+        if (error.message?.includes('insufficient_credits') || error.context?.error === 'insufficient_credits') {
+          toast.error('Créditos insuficientes para regenerar análise. Adicione créditos em Configurações > Workspace > Créditos.');
+          throw error;
+        }
+        if (error.message?.includes('rate_limit') || error.context?.error === 'rate_limit') {
+          toast.error('Limite de requisições excedido. Tente novamente em alguns instantes.');
+          throw error;
+        }
+        throw error;
+      }
 
       const updatedSegment: AudienceSegment = {
         ...segment,
@@ -197,10 +218,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       toast.success('Análise regenerada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao regenerar análise:', error);
-      if (error.message?.includes('insufficient_credits')) {
-        toast.error('Créditos insuficientes');
-      } else {
-        toast.error('Erro ao regenerar análise');
+      // Mensagem genérica apenas se não foi tratada acima
+      if (!error.message?.includes('insufficient_credits') && !error.message?.includes('rate_limit')) {
+        toast.error('Erro ao regenerar análise. Tente novamente.');
       }
     }
   };
