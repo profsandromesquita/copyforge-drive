@@ -137,6 +137,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Limpar qualquer dado de onboarding do localStorage antes de deslogar
+    localStorage.removeItem('onboarding_progress');
     await supabase.auth.signOut();
   };
 

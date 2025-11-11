@@ -760,6 +760,10 @@ export type Database = {
           number: string | null
           occupation: string | null
           onboarding_completed: boolean | null
+          onboarding_current_step: number | null
+          onboarding_custom_occupation: string | null
+          onboarding_project_data: Json | null
+          onboarding_project_id: string | null
           phone: string | null
           state: string | null
           street: string | null
@@ -779,6 +783,10 @@ export type Database = {
           number?: string | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          onboarding_current_step?: number | null
+          onboarding_custom_occupation?: string | null
+          onboarding_project_data?: Json | null
+          onboarding_project_id?: string | null
           phone?: string | null
           state?: string | null
           street?: string | null
@@ -798,6 +806,10 @@ export type Database = {
           number?: string | null
           occupation?: string | null
           onboarding_completed?: boolean | null
+          onboarding_current_step?: number | null
+          onboarding_custom_occupation?: string | null
+          onboarding_project_data?: Json | null
+          onboarding_project_id?: string | null
           phone?: string | null
           state?: string | null
           street?: string | null

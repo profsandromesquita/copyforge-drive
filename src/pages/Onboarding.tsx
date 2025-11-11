@@ -40,25 +40,29 @@ const Onboarding = () => {
       return;
     }
 
-    // Carrega progresso salvo
-    const saved = loadProgress();
-    if (saved) {
-      if (saved.currentStep) {
-        setCurrentStep(saved.currentStep);
+    // Carrega progresso salvo do banco de dados
+    const loadSavedProgress = async () => {
+      const saved = await loadProgress();
+      if (saved) {
+        if (saved.currentStep) {
+          setCurrentStep(saved.currentStep);
+        }
+        if (saved.occupation) {
+          setOccupation(saved.occupation);
+        }
+        if (saved.customOccupation) {
+          setCustomOccupation(saved.customOccupation);
+        }
+        if (saved.projectData) {
+          setProjectData(saved.projectData);
+        }
+        if (saved.projectId) {
+          setProjectId(saved.projectId);
+        }
       }
-      if (saved.occupation) {
-        setOccupation(saved.occupation);
-      }
-      if (saved.customOccupation) {
-        setCustomOccupation(saved.customOccupation);
-      }
-      if (saved.projectData) {
-        setProjectData(saved.projectData);
-      }
-      if (saved.projectId) {
-        setProjectId(saved.projectId);
-      }
-    }
+    };
+
+    loadSavedProgress();
   }, [isCompleted, navigate, loadProgress]);
 
   const handleStep1Complete = (selectedOccupation: string, custom?: string) => {
