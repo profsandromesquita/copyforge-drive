@@ -29,6 +29,7 @@ import { useModelSwitchNotification } from '@/hooks/useModelSwitchNotification';
 import { Zap } from 'lucide-react';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { useAICharacteristics } from '@/hooks/useAICharacteristics';
+import { VoiceInput } from '@/components/project-config/VoiceInput';
 
 type Etapa = 1 | 2 | 3;
 
@@ -691,13 +692,16 @@ export const CopyAITab = () => {
             <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Detalhes da Copy
             </Label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Descreva o que você precisa para sua copy..."
-              rows={14}
-              className="resize-none rounded-2xl"
-            />
+            <div className="relative">
+              <Textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Descreva o que você precisa para sua copy..."
+                rows={14}
+                className="resize-none rounded-2xl pr-12"
+              />
+              <VoiceInput onTranscript={(text) => setPrompt(prompt ? `${prompt} ${text}` : text)} />
+            </div>
           </div>
 
           <Button
@@ -885,17 +889,20 @@ export const CopyAITab = () => {
                   <Label className="font-medium">
                     Instruções para o Agente
                   </Label>
-                  <Textarea
-                    value={optimizeInstructions}
-                    onChange={(e) => setOptimizeInstructions(e.target.value)}
-                    placeholder={
-                      optimizeAction === 'otimizar'
-                        ? "Ex: Torne mais persuasivo, adicione senso de urgência, melhore a clareza..."
-                        : "Ex: Crie uma versão mais formal, adapte para LinkedIn, use abordagem emocional..."
-                    }
-                    rows={6}
-                    className="resize-none"
-                  />
+                  <div className="relative">
+                    <Textarea
+                      value={optimizeInstructions}
+                      onChange={(e) => setOptimizeInstructions(e.target.value)}
+                      placeholder={
+                        optimizeAction === 'otimizar'
+                          ? "Ex: Torne mais persuasivo, adicione senso de urgência, melhore a clareza..."
+                          : "Ex: Crie uma versão mais formal, adapte para LinkedIn, use abordagem emocional..."
+                      }
+                      rows={6}
+                      className="resize-none pr-12"
+                    />
+                    <VoiceInput onTranscript={(text) => setOptimizeInstructions(optimizeInstructions ? `${optimizeInstructions} ${text}` : text)} />
+                  </div>
                 </div>
 
                 <Button 
