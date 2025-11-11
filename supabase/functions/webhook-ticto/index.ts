@@ -371,6 +371,285 @@ async function getWorkspaceOwnerId(supabase: any, workspaceId: string): Promise<
   return member?.user_id || null;
 }
 
+// NOVAS FUNÇÕES AUXILIARES PARA PROCESSAMENTO DE WEBHOOKS
+
+// Validar se workspace existe
+async function validateWorkspaceExists(supabase: any, workspaceId: string): Promise<any | null> {
+  console.log(`🔍 Validando se workspace ${workspaceId} existe...`);
+  
+  const { data: workspace, error } = await supabase
+    .from('workspaces')
+    .select('id, name, created_by')
+    .eq('id', workspaceId)
+    .single();
+  
+  if (error || !workspace) {
+    console.warn(`⚠️ Workspace ${workspaceId} não existe. Erro: ${error?.message}`);
+    return null;
+  }
+  
+  console.log(`✅ Workspace validado: ${workspace.name}`);
+  return workspace;
+}
+
+// Buscar profile pelo email
+async function findProfileByEmail(supabase: any, email: string): Promise<{ id: string; email: string; name: string } | null> {
+  console.log(`🔍 Buscando profile pelo email: ${email}`);
+  
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, email, name')
+    .eq('email', email)
+    .maybeSingle();
+  
+  if (error) {
+    console.error(`❌ Erro ao buscar profile: ${error.message}`);
+    return null;
+  }
+  
+  if (profile) {
+    console.log(`✅ Profile encontrado: ${profile.name} (${profile.id})`);
+  } else {
+    console.log(`⚠️ Profile não encontrado para email: ${email}`);
+  }
+  
+  return profile;
+}
+
+// Criar usuário via webhook (para novos cadastros)
+async function createUserFromWebhook(
+  supabase: any,
+  email: string,
+  name: string
+): Promise<{ userId: string; temporaryPassword: string }> {
+  console.log(`👤 Criando novo usuário: ${email}`);
+  
+  // Gerar senha temporária forte
+  const temporaryPassword = `Temp${Math.random().toString(36).slice(-8)}!${Date.now().toString(36)}`;
+  
+  try {
+    // Criar usuário no auth.users usando Admin API
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email: email,
+      password: temporaryPassword,
+      email_confirm: true, // Auto-confirmar email
+      user_metadata: {
+        name: name,
+        created_via: 'ticto_webhook'
+      }
+    });
+    
+    if (authError || !authUser.user) {
+      throw new Error(`Erro ao criar usuário no auth: ${authError?.message}`);
+    }
+    
+    console.log(`✅ Usuário criado no auth.users: ${authUser.user.id}`);
+    
+    // Criar profile no banco
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: authUser.user.id,
+        email: email,
+        name: name
+      });
+    
+    if (profileError) {
+      // Se profile já existe (criado por trigger), não é erro fatal
+      console.warn(`⚠️ Profile pode já existir: ${profileError.message}`);
+    } else {
+      console.log(`✅ Profile criado no banco`);
+    }
+    
+    return {
+      userId: authUser.user.id,
+      temporaryPassword: temporaryPassword
+    };
+    
+  } catch (error) {
+    console.error(`❌ Erro ao criar usuário:`, error);
+    throw error;
+  }
+}
+
+// Criar workspace para usuário
+async function createWorkspaceForUser(
+  supabase: any,
+  userId: string,
+  userName: string,
+  plan: any,
+  offer: any,
+  payload: TictoWebhookPayload
+): Promise<string> {
+  console.log(`🏢 Criando workspace para usuário ${userId}...`);
+  
+  const workspaceName = `Workspace de ${userName}`;
+  
+  try {
+    // Criar workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .insert({
+        name: workspaceName,
+        created_by: userId,
+        is_active: true
+      })
+      .select()
+      .single();
+    
+    if (workspaceError || !workspace) {
+      throw new Error(`Erro ao criar workspace: ${workspaceError?.message}`);
+    }
+    
+    console.log(`✅ Workspace criado: ${workspace.id}`);
+    
+    // Adicionar membership como owner
+    const { error: memberError } = await supabase
+      .from('workspace_members')
+      .insert({
+        workspace_id: workspace.id,
+        user_id: userId,
+        role: 'owner',
+        invited_by: userId
+      });
+    
+    if (memberError) {
+      // Se membership já existe (criado por trigger), não é erro fatal
+      console.warn(`⚠️ Membership pode já existir: ${memberError.message}`);
+    } else {
+      console.log(`✅ Membership criado como owner`);
+    }
+    
+    // Criar workspace_credits com saldo inicial
+    const { error: creditsError } = await supabase
+      .from('workspace_credits')
+      .insert({
+        workspace_id: workspace.id,
+        balance: plan.credits_per_month,
+        total_added: plan.credits_per_month
+      });
+    
+    if (creditsError) {
+      // Se credits já existe (criado por trigger), atualizar
+      console.warn(`⚠️ Credits pode já existir, tentando atualizar: ${creditsError.message}`);
+      await supabase
+        .from('workspace_credits')
+        .update({
+          balance: plan.credits_per_month,
+          total_added: plan.credits_per_month
+        })
+        .eq('workspace_id', workspace.id);
+    } else {
+      console.log(`✅ Créditos iniciais criados: ${plan.credits_per_month}`);
+    }
+    
+    return workspace.id;
+    
+  } catch (error) {
+    console.error(`❌ Erro ao criar workspace:`, error);
+    throw error;
+  }
+}
+
+// Enviar email de boas-vindas com link para criar senha
+async function sendWelcomeEmailWithPasswordSetup(
+  email: string,
+  name: string,
+  workspaceName: string,
+  planName: string
+): Promise<void> {
+  console.log(`📧 Enviando email de boas-vindas para: ${email}`);
+  
+  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+  
+  if (!RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY não configurada, email não será enviado');
+    return;
+  }
+  
+  try {
+    const resetPasswordUrl = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?type=recovery&token=`;
+    
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🎉 Bem-vindo ao CopyDrive!</h1>
+            </div>
+            <div class="content">
+              <p>Olá <strong>${name}</strong>,</p>
+              
+              <p>Sua compra foi confirmada com sucesso! Estamos muito felizes em tê-lo(a) conosco.</p>
+              
+              <h3>Detalhes da sua assinatura:</h3>
+              <ul>
+                <li><strong>Plano:</strong> ${planName}</li>
+                <li><strong>Workspace:</strong> ${workspaceName}</li>
+              </ul>
+              
+              <p>Para começar a usar o CopyDrive, você precisa criar sua senha de acesso:</p>
+              
+              <div style="text-align: center;">
+                <a href="${resetPasswordUrl}" class="button">
+                  🔐 Criar Minha Senha
+                </a>
+              </div>
+              
+              <p style="margin-top: 30px;">Após criar sua senha, você poderá acessar o dashboard e começar a criar suas copies!</p>
+              
+              <p>Se tiver qualquer dúvida, estamos aqui para ajudar.</p>
+              
+              <p>Boas vendas! 🚀</p>
+              <p><strong>Equipe CopyDrive</strong></p>
+            </div>
+            <div class="footer">
+              <p>Este é um email automático, por favor não responda.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'CopyDrive <onboarding@resend.dev>',
+        to: [email],
+        subject: `🎉 Bem-vindo ao CopyDrive - Plano ${planName} Ativado!`,
+        html: emailHtml
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Erro ao enviar email: ${error}`);
+    }
+    
+    console.log(`✅ Email de boas-vindas enviado com sucesso para ${email}`);
+    
+  } catch (error) {
+    console.error(`❌ Erro ao enviar email:`, error);
+    // Não lançar erro - email é secundário, não deve bloquear o webhook
+  }
+}
+
 // Função para buscar oferta pelo gateway_offer_id da Ticto
 async function findPlanOfferByGatewayId(
   supabase: any, 
@@ -433,13 +712,11 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   console.log('💰 Processando venda aprovada...');
   
   // ============= VERIFICAÇÃO DE IDEMPOTÊNCIA =============
-  // Verificar se este pagamento já foi processado antes
   const orderHash = payload.order.hash;
   const transactionHash = payload.order.transaction_hash;
   
   console.log('🔍 Verificando idempotência:', { orderHash, transactionHash });
   
-  // Usar maybeSingle() para evitar erro se não encontrar
   const { data: existingInvoice, error: invoiceCheckError } = await supabase
     .from('workspace_invoices')
     .select('id, workspace_id, status')
@@ -547,6 +824,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     plan_name: plan.name
   });
 
+  // ============= IMPLEMENTAÇÃO DAS 3 REGRAS =============
   // Extrair parâmetros de tracking da URL (Ticto envia em query_params)
   const urlParams = payload.query_params || payload.url_params || {};
   const workspaceIdFromUrl = urlParams.workspace_id;
@@ -560,75 +838,93 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     customer_email: payload.customer.email
   });
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', payload.customer.email)
-    .single();
+  let targetWorkspaceId: string | null = null;
+  let targetUserId: string | null = null;
+  let isNewUser = false;
+  let isNewWorkspace = false;
 
-  if (!profile) {
-    throw new Error(`Usuário ${payload.customer.email} não encontrado`);
-  }
-
-  // Se workspace_id vier na URL, usar ele; senão, buscar pelo owner
-  let targetWorkspaceId = workspaceIdFromUrl;
-  
-  if (!targetWorkspaceId) {
-    const { data: member } = await supabase
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', profile.id)
-      .eq('role', 'owner')
-      .single();
-
-    if (!member) {
-      throw new Error(`Workspace não encontrado para usuário`);
-    }
+  // REGRA 1: workspace_id na URL → processar para aquele workspace
+  if (workspaceIdFromUrl) {
+    console.log('🎯 REGRA 1: workspace_id na URL detectado');
     
-    targetWorkspaceId = member.workspace_id;
-  } else {
-    // Validar se workspace existe e usuário tem acesso
-    const { data: workspaceAccess } = await supabase
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('workspace_id', targetWorkspaceId)
-      .eq('user_id', profile.id)
-      .single();
-
-    if (!workspaceAccess) {
-      console.warn(`⚠️ Workspace ${targetWorkspaceId} não encontrado ou usuário sem acesso. Usando workspace owner.`);
-      const { data: member } = await supabase
-        .from('workspace_members')
-        .select('workspace_id')
-        .eq('user_id', profile.id)
-        .eq('role', 'owner')
-        .single();
-
-      targetWorkspaceId = member?.workspace_id;
-      
-      if (!targetWorkspaceId) {
-        throw new Error(`Nenhum workspace encontrado para o usuário`);
-      }
+    const workspace = await validateWorkspaceExists(supabase, workspaceIdFromUrl);
+    
+    if (workspace) {
+      targetWorkspaceId = workspace.id;
+      targetUserId = workspace.created_by;
+      console.log(`✅ REGRA 1: Usando workspace da URL: ${workspace.name}`);
+    } else {
+      console.warn('⚠️ Workspace da URL não existe, prosseguindo para Regra 2/3');
     }
   }
-  
+
+  // REGRA 2 e 3: Sem workspace_id válido → verificar usuário
   if (!targetWorkspaceId) {
-    throw new Error(`Workspace não identificado`);
+    const profile = await findProfileByEmail(supabase, payload.customer.email);
+    
+    if (profile) {
+      // REGRA 2: Usuário existe → criar novo workspace
+      console.log('🎯 REGRA 2: Email existe, criando NOVO workspace');
+      
+      targetUserId = profile.id;
+      targetWorkspaceId = await createWorkspaceForUser(
+        supabase,
+        profile.id,
+        profile.name,
+        plan,
+        offer,
+        payload
+      );
+      isNewWorkspace = true;
+      
+      console.log(`✅ REGRA 2: Novo workspace criado: ${targetWorkspaceId}`);
+      
+    } else {
+      // REGRA 3: Usuário não existe → criar conta + workspace
+      console.log('🎯 REGRA 3: Email não existe, criando CONTA + WORKSPACE');
+      
+      const { userId, temporaryPassword } = await createUserFromWebhook(
+        supabase,
+        payload.customer.email,
+        payload.customer.name
+      );
+      
+      targetUserId = userId;
+      targetWorkspaceId = await createWorkspaceForUser(
+        supabase,
+        userId,
+        payload.customer.name,
+        plan,
+        offer,
+        payload
+      );
+      
+      isNewUser = true;
+      isNewWorkspace = true;
+      
+      console.log(`✅ REGRA 3: Nova conta e workspace criados: ${targetWorkspaceId}`);
+      
+      // Enviar email de boas-vindas (não-bloqueante)
+      await sendWelcomeEmailWithPasswordSetup(
+        payload.customer.email,
+        payload.customer.name,
+        `Workspace de ${payload.customer.name}`,
+        plan.name
+      );
+    }
   }
 
-  // Validar se workspace existe no banco antes de continuar
-  console.log('🔍 Validando workspace:', targetWorkspaceId);
-  const { data: workspaceExists, error: workspaceError } = await supabase
-    .from('workspaces')
-    .select('id, name')
-    .eq('id', targetWorkspaceId)
-    .single();
-
-  if (workspaceError || !workspaceExists) {
-    throw new Error(`Workspace ${targetWorkspaceId} não existe no banco de dados. Erro: ${workspaceError?.message}`);
+  if (!targetWorkspaceId || !targetUserId) {
+    throw new Error('Não foi possível determinar workspace e usuário para processar o pagamento');
   }
-  
-  console.log('✅ Workspace validado:', workspaceExists.name);
+
+  console.log('✅ Workspace e usuário determinados:', {
+    workspace_id: targetWorkspaceId,
+    user_id: targetUserId,
+    is_new_user: isNewUser,
+    is_new_workspace: isNewWorkspace
+  });
+  // ============= FIM DAS 3 REGRAS =============
 
   // Calcular períodos baseado na oferta flexível
   const billingCycle = determineBillingCycle(offer);
@@ -766,7 +1062,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     .from('credit_transactions')
     .insert({
       workspace_id: targetWorkspaceId,
-      user_id: profile.id,
+      user_id: targetUserId,
       transaction_type: 'credit',
       amount: plan.credits_per_month,
       balance_before: credits?.balance || 0,
@@ -779,6 +1075,9 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
     event_type: 'purchase.approved',
     event_category: 'payment',
     workspace_id: targetWorkspaceId,
+    user_id: targetUserId,
+    is_new_user: isNewUser,
+    is_new_workspace: isNewWorkspace,
     plan_name: plan.name,
     credits_added: plan.credits_per_month,
     message: 'Venda aprovada e assinatura ativada'
