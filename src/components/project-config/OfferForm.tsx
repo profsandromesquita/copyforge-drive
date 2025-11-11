@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,104 +9,450 @@ import { Offer, OFFER_TYPES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { CheckCircle, Circle } from 'phosphor-react';
 
 interface OfferFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   offer: Offer | null;
   allOffers: Offer[];
   onSave: (offers: Offer[]) => void;
+  onCancel: () => void;
+  onAutoSavingChange?: (isSaving: boolean) => void;
 }
 
-export const OfferForm = ({ open, onOpenChange, offer, allOffers, onSave }: OfferFormProps) => {
+export const OfferForm = ({ offer, allOffers, onSave, onCancel, onAutoSavingChange }: OfferFormProps) => {
   const { activeProject, refreshProjects } = useProject();
-  const [formData, setFormData] = useState<Partial<Offer>>({ name: '', type: 'other', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
-  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState<Partial<Offer>>({
+    name: '',
+    type: 'other',
+    short_description: '',
+    main_benefit: '',
+    unique_mechanism: '',
+    differentials: ['', '', ''],
+    proof: '',
+    guarantee: '',
+    cta: ''
+  });
+  const [identification, setIdentification] = useState('');
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [offerCreated, setOfferCreated] = useState(false);
+  const [originalId, setOriginalId] = useState<string | null>(null);
 
+  // Load draft from localStorage or edit existing
   useEffect(() => {
     if (offer) {
       setFormData(offer);
+      setIdentification(offer.name);
+      setOfferCreated(true);
+      setOriginalId(offer.id);
     } else {
-      setFormData({ name: '', type: 'other', short_description: '', main_benefit: '', unique_mechanism: '', differentials: ['', '', ''], proof: '', guarantee: '', cta: '' });
+      const draft = localStorage.getItem('offer-draft');
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData(parsed);
+        } catch (e) {
+          console.error('Error loading draft:', e);
+        }
+      }
     }
-  }, [offer, open]);
+  }, [offer]);
 
-  const handleSave = async () => {
-    if (!formData.name || !formData.short_description || !formData.main_benefit || !formData.unique_mechanism || !formData.cta) {
-      toast.error('Preencha todos os campos obrigatórios');
+  // Save draft to localStorage
+  useEffect(() => {
+    if (!offer && Object.values(formData).some(v => v !== '' && v !== 'other' && (!Array.isArray(v) || v.some(item => item !== '')))) {
+      localStorage.setItem('offer-draft', JSON.stringify(formData));
+    }
+  }, [formData, offer]);
+
+  // Auto-save to database
+  const autoSaveToDatabase = useCallback(async () => {
+    if (!activeProject || !offerCreated || !offer) return;
+
+    setAutoSaving(true);
+    onAutoSavingChange?.(true);
+
+    try {
+      const updatedOffer: Offer = {
+        ...offer,
+        ...formData,
+        name: identification || offer.name
+      } as Offer;
+
+      const updatedOffers = allOffers.map(o => o.id === offer.id ? updatedOffer : o);
+
+      await supabase
+        .from('projects')
+        .update({ offers: updatedOffers as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      onSave(updatedOffers);
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    } finally {
+      setAutoSaving(false);
+      onAutoSavingChange?.(false);
+    }
+  }, [activeProject, offerCreated, offer, formData, identification, allOffers, refreshProjects, onSave, onAutoSavingChange]);
+
+  // Trigger auto-save periodically when editing
+  useEffect(() => {
+    if (offer && offerCreated) {
+      const timer = setTimeout(() => {
+        autoSaveToDatabase();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [formData, identification, offer, offerCreated, autoSaveToDatabase]);
+
+  const handleCreateOffer = async () => {
+    if (!identification.trim()) {
+      toast.error('Digite o nome da oferta primeiro');
       return;
     }
 
-    setSaving(true);
-    try {
-      const newOffer: Offer = { ...formData, id: offer?.id || `offer-${Date.now()}` } as Offer;
-      const updatedOffers = offer ? allOffers.map(o => o.id === offer.id ? newOffer : o) : [...allOffers, newOffer];
+    if (!activeProject) {
+      toast.error('Projeto não encontrado');
+      return;
+    }
 
-      if (activeProject) {
-        const { error } = await supabase.from('projects').update({ offers: updatedOffers as any }).eq('id', activeProject.id);
-        if (error) throw error;
-        await refreshProjects();
-        onSave(updatedOffers);
-        toast.success('Oferta salva!');
-        onOpenChange(false);
-      }
+    try {
+      const newOffer: Offer = {
+        id: `offer-${Date.now()}`,
+        name: identification,
+        type: 'other',
+        short_description: '',
+        main_benefit: '',
+        unique_mechanism: '',
+        differentials: ['', '', ''],
+        proof: '',
+        guarantee: '',
+        cta: ''
+      };
+
+      const updatedOffers = [...allOffers, newOffer];
+
+      await supabase
+        .from('projects')
+        .update({ offers: updatedOffers as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      setOfferCreated(true);
+      setOriginalId(newOffer.id);
+      onSave(updatedOffers);
+      localStorage.removeItem('offer-draft');
+      toast.success('Oferta criada! Continue preenchendo os campos.');
     } catch (error) {
-      console.error(error);
-      toast.error('Erro ao salvar');
-    } finally {
-      setSaving(false);
+      console.error('Error creating offer:', error);
+      toast.error('Erro ao criar oferta');
     }
   };
 
+  const handleUpdateIdentification = async () => {
+    if (!identification.trim() || !offer || !activeProject) return;
+
+    try {
+      const updatedOffer = { ...offer, name: identification };
+      const updatedOffers = allOffers.map(o => o.id === offer.id ? updatedOffer : o);
+
+      await supabase
+        .from('projects')
+        .update({ offers: updatedOffers as any })
+        .eq('id', activeProject.id);
+
+      await refreshProjects();
+      onSave(updatedOffers);
+      toast.success('Nome atualizado!');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      toast.error('Erro ao atualizar nome');
+    }
+  };
+
+  const isAllFieldsFilled = () => {
+    return (
+      formData.short_description && formData.short_description.length >= 50 &&
+      formData.main_benefit && formData.main_benefit.length >= 30 &&
+      formData.unique_mechanism && formData.unique_mechanism.length >= 30 &&
+      formData.cta && formData.cta.length >= 10
+    );
+  };
+
+  const handleComplete = async () => {
+    if (!isAllFieldsFilled()) {
+      toast.error('Preencha todos os campos obrigatórios com o mínimo de caracteres');
+      return;
+    }
+
+    onCancel();
+    toast.success('Oferta concluída com sucesso!');
+  };
+
+  const handleClose = async () => {
+    if (offerCreated && offer) {
+      await autoSaveToDatabase();
+    }
+    onCancel();
+  };
+
+  const getCharCount = (field: keyof Offer) => {
+    const value = formData[field];
+    return typeof value === 'string' ? value.length : 0;
+  };
+
+  const fieldMinimums = [
+    { field: 'short_description', min: 50 },
+    { field: 'main_benefit', min: 30 },
+    { field: 'unique_mechanism', min: 30 },
+    { field: 'cta', min: 10 }
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{offer ? 'Editar' : 'Adicionar'} Oferta</DialogTitle></DialogHeader>
-        <div className="space-y-4 py-4">
-          <div><Label>Nome da oferta *</Label><Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Ex: Desafio 21 Dias Emagrecimento Definitivo" className="placeholder:text-xs" /></div>
-          <div><Label>Tipo *</Label><Select value={formData.type} onValueChange={v => setFormData({...formData, type: v as any})}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{OFFER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
-          
-          <div><Label>Descrição curta *</Label>
+    <div className="space-y-6">
+      {/* Identificação */}
+      <div className="bg-card border border-border rounded-lg p-6">
+        <Label className="text-base font-semibold">Nome da Oferta *</Label>
+        <p className="text-sm text-muted-foreground mt-1 mb-3">
+          Escolha um nome que identifique claramente esta oferta
+        </p>
+        <div className="flex gap-2">
+          <Input
+            value={identification}
+            onChange={(e) => setIdentification(e.target.value)}
+            placeholder="Ex: Desafio 21 Dias Emagrecimento Definitivo"
+            disabled={offerCreated}
+            className="placeholder:text-xs"
+          />
+          {!offerCreated ? (
+            <Button onClick={handleCreateOffer} disabled={!identification.trim()}>
+              Criar Oferta
+            </Button>
+          ) : (
+            identification !== originalId && (
+              <Button onClick={handleUpdateIdentification} variant="outline">
+                Atualizar
+              </Button>
+            )
+          )}
+        </div>
+        {autoSaving && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Salvando automaticamente...
+          </p>
+        )}
+      </div>
+
+      {/* Form fields - only show after offer is created */}
+      {offerCreated && (
+        <div className="space-y-6">
+          {/* Tipo */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Label className="text-base font-semibold">Tipo de Oferta *</Label>
+            <Select 
+              value={formData.type} 
+              onValueChange={(v) => setFormData({...formData, type: v as any})}
+            >
+              <SelectTrigger className="mt-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OFFER_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Descrição Curta */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-semibold">Descrição Curta *</Label>
+              <span className={`text-xs ${getCharCount('short_description') >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
+                {getCharCount('short_description')}/50 caracteres
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Faça uma descrição breve e impactante da sua oferta
+            </p>
             <div className="relative">
-              <Textarea value={formData.short_description} onChange={e => setFormData({...formData, short_description: e.target.value})} placeholder="Ex: Programa de 21 dias com receitas balanceadas e exercícios em casa" rows={2} className="pr-12 placeholder:text-xs" />
+              <Textarea
+                value={formData.short_description}
+                onChange={(e) => setFormData({...formData, short_description: e.target.value})}
+                placeholder="Ex: Programa de 21 dias com receitas balanceadas e exercícios em casa"
+                rows={3}
+                className="pr-12 placeholder:text-xs"
+              />
               <VoiceInput onTranscript={(text) => setFormData({...formData, short_description: formData.short_description ? `${formData.short_description} ${text}` : text})} />
             </div>
           </div>
-          
-          <div><Label>Benefício principal *</Label>
+
+          {/* Benefício Principal */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-semibold">Benefício Principal *</Label>
+              <span className={`text-xs ${getCharCount('main_benefit') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
+                {getCharCount('main_benefit')}/30 caracteres
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Qual é o principal resultado que o cliente vai alcançar?
+            </p>
             <div className="relative">
-              <Textarea value={formData.main_benefit} onChange={e => setFormData({...formData, main_benefit: e.target.value})} placeholder="Ex: Perca até 5kg em 21 dias sem passar fome" rows={2} className="pr-12 placeholder:text-xs" />
+              <Textarea
+                value={formData.main_benefit}
+                onChange={(e) => setFormData({...formData, main_benefit: e.target.value})}
+                placeholder="Ex: Perca até 5kg em 21 dias sem passar fome"
+                rows={2}
+                className="pr-12 placeholder:text-xs"
+              />
               <VoiceInput onTranscript={(text) => setFormData({...formData, main_benefit: formData.main_benefit ? `${formData.main_benefit} ${text}` : text})} />
             </div>
           </div>
-          
-          <div><Label>Mecanismo único *</Label>
+
+          {/* Mecanismo Único */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-semibold">Mecanismo Único *</Label>
+              <span className={`text-xs ${getCharCount('unique_mechanism') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
+                {getCharCount('unique_mechanism')}/30 caracteres
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              O que torna sua solução única e diferente das outras?
+            </p>
             <div className="relative">
-              <Textarea value={formData.unique_mechanism} onChange={e => setFormData({...formData, unique_mechanism: e.target.value})} placeholder="Ex: Método Reset Metabólico que acelera a queima de gordura" rows={2} className="pr-12 placeholder:text-xs" />
+              <Textarea
+                value={formData.unique_mechanism}
+                onChange={(e) => setFormData({...formData, unique_mechanism: e.target.value})}
+                placeholder="Ex: Método Reset Metabólico que acelera a queima de gordura"
+                rows={2}
+                className="pr-12 placeholder:text-xs"
+              />
               <VoiceInput onTranscript={(text) => setFormData({...formData, unique_mechanism: formData.unique_mechanism ? `${formData.unique_mechanism} ${text}` : text})} />
             </div>
           </div>
-          
-          <div><Label>Diferenciais (3)</Label>{[0, 1, 2].map(i => <Input key={i} className="mt-2 placeholder:text-xs" placeholder={i === 0 ? "Ex: Sem cortar carboidratos" : i === 1 ? "Ex: Grupo VIP de apoio" : "Ex: Receitas fáceis e rápidas"} value={formData.differentials?.[i] || ''} onChange={e => { const diffs = [...(formData.differentials || ['', '', ''])]; diffs[i] = e.target.value; setFormData({...formData, differentials: diffs}); }} />)}</div>
-          
-          <div><Label>Prova/Autoridade</Label>
+
+          {/* Diferenciais */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Label className="text-base font-semibold">Diferenciais (3)</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              Liste os principais diferenciais da sua oferta
+            </p>
+            {[0, 1, 2].map(i => (
+              <Input
+                key={i}
+                className="mt-2 placeholder:text-xs"
+                placeholder={i === 0 ? "Ex: Sem cortar carboidratos" : i === 1 ? "Ex: Grupo VIP de apoio" : "Ex: Receitas fáceis e rápidas"}
+                value={formData.differentials?.[i] || ''}
+                onChange={e => {
+                  const diffs = [...(formData.differentials || ['', '', ''])];
+                  diffs[i] = e.target.value;
+                  setFormData({...formData, differentials: diffs});
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Prova/Autoridade */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Label className="text-base font-semibold">Prova/Autoridade</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              Demonstre credibilidade (números, depoimentos, certificações)
+            </p>
             <div className="relative">
-              <Textarea value={formData.proof} onChange={e => setFormData({...formData, proof: e.target.value})} placeholder="Ex: Mais de 2.000 alunas emagreceram com o método" rows={2} className="pr-12 placeholder:text-xs" />
+              <Textarea
+                value={formData.proof}
+                onChange={(e) => setFormData({...formData, proof: e.target.value})}
+                placeholder="Ex: Mais de 2.000 alunas emagreceram com o método"
+                rows={2}
+                className="pr-12 placeholder:text-xs"
+              />
               <VoiceInput onTranscript={(text) => setFormData({...formData, proof: formData.proof ? `${formData.proof} ${text}` : text})} />
             </div>
           </div>
-          
-          <div><Label>Garantia (opcional)</Label>
+
+          {/* Garantia */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Label className="text-base font-semibold">Garantia (opcional)</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              Qual garantia você oferece para reduzir o risco percebido?
+            </p>
             <div className="relative">
-              <Textarea value={formData.guarantee} onChange={e => setFormData({...formData, guarantee: e.target.value})} placeholder="Ex: Se não perder peso em 21 dias, devolvemos seu dinheiro" rows={2} className="pr-12 placeholder:text-xs" />
+              <Textarea
+                value={formData.guarantee}
+                onChange={(e) => setFormData({...formData, guarantee: e.target.value})}
+                placeholder="Ex: Se não perder peso em 21 dias, devolvemos seu dinheiro"
+                rows={2}
+                className="pr-12 placeholder:text-xs"
+              />
               <VoiceInput onTranscript={(text) => setFormData({...formData, guarantee: formData.guarantee ? `${formData.guarantee} ${text}` : text})} />
             </div>
           </div>
-          
-          <div><Label>CTA *</Label><Input value={formData.cta} onChange={e => setFormData({...formData, cta: e.target.value})} placeholder="Ex: Comece agora seu desafio de 21 dias" className="placeholder:text-xs" /></div>
+
+          {/* CTA */}
+          <div className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-base font-semibold">Chamada para Ação (CTA) *</Label>
+              <span className={`text-xs ${getCharCount('cta') >= 10 ? 'text-primary' : 'text-muted-foreground'}`}>
+                {getCharCount('cta')}/10 caracteres
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Qual ação você quer que o cliente tome?
+            </p>
+            <Input
+              value={formData.cta}
+              onChange={(e) => setFormData({...formData, cta: e.target.value})}
+              placeholder="Ex: Comece agora seu desafio de 21 dias"
+              className="placeholder:text-xs"
+            />
+          </div>
+
+          {/* Status Summary */}
+          <div className="bg-muted/50 border border-border rounded-lg p-6">
+            <h3 className="font-semibold mb-3">Status dos Campos</h3>
+            <div className="space-y-2">
+              {fieldMinimums.map(({ field, min }) => {
+                const current = getCharCount(field as keyof Offer);
+                const isComplete = current >= min;
+                return (
+                  <div key={field} className="flex items-center gap-2">
+                    {isComplete ? (
+                      <CheckCircle size={16} className="text-primary" weight="fill" />
+                    ) : (
+                      <Circle size={16} className="text-muted-foreground" />
+                    )}
+                    <span className={`text-sm ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {field === 'short_description' ? 'Descrição Curta' :
+                       field === 'main_benefit' ? 'Benefício Principal' :
+                       field === 'unique_mechanism' ? 'Mecanismo Único' :
+                       'CTA'}: {current}/{min}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={handleClose} className="flex-1">
+              Salvar e Fechar
+            </Button>
+            <Button 
+              onClick={handleComplete} 
+              disabled={!isAllFieldsFilled()}
+              className="flex-1"
+            >
+              Concluir Oferta
+            </Button>
+          </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button><Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+    </div>
   );
 };
