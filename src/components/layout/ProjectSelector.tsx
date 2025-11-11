@@ -124,9 +124,7 @@ export const ProjectSelector = () => {
       <UpgradeModal
         open={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
-        limitType="projects"
-        currentLimit={limitInfo.limit}
-        currentUsage={limitInfo.current}
+        limitType="general"
       />
     </div>
   );
