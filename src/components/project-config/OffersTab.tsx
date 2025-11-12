@@ -139,6 +139,9 @@ export const OffersTab = () => {
               setIsFormOpen(false);
               setEditingOffer(null);
             }}
+            onUpdate={(newOffers) => {
+              setOffers(newOffers);
+            }}
             onCancel={handleCancelForm}
             onAutoSavingChange={setIsAutoSaving}
           />
