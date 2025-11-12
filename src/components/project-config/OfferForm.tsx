@@ -15,11 +15,12 @@ interface OfferFormProps {
   offer: Offer | null;
   allOffers: Offer[];
   onSave: (offers: Offer[]) => void;
+  onUpdate?: (offers: Offer[]) => void;
   onCancel: () => void;
   onAutoSavingChange?: (isSaving: boolean) => void;
 }
 
-export const OfferForm = ({ offer, allOffers, onSave, onCancel, onAutoSavingChange }: OfferFormProps) => {
+export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAutoSavingChange }: OfferFormProps) => {
   const { activeProject, refreshProjects } = useProject();
   const [formData, setFormData] = useState<Partial<Offer>>({
     name: '',
@@ -86,14 +87,14 @@ export const OfferForm = ({ offer, allOffers, onSave, onCancel, onAutoSavingChan
         .eq('id', activeProject.id);
 
       await refreshProjects();
-      onSave(updatedOffers);
+      onUpdate?.(updatedOffers);
     } catch (error) {
       console.error('Auto-save error:', error);
     } finally {
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [activeProject, offerCreated, offer, formData, identification, allOffers, refreshProjects, onSave, onAutoSavingChange]);
+  }, [activeProject, offerCreated, offer, formData, identification, allOffers, refreshProjects, onUpdate, onAutoSavingChange]);
 
   // Trigger auto-save periodically when editing
   useEffect(() => {
