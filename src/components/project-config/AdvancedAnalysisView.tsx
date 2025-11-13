@@ -27,6 +27,12 @@ const analysisFieldGroups = [
         description: 'Estágio de consciência do problema/solução (Eugene Schwartz) e barreiras mentais',
         minChars: 150,
       },
+      {
+        key: 'internal_mechanism',
+        label: 'Mecanismo Interno do Problema',
+        description: 'Loop comportamental/mental que perpetua o problema (ciclo vicioso)',
+        minChars: 200,
+      },
     ],
   },
   {
@@ -66,12 +72,6 @@ const analysisFieldGroups = [
         label: 'Percepção Errada do Problema',
         description: 'Diagnóstico equivocado, onde coloca a culpa, gap entre percebido e real',
         minChars: 150,
-      },
-      {
-        key: 'internal_mechanism',
-        label: 'Mecanismo Interno do Problema',
-        description: 'Loop comportamental/mental que perpetua o problema (ciclo vicioso)',
-        minChars: 200,
       },
       {
         key: 'limiting_belief',
