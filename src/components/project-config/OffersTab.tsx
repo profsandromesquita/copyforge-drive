@@ -27,18 +27,32 @@ export const OffersTab = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
 
+  const EDITING_STORAGE_KEY = `offer-editing-${activeProject?.id}`;
+
   useEffect(() => {
     if (activeProject?.offers) {
       setOffers(activeProject.offers);
+      
+      // Restaurar estado de edição após reload
+      const editingOfferId = localStorage.getItem(EDITING_STORAGE_KEY);
+      if (editingOfferId) {
+        const offerToEdit = activeProject.offers.find(o => o.id === editingOfferId);
+        if (offerToEdit) {
+          setEditingOffer(offerToEdit);
+          setIsFormOpen(true);
+        }
+      }
     }
-  }, [activeProject]);
+  }, [activeProject, EDITING_STORAGE_KEY]);
 
   const handleAddOffer = () => {
+    localStorage.removeItem(EDITING_STORAGE_KEY);
     setEditingOffer(null);
     setIsFormOpen(true);
   };
 
   const handleEditOffer = (offer: Offer) => {
+    localStorage.setItem(EDITING_STORAGE_KEY, offer.id);
     setEditingOffer(offer);
     setIsFormOpen(true);
   };
@@ -72,6 +86,7 @@ export const OffersTab = () => {
   };
 
   const handleCancelForm = () => {
+    localStorage.removeItem(EDITING_STORAGE_KEY);
     setIsFormOpen(false);
     setEditingOffer(null);
   };

@@ -143,6 +143,10 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       setOfferCreated(true);
       setOriginalId(newOffer.id);
       localStorage.removeItem('offer-draft');
+      
+      // Salvar no localStorage que esta oferta está sendo editada
+      localStorage.setItem(`offer-editing-${activeProject.id}`, newOffer.id);
+      
       toast.success('Oferta criada! Agora preencha os campos abaixo.');
     } catch (error) {
       console.error('Error creating offer:', error);
@@ -186,6 +190,9 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       return;
     }
 
+    if (activeProject) {
+      localStorage.removeItem(`offer-editing-${activeProject.id}`);
+    }
     onCancel();
     toast.success('Oferta concluída com sucesso!');
   };
@@ -193,6 +200,9 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   const handleClose = async () => {
     if (offerCreated && offer) {
       await autoSaveToDatabase();
+    }
+    if (activeProject) {
+      localStorage.removeItem(`offer-editing-${activeProject.id}`);
     }
     onCancel();
   };
