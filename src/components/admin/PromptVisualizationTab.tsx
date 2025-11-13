@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Download } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Copy, Download, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   formatSystemInstruction,
   formatJsonForDisplay,
@@ -91,6 +93,37 @@ export const PromptVisualizationTab = ({
                 </CardDescription>
               </CardHeader>
             </Card>
+          ) : sections.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>System Instruction Disponível</CardTitle>
+                <CardDescription>
+                  System instruction salvo em formato não estruturado
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Este system instruction não segue a estrutura padrão esperada. Visualizando formato bruto.
+                  </AlertDescription>
+                </Alert>
+                <ScrollArea className="h-[400px] w-full">
+                  <pre className="bg-muted p-4 rounded-lg text-sm">
+                    <code>{formatJsonForDisplay(systemInstruction)}</code>
+                  </pre>
+                </ScrollArea>
+                <Button
+                  onClick={() => copyToClipboard(formatJsonForDisplay(systemInstruction), "System Instruction")}
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar Tudo
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <Accordion type="single" collapsible className="w-full">
               {sections.map((section, index) => (
@@ -160,39 +193,45 @@ export const PromptVisualizationTab = ({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-semibold mb-2 flex items-center gap-2">
-                    <span>🤖</span>
-                    System Instruction
-                  </h4>
-                  <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-sm">
-                    <code>{formatJsonForDisplay(systemInstruction)}</code>
-                  </pre>
-                </div>
-                
-                <div className="border-t pt-6">
-                  <h4 className="font-semibold mb-2 flex items-center gap-2">
-                    <span>👤</span>
-                    User Prompt
-                  </h4>
-                  <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap text-sm">
-                    {userPrompt}
+              <ScrollArea className="h-[60vh] w-full">
+                <div className="space-y-6 pr-4">
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>🤖</span>
+                      System Instruction
+                    </h4>
+                    <ScrollArea className="h-[300px] w-full">
+                      <pre className="bg-muted p-4 rounded-lg text-sm">
+                        <code>{formatJsonForDisplay(systemInstruction)}</code>
+                      </pre>
+                    </ScrollArea>
                   </div>
-                </div>
+                  
+                  <div className="border-t pt-6">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>👤</span>
+                      User Prompt
+                    </h4>
+                    <ScrollArea className="h-[200px] w-full">
+                      <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap text-sm">
+                        {userPrompt}
+                      </div>
+                    </ScrollArea>
+                  </div>
 
-                <Button
-                  onClick={() => copyToClipboard(
-                    `${formatJsonForDisplay(systemInstruction)}\n\n---\n\n${userPrompt}`,
-                    "Complete Request"
-                  )}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Tudo
-                </Button>
-              </div>
+                  <Button
+                    onClick={() => copyToClipboard(
+                      `${formatJsonForDisplay(systemInstruction)}\n\n---\n\n${userPrompt}`,
+                      "Complete Request"
+                    )}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Tudo
+                  </Button>
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
