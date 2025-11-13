@@ -178,9 +178,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   const isAllFieldsFilled = () => {
     return (
       formData.short_description && formData.short_description.length >= 50 &&
-      formData.main_benefit && formData.main_benefit.length >= 30 &&
-      formData.unique_mechanism && formData.unique_mechanism.length >= 30 &&
-      formData.cta && formData.cta.length >= 10
+      formData.main_benefit && formData.main_benefit.length >= 30
     );
   };
 
@@ -214,9 +212,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
   const fieldMinimums = [
     { field: 'short_description', min: 50 },
-    { field: 'main_benefit', min: 30 },
-    { field: 'unique_mechanism', min: 30 },
-    { field: 'cta', min: 10 }
+    { field: 'main_benefit', min: 30 }
   ];
 
   return (
