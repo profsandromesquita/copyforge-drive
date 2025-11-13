@@ -81,39 +81,13 @@ const MyProject = () => {
         </header>
 
         <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
-          <div className="flex h-full">
-            {/* Internal Vertical Sidebar */}
-            <aside className="hidden lg:block w-64 bg-background border-r border-border">
-              <ScrollArea className="h-full">
-                <div className="p-4 space-y-2">
-                  {sections.map((section) => {
-                    const Icon = section.icon;
-                    const isActive = activeSection === section.id;
-                    
-                    return (
-                      <Button
-                        key={section.id}
-                        variant={isActive ? "default" : "ghost"}
-                        className={`w-full justify-start gap-3 ${
-                          isActive ? "" : "hover:bg-accent"
-                        }`}
-                        onClick={() => setActiveSection(section.id)}
-                      >
-                        <Icon size={20} weight={isActive ? "fill" : "regular"} />
-                        <span>{section.label}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </aside>
-
-            {/* Content Area */}
-            <div className="flex-1 bg-background overflow-hidden">
-              {/* Mobile Section Selector */}
-              <div className="lg:hidden border-b border-border bg-background">
-                <ScrollArea className="w-full">
-                  <div className="flex gap-2 p-4">
+          {/* Sidebar e conteúdo dentro da área cinza */}
+          <div className="p-6 h-full">
+            <div className="flex gap-6 h-full">
+              {/* Internal Vertical Sidebar */}
+              <aside className="hidden lg:block w-64 bg-background rounded-xl border border-border overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-2">
                     {sections.map((section) => {
                       const Icon = section.icon;
                       const isActive = activeSection === section.id;
@@ -121,28 +95,57 @@ const MyProject = () => {
                       return (
                         <Button
                           key={section.id}
-                          variant={isActive ? "default" : "outline"}
-                          size="sm"
-                          className="gap-2 whitespace-nowrap"
+                          variant={isActive ? "default" : "ghost"}
+                          className={`w-full justify-start gap-3 ${
+                            isActive ? "" : "hover:bg-accent"
+                          }`}
                           onClick={() => setActiveSection(section.id)}
                         >
-                          <Icon size={16} weight={isActive ? "fill" : "regular"} />
+                          <Icon size={20} weight={isActive ? "fill" : "regular"} />
                           <span>{section.label}</span>
                         </Button>
                       );
                     })}
                   </div>
                 </ScrollArea>
-              </div>
+              </aside>
 
-              {/* Content */}
-              <ScrollArea className="h-full">
-                <div className="p-6">
-                  {activeSection === 'identity' && <IdentityTab isNew={false} />}
-                  {activeSection === 'audience' && <AudienceTab />}
-                  {activeSection === 'offers' && <OffersTab />}
+              {/* Content Area */}
+              <div className="flex-1 bg-background rounded-xl border border-border overflow-hidden">
+                {/* Mobile Section Selector */}
+                <div className="lg:hidden border-b border-border bg-background">
+                  <ScrollArea className="w-full">
+                    <div className="flex gap-2 p-4">
+                      {sections.map((section) => {
+                        const Icon = section.icon;
+                        const isActive = activeSection === section.id;
+                        
+                        return (
+                          <Button
+                            key={section.id}
+                            variant={isActive ? "default" : "outline"}
+                            size="sm"
+                            className="gap-2 whitespace-nowrap"
+                            onClick={() => setActiveSection(section.id)}
+                          >
+                            <Icon size={16} weight={isActive ? "fill" : "regular"} />
+                            <span>{section.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
                 </div>
-              </ScrollArea>
+
+                {/* Content */}
+                <ScrollArea className="h-full">
+                  <div className="p-6">
+                    {activeSection === 'identity' && <IdentityTab isNew={false} />}
+                    {activeSection === 'audience' && <AudienceTab />}
+                    {activeSection === 'offers' && <OffersTab />}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </div>
         </main>
