@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { PromptCard } from "@/components/admin/ai-prompts/PromptCard";
 import { PromptEditorModal } from "@/components/admin/ai-prompts/PromptEditorModal";
 import { PromptHistoryModal } from "@/components/admin/ai-prompts/PromptHistoryModal";
@@ -37,6 +38,26 @@ export const PromptsSettings = () => {
   const generateCopyPrompts = prompts.filter(p => p.category === 'generate_copy');
   const optimizeCopyPrompts = prompts.filter(p => p.category === 'optimize_copy');
   const analyzeAudiencePrompts = prompts.filter(p => p.category === 'analyze_audience');
+
+  // Filtrar prompts por tipo de copy
+  const basePrompt = generateCopyPrompts.find(p => p.prompt_key === 'generate_copy_base');
+  const anuncioPrompts = generateCopyPrompts.filter(p => 
+    p.prompt_key.includes('_anuncio') || p.prompt_key.includes('_ad')
+  );
+  const landingPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_landing'));
+  const vslPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_vsl'));
+  const emailPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_email'));
+  const webinarPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_webinar'));
+  const conteudoPrompts = generateCopyPrompts.filter(p => 
+    p.prompt_key.includes('_content') || p.prompt_key.includes('_conteudo')
+  );
+  const mensagemPrompts = generateCopyPrompts.filter(p => 
+    p.prompt_key.includes('_message') || p.prompt_key.includes('_mensagem')
+  );
+
+  const customizedCount = generateCopyPrompts.filter(
+    p => p.current_prompt !== p.default_prompt
+  ).length;
 
   if (isLoading) {
     return (
@@ -77,17 +98,198 @@ export const PromptsSettings = () => {
             </TabsList>
 
             <TabsContent value="generate_copy" className="space-y-4 mt-6">
-              <div className="grid gap-4">
-                {generateCopyPrompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    prompt={prompt}
-                    onEdit={handleEdit}
-                    onHistory={handleHistory}
-                    onRestore={handleRestore}
-                  />
-                ))}
+              {/* Estatísticas */}
+              <div className="flex items-center gap-3 mb-6">
+                <Badge variant="outline" className="text-sm">
+                  {generateCopyPrompts.length} prompts configurados
+                </Badge>
+                <Badge variant="outline" className="text-sm">
+                  {customizedCount} personalizados
+                </Badge>
               </div>
+
+              {/* Sub-abas por tipo de copy */}
+              <Tabs defaultValue="base" className="w-full">
+                <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto">
+                  <TabsTrigger value="base" className="text-xs lg:text-sm">📋 Base</TabsTrigger>
+                  <TabsTrigger value="anuncios" className="text-xs lg:text-sm">📢 Anúncios</TabsTrigger>
+                  <TabsTrigger value="landing" className="text-xs lg:text-sm">🌐 Landing</TabsTrigger>
+                  <TabsTrigger value="vsl" className="text-xs lg:text-sm">🎬 VSL</TabsTrigger>
+                  <TabsTrigger value="emails" className="text-xs lg:text-sm">📧 Emails</TabsTrigger>
+                  <TabsTrigger value="webinars" className="text-xs lg:text-sm">🎥 Webinars</TabsTrigger>
+                  <TabsTrigger value="conteudo" className="text-xs lg:text-sm">📝 Conteúdo</TabsTrigger>
+                  <TabsTrigger value="mensagens" className="text-xs lg:text-sm">💬 Mensagens</TabsTrigger>
+                </TabsList>
+
+                {/* Base Prompt */}
+                <TabsContent value="base" className="mt-6">
+                  <div className="mb-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
+                    <p className="text-sm text-foreground">
+                      <strong>Prompt Base:</strong> Este é o prompt fundamental usado como base para todas as gerações de copy. 
+                      Modificações aqui afetarão TODOS os tipos de copy.
+                    </p>
+                  </div>
+                  {basePrompt ? (
+                    <PromptCard
+                      prompt={basePrompt}
+                      onEdit={handleEdit}
+                      onHistory={handleHistory}
+                      onRestore={handleRestore}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhum prompt base configurado
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Anúncios */}
+                <TabsContent value="anuncios" className="mt-6">
+                  <div className="grid gap-4">
+                    {anuncioPrompts.length > 0 ? (
+                      anuncioPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de anúncios configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Landing Pages */}
+                <TabsContent value="landing" className="mt-6">
+                  <div className="grid gap-4">
+                    {landingPrompts.length > 0 ? (
+                      landingPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de landing page configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* VSL */}
+                <TabsContent value="vsl" className="mt-6">
+                  <div className="grid gap-4">
+                    {vslPrompts.length > 0 ? (
+                      vslPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de VSL configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Emails */}
+                <TabsContent value="emails" className="mt-6">
+                  <div className="grid gap-4">
+                    {emailPrompts.length > 0 ? (
+                      emailPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de email configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Webinars */}
+                <TabsContent value="webinars" className="mt-6">
+                  <div className="grid gap-4">
+                    {webinarPrompts.length > 0 ? (
+                      webinarPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de webinar configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Conteúdo */}
+                <TabsContent value="conteudo" className="mt-6">
+                  <div className="grid gap-4">
+                    {conteudoPrompts.length > 0 ? (
+                      conteudoPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de conteúdo configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Mensagens */}
+                <TabsContent value="mensagens" className="mt-6">
+                  <div className="grid gap-4">
+                    {mensagemPrompts.length > 0 ? (
+                      mensagemPrompts.map((prompt) => (
+                        <PromptCard
+                          key={prompt.id}
+                          prompt={prompt}
+                          onEdit={handleEdit}
+                          onHistory={handleHistory}
+                          onRestore={handleRestore}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Nenhum prompt de mensagem configurado
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="optimize_copy" className="space-y-4 mt-6">
