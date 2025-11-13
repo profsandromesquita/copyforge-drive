@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,12 +21,17 @@ export const PromptEditorModal = ({ prompt, open, onClose, onSave }: PromptEdito
   const [changeReason, setChangeReason] = useState("");
   const [showDefault, setShowDefault] = useState(false);
 
-  const handleOpen = (isOpen: boolean) => {
-    if (isOpen && prompt) {
+  // Sincronizar editedPrompt quando modal abrir ou prompt mudar
+  useEffect(() => {
+    if (open && prompt?.current_prompt) {
       setEditedPrompt(prompt.current_prompt);
       setChangeReason("");
       setShowDefault(false);
-    } else {
+    }
+  }, [open, prompt?.current_prompt]);
+
+  const handleOpen = (isOpen: boolean) => {
+    if (!isOpen) {
       onClose();
     }
   };
