@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import Discover from "./pages/Discover";
 import CopyEditor from "./pages/CopyEditor";
+import MyProject from "./pages/MyProject";
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
 
@@ -67,6 +68,7 @@ const AppContent = () => {
       <Route path="/super-admin" element={<SuperAdmin />} />
       <Route path="/view/:id" element={<PublicCopy />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/my-project" element={<ProtectedRoute><MyProject /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />
       <Route path="/copy/:id" element={<ProtectedRoute><CopyEditorWithTheme /></ProtectedRoute>} />
