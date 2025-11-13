@@ -106,7 +106,7 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
       
       // Base Psicológica
       if (analysis.psychographic_profile) {
-        sections.push(`\n🧠 **Base Psicológica**`);
+        sections.push(`\n**Base Psicológica**`);
         sections.push(`**Perfil Psicográfico**: ${analysis.psychographic_profile}`);
       }
       if (analysis.consciousness_level) {
@@ -116,7 +116,7 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
       // Dimensão Emocional
       const hasEmotionalData = analysis.emotional_state || analysis.hidden_pain || analysis.primary_fear || analysis.emotional_desire;
       if (hasEmotionalData) {
-        sections.push(`\n💔 **Dimensão Emocional**`);
+        sections.push(`\n**Dimensão Emocional**`);
         if (analysis.emotional_state) sections.push(`**Estado Emocional**: ${analysis.emotional_state}`);
         if (analysis.hidden_pain) sections.push(`**Dor Oculta**: ${analysis.hidden_pain}`);
         if (analysis.primary_fear) sections.push(`**Medo Primário**: ${analysis.primary_fear}`);
@@ -126,7 +126,7 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
       // Dimensão Cognitiva
       const hasCognitiveData = analysis.problem_misperception || analysis.internal_mechanism || analysis.limiting_belief || analysis.internal_narrative || analysis.internal_contradiction;
       if (hasCognitiveData) {
-        sections.push(`\n🧩 **Dimensão Cognitiva**`);
+        sections.push(`\n**Dimensão Cognitiva**`);
         if (analysis.problem_misperception) sections.push(`**Percepção Errada**: ${analysis.problem_misperception}`);
         if (analysis.internal_mechanism) sections.push(`**Mecanismo Interno**: ${analysis.internal_mechanism}`);
         if (analysis.limiting_belief) sections.push(`**Crença Limitante**: ${analysis.limiting_belief}`);
@@ -137,7 +137,7 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
       // Dimensão Comportamental
       const hasBehavioralData = analysis.dominant_behavior || analysis.decision_trigger || analysis.communication_style || analysis.psychological_resistances;
       if (hasBehavioralData) {
-        sections.push(`\n⚡ **Dimensão Comportamental**`);
+        sections.push(`\n**Dimensão Comportamental**`);
         if (analysis.dominant_behavior) sections.push(`**Comportamento Dominante**: ${analysis.dominant_behavior}`);
         if (analysis.decision_trigger) sections.push(`**Gatilho de Decisão**: ${analysis.decision_trigger}`);
         if (analysis.communication_style) sections.push(`**Estilo de Comunicação**: ${analysis.communication_style}`);

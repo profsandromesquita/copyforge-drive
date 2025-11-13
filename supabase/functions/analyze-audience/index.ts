@@ -121,7 +121,7 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
                   },
                   consciousness_level: {
                     type: "string",
-                    description: "Nível de consciência do problema/solução segundo Eugene Schwartz (Unaware, Problem-Aware, Solution-Aware, Product-Aware, Most-Aware). Descreva em qual estágio o público está, por quê está nesse nível, e quais barreiras mentais enfrenta."
+                    description: "Nível de consciência do problema/solução segundo Eugene Schwartz. IMPORTANTE: Use os termos em PORTUGUÊS (Inconsciente, Consciente do Problema, Consciente da Solução, Consciente do Produto, Mais Consciente). Descreva em qual estágio o público está, por quê está nesse nível, e quais barreiras mentais enfrenta."
                   },
                   
                   // Dimensão Emocional

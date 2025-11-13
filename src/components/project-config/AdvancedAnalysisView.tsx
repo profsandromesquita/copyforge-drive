@@ -13,7 +13,7 @@ interface AdvancedAnalysisViewProps {
 
 const analysisFieldGroups = [
   {
-    title: '🧠 Base Psicológica',
+    title: 'Base Psicológica',
     fields: [
       {
         key: 'psychographic_profile',
@@ -30,7 +30,7 @@ const analysisFieldGroups = [
     ],
   },
   {
-    title: '💔 Dimensão Emocional',
+    title: 'Dimensão Emocional',
     fields: [
       {
         key: 'emotional_state',
@@ -59,7 +59,7 @@ const analysisFieldGroups = [
     ],
   },
   {
-    title: '🧩 Dimensão Cognitiva',
+    title: 'Dimensão Cognitiva',
     fields: [
       {
         key: 'problem_misperception',
@@ -94,7 +94,7 @@ const analysisFieldGroups = [
     ],
   },
   {
-    title: '⚡ Dimensão Comportamental',
+    title: 'Dimensão Comportamental',
     fields: [
       {
         key: 'dominant_behavior',
