@@ -142,9 +142,8 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       await refreshProjects();
       setOfferCreated(true);
       setOriginalId(newOffer.id);
-      onSave(updatedOffers);
       localStorage.removeItem('offer-draft');
-      toast.success('Oferta criada! Continue preenchendo os campos.');
+      toast.success('Oferta criada! Agora preencha os campos abaixo.');
     } catch (error) {
       console.error('Error creating offer:', error);
       toast.error('Erro ao criar oferta');
@@ -238,11 +237,6 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             )
           )}
         </div>
-        {autoSaving && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Salvando automaticamente...
-          </p>
-        )}
       </div>
 
       {/* Form fields - only show after offer is created */}
