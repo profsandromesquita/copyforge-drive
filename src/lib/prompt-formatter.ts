@@ -9,6 +9,23 @@ export const formatSystemInstruction = (systemInstruction: any): SystemInstructi
 
   const sections: SystemInstructionSection[] = [];
 
+  // Check if it's a compiled string format (with full_text)
+  let fullText = '';
+  if (typeof systemInstruction === 'string') {
+    fullText = systemInstruction;
+  } else if (systemInstruction.full_text && typeof systemInstruction.full_text === 'string') {
+    fullText = systemInstruction.full_text;
+  }
+
+  // If we have a compiled text format, parse it
+  if (fullText) {
+    const parsedSections = parseCompiledSystemInstruction(fullText);
+    if (parsedSections.length > 0) {
+      return parsedSections;
+    }
+  }
+
+  // Otherwise, use the structured format
   // Base Prompt
   if (systemInstruction.base_prompt) {
     sections.push({
@@ -52,6 +69,64 @@ export const formatSystemInstruction = (systemInstruction: any): SystemInstructi
       content: systemInstruction.characteristics,
       type: 'json'
     });
+  }
+
+  return sections;
+};
+
+// Parse compiled system instruction format
+const parseCompiledSystemInstruction = (text: string): SystemInstructionSection[] => {
+  const sections: SystemInstructionSection[] = [];
+  
+  // Split by section markers (===)
+  const sectionPattern = /===\s*([^=]+?)\s*===\s*\n([\s\S]*?)(?=\n===|$)/g;
+  const matches = [...text.matchAll(sectionPattern)];
+  
+  if (matches.length === 0) {
+    // No section markers found, return empty to fallback to raw JSON
+    return [];
+  }
+
+  matches.forEach(match => {
+    const title = match[1].trim();
+    let content = match[2].trim();
+    
+    // Map section titles to friendly names
+    const titleMap: Record<string, string> = {
+      'PROMPT BASE': 'Prompt Base',
+      'IDENTIDADE DA MARCA': 'Identidade da Marca',
+      'PERFIL DE AUDIÊNCIA': 'Perfil de Audiência',
+      'OFERTA': 'Oferta',
+      'CARACTERÍSTICAS': 'Características Selecionadas',
+      'DIRETRIZES DE EXECUÇÃO': 'Diretrizes de Execução',
+      'CONTEXTO ADICIONAL': 'Contexto Adicional'
+    };
+
+    const friendlyTitle = titleMap[title.toUpperCase()] || title;
+    
+    // Try to detect if content is JSON-like
+    const isJsonLike = content.includes('**') && (content.includes('Marca') || content.includes('Setor') || content.includes('Propósito'));
+    
+    sections.push({
+      title: friendlyTitle,
+      content: content,
+      type: isJsonLike ? 'text' : 'text'
+    });
+  });
+
+  // Extract metadata if present (usually at the end)
+  const metadataMatch = text.match(/\{[\s\S]*"has_offer"[\s\S]*\}/);
+  if (metadataMatch) {
+    try {
+      const metadata = JSON.parse(metadataMatch[0]);
+      sections.push({
+        title: 'Metadados',
+        content: metadata,
+        type: 'json'
+      });
+    } catch (e) {
+      // If JSON parsing fails, ignore metadata
+    }
   }
 
   return sections;
@@ -116,9 +191,14 @@ export const getSectionIcon = (title: string): string => {
   const iconMap: Record<string, string> = {
     'Prompt Base': '📝',
     'Identidade do Projeto': '🎯',
+    'Identidade da Marca': '🎯',
     'Segmento de Audiência': '👥',
+    'Perfil de Audiência': '👥',
     'Oferta': '🎁',
-    'Características Selecionadas': '⚙️'
+    'Características Selecionadas': '⚙️',
+    'Diretrizes de Execução': '📋',
+    'Contexto Adicional': '📌',
+    'Metadados': '🔧'
   };
   return iconMap[title] || '📄';
 };
