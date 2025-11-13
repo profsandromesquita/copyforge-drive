@@ -17,7 +17,7 @@ type ProjectSection = 'identity' | 'audience' | 'offers';
 const MyProject = () => {
   const { setTheme } = useTheme();
   const navigate = useNavigate();
-  const { activeProject } = useProject();
+  const { activeProject, loading } = useProject();
   const [activeSection, setActiveSection] = useState<ProjectSection>('identity');
 
   // Força modo claro
@@ -25,13 +25,26 @@ const MyProject = () => {
     setTheme('light');
   }, [setTheme]);
 
-  // Redirecionar se não houver projeto ativo
+  // Redirecionar se não houver projeto ativo (após carregar)
   useEffect(() => {
-    if (!activeProject) {
-      navigate('/dashboard');
+    if (!loading && !activeProject) {
+      navigate('/dashboard', { replace: true });
     }
-  }, [activeProject, navigate]);
+  }, [activeProject, loading, navigate]);
 
+  // Mostrar loading enquanto carrega
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando projeto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não há projeto, retorna null (mas o useEffect acima já redirecionou)
   if (!activeProject) {
     return null;
   }
