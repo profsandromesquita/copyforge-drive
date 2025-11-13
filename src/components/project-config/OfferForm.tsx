@@ -30,8 +30,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
     unique_mechanism: '',
     differentials: ['', '', ''],
     proof: '',
-    guarantee: '',
-    cta: ''
+    guarantee: ''
   });
   const [identification, setIdentification] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
@@ -387,20 +386,6 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               />
               <VoiceInput onTranscript={(text) => setFormData({...formData, guarantee: formData.guarantee ? `${formData.guarantee} ${text}` : text})} />
             </div>
-          </div>
-
-          {/* CTA */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Chamada para Ação (CTA)</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Qual ação você quer que o cliente tome?
-            </p>
-            <Input
-              value={formData.cta}
-              onChange={(e) => setFormData({...formData, cta: e.target.value})}
-              placeholder="Ex: Comece agora seu desafio de 21 dias"
-              className="placeholder:text-xs"
-            />
           </div>
 
           {/* Status Summary */}
