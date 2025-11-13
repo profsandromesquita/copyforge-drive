@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IdentityTab } from '@/components/project-config/IdentityTab';
@@ -13,11 +13,14 @@ import { toast } from 'sonner';
 const ProjectConfig = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { setTheme } = useTheme();
   const { projects, activeProject, setActiveProject, createProject, refreshProjects } = useProject();
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('identity');
+  
+  // Ler aba da URL ou usar 'identity' como padrão
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'identity');
 
   // Verifica se as abas estão desbloqueadas
   const isIdentityComplete = activeProject?.brand_name && activeProject?.sector;
@@ -30,6 +33,14 @@ const ProjectConfig = () => {
   useEffect(() => {
     setTheme('light');
   }, [setTheme]);
+
+  // Sincronizar aba da URL com estado local
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['identity', 'audience', 'offers'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const init = async () => {
@@ -79,6 +90,9 @@ const ProjectConfig = () => {
       toast.error('Adicione pelo menos um Segmento de Público primeiro');
       return;
     }
+    
+    // Atualizar URL com a nova aba
+    setSearchParams({ tab: value });
     setActiveTab(value);
   };
 
@@ -158,6 +172,7 @@ const ProjectConfig = () => {
               onSaveSuccess={() => {
                 // Avança para próxima aba sempre que salvar identidade
                 if (isNew || (isAudienceUnlocked && activeTab === 'identity')) {
+                  setSearchParams({ tab: 'audience' });
                   setActiveTab('audience');
                 }
               }}
@@ -169,6 +184,7 @@ const ProjectConfig = () => {
               onSaveSuccess={() => {
                 // Avança para próxima aba quando adicionar primeiro segmento
                 if (isOffersUnlocked && activeTab === 'audience') {
+                  setSearchParams({ tab: 'offers' });
                   setActiveTab('offers');
                 }
               }}
