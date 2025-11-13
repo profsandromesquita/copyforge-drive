@@ -327,7 +327,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               </span>
             </div>
             <p className="text-sm text-muted-foreground mb-3">
-              O que torna sua solução única e diferente das outras?
+              Qual o caminho estruturado/método que levará o cliente de onde está para onde ele quer chegar?
             </p>
             <div className="relative">
               <Textarea
