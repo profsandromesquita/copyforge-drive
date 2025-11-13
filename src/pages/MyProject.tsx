@@ -74,8 +74,7 @@ const MyProject = () => {
       <div className="flex-1 flex flex-col">
         {/* Header simples */}
         <header className="bg-background px-6 py-4 sticky top-0 z-50">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold">Meu Projeto</h2>
+          <div className="flex items-center justify-end gap-4">
             <UserMenu />
           </div>
         </header>
