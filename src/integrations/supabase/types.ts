@@ -71,6 +71,7 @@ export type Database = {
           project_identity: Json | null
           prompt: string
           sessions: Json
+          system_instruction: Json | null
           total_tokens: number | null
           tpc_snapshot: number | null
           was_auto_routed: boolean | null
@@ -96,6 +97,7 @@ export type Database = {
           project_identity?: Json | null
           prompt: string
           sessions: Json
+          system_instruction?: Json | null
           total_tokens?: number | null
           tpc_snapshot?: number | null
           was_auto_routed?: boolean | null
@@ -121,6 +123,7 @@ export type Database = {
           project_identity?: Json | null
           prompt?: string
           sessions?: Json
+          system_instruction?: Json | null
           total_tokens?: number | null
           tpc_snapshot?: number | null
           was_auto_routed?: boolean | null

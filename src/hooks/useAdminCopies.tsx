@@ -10,6 +10,7 @@ export interface CopyGeneration {
   generation_type: string;
   copy_type: string;
   prompt: string;
+  system_instruction?: any;
   parameters: any;
   sessions: any;
   original_content: any;
@@ -50,7 +51,7 @@ export const useAdminCopies = (filters: CopyFilters = {}, page: number = 1, page
       // Buscar dados do histórico
       let historyQuery = supabase
         .from("ai_generation_history")
-        .select("*", { count: 'exact' })
+        .select("*, system_instruction", { count: 'exact' })
         .order("created_at", { ascending: false });
 
       // Aplicar filtros
@@ -127,7 +128,7 @@ export const useAdminCopyDetails = (generationId: string) => {
       // Buscar histórico
       const { data: historyData, error } = await supabase
         .from("ai_generation_history")
-        .select("*")
+        .select("*, system_instruction")
         .eq("id", generationId)
         .single();
 

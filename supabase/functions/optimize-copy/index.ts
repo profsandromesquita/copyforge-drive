@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
 
     // Buscar system instruction salva da copy original
     let systemPrompt = buildSystemPrompt(action); // Fallback
+    let savedSystemInstruction = null;
     
     if (copyId) {
       const { data: copyData } = await supabase
@@ -260,6 +261,7 @@ Deno.serve(async (req) => {
       
       if (copyData?.system_instruction) {
         console.log('✓ System instruction encontrada na copy, usando contexto salvo');
+        savedSystemInstruction = copyData.system_instruction;
         const savedInstruction = getSystemInstructionText(copyData.system_instruction);
         
         // Adicionar instruções específicas da operação ao contexto salvo
@@ -431,6 +433,7 @@ Deno.serve(async (req) => {
         generation_type: action === 'otimizar' ? 'optimize' : 'variation',
         copy_type: 'outro',
         prompt: instructions,
+        system_instruction: savedSystemInstruction,
         parameters: {
           action,
           regenerateInstructions,

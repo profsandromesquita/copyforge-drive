@@ -327,6 +327,7 @@ serve(async (req) => {
           created_by: userId,
           copy_type: copyType,
           prompt,
+          system_instruction: systemInstructionCompiled,
           parameters: {
             objectives: objetivos,
             styles: estilos,
