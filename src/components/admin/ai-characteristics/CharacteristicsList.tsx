@@ -49,11 +49,12 @@ const SortableItem = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes}>
       <CharacteristicCard
         characteristic={characteristic}
         onEdit={onEdit}
         onDelete={onDelete}
+        dragHandleProps={listeners}
       />
     </div>
   );

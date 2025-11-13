@@ -8,9 +8,10 @@ interface CharacteristicCardProps {
   characteristic: AICharacteristic;
   onEdit: (characteristic: AICharacteristic) => void;
   onDelete: (id: string) => void;
+  dragHandleProps?: any;
 }
 
-export const CharacteristicCard = ({ characteristic, onEdit, onDelete }: CharacteristicCardProps) => {
+export const CharacteristicCard = ({ characteristic, onEdit, onDelete, dragHandleProps }: CharacteristicCardProps) => {
   const handleDelete = () => {
     if (confirm('Tem certeza que deseja deletar esta característica?')) {
       onDelete(characteristic.id);
@@ -19,7 +20,10 @@ export const CharacteristicCard = ({ characteristic, onEdit, onDelete }: Charact
 
   return (
     <Card className="p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
-      <div className="cursor-grab text-muted-foreground hover:text-foreground">
+      <div 
+        className="cursor-grab text-muted-foreground hover:text-foreground"
+        {...dragHandleProps}
+      >
         <GripVertical size={20} />
       </div>
       
