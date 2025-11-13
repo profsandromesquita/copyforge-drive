@@ -280,7 +280,7 @@ export const AudienceSegmentForm = ({
     },
     {
       id: 'biggest_desire',
-      label: '2. O que essa pessoa mais quer?',
+      label: '2. O que essa pessoa mais deseja alcançar?',
       placeholder: 'Ex: Ter uma renda extra de R$ 2.000 a R$ 3.000 por mês trabalhando de casa, nas horas vagas, para finalmente conseguir juntar dinheiro para a entrada do apartamento próprio e realizar pequenas viagens sem pesar no orçamento.'
     },
     {
