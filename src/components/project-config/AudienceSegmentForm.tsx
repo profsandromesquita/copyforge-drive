@@ -99,14 +99,14 @@ export const AudienceSegmentForm = ({
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      // Não chamar refreshProjects aqui para evitar fechar o formulário
     } catch (error) {
       console.error('Erro no auto-save:', error);
     } finally {
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [identification, formData, activeProject, allSegments, refreshProjects, onAutoSavingChange, segmentCreated]);
+  }, [identification, formData, activeProject, allSegments, onAutoSavingChange, segmentCreated]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -253,20 +253,18 @@ export const AudienceSegmentForm = ({
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     // Salvar antes de fechar se houver dados
     if (identification && segmentCreated && Object.values(formData).some(v => v)) {
-      autoSaveToDatabase();
+      await autoSaveToDatabase();
+      await refreshProjects();
     }
     
     if (!segment) {
       localStorage.removeItem(STORAGE_KEY);
     }
     
-    // Aguardar um pouco para garantir que o save foi concluído
-    setTimeout(() => {
-      onCancel();
-    }, 500);
+    onCancel();
   };
 
   const getCharCount = (fieldId: string) => {
