@@ -41,19 +41,13 @@ export const PromptsSettings = () => {
 
   // Filtrar prompts por tipo de copy
   const basePrompt = generateCopyPrompts.find(p => p.prompt_key === 'generate_copy_base');
-  const anuncioPrompts = generateCopyPrompts.filter(p => 
-    p.prompt_key.includes('_anuncio') || p.prompt_key.includes('_ad')
-  );
-  const landingPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_landing'));
-  const vslPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_vsl'));
-  const emailPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_email'));
-  const webinarPrompts = generateCopyPrompts.filter(p => p.prompt_key.includes('_webinar'));
-  const conteudoPrompts = generateCopyPrompts.filter(p => 
-    p.prompt_key.includes('_content') || p.prompt_key.includes('_conteudo')
-  );
-  const mensagemPrompts = generateCopyPrompts.filter(p => 
-    p.prompt_key.includes('_message') || p.prompt_key.includes('_mensagem')
-  );
+  const anuncioPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_ad');
+  const landingPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_landing_page');
+  const vslPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_vsl');
+  const emailPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_email');
+  const webinarPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_webinar');
+  const conteudoPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_content');
+  const mensagemPrompts = generateCopyPrompts.filter(p => p.prompt_key === 'generate_copy_message');
 
   const customizedCount = generateCopyPrompts.filter(
     p => p.current_prompt !== p.default_prompt

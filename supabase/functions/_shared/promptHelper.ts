@@ -36,7 +36,7 @@ function getFallbackPrompt(promptKey: string): string {
 
 IMPORTANTE: Você tem acesso a diferentes tipos de blocos (headline, subheadline, text, list, button), mas deve usar APENAS os que fazem sentido para o contexto específico da copy. Não force o uso de todos os tipos de blocos se eles não agregarem valor ao conteúdo.`,
 
-    'generate_copy_anuncio': `Especializado em anúncios diretos e impactantes. Para anúncios:
+    'generate_copy_ad': `Especializado em anúncios diretos e impactantes. Para anúncios:
 - Priorize headline + text curto + button (estrutura mínima e direta)
 - Use list apenas se os benefícios forem o foco principal
 - Mantenha conciso e direto ao ponto`,
@@ -63,12 +63,12 @@ IMPORTANTE: Você tem acesso a diferentes tipos de blocos (headline, subheadline
 - Text para introdução e desenvolvimento de tópicos
 - List para agenda, takeaways ou pontos-chave`,
 
-    'generate_copy_conteudo': `Especializado em conteúdo de valor educativo. Para conteúdo:
+    'generate_copy_content': `Especializado em conteúdo de valor educativo. Para conteúdo:
 - Foco em text para desenvolvimento profundo
 - Headline para títulos de seções
 - List quando houver passos, dicas ou conceitos múltiplos`,
 
-    'generate_copy_mensagem': `Especializado em mensagens diretas para WhatsApp/Telegram. Para mensagens:
+    'generate_copy_message': `Especializado em mensagens diretas para WhatsApp/Telegram. Para mensagens:
 - MINIMALISTA: use o mínimo de blocos possível
 - Priorize text para manter conversacional`,
 
