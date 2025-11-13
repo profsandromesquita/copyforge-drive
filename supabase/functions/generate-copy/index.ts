@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { buildContextualSystemInstruction, getSystemInstructionText } from '../_shared/systemInstructionBuilder.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,18 +103,18 @@ serve(async (req) => {
 
     console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
 
-    // Buscar system prompt do banco de dados
+    // Buscar base prompt do banco de dados
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    let systemPrompt = buildSystemPrompt(copyType); // Fallback padrão
+    let basePrompt = buildSystemPrompt(copyType); // Fallback padrão
     
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, copyType);
         if (dynamicPrompt) {
-          systemPrompt = dynamicPrompt;
+          basePrompt = dynamicPrompt;
           console.log(`✓ Usando prompt dinâmico do banco para tipo: ${copyType}`);
         } else {
           console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${copyType}`);
@@ -122,6 +123,31 @@ serve(async (req) => {
         console.error("Erro ao buscar prompt do banco, usando fallback:", error);
       }
     }
+    
+    // Construir system instruction contextualizada
+    const systemInstructionCompiled = buildContextualSystemInstruction({
+      copyType,
+      basePrompt,
+      projectIdentity,
+      audienceSegment,
+      offer,
+      characteristics: {
+        objectives: objetivos,
+        styles: estilos,
+        size: tamanhos[0],
+        preferences: preferencias
+      }
+    });
+    
+    const systemPrompt = getSystemInstructionText(systemInstructionCompiled);
+    
+    console.log("System instruction compiled:", {
+      has_project_identity: systemInstructionCompiled.has_project_identity,
+      has_audience_segment: systemInstructionCompiled.has_audience_segment,
+      has_offer: systemInstructionCompiled.has_offer,
+      has_characteristics: systemInstructionCompiled.has_characteristics,
+      text_length: systemPrompt.length
+    });
     
     const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer });
 

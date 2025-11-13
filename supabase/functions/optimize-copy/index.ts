@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getSystemInstructionText } from '../_shared/systemInstructionBuilder.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -247,26 +248,48 @@ Deno.serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    // Buscar prompt do banco de dados
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // Buscar system instruction salva da copy original
+    let systemPrompt = buildSystemPrompt(action); // Fallback
     
-    let systemPrompt = buildSystemPrompt(action); // Fallback padrão
-    
-    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, action);
-        if (dynamicPrompt) {
-          systemPrompt = dynamicPrompt;
-          console.log(`✓ Usando prompt dinâmico do banco para ação: ${action}`);
-        } else {
-          console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${action}`);
+    if (copyId) {
+      const { data: copyData } = await supabase
+        .from('copies')
+        .select('system_instruction')
+        .eq('id', copyId)
+        .single();
+      
+      if (copyData?.system_instruction) {
+        console.log('✓ System instruction encontrada na copy, usando contexto salvo');
+        const savedInstruction = getSystemInstructionText(copyData.system_instruction);
+        
+        // Adicionar instruções específicas da operação ao contexto salvo
+        const operationGuidance = action === 'otimizar'
+          ? `\n\n=== INSTRUÇÃO DE OTIMIZAÇÃO ===\nOtimize o conteúdo mantendo a estrutura similar mas melhorando clareza, impacto, persuasão e flow. Preserve a essência e quantidade de blocos.`
+          : `\n\n=== INSTRUÇÃO DE VARIAÇÃO ===\nCrie uma variação do conteúdo explorando ângulos e formatos diferentes. Mantenha o objetivo mas sinta-se livre para reorganizar e experimentar.`;
+        
+        systemPrompt = savedInstruction + operationGuidance;
+        console.log('System prompt length with saved context:', systemPrompt.length);
+      } else {
+        console.log('⚠️ Copy sem system_instruction salva, usando prompt do banco');
+        // Buscar prompt do banco de dados
+        const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+        const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        
+        if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+          try {
+            const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+            const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, action);
+            if (dynamicPrompt) {
+              systemPrompt = dynamicPrompt;
+              console.log(`✓ Usando prompt dinâmico do banco para ação: ${action}`);
+            }
+          } catch (error) {
+            console.error('Erro ao buscar prompt do banco, usando fallback:', error);
+          }
         }
-      } catch (error) {
-        console.error('Erro ao buscar prompt do banco, usando fallback:', error);
       }
     }
+    
     const userPrompt = buildUserPrompt(
       action,
       originalContent,

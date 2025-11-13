@@ -251,6 +251,7 @@ export type Database = {
           sessions: Json
           show_in_discover: boolean | null
           status: string | null
+          system_instruction: Json | null
           title: string
           updated_at: string
           workspace_id: string
@@ -269,6 +270,7 @@ export type Database = {
           sessions?: Json
           show_in_discover?: boolean | null
           status?: string | null
+          system_instruction?: Json | null
           title?: string
           updated_at?: string
           workspace_id: string
@@ -287,6 +289,7 @@ export type Database = {
           sessions?: Json
           show_in_discover?: boolean | null
           status?: string | null
+          system_instruction?: Json | null
           title?: string
           updated_at?: string
           workspace_id?: string
