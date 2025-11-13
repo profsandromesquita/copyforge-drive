@@ -84,23 +84,21 @@ const MyProject = () => {
           <div className="p-6 h-full">
             <div className="flex gap-6 h-full">
               {/* Internal Vertical Sidebar */}
-              <aside className="hidden lg:block w-64 bg-background rounded-xl border border-border overflow-hidden">
+              <aside className="hidden lg:block w-64 overflow-hidden">
                 <ScrollArea className="h-full">
                   <div className="p-4 space-y-2">
                     {sections.map((section) => {
-                      const Icon = section.icon;
                       const isActive = activeSection === section.id;
                       
                       return (
                         <Button
                           key={section.id}
                           variant={isActive ? "default" : "ghost"}
-                          className={`w-full justify-start gap-3 ${
+                          className={`w-full justify-start ${
                             isActive ? "" : "hover:bg-accent"
                           }`}
                           onClick={() => setActiveSection(section.id)}
                         >
-                          <Icon size={20} weight={isActive ? "fill" : "regular"} />
                           <span>{section.label}</span>
                         </Button>
                       );
@@ -116,7 +114,6 @@ const MyProject = () => {
                   <ScrollArea className="w-full">
                     <div className="flex gap-2 p-4">
                       {sections.map((section) => {
-                        const Icon = section.icon;
                         const isActive = activeSection === section.id;
                         
                         return (
@@ -124,10 +121,9 @@ const MyProject = () => {
                             key={section.id}
                             variant={isActive ? "default" : "outline"}
                             size="sm"
-                            className="gap-2 whitespace-nowrap"
+                            className="whitespace-nowrap"
                             onClick={() => setActiveSection(section.id)}
                           >
-                            <Icon size={16} weight={isActive ? "fill" : "regular"} />
                             <span>{section.label}</span>
                           </Button>
                         );
