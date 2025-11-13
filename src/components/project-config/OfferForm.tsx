@@ -316,13 +316,8 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
           {/* Mecanismo Único */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-base font-semibold">Mecanismo Único *</Label>
-              <span className={`text-xs ${getCharCount('unique_mechanism') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {getCharCount('unique_mechanism')}/30 caracteres
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
+            <Label className="text-base font-semibold">Mecanismo Único</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
               Qual o caminho estruturado/método que levará o cliente de onde está para onde ele quer chegar?
             </p>
             <div className="relative">
@@ -396,13 +391,8 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
           {/* CTA */}
           <div className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-base font-semibold">Chamada para Ação (CTA) *</Label>
-              <span className={`text-xs ${getCharCount('cta') >= 10 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {getCharCount('cta')}/10 caracteres
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
+            <Label className="text-base font-semibold">Chamada para Ação (CTA)</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
               Qual ação você quer que o cliente tome?
             </p>
             <Input
@@ -429,9 +419,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
                     )}
                     <span className={`text-sm ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {field === 'short_description' ? 'Descrição Curta' :
-                       field === 'main_benefit' ? 'Benefício Principal' :
-                       field === 'unique_mechanism' ? 'Mecanismo Único' :
-                       'CTA'}: {current}/{min}
+                       'Benefício Principal'}: {current}/{min}
                     </span>
                   </div>
                 );
