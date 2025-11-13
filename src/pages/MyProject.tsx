@@ -84,9 +84,9 @@ const MyProject = () => {
           <div className="p-6 h-full">
             <div className="flex gap-6 h-full">
               {/* Internal Vertical Sidebar */}
-              <aside className="hidden lg:block w-64 bg-background rounded-xl border border-border overflow-hidden">
+              <aside className="hidden lg:block w-52 bg-background rounded-xl border border-border overflow-hidden shrink-0">
                 <ScrollArea className="h-full">
-                  <div className="p-4 space-y-2">
+                  <div className="p-3 space-y-1">
                     {sections.map((section) => {
                       const Icon = section.icon;
                       const isActive = activeSection === section.id;
@@ -95,12 +95,13 @@ const MyProject = () => {
                         <Button
                           key={section.id}
                           variant={isActive ? "default" : "ghost"}
-                          className={`w-full justify-start gap-3 ${
-                            isActive ? "" : "hover:bg-accent"
+                          size="sm"
+                          className={`w-full justify-start gap-2.5 h-9 text-sm font-medium ${
+                            isActive ? "shadow-sm" : "hover:bg-accent/50"
                           }`}
                           onClick={() => setActiveSection(section.id)}
                         >
-                          <Icon size={20} weight={isActive ? "fill" : "regular"} />
+                          <Icon size={18} weight={isActive ? "fill" : "regular"} />
                           <span>{section.label}</span>
                         </Button>
                       );
