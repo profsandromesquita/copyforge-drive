@@ -47,7 +47,7 @@ export const PromptVisualizationTab = ({
   const renderSectionContent = (section: SystemInstructionSection) => {
     if (section.type === 'json') {
       return (
-        <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-sm">
+        <pre className="bg-muted p-4 rounded-lg overflow-auto max-h-96 text-sm whitespace-pre-wrap break-words">
           <code>{formatJsonForDisplay(section.content)}</code>
         </pre>
       );
@@ -109,9 +109,11 @@ export const PromptVisualizationTab = ({
                   </AlertDescription>
                 </Alert>
                 <ScrollArea className="h-[400px] w-full">
-                  <pre className="bg-muted p-4 rounded-lg text-sm">
-                    <code>{formatJsonForDisplay(systemInstruction)}</code>
-                  </pre>
+                  <div className="pr-4">
+                    <pre className="bg-muted p-4 rounded-lg text-sm whitespace-pre-wrap break-words">
+                      <code>{formatJsonForDisplay(systemInstruction)}</code>
+                    </pre>
+                  </div>
                 </ScrollArea>
                 <Button
                   onClick={() => copyToClipboard(formatJsonForDisplay(systemInstruction), "System Instruction")}
@@ -200,11 +202,11 @@ export const PromptVisualizationTab = ({
                       <span>🤖</span>
                       System Instruction
                     </h4>
-                    <ScrollArea className="h-[300px] w-full">
-                      <pre className="bg-muted p-4 rounded-lg text-sm">
+                    <div className="h-[300px] overflow-auto bg-muted rounded-lg">
+                      <pre className="p-4 text-sm whitespace-pre-wrap break-words">
                         <code>{formatJsonForDisplay(systemInstruction)}</code>
                       </pre>
-                    </ScrollArea>
+                    </div>
                   </div>
                   
                   <div className="border-t pt-6">
