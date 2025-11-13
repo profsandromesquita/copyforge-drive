@@ -108,7 +108,7 @@ const MyProject = () => {
               </aside>
 
               {/* Content Area */}
-              <div className="flex-1 bg-background rounded-xl border border-border overflow-hidden">
+              <div className="flex-1 overflow-hidden">
                 {/* Mobile Section Selector */}
                 <div className="lg:hidden border-b border-border bg-background">
                   <ScrollArea className="w-full">
