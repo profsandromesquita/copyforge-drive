@@ -387,7 +387,7 @@ export const AudienceSegmentForm = ({
                       }))}
                     />
                   </div>
-                  <span className={`text-xs ${isValid ? 'text-muted-foreground' : 'text-destructive'}`}>
+                  <span className={`text-xs ${isValid ? 'text-primary' : 'text-muted-foreground'}`}>
                     {charCount}/{MIN_CHARS} caracteres mínimos
                   </span>
                 </div>
