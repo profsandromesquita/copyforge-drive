@@ -97,38 +97,51 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
     sections.push(`**Segmento**: ${context.audienceSegment.name}`);
     sections.push(`**Descrição**: ${context.audienceSegment.description}`);
     
-    // Incluir análise psicográfica avançada se disponível
+    // Incluir análise psicográfica avançada se disponível (estrutura otimizada - 15 dimensões)
     if (context.audienceSegment.advanced_analysis) {
       const analysis = context.audienceSegment.advanced_analysis;
       
       sections.push("");
-      sections.push("**ANÁLISE PSICOGRÁFICA**:");
+      sections.push("**ANÁLISE PSICOGRÁFICA AVANÇADA**:");
       
-      if (analysis.identity) {
-        sections.push(`- Identidade: ${JSON.stringify(analysis.identity)}`);
+      // Base Psicológica
+      if (analysis.psychographic_profile) {
+        sections.push(`\n🧠 **Base Psicológica**`);
+        sections.push(`**Perfil Psicográfico**: ${analysis.psychographic_profile}`);
       }
-      
-      if (analysis.pains) {
-        sections.push(`- Dores: ${JSON.stringify(analysis.pains)}`);
-      }
-      
-      if (analysis.desires) {
-        sections.push(`- Desejos: ${JSON.stringify(analysis.desires)}`);
-      }
-      
       if (analysis.consciousness_level) {
-        sections.push(`- Nível de Consciência: ${analysis.consciousness_level.level} - ${analysis.consciousness_level.approach}`);
+        sections.push(`**Nível de Consciência**: ${analysis.consciousness_level}`);
       }
       
-      if (analysis.language) {
-        sections.push(`- Linguagem: Como falam: "${analysis.language.how_they_speak}" | Evitar: "${analysis.language.avoid}"`);
+      // Dimensão Emocional
+      const hasEmotionalData = analysis.emotional_state || analysis.hidden_pain || analysis.primary_fear || analysis.emotional_desire;
+      if (hasEmotionalData) {
+        sections.push(`\n💔 **Dimensão Emocional**`);
+        if (analysis.emotional_state) sections.push(`**Estado Emocional**: ${analysis.emotional_state}`);
+        if (analysis.hidden_pain) sections.push(`**Dor Oculta**: ${analysis.hidden_pain}`);
+        if (analysis.primary_fear) sections.push(`**Medo Primário**: ${analysis.primary_fear}`);
+        if (analysis.emotional_desire) sections.push(`**Desejo Emocional**: ${analysis.emotional_desire}`);
       }
       
-      if (analysis.mental_triggers) {
-        const triggers = analysis.mental_triggers
-          .map((t: any) => `${t.trigger} (força ${t.effectiveness})`)
-          .join(', ');
-        sections.push(`- Gatilhos Mentais Efetivos: ${triggers}`);
+      // Dimensão Cognitiva
+      const hasCognitiveData = analysis.problem_misperception || analysis.internal_mechanism || analysis.limiting_belief || analysis.internal_narrative || analysis.internal_contradiction;
+      if (hasCognitiveData) {
+        sections.push(`\n🧩 **Dimensão Cognitiva**`);
+        if (analysis.problem_misperception) sections.push(`**Percepção Errada**: ${analysis.problem_misperception}`);
+        if (analysis.internal_mechanism) sections.push(`**Mecanismo Interno**: ${analysis.internal_mechanism}`);
+        if (analysis.limiting_belief) sections.push(`**Crença Limitante**: ${analysis.limiting_belief}`);
+        if (analysis.internal_narrative) sections.push(`**Narrativa Interna**: ${analysis.internal_narrative}`);
+        if (analysis.internal_contradiction) sections.push(`**Contradição Interna**: ${analysis.internal_contradiction}`);
+      }
+      
+      // Dimensão Comportamental
+      const hasBehavioralData = analysis.dominant_behavior || analysis.decision_trigger || analysis.communication_style || analysis.psychological_resistances;
+      if (hasBehavioralData) {
+        sections.push(`\n⚡ **Dimensão Comportamental**`);
+        if (analysis.dominant_behavior) sections.push(`**Comportamento Dominante**: ${analysis.dominant_behavior}`);
+        if (analysis.decision_trigger) sections.push(`**Gatilho de Decisão**: ${analysis.decision_trigger}`);
+        if (analysis.communication_style) sections.push(`**Estilo de Comunicação**: ${analysis.communication_style}`);
+        if (analysis.psychological_resistances) sections.push(`**Resistências Psicológicas**: ${analysis.psychological_resistances}`);
       }
     }
     

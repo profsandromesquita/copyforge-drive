@@ -10,17 +10,30 @@ export interface AudienceSegment {
   journey: string; // Onde ela está e onde quer chegar?
   is_completed?: boolean; // Se o usuário concluiu o preenchimento
   
-  // FASE 2 - Análise gerada por IA (estruturada) - FOCO EM PÚBLICO
+  // FASE 2 - Análise gerada por IA (estruturada) - 15 dimensões psicológicas
   advanced_analysis?: {
-    consciousness_level: string; // Nível de consciência do problema/solução
-    psychographic_profile: string; // Valores, estilo de vida, personalidade
-    pains_frustrations: string; // Dores e frustrações específicas
-    desires_aspirations: string; // Desejos, aspirações e objetivos verdadeiros
-    behaviors_habits: string; // Comportamentos observáveis, hábitos, rotinas
-    language_communication: string; // Como se comunica naturalmente
-    influences_references: string; // Influenciadores, referências, fontes de informação
-    internal_barriers: string; // Barreiras psicológicas e bloqueios internos
-    anti_persona: string; // Quem definitivamente NÃO é esse público
+    // Core psicológico
+    psychographic_profile: string; // Valores centrais, estilo de vida, personalidade
+    consciousness_level: string; // Nível de consciência do problema/solução (Eugene Schwartz)
+    
+    // Dimensão Emocional
+    emotional_state: string; // Estado emocional atual, emoções dominantes, gatilhos
+    hidden_pain: string; // Dor real não verbalizada, sofrimento subjacente
+    primary_fear: string; // Medo fundamental que dirige comportamentos
+    emotional_desire: string; // Estado emocional desejado, como quer se sentir
+    
+    // Dimensão Cognitiva
+    problem_misperception: string; // O que acha que é o problema (mas está errado)
+    internal_mechanism: string; // Como o problema funciona internamente (ciclo vicioso)
+    limiting_belief: string; // Crença central que sabota progresso
+    internal_narrative: string; // História que conta para si mesmo
+    internal_contradiction: string; // Conflitos internos entre desejos e ações
+    
+    // Dimensão Comportamental
+    dominant_behavior: string; // Padrão de ação mais frequente
+    decision_trigger: string; // O que faz finalmente tomar ação
+    communication_style: string; // Vocabulário, tom, expressões naturais
+    psychological_resistances: string; // Barreiras emocionais, auto-sabotagem
   };
   analysis_generated_at?: string;
 }

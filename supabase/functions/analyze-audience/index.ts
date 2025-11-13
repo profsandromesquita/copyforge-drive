@@ -110,59 +110,95 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
             type: "function",
             function: {
               name: "generate_audience_analysis",
-              description: "Gera análise psicográfica profunda de público-alvo",
+              description: "Retorna análise psicográfica profunda estruturada em 15 dimensões específicas",
               parameters: {
                 type: "object",
                 properties: {
-                  consciousness_level: {
-                    type: "string",
-                    description: "Nível de consciência (Eugene Schwartz): em qual dos 5 estágios o público está? Explique o mindset atual e barreiras para avançar. Seja específico sobre o que essa pessoa já sabe, o que ainda não percebeu e quais são os bloqueios mentais que a impedem de evoluir para o próximo nível."
-                  },
+                  // Core psicológico
                   psychographic_profile: {
                     type: "string",
-                    description: "Perfil psicográfico completo: valores centrais que guiam decisões, estilo de vida (rotina, prioridades, contexto de vida), traços de personalidade relevantes (considere Big Five se aplicável), identidade social (a quais grupos pertence ou quer pertencer), autoimagem (como se vê e como quer ser vista pelos outros)."
+                    description: "Perfil psicográfico completo: valores centrais que guiam decisões, estilo de vida (como passa os dias, prioridades), traços de personalidade dominantes, identidade social (grupos aos quais pertence ou aspira), autoimagem (como se vê e como quer ser visto)."
                   },
-                  pains_frustrations: {
+                  consciousness_level: {
                     type: "string",
-                    description: "Mapeamento completo de dores: dores principais (as mais intensas e urgentes), dores secundárias (consequências das principais), frustrações diárias específicas, sentimentos negativos recorrentes, impactos emocionais e práticos na vida pessoal/profissional. Seja concreto e específico."
+                    description: "Nível de consciência do problema/solução segundo Eugene Schwartz (Unaware, Problem-Aware, Solution-Aware, Product-Aware, Most-Aware). Descreva em qual estágio o público está, por quê está nesse nível, e quais barreiras mentais enfrenta."
                   },
-                  desires_aspirations: {
+                  
+                  // Dimensão Emocional
+                  emotional_state: {
                     type: "string",
-                    description: "Desejos verdadeiros: o que REALMENTE quer alcançar (vá além do óbvio, busque a motivação profunda), aspirações de longo prazo, versão ideal de si mesmo (quem quer se tornar), mudanças desejadas na vida, sonhos e objetivos (mesmo os que parecem inalcançáveis)."
+                    description: "Estado emocional atual predominante: emoções dominantes no dia a dia (frustração, ansiedade, esperança, medo), intensidade emocional (alta/média/baixa volatilidade), gatilhos emocionais específicos que ativam reações, padrões de oscilação emocional. Mapeie sentimentos recorrentes."
                   },
-                  behaviors_habits: {
+                  hidden_pain: {
                     type: "string",
-                    description: "Comportamentos observáveis: rotina diária típica, hábitos de consumo de conteúdo (o que lê, assiste, ouve), onde passa o tempo (online: redes sociais, fóruns, sites / offline: lugares físicos), rituais e padrões repetitivos, como toma decisões (impulsivo, analítico, emocional), triggers comportamentais."
+                    description: "A dor real não verbalizada: o que está por trás da dor superficial, sofrimento emocional subjacente verdadeiro, o que mantém acordado à noite, dor que evita admitir por vergonha ou medo. A dor por trás da dor."
                   },
-                  language_communication: {
+                  primary_fear: {
                     type: "string",
-                    description: "Como se comunica naturalmente: vocabulário específico (liste 10-15 termos/frases que essa pessoa realmente usa), tom natural predominante (formal/informal/técnico/coloquial), gírias, expressões regionais ou de nicho, metáforas e analogias que usa, como descreve seus problemas (quais palavras usa para expressar dores)."
+                    description: "Medo fundamental que dirige comportamentos: o medo mais profundo relacionado ao problema, como esse medo se manifesta no dia a dia, consequências que tenta evitar a todo custo, cenário apocalíptico que visualiza se não resolver."
                   },
-                  influences_references: {
+                  emotional_desire: {
                     type: "string",
-                    description: "Influências e referências: autoridades que segue e confia, criadores de conteúdo (YouTubers, podcasters, influenciadores), marcas favoritas e por que as admira, comunidades/grupos dos quais faz parte (online e offline), fontes de informação que considera confiáveis, quem são seus modelos de referência."
+                    description: "Estado emocional desejado (além de ter/conseguir): como quer se sentir consigo mesmo, como quer ser visto pelos outros, emoções de transformação esperadas (paz, orgulho, segurança, liberdade), sentimento que busca alcançar."
                   },
-                  internal_barriers: {
+                  
+                  // Dimensão Cognitiva
+                  problem_misperception: {
                     type: "string",
-                    description: "Barreiras e bloqueios internos: crenças limitantes profundas (o que acredita que é verdade mas a limita), medos específicos e irracionais, padrões de auto-sabotagem, resistências emocionais (o que evita sentir), experiências passadas traumáticas que bloqueiam ação, contradições internas (quer X mas faz Y)."
+                    description: "O que ACHA que é o problema (mas está errado): diagnóstico equivocado que faz, onde coloca a culpa incorretamente, soluções que tenta (mas não funcionam), gap entre problema percebido vs. problema real."
                   },
-                  anti_persona: {
+                  internal_mechanism: {
                     type: "string",
-                    description: "Anti-persona detalhada: características demográficas e psicográficas de quem definitivamente NÃO é esse público, perfil oposto, valores e crenças conflitantes, comportamentos excludentes, red flags que indicam que não é esse público, por que essas pessoas não se identificariam com este segmento."
+                    description: "Como o problema funciona internamente (ciclo vicioso): loop comportamental/mental que perpetua o problema, sequência Gatilho → Comportamento → Consequência → Reforço, por que tentativas anteriores falharam, dinâmica psicológica que mantém travado."
+                  },
+                  limiting_belief: {
+                    type: "string",
+                    description: "Crença central que sabota progresso: crença limitante principal (ex: 'não sou capaz', 'preciso sofrer para merecer'), origem da crença (experiências passadas), como se manifesta em decisões, evidências que usa para confirmar a crença."
+                  },
+                  internal_narrative: {
+                    type: "string",
+                    description: "História que conta para si mesmo sobre sua situação: narrativa predominante (vítima/herói/incompetente), papel que se atribui no próprio problema, justificativas que usa repetidamente, 'script' mental que reproduz."
+                  },
+                  internal_contradiction: {
+                    type: "string",
+                    description: "Conflitos internos entre desejos e ações: 'Quero X mas faço Y', valores conflitantes em choque, desejos opostos simultâneos, ambivalência paralisante, como essa contradição trava progresso."
+                  },
+                  
+                  // Dimensão Comportamental
+                  dominant_behavior: {
+                    type: "string",
+                    description: "Padrão de ação mais frequente relacionado ao problema: comportamento automático predominante, quando ocorre (situações gatilho específicas), função que esse comportamento serve (mesmo que disfuncional), resultado que gera."
+                  },
+                  decision_trigger: {
+                    type: "string",
+                    description: "O que faz finalmente tomar ação: momento de 'chega!' típico, eventos que aceleram decisão, se é acumulação de fatores ou evento único, padrão de tomada de decisão (impulsivo/analítico/emocional)."
+                  },
+                  communication_style: {
+                    type: "string",
+                    description: "Linguagem e comunicação natural: vocabulário específico que usa, tom natural de fala (formal/informal, sério/descontraído), expressões típicas e gírias, metáforas e analogias que fazem sentido, como prefere receber informações."
+                  },
+                  psychological_resistances: {
+                    type: "string",
+                    description: "Barreiras emocionais e auto-sabotagem: resistências emocionais específicas a mudanças, padrões de auto-sabotagem quando está perto de avançar, objeções internas antes de agir, mecanismos de defesa psicológica."
                   }
                 },
                 required: [
-                  "consciousness_level",
                   "psychographic_profile",
-                  "pains_frustrations",
-                  "desires_aspirations",
-                  "behaviors_habits",
-                  "language_communication",
-                  "influences_references",
-                  "internal_barriers",
-                  "anti_persona"
-                ],
-                additionalProperties: false
+                  "consciousness_level",
+                  "emotional_state",
+                  "hidden_pain",
+                  "primary_fear",
+                  "emotional_desire",
+                  "problem_misperception",
+                  "internal_mechanism",
+                  "limiting_belief",
+                  "internal_narrative",
+                  "internal_contradiction",
+                  "dominant_behavior",
+                  "decision_trigger",
+                  "communication_style",
+                  "psychological_resistances"
+                ]
               }
             }
           }
