@@ -20,19 +20,19 @@ const analysisFields = [
   },
   {
     key: 'psychographic_profile',
-    label: 'Perfil Psicográfico Profundo',
+    label: 'Perfil Psicográfico',
     description: 'Valores centrais, estilo de vida, personalidade, identidade social e autoimagem',
     minChars: 200,
   },
   {
     key: 'pains_frustrations',
-    label: 'Dores e Frustrações Principais',
+    label: 'Dores e Frustrações',
     description: 'Mapeamento completo das dores, frustrações diárias e impactos emocionais',
     minChars: 200,
   },
   {
     key: 'desires_aspirations',
-    label: 'Desejos e Aspirações Verdadeiras',
+    label: 'Desejos e Aspirações',
     description: 'Objetivos de longo prazo, versão ideal de si mesmo e mudanças desejadas',
     minChars: 150,
   },
@@ -44,7 +44,7 @@ const analysisFields = [
   },
   {
     key: 'language_communication',
-    label: 'Linguagem e Comunicação Natural',
+    label: 'Linguagem e Comunicação',
     description: 'Vocabulário específico, tom natural, expressões, gírias e metáforas usadas',
     minChars: 150,
   },
