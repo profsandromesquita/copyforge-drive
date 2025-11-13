@@ -26,7 +26,6 @@ export const AudienceSegmentCard = ({
           <h3 className="font-bold text-base mb-1 truncate">{segment.id}</h3>
           {segment.analysis_generated_at && (
             <Badge variant="secondary" className="text-xs">
-              <Sparkles className="h-3 w-3 mr-1" />
               Análise IA gerada
             </Badge>
           )}
@@ -60,7 +59,6 @@ export const AudienceSegmentCard = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4 mr-2" />
                       {segment.advanced_analysis ? 'Ver Análise Avançada' : 'Gerar Análise Avançada'}
                     </>
                   )}
