@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VoiceInput } from './VoiceInput';
+import { AdvancedAnalysisTab } from './AdvancedAnalysisTab';
 import { AudienceSegment } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/hooks/useProject';
@@ -312,7 +314,19 @@ export const AudienceSegmentForm = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
+          <TabsTrigger 
+            value="analysis" 
+            disabled={!segment?.is_completed}
+          >
+            Análise Avançada
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic" className="mt-6">
+          <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
         <div className="space-y-2 pb-4 border-b border-border">
           <Label htmlFor="identification" className="text-sm font-medium flex items-center gap-1">
             Identificação do Público <span className="text-destructive">*</span>
@@ -421,7 +435,27 @@ export const AudienceSegmentForm = ({
             )}
           </>
         )}
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analysis" className="mt-6">
+          {segment && (
+            <div className="bg-card border border-border rounded-xl p-4 md:p-6">
+              <AdvancedAnalysisTab
+                segment={segment}
+                allSegments={allSegments}
+                onUpdate={(updatedSegments) => {
+                  // Atualizar o segmento local com os novos dados
+                  const updatedSegment = updatedSegments.find(s => s.id === segment.id);
+                  if (updatedSegment) {
+                    Object.assign(segment, updatedSegment);
+                  }
+                }}
+              />
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <div className="flex gap-3 justify-end pt-4 border-t border-border">
         <Button variant="outline" onClick={handleClose}>

@@ -1,23 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, Trash, Sparkles, Loader2 } from 'lucide-react';
+import { Pencil, Trash } from 'lucide-react';
 import { AudienceSegment } from '@/types/project-config';
 
 interface AudienceSegmentCardProps {
   segment: AudienceSegment;
   onEdit: (segment: AudienceSegment) => void;
   onDelete: (segmentId: string) => void;
-  onViewAnalysis?: (segment: AudienceSegment) => void;
-  isGenerating?: boolean;
 }
 
 export const AudienceSegmentCard = ({ 
   segment, 
   onEdit, 
-  onDelete,
-  onViewAnalysis,
-  isGenerating 
+  onDelete
 }: AudienceSegmentCardProps) => {
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
@@ -39,40 +34,6 @@ export const AudienceSegmentCard = ({
           </Button>
         </div>
       </div>
-
-      {onViewAnalysis && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="w-full">
-                <Button 
-                  variant={segment.advanced_analysis ? "outline" : "default"}
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onViewAnalysis(segment)}
-                  disabled={!segment.is_completed || isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      {segment.advanced_analysis ? 'Ver Análise Avançada' : 'Gerar Análise Avançada'}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </TooltipTrigger>
-            {!segment.is_completed && (
-              <TooltipContent>
-                <p>Conclua o preenchimento das 7 perguntas para habilitar</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      )}
     </div>
   );
 };
