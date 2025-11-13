@@ -65,7 +65,7 @@ export const CopyGenerationDetailsModal = ({
           </TabsList>
 
           <TabsContent value="info">
-            <ScrollArea className="max-h-[calc(90vh-200px)]">
+            <ScrollArea className="h-[calc(90vh-200px)]">
               <div className="space-y-6 pr-4">
                 {/* Header Info */}
                 <div className="space-y-4">
@@ -282,11 +282,13 @@ export const CopyGenerationDetailsModal = ({
           </TabsContent>
 
           <TabsContent value="prompts">
-            <ScrollArea className="max-h-[calc(90vh-200px)]">
-              <PromptVisualizationTab
-                systemInstruction={generation.system_instruction}
-                userPrompt={generation.prompt}
-              />
+            <ScrollArea className="h-[calc(90vh-200px)]">
+              <div className="pr-4">
+                <PromptVisualizationTab
+                  systemInstruction={generation.system_instruction}
+                  userPrompt={generation.prompt}
+                />
+              </div>
             </ScrollArea>
           </TabsContent>
         </Tabs>
