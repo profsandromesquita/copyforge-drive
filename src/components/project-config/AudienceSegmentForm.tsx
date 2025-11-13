@@ -285,7 +285,7 @@ export const AudienceSegmentForm = ({
     },
     {
       id: 'biggest_pain',
-      label: '3. O que mais dói pra ela hoje?',
+      label: 'Qual é o principal problema que essa pessoa tem?',
       placeholder: 'Ex: Vê o dinheiro do salário sumir entre contas, aluguel e pequenos gastos. Sente frustração por trabalhar tanto e não conseguir realizar sonhos básicos. Tem medo de depender só do emprego CLT e não ter segurança financeira. Vê amigas progredindo enquanto ela está estagnada.'
     },
     {
