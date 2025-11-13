@@ -72,23 +72,18 @@ const MyProject = () => {
       <Sidebar />
       
       <div className="flex-1 flex flex-col">
-        {/* Header com barra de pesquisa */}
+        {/* Header simples */}
         <header className="bg-background px-6 py-4 sticky top-0 z-50">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold">Meu Projeto</h2>
-              <p className="text-sm text-muted-foreground">{activeProject.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <UserMenu />
-            </div>
+            <h2 className="text-lg font-semibold">Meu Projeto</h2>
+            <UserMenu />
           </div>
         </header>
 
         <main className="flex-1 pb-20 lg:pb-0 rounded-tl-3xl overflow-hidden" style={{ backgroundColor: '#f5f5f5' }}>
           <div className="flex h-full">
             {/* Internal Vertical Sidebar */}
-            <aside className="hidden lg:block w-64 border-r border-border bg-background">
+            <aside className="hidden lg:block w-64 bg-background border-r border-border">
               <ScrollArea className="h-full">
                 <div className="p-4 space-y-2">
                   {sections.map((section) => {
@@ -113,33 +108,34 @@ const MyProject = () => {
               </ScrollArea>
             </aside>
 
-            {/* Mobile Section Selector */}
-            <div className="lg:hidden w-full border-b border-border bg-background sticky top-0 z-30">
-              <ScrollArea className="w-full">
-                <div className="flex gap-2 p-4">
-                  {sections.map((section) => {
-                    const Icon = section.icon;
-                    const isActive = activeSection === section.id;
-                    
-                    return (
-                      <Button
-                        key={section.id}
-                        variant={isActive ? "default" : "outline"}
-                        size="sm"
-                        className="gap-2 whitespace-nowrap"
-                        onClick={() => setActiveSection(section.id)}
-                      >
-                        <Icon size={16} weight={isActive ? "fill" : "regular"} />
-                        <span>{section.label}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            </div>
-
             {/* Content Area */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 bg-background overflow-hidden">
+              {/* Mobile Section Selector */}
+              <div className="lg:hidden border-b border-border bg-background">
+                <ScrollArea className="w-full">
+                  <div className="flex gap-2 p-4">
+                    {sections.map((section) => {
+                      const Icon = section.icon;
+                      const isActive = activeSection === section.id;
+                      
+                      return (
+                        <Button
+                          key={section.id}
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className="gap-2 whitespace-nowrap"
+                          onClick={() => setActiveSection(section.id)}
+                        >
+                          <Icon size={16} weight={isActive ? "fill" : "regular"} />
+                          <span>{section.label}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* Content */}
               <ScrollArea className="h-full">
                 <div className="p-6">
                   {activeSection === 'identity' && <IdentityTab isNew={false} />}
