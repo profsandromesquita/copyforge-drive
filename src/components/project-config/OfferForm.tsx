@@ -120,16 +120,12 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
     }
   }, [activeProject, offerCreated, offer, formData, identification, allOffers, onUpdate, onAutoSavingChange]);
 
-  // Trigger auto-save com debounce de 3 segundos
-  useEffect(() => {
+  // Handler para salvar ao tirar o foco do campo
+  const handleBlur = useCallback(() => {
     if (offer && offerCreated) {
-      const timer = setTimeout(() => {
-        autoSaveToDatabase();
-      }, 3000); // Aumentado para 3 segundos para melhor UX
-
-      return () => clearTimeout(timer);
+      autoSaveToDatabase();
     }
-  }, [formData, identification, offer, offerCreated, autoSaveToDatabase]);
+  }, [offer, offerCreated, autoSaveToDatabase]);
 
   // Flush auto-save on unmount and persist a local draft for existing offer
   useEffect(() => {
@@ -295,7 +291,10 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             <Label className="text-base font-semibold">Tipo de Oferta *</Label>
             <Select 
               value={formData.type} 
-              onValueChange={(v) => setFormData({...formData, type: v as any})}
+              onValueChange={(v) => {
+                setFormData({...formData, type: v as any});
+                handleBlur();
+              }}
             >
               <SelectTrigger className="mt-3">
                 <SelectValue />
@@ -325,6 +324,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               <Textarea
                 value={formData.short_description}
                 onChange={(e) => setFormData({...formData, short_description: e.target.value})}
+                onBlur={handleBlur}
                 placeholder="Ex: Programa de 21 dias com receitas balanceadas e exercícios em casa"
                 rows={3}
                 className="pr-12 placeholder:text-xs"
@@ -348,6 +348,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               <Textarea
                 value={formData.main_benefit}
                 onChange={(e) => setFormData({...formData, main_benefit: e.target.value})}
+                onBlur={handleBlur}
                 placeholder="Ex: Perca até 5kg em 21 dias sem passar fome"
                 rows={2}
                 className="pr-12 placeholder:text-xs"
@@ -366,6 +367,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               <Textarea
                 value={formData.unique_mechanism}
                 onChange={(e) => setFormData({...formData, unique_mechanism: e.target.value})}
+                onBlur={handleBlur}
                 placeholder="Ex: Método Reset Metabólico que acelera a queima de gordura"
                 rows={2}
                 className="pr-12 placeholder:text-xs"
@@ -391,6 +393,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
                   diffs[i] = e.target.value;
                   setFormData({...formData, differentials: diffs});
                 }}
+                onBlur={handleBlur}
               />
             ))}
           </div>
@@ -405,6 +408,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               <Textarea
                 value={formData.proof}
                 onChange={(e) => setFormData({...formData, proof: e.target.value})}
+                onBlur={handleBlur}
                 placeholder="Ex: Mais de 2.000 alunas emagreceram com o método"
                 rows={2}
                 className="pr-12 placeholder:text-xs"
@@ -423,6 +427,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               <Textarea
                 value={formData.guarantee}
                 onChange={(e) => setFormData({...formData, guarantee: e.target.value})}
+                onBlur={handleBlur}
                 placeholder="Ex: Se não perder peso em 21 dias, devolvemos seu dinheiro"
                 rows={2}
                 className="pr-12 placeholder:text-xs"
