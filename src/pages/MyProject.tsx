@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
-import { Buildings, Users, Megaphone } from "phosphor-react";
+import { Buildings, Users, Megaphone, Strategy } from "phosphor-react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -9,10 +9,11 @@ import { useProject } from "@/hooks/useProject";
 import { IdentityTab } from "@/components/project-config/IdentityTab";
 import { AudienceTab } from "@/components/project-config/AudienceTab";
 import { OffersTab } from "@/components/project-config/OffersTab";
+import { MethodologyTab } from "@/components/project-config/MethodologyTab";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type ProjectSection = 'identity' | 'audience' | 'offers';
+type ProjectSection = 'identity' | 'audience' | 'offers' | 'methodology';
 
 const MyProject = () => {
   const { setTheme } = useTheme();
@@ -64,6 +65,11 @@ const MyProject = () => {
       id: 'offers' as ProjectSection,
       icon: Megaphone,
       label: 'Ofertas',
+    },
+    {
+      id: 'methodology' as ProjectSection,
+      icon: Strategy,
+      label: 'Metodologia',
     },
   ];
 
@@ -138,6 +144,7 @@ const MyProject = () => {
                     {activeSection === 'identity' && <IdentityTab isNew={false} />}
                     {activeSection === 'audience' && <AudienceTab />}
                     {activeSection === 'offers' && <OffersTab />}
+                    {activeSection === 'methodology' && <MethodologyTab />}
                   </div>
                 </ScrollArea>
               </div>
