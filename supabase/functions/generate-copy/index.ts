@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { buildContextualSystemInstruction, getSystemInstructionText } from '../_shared/systemInstructionBuilder.ts';
+import { getFullPrompt } from '../_shared/promptHelper.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,21 +133,59 @@ serve(async (req) => {
 
     console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
 
-    // Buscar base prompt do banco de dados
+    // Buscar base prompt do banco de dados (com personalização se disponível)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const authHeader = req.headers.get('Authorization');
     
     let basePrompt = buildSystemPrompt(copyType); // Fallback padrão
+    let userId: string | null = null;
+    
+    // Extrair userId se tiver Authorization header
+    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabaseAuth.auth.getUser(token);
+        if (user) {
+          userId = user.id;
+          console.log('✓ Usuário autenticado detectado:', userId);
+        }
+      } catch (err) {
+        console.log('⚠️ Não foi possível extrair userId, usando prompt padrão');
+      }
+    }
     
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, copyType);
-        if (dynamicPrompt) {
-          basePrompt = dynamicPrompt;
-          console.log(`✓ Usando prompt dinâmico do banco para tipo: ${copyType}`);
+        
+        // Mapear copyType para promptKey
+        const promptKeyMap: Record<string, string> = {
+          'anuncio': 'generate_copy_ad',
+          'landing_page': 'generate_copy_landing_page',
+          'vsl': 'generate_copy_vsl',
+          'email': 'generate_copy_email',
+          'webinar': 'generate_copy_webinar',
+          'conteudo': 'generate_copy_content',
+          'mensagem': 'generate_copy_message',
+        };
+        
+        const promptKey = promptKeyMap[copyType] || 'generate_copy_base';
+        
+        // Usar getFullPrompt se tiver userId e workspaceId, senão buscar só do template
+        if (userId && workspaceId) {
+          basePrompt = await getFullPrompt(supabaseAdmin, promptKey, userId, workspaceId);
+          console.log(`✓ Usando prompt personalizado/completo para ${copyType}`);
         } else {
-          console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${copyType}`);
+          // Buscar só o template padrão
+          const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, copyType);
+          if (dynamicPrompt) {
+            basePrompt = dynamicPrompt;
+            console.log(`✓ Usando prompt padrão do banco para tipo: ${copyType}`);
+          } else {
+            console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${copyType}`);
+          }
         }
       } catch (error) {
         console.error("Erro ao buscar prompt do banco, usando fallback:", error);

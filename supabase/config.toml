@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.webhook-ticto]
 verify_jwt = false
+
+[functions.get-user-prompt]
+verify_jwt = true
+
+[functions.save-user-prompt]
+verify_jwt = true
+
+[functions.restore-default-prompt]
+verify_jwt = true

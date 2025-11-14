@@ -1,7 +1,55 @@
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 /**
+ * Busca o prompt completo para geração de copy
+ * Prioriza personalização do usuário, depois user_editable_prompt do template
+ * SEMPRE concatena com system_instructions (parte estrutural oculta)
+ */
+export async function getFullPrompt(
+  supabase: any, // Aceita qualquer versão do SupabaseClient
+  promptKey: string,
+  userId: string,
+  workspaceId: string
+): Promise<string> {
+  try {
+    // 1. Tentar buscar personalização do usuário
+    const { data: customization } = await supabase
+      .from('user_prompt_customizations')
+      .select('custom_prompt')
+      .eq('user_id', userId)
+      .eq('workspace_id', workspaceId)
+      .eq('prompt_key', promptKey)
+      .eq('is_active', true)
+      .single();
+
+    // 2. Buscar template (para system_instructions e fallback)
+    const { data: template } = await supabase
+      .from('ai_prompt_templates')
+      .select('user_editable_prompt, system_instructions')
+      .eq('prompt_key', promptKey)
+      .eq('is_active', true)
+      .single();
+
+    if (!template) {
+      console.warn(`Template ${promptKey} não encontrado, usando fallback`);
+      return getFallbackPrompt(promptKey);
+    }
+
+    // 3. Montar prompt completo
+    const userEditablePart = customization?.custom_prompt || template.user_editable_prompt || '';
+    const systemInstructions = template.system_instructions || '';
+
+    // SEMPRE concatenar: parte editável + instruções estruturais
+    return userEditablePart + '\n\n' + systemInstructions;
+  } catch (err) {
+    console.error(`Erro ao buscar prompt completo ${promptKey}:`, err);
+    return getFallbackPrompt(promptKey);
+  }
+}
+
+/**
  * Helper para buscar prompts do banco de dados com fallback para hardcoded
+ * @deprecated Use getFullPrompt() para geração com personalização
  */
 export async function getPrompt(
   supabase: SupabaseClient,
