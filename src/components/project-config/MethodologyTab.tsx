@@ -105,12 +105,7 @@ export const MethodologyTab = () => {
       {!isFormOpen && (
         <>
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">Metodologias</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Defina as diferentes metodologias do seu projeto
-              </p>
-            </div>
+            <h2 className="text-xl font-bold">Metodologias</h2>
             {methodologies.length > 0 && (
               <Button onClick={handleAddMethodology}>
                 <Plus size={20} className="mr-2" />
