@@ -1,13 +1,13 @@
 export interface Methodology {
-  framework: string; // Ex: "Identidade > Audiência > Oferta > Copy"
-  step1_name: string;
-  step1_description: string;
-  step2_name: string;
-  step2_description: string;
-  step3_name: string;
-  step3_description: string;
-  step4_name: string;
-  step4_description: string;
+  tese_central: string;
+  mecanismo_primario: string;
+  por_que_funciona: string;
+  erro_invisivel: string;
+  diferenciacao: string;
+  principios_fundamentos: string;
+  etapas_metodo: string;
+  transformacao_real: string;
+  prova_funcionamento: string;
 }
 
 export interface AudienceSegment {

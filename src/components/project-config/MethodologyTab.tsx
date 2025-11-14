@@ -13,18 +13,102 @@ import { MethodologyCard } from './MethodologyCard';
 import { Lightbulb } from 'phosphor-react';
 
 const methodologySchema = z.object({
-  framework: z.string().min(1, 'Framework é obrigatório'),
-  step1_name: z.string().min(1, 'Nome do passo 1 é obrigatório'),
-  step1_description: z.string().min(1, 'Descrição do passo 1 é obrigatória'),
-  step2_name: z.string().min(1, 'Nome do passo 2 é obrigatório'),
-  step2_description: z.string().min(1, 'Descrição do passo 2 é obrigatória'),
-  step3_name: z.string().min(1, 'Nome do passo 3 é obrigatório'),
-  step3_description: z.string().min(1, 'Descrição do passo 3 é obrigatória'),
-  step4_name: z.string().min(1, 'Nome do passo 4 é obrigatório'),
-  step4_description: z.string().min(1, 'Descrição do passo 4 é obrigatória'),
+  tese_central: z.string()
+    .trim()
+    .min(10, 'A tese central deve ter pelo menos 10 caracteres')
+    .max(1000, 'A tese central deve ter no máximo 1000 caracteres'),
+  mecanismo_primario: z.string()
+    .trim()
+    .min(10, 'O mecanismo primário deve ter pelo menos 10 caracteres')
+    .max(1000, 'O mecanismo primário deve ter no máximo 1000 caracteres'),
+  por_que_funciona: z.string()
+    .trim()
+    .min(10, 'A explicação deve ter pelo menos 10 caracteres')
+    .max(1000, 'A explicação deve ter no máximo 1000 caracteres'),
+  erro_invisivel: z.string()
+    .trim()
+    .min(10, 'O erro invisível deve ter pelo menos 10 caracteres')
+    .max(1000, 'O erro invisível deve ter no máximo 1000 caracteres'),
+  diferenciacao: z.string()
+    .trim()
+    .min(10, 'A diferenciação deve ter pelo menos 10 caracteres')
+    .max(1000, 'A diferenciação deve ter no máximo 1000 caracteres'),
+  principios_fundamentos: z.string()
+    .trim()
+    .min(10, 'Os princípios devem ter pelo menos 10 caracteres')
+    .max(1000, 'Os princípios devem ter no máximo 1000 caracteres'),
+  etapas_metodo: z.string()
+    .trim()
+    .min(10, 'As etapas devem ter pelo menos 10 caracteres')
+    .max(2000, 'As etapas devem ter no máximo 2000 caracteres'),
+  transformacao_real: z.string()
+    .trim()
+    .min(10, 'A transformação deve ter pelo menos 10 caracteres')
+    .max(1000, 'A transformação deve ter no máximo 1000 caracteres'),
+  prova_funcionamento: z.string()
+    .trim()
+    .min(10, 'A prova deve ter pelo menos 10 caracteres')
+    .max(1000, 'A prova deve ter no máximo 1000 caracteres'),
 });
 
 type MethodologyFormData = z.infer<typeof methodologySchema>;
+
+const fields = [
+  {
+    name: 'tese_central',
+    label: 'Tese Central',
+    placeholder: 'Ex: Você não engorda porque come muito, mas porque seu corpo perdeu sensibilidade à saciedade.',
+    tooltip: "A ideia-mãe do seu método. A frase que explica 'o porquê' da transformação acontecer. Ex: 'Você não engorda porque come muito, mas porque seu corpo perdeu sensibilidade à saciedade.'"
+  },
+  {
+    name: 'mecanismo_primario',
+    label: 'Mecanismo Primário',
+    placeholder: 'Ex: Reprogramação de padrões, Ajuste hormonal...',
+    tooltip: 'O motor interno da sua solução. Como a mudança realmente acontece. Ex: Reprogramação de padrões, Ajuste hormonal, Treinamento neurocomportamental.'
+  },
+  {
+    name: 'por_que_funciona',
+    label: 'Por que Funciona',
+    placeholder: 'Explique tecnicamente de forma simples...',
+    tooltip: 'A explicação técnica de forma simples. O que acontece no corpo, mente, comportamento, negócio ou processo para gerar a transformação.'
+  },
+  {
+    name: 'erro_invisivel',
+    label: 'Erro Invisível',
+    placeholder: 'Ex: Você não vende pouco por falta de estratégia, mas por excesso de ruído mental.',
+    tooltip: "O erro que mantém a pessoa presa no problema e que ela não percebe. Ex: 'Você não vende pouco por falta de estratégia, mas por excesso de ruído mental.'"
+  },
+  {
+    name: 'diferenciacao',
+    label: 'Diferenciação',
+    placeholder: 'Por que seu método funciona quando outros falham?',
+    tooltip: 'Por que seu método funciona quando outros falham? Qual variável você enxerga que os outros ignoram? Qual é sua alavanca única?'
+  },
+  {
+    name: 'principios_fundamentos',
+    label: 'Princípios/Fundamentos',
+    placeholder: 'Base científica ou teórica do método...',
+    tooltip: 'Base científica ou teórica do método: neurociência, psicologia, biologia, frameworks próprios, experiência clínica, análise de dados, etc.'
+  },
+  {
+    name: 'etapas_metodo',
+    label: 'Etapas do Método',
+    placeholder: 'Descreva o processo claro com etapas e sequência...',
+    tooltip: 'Processo claro com etapas, sequência e por que a ordem importa. O que acontece em cada fase da transformação.'
+  },
+  {
+    name: 'transformacao_real',
+    label: 'Transformação Real',
+    placeholder: 'Descreva o antes e depois verdadeiro...',
+    tooltip: 'O antes e depois verdadeiro: mental, emocional, técnico, financeiro, comportamental, relacional, físico ou operacional.'
+  },
+  {
+    name: 'prova_funcionamento',
+    label: 'Prova de Funcionamento',
+    placeholder: 'Evidências que comprovam a eficácia...',
+    tooltip: 'Evidências: princípios científicos, experiência prévia, validação psicológica, lógica operacional, estudos, testes iniciais, exemplos práticos.'
+  },
+] as const;
 
 export const MethodologyTab = () => {
   const { activeProject, refreshProjects } = useProject();
@@ -99,49 +183,24 @@ export const MethodologyTab = () => {
         <CardDescription className="flex items-start gap-2 pt-2">
           <Lightbulb size={20} className="text-primary mt-0.5 flex-shrink-0" />
           <span>
-            Defina o framework estratégico que você segue e descreva os 4 passos principais da sua metodologia de trabalho.
+            Defina a metodologia completa do seu projeto: tese central, mecanismo, diferenciação e evidências de funcionamento.
           </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <FieldWithTooltip
-            label="Framework Estratégico"
-            name="framework"
-            placeholder="Ex: Identidade > Audiência > Oferta > Copy"
-            tooltip="O modelo estratégico que você segue para criar suas copies"
-            type="input"
-            register={register}
-            error={errors.framework}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="space-y-4 p-4 border border-border rounded-lg bg-muted/30">
-                <h3 className="font-medium text-sm text-muted-foreground">Passo {step}</h3>
-                
-                <FieldWithTooltip
-                  label="Nome do Passo"
-                  name={`step${step}_name`}
-                  placeholder={`Ex: ${step === 1 ? 'Identidade' : step === 2 ? 'Audiência' : step === 3 ? 'Oferta' : 'Copy'}`}
-                  tooltip={`Nome da ${step === 1 ? 'primeira' : step === 2 ? 'segunda' : step === 3 ? 'terceira' : 'quarta'} etapa da sua metodologia`}
-                  type="input"
-                  register={register}
-                  error={errors[`step${step}_name` as keyof typeof errors] as any}
-                />
-
-                <FieldWithTooltip
-                  label="Descrição"
-                  name={`step${step}_description`}
-                  placeholder="Descreva o que acontece nesta etapa..."
-                  tooltip={`Descrição detalhada da ${step === 1 ? 'primeira' : step === 2 ? 'segunda' : step === 3 ? 'terceira' : 'quarta'} etapa`}
-                  type="textarea"
-                  register={register}
-                  error={errors[`step${step}_description` as keyof typeof errors] as any}
-                />
-              </div>
-            ))}
-          </div>
+          {fields.map((field) => (
+            <FieldWithTooltip
+              key={field.name}
+              label={field.label}
+              name={field.name}
+              placeholder={field.placeholder}
+              tooltip={field.tooltip}
+              type="textarea"
+              register={register}
+              error={errors[field.name as keyof typeof errors] as any}
+            />
+          ))}
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={saving} className="flex-1 sm:flex-none">
