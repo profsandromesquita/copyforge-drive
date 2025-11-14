@@ -207,33 +207,33 @@ export const MethodologyForm = ({
   if (!methodologyCreated) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-bold mb-2">Nova Metodologia</h2>
-          <p className="text-sm text-muted-foreground">
-            Digite o nome da sua metodologia para começar
+        <div className="bg-card border border-border rounded-lg p-6">
+          <Label className="text-base font-semibold">Nome da Metodologia *</Label>
+          <p className="text-sm text-muted-foreground mt-1 mb-3">
+            Escolha um nome que identifique claramente esta metodologia
           </p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="identification">Nome da Metodologia</Label>
+          <div className="flex gap-2">
             <Input
-              id="identification"
               value={identification}
               onChange={(e) => setIdentification(e.target.value)}
               placeholder="Ex: Método de Emagrecimento Intuitivo"
-              className="mt-2"
+              className="placeholder:text-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && identification.trim()) {
+                  handleCreateMethodology();
+                }
+              }}
             />
-          </div>
-
-          <div className="flex gap-2">
             <Button onClick={handleCreateMethodology} disabled={!identification.trim()}>
               Criar Metodologia
             </Button>
-            <Button variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
           </div>
+        </div>
+        
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
         </div>
       </div>
     );
