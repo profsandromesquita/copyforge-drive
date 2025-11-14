@@ -229,6 +229,11 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             placeholder="Ex: Desafio 21 Dias Emagrecimento Definitivo"
             disabled={offerCreated}
             className="placeholder:text-xs"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !offerCreated && identification.trim()) {
+                handleCreateOffer();
+              }
+            }}
           />
           {!offerCreated ? (
             <Button onClick={handleCreateOffer} disabled={!identification.trim()}>

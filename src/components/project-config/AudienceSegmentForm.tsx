@@ -324,56 +324,47 @@ export const AudienceSegmentForm = ({
         </TabsList>
 
         <TabsContent value="basic" className="mt-6">
-          <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
-        <div className="space-y-2 pb-4 border-b border-border">
-          <Label htmlFor="identification" className="text-sm font-medium flex items-center gap-1">
-            Identificação do Público <span className="text-destructive">*</span>
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="identification"
-              value={identification}
-              onChange={(e) => setIdentification(e.target.value)}
-              placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
-              className="text-base font-medium placeholder:text-sm"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (!segmentCreated) {
+          {/* Identificação */}
+          <div className="bg-card border border-border rounded-lg p-6 mb-6">
+            <Label className="text-base font-semibold">Identificação do Público *</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
+              Escolha um nome que identifique claramente este público-alvo
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={identification}
+                onChange={(e) => setIdentification(e.target.value)}
+                placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
+                disabled={segmentCreated}
+                className="placeholder:text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !segmentCreated && identification.trim()) {
                     handleCreateSegment();
-                  } else if (identification !== originalId) {
-                    handleUpdateIdentification();
                   }
-                }
-              }}
-            />
-            {!segmentCreated ? (
-              <Button 
-                onClick={handleCreateSegment}
-                disabled={!identification}
-                className="shrink-0"
-              >
-                Criar Segmento
-              </Button>
-            ) : identification !== originalId && (
-              <Button 
-                onClick={handleUpdateIdentification}
-                disabled={!identification}
-                className="shrink-0"
-              >
-                Atualizar
-              </Button>
-            )}
+                }}
+              />
+              {!segmentCreated ? (
+                <Button 
+                  onClick={handleCreateSegment}
+                  disabled={!identification.trim()}
+                  className="shrink-0"
+                >
+                  Criar Segmento
+                </Button>
+              ) : identification !== originalId && (
+                <Button 
+                  onClick={handleUpdateIdentification}
+                  disabled={!identification}
+                  className="shrink-0"
+                >
+                  Atualizar
+                </Button>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {segmentCreated 
-              ? '✓ Segmento criado! Os campos abaixo salvam automaticamente.'
-              : 'Digite um nome e clique em "Criar Segmento" para começar'
-            }
-          </p>
-        </div>
 
         {segmentCreated && (
-          <>
+          <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
             {questions.map((question) => {
               const charCount = getCharCount(question.id);
               const isValid = charCount >= MIN_CHARS;
@@ -431,9 +422,8 @@ export const AudienceSegmentForm = ({
                 </p>
               </div>
             )}
-          </>
-        )}
           </div>
+        )}
         </TabsContent>
 
         <TabsContent value="analysis" className="mt-6">
