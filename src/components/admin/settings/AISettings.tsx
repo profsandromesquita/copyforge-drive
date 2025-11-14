@@ -128,9 +128,20 @@ export const AISettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4">
+            <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">
+              ℹ️ Configuração Dinâmica
+            </p>
+            <p className="text-xs text-muted-foreground">
+              O roteamento de modelos agora é configurável! Acesse a aba{" "}
+              <strong>"Roteamento IA"</strong> para definir qual modelo será usado 
+              automaticamente para cada tipo de copy.
+            </p>
+          </div>
+          
           <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-4">
             <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">
-              ⚠️ IMPORTANTE
+              ⚠️ Como Funciona
             </p>
             <p className="text-xs text-muted-foreground">
               O roteamento automático depende do <strong>tipo da copy</strong> configurado ao criar a copy no Drive. 
