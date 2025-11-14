@@ -21,7 +21,7 @@ interface OfferFormProps {
 }
 
 export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAutoSavingChange }: OfferFormProps) => {
-  const { activeProject, refreshProjects } = useProject();
+  const { activeProject, refreshProjects, setActiveProject } = useProject();
   const [formData, setFormData] = useState<Partial<Offer>>({
     name: '',
     type: 'other',
@@ -107,6 +107,11 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       // Atualizar o estado local sem perder foco
       onUpdate?.(updatedOffers);
 
+      // Atualizar o contexto do projeto para manter sincronização entre abas
+      if (activeProject) {
+        setActiveProject({ ...activeProject, offers: updatedOffers });
+      }
+
       // Limpa draft específico após salvar com sucesso
       try { localStorage.removeItem(`offer-draft-${offer.id}`); } catch {}
     } catch (error) {
@@ -173,6 +178,10 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
         .eq('id', activeProject.id);
 
       await refreshProjects();
+      
+      // Atualizar o contexto do projeto imediatamente
+      setActiveProject({ ...activeProject, offers: updatedOffers });
+      
       setOfferCreated(true);
       setOriginalId(newOffer.id);
       localStorage.removeItem('offer-draft');
@@ -200,6 +209,10 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
         .eq('id', activeProject.id);
 
       await refreshProjects();
+      
+      // Atualizar o contexto do projeto imediatamente
+      setActiveProject({ ...activeProject, offers: updatedOffers });
+      
       onSave(updatedOffers);
       toast.success('Nome atualizado!');
     } catch (error) {
