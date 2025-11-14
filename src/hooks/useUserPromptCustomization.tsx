@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { CopyType } from '@/lib/ai-models';
+import { getPromptKey } from '@/lib/prompt-keys';
 
 interface UserPromptResponse {
   prompt: string;
@@ -14,9 +15,12 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
   const { activeWorkspace } = useWorkspace();
   const queryClient = useQueryClient();
 
+  // Converter copyType para promptKey correto
+  const promptKey = getPromptKey(copyType);
+
   // Buscar prompt do usuário
   const { data, isLoading, error } = useQuery({
-    queryKey: ['user-prompt', copyType, activeWorkspace?.id],
+    queryKey: ['user-prompt', promptKey, activeWorkspace?.id],
     queryFn: async () => {
       if (!activeWorkspace?.id) {
         throw new Error('Workspace não encontrado');
@@ -24,7 +28,7 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
 
       const { data, error } = await supabase.functions.invoke<UserPromptResponse>('get-user-prompt', {
         body: {
-          promptKey: copyType,
+          promptKey: promptKey,
           workspaceId: activeWorkspace.id,
         },
       });
@@ -44,7 +48,7 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
 
       const { data, error } = await supabase.functions.invoke('save-user-prompt', {
         body: {
-          promptKey: copyType,
+          promptKey: promptKey,
           workspaceId: activeWorkspace.id,
           customPrompt,
         },
@@ -54,7 +58,7 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-prompt', copyType, activeWorkspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-prompt', promptKey, activeWorkspace?.id] });
       toast({
         title: 'Prompt personalizado salvo!',
         description: 'Suas próximas gerações usarão este prompt.',
@@ -92,7 +96,7 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
 
       const { data, error } = await supabase.functions.invoke('restore-default-prompt', {
         body: {
-          promptKey: copyType,
+          promptKey: promptKey,
           workspaceId: activeWorkspace.id,
         },
       });
@@ -101,7 +105,7 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-prompt', copyType, activeWorkspace?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-prompt', promptKey, activeWorkspace?.id] });
       toast({
         title: 'Prompt restaurado',
         description: 'O prompt padrão do sistema foi restaurado.',

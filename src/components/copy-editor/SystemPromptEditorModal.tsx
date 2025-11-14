@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useAIPrompts } from "@/hooks/useAIPrompts";
-import { RotateCcw, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useUserPromptCustomization } from "@/hooks/useUserPromptCustomization";
+import { RotateCcw, Save, Sparkles, Info } from "lucide-react";
 import { CopyType } from "@/lib/ai-models";
+import { COPY_TYPE_LABELS } from "@/lib/prompt-keys";
 
 interface SystemPromptEditorModalProps {
   open: boolean;
@@ -14,93 +16,70 @@ interface SystemPromptEditorModalProps {
   copyType: CopyType;
 }
 
-const COPY_TYPE_TO_PROMPT_KEY: Record<CopyType, string> = {
-  anuncio: 'generate_copy_ad',
-  landing_page: 'generate_copy_landing_page',
-  vsl: 'generate_copy_vsl',
-  email: 'generate_copy_email',
-  webinar: 'generate_copy_webinar',
-  conteudo: 'generate_copy_content',
-  mensagem: 'generate_copy_message',
-  outro: 'generate_copy_base'
-};
+const MAX_PROMPT_LENGTH = 5000;
 
 export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromptEditorModalProps) => {
-  const { prompts, isLoading, updatePrompt, restoreDefault } = useAIPrompts();
-  const { toast } = useToast();
+  const { 
+    prompt, 
+    isCustomized, 
+    isLoading, 
+    saveCustomization, 
+    restoreDefault, 
+    isSaving, 
+    isRestoring 
+  } = useUserPromptCustomization(copyType);
+  
   const [editedPrompt, setEditedPrompt] = useState("");
-  const [isRestoring, setIsRestoring] = useState(false);
-
-  // Buscar o prompt correspondente ao tipo de copy
-  const promptKey = COPY_TYPE_TO_PROMPT_KEY[copyType];
-  const currentPrompt = prompts?.find(p => p.prompt_key === promptKey);
 
   // Sincronizar editedPrompt quando modal abrir ou prompt mudar
   useEffect(() => {
-    if (open && currentPrompt?.current_prompt) {
-      setEditedPrompt(currentPrompt.current_prompt);
+    if (open && prompt) {
+      setEditedPrompt(prompt);
     }
-  }, [open, currentPrompt?.current_prompt]);
+  }, [open, prompt]);
 
-  const handleSave = () => {
-    if (!currentPrompt || !editedPrompt.trim()) return;
+  const handleSave = async () => {
+    if (!editedPrompt.trim()) return;
     
-    updatePrompt.mutate({
-      id: currentPrompt.id,
-      current_prompt: editedPrompt,
-      change_reason: "Personalização pelo usuário no fluxo de criação"
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "✅ Prompt atualizado",
-          description: "O system prompt foi personalizado com sucesso."
-        });
-        onClose();
-      },
-      onError: () => {
-        toast({
-          title: "Erro ao salvar",
-          description: "Não foi possível atualizar o prompt. Tente novamente.",
-          variant: "destructive"
-        });
-      }
-    });
+    try {
+      await saveCustomization(editedPrompt);
+      onClose();
+    } catch (error) {
+      // Erro já tratado pelo hook com toast
+    }
   };
 
-  const handleRestore = () => {
-    if (!currentPrompt) return;
-    
-    setIsRestoring(true);
-    restoreDefault.mutate(currentPrompt.id, {
-      onSuccess: () => {
-        setEditedPrompt(currentPrompt.default_prompt);
-        toast({
-          title: "✅ Prompt restaurado",
-          description: "O prompt foi restaurado para o padrão original."
-        });
-        setIsRestoring(false);
-      },
-      onError: () => {
-        toast({
-          title: "Erro ao restaurar",
-          description: "Não foi possível restaurar o prompt. Tente novamente.",
-          variant: "destructive"
-        });
-        setIsRestoring(false);
-      }
-    });
+  const handleRestore = async () => {
+    try {
+      await restoreDefault();
+      // O hook já atualiza o prompt, vamos sincronizar
+      setEditedPrompt(prompt);
+    } catch (error) {
+      // Erro já tratado pelo hook com toast
+    }
   };
 
   const charCount = editedPrompt.length;
-  const isModified = currentPrompt ? editedPrompt !== currentPrompt.current_prompt : false;
+  const isOverLimit = charCount > MAX_PROMPT_LENGTH;
+  const isModified = editedPrompt !== prompt;
+  const canSave = editedPrompt.trim() && isModified && !isOverLimit;
+  const canRestore = isCustomized && !isRestoring;
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Personalizar System Prompt Base</DialogTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <DialogTitle>Personalizar Prompt Base</DialogTitle>
+            {isCustomized && (
+              <Badge variant="secondary" className="gap-1">
+                <Sparkles className="w-3 h-3" />
+                Personalizado
+              </Badge>
+            )}
+          </div>
           <DialogDescription>
-            Edite o prompt que orienta a IA na geração de {copyType}. Este prompt define o comportamento e estilo da IA.
+            Personalize como a IA gera {COPY_TYPE_LABELS[copyType]}. Defina a identidade, tom e habilidades do agente.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,62 +90,89 @@ export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromp
               <p className="text-sm text-muted-foreground">Carregando prompt...</p>
             </div>
           </div>
-        ) : !currentPrompt ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Prompt não encontrado para este tipo de copy.
-              </p>
-              <Button variant="outline" onClick={onClose}>
-                Fechar
-              </Button>
-            </div>
-          </div>
         ) : (
           <>
-            <div className="flex-1 overflow-auto space-y-4 py-4">
-              <div>
-                <Label className="mb-2 block">Prompt Atual</Label>
-                <Textarea
-                  value={editedPrompt}
-                  onChange={(e) => setEditedPrompt(e.target.value)}
-                  className="min-h-[350px] font-mono text-sm"
-                  placeholder="Digite o system prompt..."
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {charCount} caracteres {charCount > 10000 && <span className="text-amber-600">(máximo recomendado: 10.000)</span>}
-                </p>
-              </div>
-            </div>
+            <Alert className="border-primary/20 bg-primary/5">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm space-y-1">
+                <p><strong>Dicas de personalização:</strong></p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Defina a identidade do agente (ex: "Você é um copywriter especialista em...")</li>
+                  <li>Especifique o tom de voz desejado (formal, casual, persuasivo...)</li>
+                  <li>Liste habilidades específicas que a IA deve ter</li>
+                  <li>A estrutura de sessões/blocos será mantida automaticamente</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
-            <DialogFooter className="flex items-center justify-between gap-2">
-              <Button
-                variant="outline"
-                onClick={handleRestore}
-                disabled={isRestoring}
-                className="gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Restaurar Original
-              </Button>
-              
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={onClose}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={handleSave}
-                  disabled={!isModified || !editedPrompt.trim()}
-                  className="gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  Salvar
-                </Button>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="prompt">Prompt Base</Label>
+                <span className={`text-xs ${
+                  isOverLimit 
+                    ? 'text-destructive font-medium' 
+                    : charCount > MAX_PROMPT_LENGTH * 0.9 
+                      ? 'text-orange-500' 
+                      : 'text-muted-foreground'
+                }`}>
+                  {charCount} / {MAX_PROMPT_LENGTH} caracteres
+                  {isOverLimit && ' (limite excedido)'}
+                </span>
               </div>
-            </DialogFooter>
+              <Textarea
+                id="prompt"
+                value={editedPrompt}
+                onChange={(e) => setEditedPrompt(e.target.value)}
+                className={`min-h-[300px] font-mono text-sm resize-none ${
+                  isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''
+                }`}
+                placeholder="Digite o prompt personalizado..."
+              />
+            </div>
           </>
         )}
 
+        <DialogFooter className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRestore}
+            disabled={!canRestore || isLoading}
+            className="gap-2"
+          >
+            {isRestoring ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                Restaurando...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="w-4 h-4" />
+                Restaurar Original
+              </>
+            )}
+          </Button>
+          <div className="flex-1" />
+          <Button variant="outline" onClick={onClose} disabled={isSaving || isRestoring}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={!canSave || isSaving || isLoading}
+            className="gap-2"
+          >
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Salvar Personalização
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
