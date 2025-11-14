@@ -1,3 +1,15 @@
+export interface Methodology {
+  framework: string; // Ex: "Identidade > Audiência > Oferta > Copy"
+  step1_name: string;
+  step1_description: string;
+  step2_name: string;
+  step2_description: string;
+  step3_name: string;
+  step3_description: string;
+  step4_name: string;
+  step4_description: string;
+}
+
 export interface AudienceSegment {
   id: string;
   // FASE 1 - Preenchimento manual
@@ -65,6 +77,9 @@ export interface Project {
   central_purpose?: string;
   brand_personality?: string[];
   keywords?: string[];
+  
+  // ABA 4: METODOLOGIA
+  methodology?: Methodology;
   
   // Configurações completas
   audience_segments?: AudienceSegment[];
