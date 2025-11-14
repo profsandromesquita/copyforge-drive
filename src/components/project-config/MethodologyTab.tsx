@@ -23,8 +23,11 @@ export const MethodologyTab = () => {
   const [methodologies, setMethodologies] = useState<Methodology[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMethodology, setEditingMethodology] = useState<Methodology | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [methodologyToDelete, setMethodologyToDelete] = useState<string | null>(null);
+
+  const EDITING_STORAGE_KEY = `methodology-editing-${activeProject?.id}`;
 
   useEffect(() => {
     if (activeProject?.methodology) {
@@ -32,15 +35,27 @@ export const MethodologyTab = () => {
         ? activeProject.methodology
         : [];
       setMethodologies(methodologiesArray);
+      
+      // Restore editing state after reload
+      const editingMethodologyId = localStorage.getItem(EDITING_STORAGE_KEY);
+      if (editingMethodologyId) {
+        const methodologyToEdit = methodologiesArray.find(m => m.id === editingMethodologyId);
+        if (methodologyToEdit) {
+          setEditingMethodology(methodologyToEdit);
+          setIsFormOpen(true);
+        }
+      }
     }
-  }, [activeProject]);
+  }, [activeProject, EDITING_STORAGE_KEY]);
 
   const handleAddMethodology = () => {
+    localStorage.removeItem(EDITING_STORAGE_KEY);
     setEditingMethodology(null);
     setIsFormOpen(true);
   };
 
   const handleEditMethodology = (methodology: Methodology) => {
+    localStorage.setItem(EDITING_STORAGE_KEY, methodology.id);
     setEditingMethodology(methodology);
     setIsFormOpen(true);
   };
@@ -74,11 +89,13 @@ export const MethodologyTab = () => {
   };
 
   const handleCancelForm = () => {
+    localStorage.removeItem(EDITING_STORAGE_KEY);
     setIsFormOpen(false);
     setEditingMethodology(null);
   };
 
-  const handleFormSuccess = () => {
+  const handleSaveMethodologies = (updatedMethodologies: Methodology[]) => {
+    setMethodologies(updatedMethodologies);
     setIsFormOpen(false);
     setEditingMethodology(null);
   };
@@ -128,10 +145,13 @@ export const MethodologyTab = () => {
       )}
 
       {isFormOpen && (
-        <MethodologyForm
+        <MethodologyForm 
           editingMethodology={editingMethodology}
+          allMethodologies={methodologies}
+          onSave={handleSaveMethodologies}
+          onUpdate={setMethodologies}
           onCancel={handleCancelForm}
-          onSuccess={handleFormSuccess}
+          onAutoSavingChange={setIsAutoSaving}
         />
       )}
 
