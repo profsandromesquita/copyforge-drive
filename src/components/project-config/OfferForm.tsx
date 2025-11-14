@@ -262,14 +262,16 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto space-y-8 pb-8">
       {/* Identificação */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <Label className="text-base font-semibold">Nome da Oferta *</Label>
-        <p className="text-sm text-muted-foreground mt-1 mb-3">
-          Escolha um nome que identifique claramente esta oferta
-        </p>
-        <div className="flex gap-2">
+      <div className="space-y-4">
+        <div>
+          <Label className="text-lg font-semibold">Nome da Oferta *</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Escolha um nome que identifique claramente esta oferta
+          </p>
+        </div>
+        <div className="flex gap-3">
           <Input
             value={identification}
             onChange={(e) => setIdentification(e.target.value)}
@@ -283,12 +285,12 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             }}
           />
           {!offerCreated ? (
-            <Button onClick={handleCreateOffer} disabled={!identification.trim()}>
+            <Button onClick={handleCreateOffer} disabled={!identification.trim()} size="lg">
               Criar Oferta
             </Button>
           ) : (
             identification !== originalId && (
-              <Button onClick={handleUpdateIdentification} variant="outline">
+              <Button onClick={handleUpdateIdentification} variant="outline" size="lg">
                 Atualizar
               </Button>
             )
@@ -298,175 +300,205 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
       {/* Form fields - only show after offer is created */}
       {offerCreated && (
-        <div className="space-y-6">
-          {/* Tipo */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Tipo de Oferta *</Label>
-            <Select 
-              value={formData.type} 
-              onValueChange={(v) => {
-                setFormData({...formData, type: v as any});
-                handleBlur();
-              }}
-            >
-              <SelectTrigger className="mt-3">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OFFER_TYPES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Descrição Curta */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-base font-semibold">Descrição Curta *</Label>
-              <span className={`text-xs ${getCharCount('short_description') >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {getCharCount('short_description')}/50 caracteres
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Faça uma descrição breve e impactante da sua oferta
-            </p>
-            <div className="relative">
-              <Textarea
-                value={formData.short_description}
-                onChange={(e) => setFormData({...formData, short_description: e.target.value})}
-                onBlur={handleBlur}
-                placeholder="Ex: Programa de 21 dias com receitas balanceadas e exercícios em casa"
-                rows={3}
-                className="pr-12 placeholder:text-xs"
-              />
-              <VoiceInput onTranscript={(text) => setFormData({...formData, short_description: formData.short_description ? `${formData.short_description} ${text}` : text})} />
-            </div>
-          </div>
-
-          {/* Benefício Principal */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-base font-semibold">Benefício Principal *</Label>
-              <span className={`text-xs ${getCharCount('main_benefit') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {getCharCount('main_benefit')}/30 caracteres
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Qual é o principal resultado que o cliente vai alcançar?
-            </p>
-            <div className="relative">
-              <Textarea
-                value={formData.main_benefit}
-                onChange={(e) => setFormData({...formData, main_benefit: e.target.value})}
-                onBlur={handleBlur}
-                placeholder="Ex: Perca até 5kg em 21 dias sem passar fome"
-                rows={2}
-                className="pr-12 placeholder:text-xs"
-              />
-              <VoiceInput onTranscript={(text) => setFormData({...formData, main_benefit: formData.main_benefit ? `${formData.main_benefit} ${text}` : text})} />
-            </div>
-          </div>
-
-          {/* Mecanismo Único */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Mecanismo Único</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Qual o caminho estruturado/método que levará o cliente de onde está para onde ele quer chegar?
-            </p>
-            <div className="relative">
-              <Textarea
-                value={formData.unique_mechanism}
-                onChange={(e) => setFormData({...formData, unique_mechanism: e.target.value})}
-                onBlur={handleBlur}
-                placeholder="Ex: Método Reset Metabólico que acelera a queima de gordura"
-                rows={2}
-                className="pr-12 placeholder:text-xs"
-              />
-              <VoiceInput onTranscript={(text) => setFormData({...formData, unique_mechanism: formData.unique_mechanism ? `${formData.unique_mechanism} ${text}` : text})} />
-            </div>
-          </div>
-
-          {/* Diferenciais */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Diferenciais (3)</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Liste os principais diferenciais da sua oferta
-            </p>
-            {[0, 1, 2].map(i => (
-              <Input
-                key={i}
-                className="mt-2 placeholder:text-xs"
-                placeholder={i === 0 ? "Ex: Sem cortar carboidratos" : i === 1 ? "Ex: Grupo VIP de apoio" : "Ex: Receitas fáceis e rápidas"}
-                value={formData.differentials?.[i] || ''}
-                onChange={e => {
-                  const diffs = [...(formData.differentials || ['', '', ''])];
-                  diffs[i] = e.target.value;
-                  setFormData({...formData, differentials: diffs});
+        <div className="space-y-8">
+          {/* Card único com todos os campos */}
+          <div className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-6">
+            {/* Tipo */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Tipo de Oferta *</Label>
+              <Select 
+                value={formData.type} 
+                onValueChange={(v) => {
+                  setFormData({...formData, type: v as any});
+                  handleBlur();
                 }}
-                onBlur={handleBlur}
-              />
-            ))}
-          </div>
-
-          {/* Prova/Autoridade */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Prova/Autoridade</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Demonstre credibilidade (números, depoimentos, certificações)
-            </p>
-            <div className="relative">
-              <Textarea
-                value={formData.proof}
-                onChange={(e) => setFormData({...formData, proof: e.target.value})}
-                onBlur={handleBlur}
-                placeholder="Ex: Mais de 2.000 alunas emagreceram com o método"
-                rows={2}
-                className="pr-12 placeholder:text-xs"
-              />
-              <VoiceInput onTranscript={(text) => setFormData({...formData, proof: formData.proof ? `${formData.proof} ${text}` : text})} />
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {OFFER_TYPES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          {/* Garantia */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Label className="text-base font-semibold">Garantia (opcional)</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Qual garantia você oferece para reduzir o risco percebido?
-            </p>
-            <div className="relative">
-              <Textarea
-                value={formData.guarantee}
-                onChange={(e) => setFormData({...formData, guarantee: e.target.value})}
-                onBlur={handleBlur}
-                placeholder="Ex: Se não perder peso em 21 dias, devolvemos seu dinheiro"
-                rows={2}
-                className="pr-12 placeholder:text-xs"
-              />
-              <VoiceInput onTranscript={(text) => setFormData({...formData, guarantee: formData.guarantee ? `${formData.guarantee} ${text}` : text})} />
+            <div className="border-t border-border" />
+
+            {/* Descrição Curta */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Descrição Curta *</Label>
+                <span className={`text-xs font-medium ${getCharCount('short_description') >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {getCharCount('short_description')}/50
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Faça uma descrição breve e impactante da sua oferta
+              </p>
+              <div className="relative">
+                <Textarea
+                  value={formData.short_description}
+                  onChange={(e) => setFormData({...formData, short_description: e.target.value})}
+                  onBlur={handleBlur}
+                  placeholder="Ex: Programa de 21 dias com receitas balanceadas e exercícios em casa"
+                  rows={3}
+                  className="pr-12 resize-none"
+                />
+                <VoiceInput onTranscript={(text) => setFormData({...formData, short_description: formData.short_description ? `${formData.short_description} ${text}` : text})} />
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Benefício Principal */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Benefício Principal *</Label>
+                <span className={`text-xs font-medium ${getCharCount('main_benefit') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {getCharCount('main_benefit')}/30
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Qual é o principal resultado que o cliente vai alcançar?
+              </p>
+              <div className="relative">
+                <Textarea
+                  value={formData.main_benefit}
+                  onChange={(e) => setFormData({...formData, main_benefit: e.target.value})}
+                  onBlur={handleBlur}
+                  placeholder="Ex: Perca até 5kg em 21 dias sem passar fome"
+                  rows={2}
+                  className="pr-12 resize-none"
+                />
+                <VoiceInput onTranscript={(text) => setFormData({...formData, main_benefit: formData.main_benefit ? `${formData.main_benefit} ${text}` : text})} />
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Mecanismo Único */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Mecanismo Único</Label>
+              <p className="text-sm text-muted-foreground">
+                Qual o caminho estruturado/método que levará o cliente de onde está para onde ele quer chegar?
+              </p>
+              <div className="relative">
+                <Textarea
+                  value={formData.unique_mechanism}
+                  onChange={(e) => setFormData({...formData, unique_mechanism: e.target.value})}
+                  onBlur={handleBlur}
+                  placeholder="Ex: Método Reset Metabólico que acelera a queima de gordura"
+                  rows={2}
+                  className="pr-12 resize-none"
+                />
+                <VoiceInput onTranscript={(text) => setFormData({...formData, unique_mechanism: formData.unique_mechanism ? `${formData.unique_mechanism} ${text}` : text})} />
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Diferenciais */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Diferenciais</Label>
+              <p className="text-sm text-muted-foreground">
+                Liste os principais diferenciais da sua oferta
+              </p>
+              <div className="space-y-2">
+                {[0, 1, 2].map(i => (
+                  <Input
+                    key={i}
+                    placeholder={i === 0 ? "Ex: Sem cortar carboidratos" : i === 1 ? "Ex: Grupo VIP de apoio" : "Ex: Receitas fáceis e rápidas"}
+                    value={formData.differentials?.[i] || ''}
+                    onChange={e => {
+                      const diffs = [...(formData.differentials || ['', '', ''])];
+                      diffs[i] = e.target.value;
+                      setFormData({...formData, differentials: diffs});
+                    }}
+                    onBlur={handleBlur}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Prova/Autoridade */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Prova/Autoridade</Label>
+              <p className="text-sm text-muted-foreground">
+                Demonstre credibilidade (números, depoimentos, certificações)
+              </p>
+              <div className="relative">
+                <Textarea
+                  value={formData.proof}
+                  onChange={(e) => setFormData({...formData, proof: e.target.value})}
+                  onBlur={handleBlur}
+                  placeholder="Ex: Mais de 2.000 alunas emagreceram com o método"
+                  rows={2}
+                  className="pr-12 resize-none"
+                />
+                <VoiceInput onTranscript={(text) => setFormData({...formData, proof: formData.proof ? `${formData.proof} ${text}` : text})} />
+              </div>
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* Garantia */}
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Garantia</Label>
+              <p className="text-sm text-muted-foreground">
+                Qual garantia você oferece para reduzir o risco percebido?
+              </p>
+              <div className="relative">
+                <Textarea
+                  value={formData.guarantee}
+                  onChange={(e) => setFormData({...formData, guarantee: e.target.value})}
+                  onBlur={handleBlur}
+                  placeholder="Ex: Se não perder peso em 21 dias, devolvemos seu dinheiro"
+                  rows={2}
+                  className="pr-12 resize-none"
+                />
+                <VoiceInput onTranscript={(text) => setFormData({...formData, guarantee: formData.guarantee ? `${formData.guarantee} ${text}` : text})} />
+              </div>
             </div>
           </div>
 
           {/* Status Summary */}
-          <div className="bg-muted/50 border border-border rounded-lg p-6">
-            <h3 className="font-semibold mb-3">Status dos Campos</h3>
-            <div className="space-y-2">
+          <div className="bg-muted/30 border border-border/50 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-8 w-1 bg-primary rounded-full" />
+              <h3 className="font-semibold text-base">Status de Preenchimento</h3>
+            </div>
+            <div className="grid gap-3">
               {fieldMinimums.map(({ field, min }) => {
                 const current = getCharCount(field as keyof Offer);
                 const isComplete = current >= min;
+                const percentage = Math.min((current / min) * 100, 100);
                 return (
-                  <div key={field} className="flex items-center gap-2">
-                    {isComplete ? (
-                      <CheckCircle size={16} className="text-primary" weight="fill" />
-                    ) : (
-                      <Circle size={16} className="text-muted-foreground" />
-                    )}
-                    <span className={`text-sm ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      {field === 'short_description' ? 'Descrição Curta' :
-                       'Benefício Principal'}: {current}/{min}
-                    </span>
+                  <div key={field} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {isComplete ? (
+                          <CheckCircle size={18} className="text-primary" weight="fill" />
+                        ) : (
+                          <Circle size={18} className="text-muted-foreground" />
+                        )}
+                        <span className={`text-sm font-medium ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {field === 'short_description' ? 'Descrição Curta' : 'Benefício Principal'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-medium">{current}/{min}</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary transition-all duration-300 rounded-full" 
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -474,22 +506,22 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleClose} className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleClose} 
+              className="flex-1 h-11"
+              size="lg"
+            >
               Salvar e Fechar
             </Button>
             <Button 
               onClick={handleComplete} 
               disabled={!isAllFieldsFilled()}
-              className="flex-1"
+              className="flex-1 h-11"
+              size="lg"
             >
               Concluir Oferta
-            </Button>
-          </div>
-
-          <div className="flex gap-3 justify-end pt-4 border-t border-border">
-            <Button variant="outline" onClick={handleClose}>
-              Fechar
             </Button>
           </div>
         </div>
