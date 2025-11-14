@@ -15,14 +15,14 @@ interface SystemPromptEditorModalProps {
 }
 
 const COPY_TYPE_TO_PROMPT_KEY: Record<CopyType, string> = {
-  anuncio: 'generate_anuncio',
-  landing_page: 'generate_landing_page',
-  vsl: 'generate_vsl',
-  email: 'generate_email',
-  webinar: 'generate_webinar',
-  conteudo: 'generate_conteudo',
-  mensagem: 'generate_mensagem',
-  outro: 'generate_outro'
+  anuncio: 'generate_copy_ad',
+  landing_page: 'generate_copy_landing_page',
+  vsl: 'generate_copy_vsl',
+  email: 'generate_copy_email',
+  webinar: 'generate_copy_webinar',
+  conteudo: 'generate_copy_content',
+  mensagem: 'generate_copy_message',
+  outro: 'generate_copy_base'
 };
 
 export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromptEditorModalProps) => {
