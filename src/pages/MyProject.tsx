@@ -12,6 +12,7 @@ import { OffersTab } from "@/components/project-config/OffersTab";
 import { MethodologyTab } from "@/components/project-config/MethodologyTab";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
 type ProjectSection = 'identity' | 'audience' | 'offers' | 'methodology';
 
@@ -37,8 +38,12 @@ const MyProject = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <div className="flex flex-col items-center gap-4">
+          <img 
+            src={copyDriveIcon} 
+            alt="Loading" 
+            className="h-16 animate-spin"
+          />
           <p className="text-muted-foreground">Carregando projeto...</p>
         </div>
       </div>
