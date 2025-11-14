@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const menuItems = [
-  { icon: Folder, label: "Drive", path: "/dashboard" },
+  { icon: Folder, label: "Drive", path: "/drive" },
   { icon: Sparkle, label: "Modelos", path: "/templates" },
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
 ];

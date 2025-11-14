@@ -29,7 +29,7 @@ export const ProjectConfigHeader = ({ isNew }: ProjectConfigHeaderProps) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/my-project')}
           >
             <ArrowLeft size={20} />
           </Button>
@@ -47,7 +47,7 @@ export const ProjectConfigHeader = ({ isNew }: ProjectConfigHeaderProps) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button onClick={() => navigate('/dashboard')} variant="outline">
+          <Button onClick={() => navigate('/my-project')} variant="outline">
             Fechar
           </Button>
         </div>

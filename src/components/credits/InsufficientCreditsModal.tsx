@@ -54,7 +54,7 @@ export const InsufficientCreditsModal = ({
           </Button>
           <Button onClick={() => {
             onOpenChange(false);
-            navigate('/dashboard');
+            navigate('/drive');
           }}>
             Voltar ao Dashboard
           </Button>

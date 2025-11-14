@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
                   
                   if (profile?.onboarding_completed) {
-                    console.log('[useAuth] Redirecting to dashboard (onboarding completed)');
-                    navigate('/dashboard');
+                    console.log('[useAuth] Redirecting to my-project (onboarding completed)');
+                    navigate('/my-project');
                   } else {
                     console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
                     navigate('/onboarding');
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/my-project`,
         queryParams: {
           access_type: 'offline',
           prompt: 'select_account',

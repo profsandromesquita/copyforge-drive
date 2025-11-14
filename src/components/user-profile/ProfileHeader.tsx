@@ -11,8 +11,8 @@ export const ProfileHeader = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/dashboard')}
-          title="Voltar ao Dashboard"
+          onClick={() => navigate('/my-project')}
+          title="Voltar"
         >
           <ArrowLeft size={20} />
         </Button>

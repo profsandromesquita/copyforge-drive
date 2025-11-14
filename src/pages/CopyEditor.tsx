@@ -33,7 +33,7 @@ const CopyEditorContent = () => {
 
   useEffect(() => {
     if (!id) {
-      navigate('/dashboard');
+      navigate('/drive');
       return;
     }
 

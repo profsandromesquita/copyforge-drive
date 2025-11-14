@@ -61,13 +61,13 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/auth" replace />} />
+      <Route path="/" element={<Navigate to="/my-project" replace />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/signup-invite" element={<SignupInvite />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/super-admin" element={<SuperAdmin />} />
       <Route path="/view/:id" element={<PublicCopy />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/drive" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/my-project" element={<ProtectedRoute><MyProject /></ProtectedRoute>} />
       <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
       <Route path="/discover" element={<ProtectedRoute><Discover /></ProtectedRoute>} />

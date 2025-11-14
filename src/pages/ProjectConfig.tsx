@@ -57,11 +57,11 @@ const ProjectConfig = () => {
         if (project) {
           setActiveProject(project);
         } else {
-          navigate('/dashboard');
+          navigate('/my-project');
         }
         setLoading(false);
       } else {
-        navigate('/dashboard');
+        navigate('/my-project');
       }
     };
 
@@ -113,7 +113,7 @@ const ProjectConfig = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/40">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/my-project')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
             aria-label="Voltar ao Dashboard"
           >

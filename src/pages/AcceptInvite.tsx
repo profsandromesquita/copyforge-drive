@@ -46,14 +46,14 @@ export default function AcceptInvite() {
 
       if (error || !data) {
         toast.error("Convite não encontrado ou já utilizado");
-        navigate("/dashboard");
+        navigate("/my-project");
         return;
       }
 
       // Check if invite has expired
       if (new Date(data.expires_at) < new Date()) {
         toast.error("Este convite expirou");
-        navigate("/dashboard");
+        navigate("/my-project");
         return;
       }
 
@@ -73,7 +73,7 @@ export default function AcceptInvite() {
 
       if (profile?.email !== data.email) {
         toast.error("Este convite foi enviado para outro email");
-        navigate("/dashboard");
+        navigate("/my-project");
         return;
       }
 
@@ -87,7 +87,7 @@ export default function AcceptInvite() {
 
       if (existingMember) {
         toast.info("Você já é membro deste workspace");
-        navigate("/dashboard");
+        navigate("/my-project");
         return;
       }
 
@@ -96,7 +96,7 @@ export default function AcceptInvite() {
     } catch (error) {
       console.error("Error loading invite:", error);
       toast.error("Erro ao carregar convite");
-      navigate("/dashboard");
+      navigate("/my-project");
     }
   };
 
@@ -146,13 +146,13 @@ export default function AcceptInvite() {
       // Refresh workspaces (will pick up the saved workspace ID)
       await refreshWorkspaces();
 
-      navigate("/dashboard");
+      navigate("/my-project");
     } catch (error: any) {
       console.error("Error accepting invite:", error);
       toast.error(error.message || "Erro ao aceitar convite");
       // Even on error, try to redirect to dashboard after a delay
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/my-project");
       }, 2000);
     } finally {
       setProcessing(false);
@@ -171,7 +171,7 @@ export default function AcceptInvite() {
       if (error) throw error;
 
       toast.info("Convite recusado");
-      navigate("/dashboard");
+      navigate("/my-project");
     } catch (error: any) {
       console.error("Error declining invite:", error);
       toast.error(error.message || "Erro ao recusar convite");

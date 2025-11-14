@@ -28,7 +28,7 @@ const MyProject = () => {
   // Redirecionar se não houver projeto ativo (após carregar)
   useEffect(() => {
     if (!loading && !activeProject) {
-      navigate('/dashboard', { replace: true });
+      navigate('/drive', { replace: true });
     }
   }, [activeProject, loading, navigate]);
 

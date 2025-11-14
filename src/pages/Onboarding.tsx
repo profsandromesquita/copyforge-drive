@@ -37,7 +37,7 @@ const Onboarding = () => {
   useEffect(() => {
     // Se onboarding já completo, redireciona
     if (isCompleted) {
-      navigate('/dashboard');
+      navigate('/my-project');
       return;
     }
 
@@ -247,7 +247,7 @@ const Onboarding = () => {
       }
 
       clearProgress();
-      navigate('/dashboard');
+      navigate('/my-project');
     } catch (error) {
       console.error("Erro ao completar onboarding:", error);
       toast.error("Erro ao finalizar. Tente novamente.");
