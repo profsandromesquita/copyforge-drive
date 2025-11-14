@@ -1,265 +1,156 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Plus } from 'phosphor-react';
+import { Methodology } from '@/types/project-config';
+import { MethodologyCard } from './MethodologyCard';
+import { MethodologyForm } from './MethodologyForm';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Methodology } from '@/types/project-config';
-import { VoiceInput } from './VoiceInput';
-import { PencilSimple, Lightbulb, Info } from 'phosphor-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-const fields = [
-  {
-    name: 'tese_central',
-    label: 'Tese Central',
-    placeholder: 'Ex: Você não engorda porque come muito, mas porque seu corpo perdeu sensibilidade à saciedade.',
-    tooltip: "A ideia-mãe do seu método. A frase que explica 'o porquê' da transformação acontecer."
-  },
-  {
-    name: 'mecanismo_primario',
-    label: 'Mecanismo Primário',
-    placeholder: 'Ex: Reprogramação de padrões, Ajuste hormonal...',
-    tooltip: 'O motor interno da sua solução. Como a mudança realmente acontece.'
-  },
-  {
-    name: 'por_que_funciona',
-    label: 'Por que Funciona',
-    placeholder: 'Explique tecnicamente de forma simples...',
-    tooltip: 'A explicação técnica de forma simples. O que acontece no corpo, mente, comportamento, negócio ou processo para gerar a transformação.'
-  },
-  {
-    name: 'erro_invisivel',
-    label: 'Erro Invisível',
-    placeholder: 'Ex: Você não vende pouco por falta de estratégia, mas por excesso de ruído mental.',
-    tooltip: "O erro que mantém a pessoa presa no problema e que ela não percebe."
-  },
-  {
-    name: 'diferenciacao',
-    label: 'Diferenciação',
-    placeholder: 'Por que seu método funciona quando outros falham?',
-    tooltip: 'Por que seu método funciona quando outros falham? Qual variável você enxerga que os outros ignoram? Qual é sua alavanca única?'
-  },
-  {
-    name: 'principios_fundamentos',
-    label: 'Princípios/Fundamentos',
-    placeholder: 'Base científica ou teórica do método...',
-    tooltip: 'Base científica ou teórica do método: neurociência, psicologia, biologia, frameworks próprios, experiência clínica, análise de dados, etc.'
-  },
-  {
-    name: 'etapas_metodo',
-    label: 'Etapas do Método',
-    placeholder: 'Descreva o processo claro com etapas e sequência...',
-    tooltip: 'Processo claro com etapas, sequência e por que a ordem importa. O que acontece em cada fase da transformação.'
-  },
-  {
-    name: 'transformacao_real',
-    label: 'Transformação Real',
-    placeholder: 'Descreva o antes e depois verdadeiro...',
-    tooltip: 'O antes e depois verdadeiro: mental, emocional, técnico, financeiro, comportamental, relacional, físico ou operacional.'
-  },
-  {
-    name: 'prova_funcionamento',
-    label: 'Prova de Funcionamento',
-    placeholder: 'Evidências que comprovam a eficácia...',
-    tooltip: 'Evidências: princípios científicos, experiência prévia, validação psicológica, lógica operacional, estudos, testes iniciais, exemplos práticos.'
-  },
-] as const;
 
 export const MethodologyTab = () => {
   const { activeProject, refreshProjects } = useProject();
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<Methodology>>({
-    tese_central: '',
-    mecanismo_primario: '',
-    por_que_funciona: '',
-    erro_invisivel: '',
-    diferenciacao: '',
-    principios_fundamentos: '',
-    etapas_metodo: '',
-    transformacao_real: '',
-    prova_funcionamento: '',
-  });
-  const [saving, setSaving] = useState(false);
+  const [methodologies, setMethodologies] = useState<Methodology[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingMethodology, setEditingMethodology] = useState<Methodology | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [methodologyToDelete, setMethodologyToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeProject?.methodology) {
-      setFormData(activeProject.methodology);
-      setIsEditing(false);
-    } else {
-      setIsEditing(true);
+      const methodologiesArray = Array.isArray(activeProject.methodology)
+        ? activeProject.methodology
+        : [];
+      setMethodologies(methodologiesArray);
     }
-  }, [activeProject?.methodology]);
+  }, [activeProject]);
 
-  const handleSave = async () => {
-    if (!activeProject?.id) return;
+  const handleAddMethodology = () => {
+    setEditingMethodology(null);
+    setIsFormOpen(true);
+  };
 
-    // Validar campos obrigatórios
-    const hasEmptyFields = fields.some(field => {
-      const value = formData[field.name as keyof Methodology];
-      return !value || value.trim().length < 10;
-    });
+  const handleEditMethodology = (methodology: Methodology) => {
+    setEditingMethodology(methodology);
+    setIsFormOpen(true);
+  };
 
-    if (hasEmptyFields) {
-      toast.error('Preencha todos os campos com pelo menos 10 caracteres');
-      return;
-    }
+  const handleDeleteMethodology = (methodologyId: string) => {
+    setMethodologyToDelete(methodologyId);
+    setDeleteDialogOpen(true);
+  };
 
-    setSaving(true);
+  const confirmDeleteMethodology = async () => {
+    if (!methodologyToDelete || !activeProject) return;
+
     try {
-      const { error } = await supabase
+      const updatedMethodologies = methodologies.filter(m => m.id !== methodologyToDelete);
+      
+      await supabase
         .from('projects')
-        .update({ methodology: formData })
+        .update({ methodology: updatedMethodologies as any })
         .eq('id', activeProject.id);
 
-      if (error) throw error;
-
       await refreshProjects();
-      toast.success('Metodologia salva com sucesso!');
-      setIsEditing(false);
+      setMethodologies(updatedMethodologies);
+      toast.success('Metodologia excluída com sucesso!');
     } catch (error) {
-      console.error('Error saving methodology:', error);
-      toast.error('Erro ao salvar metodologia');
+      console.error('Erro ao excluir metodologia:', error);
+      toast.error('Erro ao excluir metodologia');
     } finally {
-      setSaving(false);
+      setDeleteDialogOpen(false);
+      setMethodologyToDelete(null);
     }
   };
 
-  const handleCancel = () => {
-    if (activeProject?.methodology) {
-      setFormData(activeProject.methodology);
-      setIsEditing(false);
-    }
+  const handleCancelForm = () => {
+    setIsFormOpen(false);
+    setEditingMethodology(null);
   };
 
-  // View mode - Card visual
-  if (!isEditing && activeProject?.methodology) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold">Metodologia</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Metodologia completa do seu projeto
-            </p>
-          </div>
-          <Button onClick={() => setIsEditing(true)} variant="outline">
-            <PencilSimple size={20} className="mr-2" />
-            Editar Metodologia
-          </Button>
-        </div>
+  const handleFormSuccess = () => {
+    setIsFormOpen(false);
+    setEditingMethodology(null);
+  };
 
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            {fields.map((field) => {
-              const value = formData[field.name as keyof Methodology];
-              
-              return (
-                <div key={field.name} className="space-y-2 pb-4 border-b border-border last:border-0 last:pb-0">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    {field.label}
-                  </h3>
-                  <p className="text-base whitespace-pre-wrap">{value}</p>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Edit mode - Form
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">
-            {activeProject?.methodology ? 'Editar Metodologia' : 'Criar Metodologia'}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Defina a metodologia completa do seu projeto
-          </p>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Lightbulb size={24} className="text-primary" />
-            Metodologia do Projeto
-          </CardTitle>
-          <CardDescription>
-            Defina tese central, mecanismo, diferenciação e evidências de funcionamento.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {fields.map((field) => (
-            <div key={field.name} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor={field.name} className="text-sm font-medium">
-                  {field.label}
-                </Label>
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger type="button" asChild>
-                      <button type="button" className="inline-flex">
-                        <Info size={16} className="text-muted-foreground cursor-help" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-sm">
-                      <p className="text-sm whitespace-pre-wrap">{field.tooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-              <div className="relative">
-                <Textarea
-                  id={field.name}
-                  value={formData[field.name as keyof Methodology] || ''}
-                  onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                  placeholder={field.placeholder}
-                  className="min-h-[100px] resize-none pr-12 placeholder:text-xs"
-                  rows={field.name === 'etapas_metodo' ? 6 : 4}
-                />
-                <VoiceInput
-                  onTranscript={(text) => {
-                    const currentValue = formData[field.name as keyof Methodology] || '';
-                    setFormData({
-                      ...formData,
-                      [field.name]: currentValue ? `${currentValue} ${text}` : text
-                    });
-                  }}
-                />
-              </div>
+      {!isFormOpen && (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold">Metodologias</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Defina as diferentes metodologias do seu projeto
+              </p>
             </div>
-          ))}
-
-          <div className="flex gap-3 pt-4">
-            <Button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none">
-              {saving ? 'Salvando...' : 'Salvar Metodologia'}
-            </Button>
-            {activeProject?.methodology && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                Cancelar
+            {methodologies.length > 0 && (
+              <Button onClick={handleAddMethodology}>
+                <Plus size={20} className="mr-2" />
+                Adicionar Metodologia
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+
+          {methodologies.length === 0 ? (
+            <div className="bg-card border border-border rounded-lg p-12 text-center">
+              <p className="text-muted-foreground mb-4">
+                Nenhuma metodologia criada ainda
+              </p>
+              <Button onClick={handleAddMethodology}>
+                <Plus size={20} className="mr-2" />
+                Criar Primeira Metodologia
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {methodologies.map((methodology) => (
+                <MethodologyCard
+                  key={methodology.id}
+                  methodology={methodology}
+                  onEdit={handleEditMethodology}
+                  onDelete={handleDeleteMethodology}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {isFormOpen && (
+        <MethodologyForm
+          editingMethodology={editingMethodology}
+          onCancel={handleCancelForm}
+          onSuccess={handleFormSuccess}
+        />
+      )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta metodologia? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMethodology}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
