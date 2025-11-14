@@ -67,6 +67,11 @@ export const OffersTab = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isFormOpen, refreshProjects]);
 
+  // Recarregar dados ao montar a aba (quando usuário volta para Ofertas)
+  useEffect(() => {
+    refreshProjects();
+  }, [refreshProjects]);
+
   const handleAddOffer = () => {
     localStorage.removeItem(EDITING_STORAGE_KEY);
     setEditingOffer(null);
