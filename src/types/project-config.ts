@@ -1,4 +1,6 @@
 export interface Methodology {
+  id: string;
+  name: string;
   tese_central: string;
   mecanismo_primario: string;
   por_que_funciona: string;
