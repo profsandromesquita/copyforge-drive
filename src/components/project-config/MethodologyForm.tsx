@@ -206,33 +206,25 @@ export const MethodologyForm = ({
 
   if (!methodologyCreated) {
     return (
-      <div className="space-y-6">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <Label className="text-base font-semibold">Nome da Metodologia *</Label>
-          <p className="text-sm text-muted-foreground mt-1 mb-3">
-            Escolha um nome que identifique claramente esta metodologia
-          </p>
-          <div className="flex gap-2">
-            <Input
-              value={identification}
-              onChange={(e) => setIdentification(e.target.value)}
-              placeholder="Ex: Método de Emagrecimento Intuitivo"
-              className="placeholder:text-xs"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && identification.trim()) {
-                  handleCreateMethodology();
-                }
-              }}
-            />
-            <Button onClick={handleCreateMethodology} disabled={!identification.trim()}>
-              Criar Metodologia
-            </Button>
-          </div>
-        </div>
-        
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={onCancel}>
-            Cancelar
+      <div className="bg-card border border-border rounded-lg p-6">
+        <Label className="text-base font-semibold">Nome da Metodologia *</Label>
+        <p className="text-sm text-muted-foreground mt-1 mb-3">
+          Escolha um nome que identifique claramente esta metodologia
+        </p>
+        <div className="flex gap-2">
+          <Input
+            value={identification}
+            onChange={(e) => setIdentification(e.target.value)}
+            placeholder="Ex: Método de Emagrecimento Intuitivo"
+            className="placeholder:text-xs"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && identification.trim()) {
+                handleCreateMethodology();
+              }
+            }}
+          />
+          <Button onClick={handleCreateMethodology} disabled={!identification.trim()}>
+            Criar Metodologia
           </Button>
         </div>
       </div>
@@ -249,11 +241,6 @@ export const MethodologyForm = ({
               {autoSaving ? 'Salvando automaticamente...' : 'As alterações são salvas automaticamente'}
             </p>
           </div>
-          {allFieldsValid && (
-            <Button onClick={handleFinish}>
-              Concluir
-            </Button>
-          )}
         </div>
 
         <div className="space-y-6">
@@ -610,17 +597,8 @@ export const MethodologyForm = ({
         </div>
 
         <div className="flex gap-2 pt-4 border-t">
-          {allFieldsValid ? (
-            <Button onClick={handleFinish}>
-              Concluir
-            </Button>
-          ) : (
-            <Button disabled>
-              Preencha todos os campos (mínimo {MIN_CHARS} caracteres cada)
-            </Button>
-          )}
-          <Button variant="outline" onClick={onCancel}>
-            Voltar
+          <Button onClick={handleFinish} disabled={!allFieldsValid}>
+            {allFieldsValid ? 'Concluir' : `Preencha todos os campos (mínimo ${MIN_CHARS} caracteres cada)`}
           </Button>
         </div>
       </div>

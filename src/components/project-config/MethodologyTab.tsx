@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus } from 'phosphor-react';
+import { Plus, X } from 'lucide-react';
 import { Methodology } from '@/types/project-config';
 import { MethodologyCard } from './MethodologyCard';
 import { MethodologyForm } from './MethodologyForm';
@@ -145,14 +145,25 @@ export const MethodologyTab = () => {
       )}
 
       {isFormOpen && (
-        <MethodologyForm 
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">
+              {editingMethodology ? 'Editar' : 'Nova'} Metodologia
+            </h2>
+            <Button variant="ghost" size="icon" onClick={handleCancelForm}>
+              <X size={20} />
+            </Button>
+          </div>
+          
+          <MethodologyForm
           editingMethodology={editingMethodology}
           allMethodologies={methodologies}
           onSave={handleSaveMethodologies}
           onUpdate={setMethodologies}
           onCancel={handleCancelForm}
           onAutoSavingChange={setIsAutoSaving}
-        />
+          />
+        </div>
       )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
