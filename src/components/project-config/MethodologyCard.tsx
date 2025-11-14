@@ -8,6 +8,18 @@ interface MethodologyCardProps {
   onEdit: () => void;
 }
 
+const fields = [
+  { key: 'tese_central', label: 'Tese Central' },
+  { key: 'mecanismo_primario', label: 'Mecanismo Primário' },
+  { key: 'por_que_funciona', label: 'Por que Funciona' },
+  { key: 'erro_invisivel', label: 'Erro Invisível' },
+  { key: 'diferenciacao', label: 'Diferenciação' },
+  { key: 'principios_fundamentos', label: 'Princípios/Fundamentos' },
+  { key: 'etapas_metodo', label: 'Etapas do Método' },
+  { key: 'transformacao_real', label: 'Transformação Real' },
+  { key: 'prova_funcionamento', label: 'Prova de Funcionamento' },
+] as const;
+
 export const MethodologyCard = ({ methodology, onEdit }: MethodologyCardProps) => {
   return (
     <Card>
@@ -23,28 +35,18 @@ export const MethodologyCard = ({ methodology, onEdit }: MethodologyCardProps) =
         </Button>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Framework</h3>
-          <p className="text-base font-medium">{methodology.framework}</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((step) => {
-            const stepKey = `step${step}` as const;
-            const name = methodology[`${stepKey}_name` as keyof Methodology] as string;
-            const description = methodology[`${stepKey}_description` as keyof Methodology] as string;
-            
-            return (
-              <div key={step} className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                  Passo {step}
-                </h3>
-                <p className="text-base font-medium">{name}</p>
-                <p className="text-sm text-muted-foreground">{description}</p>
-              </div>
-            );
-          })}
-        </div>
+        {fields.map((field) => {
+          const value = methodology[field.key as keyof Methodology];
+          
+          return (
+            <div key={field.key} className="space-y-2 pb-4 border-b border-border last:border-0 last:pb-0">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {field.label}
+              </h3>
+              <p className="text-base whitespace-pre-wrap">{value}</p>
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
   );
