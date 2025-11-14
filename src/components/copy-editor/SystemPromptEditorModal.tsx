@@ -26,7 +26,7 @@ const COPY_TYPE_TO_PROMPT_KEY: Record<CopyType, string> = {
 };
 
 export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromptEditorModalProps) => {
-  const { prompts, updatePrompt, restoreDefault } = useAIPrompts();
+  const { prompts, isLoading, updatePrompt, restoreDefault } = useAIPrompts();
   const { toast } = useToast();
   const [editedPrompt, setEditedPrompt] = useState("");
   const [isRestoring, setIsRestoring] = useState(false);
@@ -91,10 +91,8 @@ export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromp
     });
   };
 
-  if (!currentPrompt) return null;
-
   const charCount = editedPrompt.length;
-  const isModified = editedPrompt !== currentPrompt.current_prompt;
+  const isModified = currentPrompt ? editedPrompt !== currentPrompt.current_prompt : false;
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -106,46 +104,69 @@ export const SystemPromptEditorModal = ({ open, onClose, copyType }: SystemPromp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto space-y-4 py-4">
-          <div>
-            <Label className="mb-2 block">Prompt Atual</Label>
-            <Textarea
-              value={editedPrompt}
-              onChange={(e) => setEditedPrompt(e.target.value)}
-              className="min-h-[350px] font-mono text-sm"
-              placeholder="Digite o system prompt..."
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              {charCount} caracteres {charCount > 10000 && <span className="text-amber-600">(máximo recomendado: 10.000)</span>}
-            </p>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center space-y-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+              <p className="text-sm text-muted-foreground">Carregando prompt...</p>
+            </div>
           </div>
-        </div>
+        ) : !currentPrompt ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Prompt não encontrado para este tipo de copy.
+              </p>
+              <Button variant="outline" onClick={onClose}>
+                Fechar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-auto space-y-4 py-4">
+              <div>
+                <Label className="mb-2 block">Prompt Atual</Label>
+                <Textarea
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  className="min-h-[350px] font-mono text-sm"
+                  placeholder="Digite o system prompt..."
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {charCount} caracteres {charCount > 10000 && <span className="text-amber-600">(máximo recomendado: 10.000)</span>}
+                </p>
+              </div>
+            </div>
 
-        <DialogFooter className="flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            onClick={handleRestore}
-            disabled={isRestoring}
-            className="gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Restaurar Original
-          </Button>
-          
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={!isModified || !editedPrompt.trim()}
-              className="gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Salvar
-            </Button>
-          </div>
-        </DialogFooter>
+            <DialogFooter className="flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRestore}
+                disabled={isRestoring}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Restaurar Original
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={!isModified || !editedPrompt.trim()}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Salvar
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
+
       </DialogContent>
     </Dialog>
   );
