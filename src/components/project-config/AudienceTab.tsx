@@ -37,6 +37,28 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
     }
   }, [activeProject]);
 
+  // Atualizar editingSegment quando segments mudar (autosave)
+  useEffect(() => {
+    if (editingSegment && segments.length > 0) {
+      const updatedSegment = segments.find(s => s.id === editingSegment.id);
+      if (updatedSegment && JSON.stringify(updatedSegment) !== JSON.stringify(editingSegment)) {
+        setEditingSegment(updatedSegment);
+      }
+    }
+  }, [segments, editingSegment]);
+
+  // Recarregar dados quando a aba ganha foco
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isFormOpen) {
+        refreshProjects();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isFormOpen, refreshProjects]);
+
   const handleAddSegment = () => {
     setEditingSegment(null);
     setIsFormOpen(true);

@@ -48,6 +48,28 @@ export const MethodologyTab = () => {
     }
   }, [activeProject, EDITING_STORAGE_KEY]);
 
+  // Atualizar editingMethodology quando methodologies mudar (autosave)
+  useEffect(() => {
+    if (editingMethodology && methodologies.length > 0) {
+      const updatedMethodology = methodologies.find(m => m.id === editingMethodology.id);
+      if (updatedMethodology && JSON.stringify(updatedMethodology) !== JSON.stringify(editingMethodology)) {
+        setEditingMethodology(updatedMethodology);
+      }
+    }
+  }, [methodologies, editingMethodology]);
+
+  // Recarregar dados quando a aba ganha foco
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isFormOpen) {
+        refreshProjects();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isFormOpen, refreshProjects]);
+
   const handleAddMethodology = () => {
     localStorage.removeItem(EDITING_STORAGE_KEY);
     setEditingMethodology(null);
