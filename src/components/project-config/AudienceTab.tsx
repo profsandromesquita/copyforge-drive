@@ -86,15 +86,15 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
         <>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold">Segmentos de Público</h2>
+              <h2 className="text-xl font-bold">Público-alvo</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Defina os diferentes segmentos de público que você deseja atingir
+                Defina os diferentes públicos-alvo que você deseja atingir
               </p>
             </div>
             {segments.length > 0 && (
               <Button onClick={handleAddSegment}>
                 <Plus size={20} className="mr-2" />
-                Adicionar Segmento
+                Adicionar Público-alvo
               </Button>
             )}
           </div>
@@ -102,11 +102,11 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
           {segments.length === 0 ? (
             <div className="bg-card border border-border rounded-lg p-12 text-center">
               <p className="text-muted-foreground mb-4">
-                Nenhum segmento de público criado ainda
+                Nenhum público-alvo criado ainda
               </p>
               <Button onClick={handleAddSegment}>
                 <Plus size={20} className="mr-2" />
-                Criar Primeiro Segmento
+                Criar Primeiro Público-alvo
               </Button>
             </div>
           ) : (
@@ -128,7 +128,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">
-              {editingSegment ? 'Editar' : 'Novo'} Segmento de Público
+              {editingSegment ? 'Editar' : 'Novo'} Público-alvo
             </h2>
             <Button variant="ghost" size="icon" onClick={handleCancelForm}>
               <X size={20} />
@@ -155,9 +155,9 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Segmento de Público</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Público-alvo</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este segmento de público? 
+              Tem certeza que deseja excluir este público-alvo? 
               Esta ação não pode ser desfeita e todos os dados serão perdidos permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
