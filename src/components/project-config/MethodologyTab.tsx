@@ -207,13 +207,15 @@ export const MethodologyTab = () => {
                 <Label htmlFor={field.name} className="text-sm font-medium">
                   {field.label}
                 </Label>
-                <TooltipProvider>
+                <TooltipProvider delayDuration={200}>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info size={16} className="text-muted-foreground cursor-help" />
+                    <TooltipTrigger type="button" asChild>
+                      <button type="button" className="inline-flex">
+                        <Info size={16} className="text-muted-foreground cursor-help" />
+                      </button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-sm">{field.tooltip}</p>
+                    <TooltipContent side="right" className="max-w-sm">
+                      <p className="text-sm whitespace-pre-wrap">{field.tooltip}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
