@@ -349,7 +349,7 @@ export const AudienceSegmentForm = ({
                   disabled={!identification.trim()}
                   className="shrink-0"
                 >
-                  Criar Segmento
+                  Criar Público-alvo
                 </Button>
               ) : identification !== originalId && (
                 <Button 
