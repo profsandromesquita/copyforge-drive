@@ -90,9 +90,9 @@ const MyProject = () => {
           <div className="p-6 h-full">
             <div className="flex gap-6 h-full">
               {/* Internal Vertical Sidebar */}
-              <aside className="hidden lg:block w-64 overflow-hidden">
+              <aside className="hidden lg:block w-64 overflow-hidden border-r border-border/40">
                 <ScrollArea className="h-full">
-                  <div className="p-4 space-y-2">
+                  <div className="p-4 space-y-2 pr-6">
                     {sections.map((section) => {
                       const isActive = activeSection === section.id;
                       
