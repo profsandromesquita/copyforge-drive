@@ -19,6 +19,7 @@ import { AIGeneratedPreviewModal } from './AIGeneratedPreviewModal';
 import { SelectContentModal } from './SelectContentModal';
 import { OptimizeComparisonModal } from './OptimizeComparisonModal';
 import { ModelSelector } from './ModelSelector';
+import { SystemPromptEditorModal } from './SystemPromptEditorModal';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -85,6 +86,7 @@ export const CopyAITab = () => {
   const [optimizeInstructions, setOptimizeInstructions] = useState('');
   const [optimizedSessions, setOptimizedSessions] = useState<Session[]>([]);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
 
   // Histórico
   const [history, setHistory] = useState<any[]>([]);
@@ -689,9 +691,20 @@ export const CopyAITab = () => {
           </Button>
 
           <div className="space-y-3">
-            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Detalhes da Copy
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Detalhes da Copy
+              </Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPromptEditor(true)}
+                className="gap-2 text-xs"
+              >
+                <Wand2 className="h-3.5 w-3.5" />
+                Personalizar Prompt Base
+              </Button>
+            </div>
             <div className="relative">
               <Textarea
                 value={prompt}
@@ -1150,6 +1163,12 @@ export const CopyAITab = () => {
         onAdd={handleAdd}
         onRegenerate={handleRegenerate}
         isRegenerating={isOptimizing}
+      />
+      
+      <SystemPromptEditorModal
+        open={showPromptEditor}
+        onClose={() => setShowPromptEditor(false)}
+        copyType={copyType as any}
       />
         </>
       )}
