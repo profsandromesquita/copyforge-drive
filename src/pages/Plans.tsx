@@ -101,7 +101,7 @@ export default function Plans() {
       {user && (
         <div className="border-b">
           <div className="container mx-auto px-4 py-4">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" onClick={() => navigate('/my-project')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Dashboard
             </Button>
@@ -188,7 +188,7 @@ export default function Plans() {
             Nossa equipe está pronta para ajudar você a encontrar a solução perfeita
           </p>
           <Button size="lg" variant="outline" asChild>
-            <Link to="/dashboard">Voltar ao Dashboard</Link>
+            <Link to="/my-project">Voltar</Link>
           </Button>
         </div>
       </section>

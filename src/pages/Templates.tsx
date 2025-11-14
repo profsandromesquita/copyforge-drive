@@ -86,7 +86,7 @@ const Templates = () => {
   const handleCreateFolder = async (name: string) => {
     await createFolder(name);
     setCreateFolderOpen(false);
-    navigate('/dashboard');
+    navigate('/drive');
   };
 
   const handleMoveTemplate = async (templateId: string, targetFolderId: string | null) => {
@@ -243,8 +243,8 @@ const Templates = () => {
                   }
                 </p>
                 {!searchQuery && (
-                  <Button onClick={() => navigate('/dashboard')}>
-                    Ir para Dashboard
+                  <Button onClick={() => navigate('/drive')}>
+                    Ir para Drive
                   </Button>
                 )}
               </div>

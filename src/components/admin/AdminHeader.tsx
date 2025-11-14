@@ -50,7 +50,7 @@ export const AdminHeader = () => {
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+          <DropdownMenuItem onClick={() => navigate("/my-project")}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Ir para Dashboard
           </DropdownMenuItem>

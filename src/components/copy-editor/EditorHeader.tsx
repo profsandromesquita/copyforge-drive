@@ -86,7 +86,7 @@ export const EditorHeader = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/drive')}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>

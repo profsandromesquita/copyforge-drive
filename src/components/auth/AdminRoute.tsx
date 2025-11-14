@@ -69,8 +69,8 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user || !isAdmin) {
-    console.log('Redirecting to dashboard - user:', !!user, 'isAdmin:', isAdmin);
-    return <Navigate to="/dashboard" replace />;
+    console.log('Redirecting to my-project - user:', !!user, 'isAdmin:', isAdmin);
+    return <Navigate to="/my-project" replace />;
   }
 
   console.log('Admin access granted!');

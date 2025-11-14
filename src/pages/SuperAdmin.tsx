@@ -67,7 +67,7 @@ const SuperAdmin = () => {
       <div className="w-full max-w-md space-y-4">
         <Button
           variant="ghost"
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/my-project')}
           className="mb-4"
         >
           <ArrowLeft size={20} className="mr-2" />

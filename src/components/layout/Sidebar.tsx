@@ -17,7 +17,7 @@ import { UpgradeModal } from "@/components/workspace/UpgradeModal";
 
 const menuItems = [
   { icon: Buildings, label: "Meu Projeto", path: "/my-project" },
-  { icon: Folder, label: "Drive", path: "/dashboard" },
+  { icon: Folder, label: "Drive", path: "/drive" },
   { icon: Sparkle, label: "Modelos", path: "/templates" },
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
 ];
