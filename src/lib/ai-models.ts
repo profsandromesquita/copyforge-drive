@@ -77,10 +77,45 @@ export function getModelDisplayName(model: AIModel): string {
 }
 
 /**
+ * Fetches the model multiplier from database configuration
+ * Falls back to hardcoded multiplier if database is unavailable
+ */
+export async function getModelMultiplierFromDB(model: AIModel): Promise<number> {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase
+      .from('model_multipliers')
+      .select('multiplier')
+      .eq('model_name', model)
+      .single();
+    
+    if (error || !data) {
+      console.warn('Falling back to hardcoded multiplier:', error);
+      return MODEL_CONFIG[model]?.estimatedCostMultiplier || 1;
+    }
+    
+    return data.multiplier;
+  } catch (error) {
+    console.error('Error fetching model multiplier:', error);
+    return MODEL_CONFIG[model]?.estimatedCostMultiplier || 1;
+  }
+}
+
+/**
  * Estimates the credit cost for a generation based on model and estimated tokens
  */
 export function estimateGenerationCost(model: AIModel, estimatedTokens: number = 5000): number {
   // Base calculation: tokens / TPC (10000) * multiplier
   const baseCost = estimatedTokens / 10000;
   return baseCost * MODEL_CONFIG[model].estimatedCostMultiplier;
+}
+
+/**
+ * Estimates the credit cost for a generation based on model and estimated tokens
+ * Uses database multiplier instead of hardcoded value
+ */
+export async function estimateGenerationCostFromDB(model: AIModel, estimatedTokens: number = 5000): Promise<number> {
+  const multiplier = await getModelMultiplierFromDB(model);
+  const baseCost = estimatedTokens / 10000;
+  return baseCost * multiplier;
 }

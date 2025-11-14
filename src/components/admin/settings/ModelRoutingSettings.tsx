@@ -3,12 +3,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Info } from "lucide-react";
 import { useModelRouting } from "@/hooks/useModelRouting";
+import { useModelMultipliers } from "@/hooks/useModelMultipliers";
 import { MODEL_CONFIG } from "@/lib/ai-models";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const ModelRoutingSettings = () => {
   const { routingConfigs, isLoading, updateRouting, isUpdating } = useModelRouting();
+  const { data: multipliersData, isLoading: isLoadingMultipliers } = useModelMultipliers();
 
   if (isLoading) {
     return (
@@ -109,7 +111,11 @@ export const ModelRoutingSettings = () => {
                       <p>{currentModel.description}</p>
                       <p className="mt-1">{currentModel.recommended}</p>
                       <p className="mt-2 text-amber-600 dark:text-amber-400">
-                        Custo relativo: {currentModel.estimatedCostMultiplier}x
+                        Custo relativo: {
+                          isLoadingMultipliers 
+                            ? 'Carregando...' 
+                            : `${multipliersData?.multipliers[config.default_model] || currentModel.estimatedCostMultiplier}x`
+                        }
                       </p>
                     </div>
                   )}
