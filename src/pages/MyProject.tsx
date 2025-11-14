@@ -59,7 +59,7 @@ const MyProject = () => {
     {
       id: 'audience' as ProjectSection,
       icon: Users,
-      label: 'Segmentos de Público',
+      label: 'Público-alvo',
     },
     {
       id: 'offers' as ProjectSection,
