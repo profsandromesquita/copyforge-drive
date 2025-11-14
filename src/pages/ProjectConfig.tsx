@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IdentityTab } from '@/components/project-config/IdentityTab';
 import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
+import { MethodologyTab } from '@/components/project-config/MethodologyTab';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Lock, ArrowLeft } from 'phosphor-react';
@@ -25,9 +26,11 @@ const ProjectConfig = () => {
   // Verifica se as abas estão desbloqueadas
   const isIdentityComplete = activeProject?.brand_name && activeProject?.sector;
   const hasAudienceSegments = activeProject?.audience_segments && activeProject.audience_segments.length > 0;
+  const hasOffers = activeProject?.offers && activeProject.offers.length > 0;
   
   const isAudienceUnlocked = isIdentityComplete;
   const isOffersUnlocked = isIdentityComplete && hasAudienceSegments;
+  const isMethodologyUnlocked = isOffersUnlocked && hasOffers;
 
   // Força modo claro no ProjectConfig
   useEffect(() => {
@@ -37,7 +40,7 @@ const ProjectConfig = () => {
   // Sincronizar aba da URL com estado local
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['identity', 'audience', 'offers'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['identity', 'audience', 'offers', 'methodology'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -72,6 +75,9 @@ const ProjectConfig = () => {
   useEffect(() => {
     if (activeProject) {
       // Se estiver em uma aba bloqueada, volta para a última desbloqueada
+      if (activeTab === 'methodology' && !isMethodologyUnlocked) {
+        setActiveTab('offers');
+      }
       if (activeTab === 'offers' && !isOffersUnlocked) {
         setActiveTab('audience');
       }
@@ -79,7 +85,7 @@ const ProjectConfig = () => {
         setActiveTab('identity');
       }
     }
-  }, [activeProject, activeTab, isAudienceUnlocked, isOffersUnlocked]);
+  }, [activeProject, activeTab, isAudienceUnlocked, isOffersUnlocked, isMethodologyUnlocked]);
 
   const handleTabChange = (value: string) => {
     if (value === 'audience' && !isAudienceUnlocked) {
@@ -88,6 +94,10 @@ const ProjectConfig = () => {
     }
     if (value === 'offers' && !isOffersUnlocked) {
       toast.error('Adicione pelo menos um Segmento de Público primeiro');
+      return;
+    }
+    if (value === 'methodology' && !isMethodologyUnlocked) {
+      toast.error('Adicione pelo menos uma Oferta primeiro');
       return;
     }
     
@@ -131,7 +141,7 @@ const ProjectConfig = () => {
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-6">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid grid-cols-3 w-full h-auto p-1 bg-muted/50">
+          <TabsList className="grid grid-cols-4 w-full h-auto p-1 bg-muted/50">
             <TabsTrigger 
               value="identity"
               className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
@@ -164,6 +174,17 @@ const ProjectConfig = () => {
                 <span>Ofertas</span>
               </span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="methodology" 
+              disabled={!isMethodologyUnlocked}
+              className="disabled:opacity-40 disabled:cursor-not-allowed data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
+            >
+              <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
+                {!isMethodologyUnlocked && <Lock size={14} className="md:hidden" />}
+                {!isMethodologyUnlocked && <Lock size={16} className="hidden md:block" />}
+                <span>Metodologia</span>
+              </span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="identity" className="space-y-6">
@@ -193,6 +214,10 @@ const ProjectConfig = () => {
           
           <TabsContent value="offers" className="space-y-6">
             <OffersTab />
+          </TabsContent>
+          
+          <TabsContent value="methodology" className="space-y-6">
+            <MethodologyTab />
           </TabsContent>
         </Tabs>
       </div>
