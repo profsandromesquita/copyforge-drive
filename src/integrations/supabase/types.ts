@@ -643,6 +643,88 @@ export type Database = {
         }
         Relationships: []
       }
+      model_routing_config: {
+        Row: {
+          available_models: string[]
+          copy_type: string
+          copy_type_label: string
+          created_at: string
+          default_model: string
+          description: string | null
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          available_models?: string[]
+          copy_type: string
+          copy_type_label: string
+          created_at?: string
+          default_model: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          available_models?: string[]
+          copy_type?: string
+          copy_type_label?: string
+          created_at?: string
+          default_model?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_routing_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_routing_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          copy_type: string
+          id: string
+          new_model: string
+          old_model: string
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          copy_type: string
+          id?: string
+          new_model: string
+          old_model: string
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          copy_type?: string
+          id?: string
+          new_model?: string
+          old_model?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "model_routing_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_gateways: {
         Row: {
           config: Json

@@ -9,6 +9,7 @@ import { CreditSettings } from "@/components/admin/settings/CreditSettings";
 import { PlanSettings } from "@/components/admin/settings/PlanSettings";
 import { WorkspaceSettings } from "@/components/admin/settings/WorkspaceSettings";
 import { SettingsSidebar } from "@/components/admin/settings/SettingsSidebar";
+import { ModelRoutingSettings } from "@/components/admin/settings/ModelRoutingSettings";
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState("geral");
@@ -25,6 +26,8 @@ export default function AdminSettings() {
         return <AISettings />;
       case "prompts":
         return <PromptsSettings />;
+      case "roteamento":
+        return <ModelRoutingSettings />;
       case "creditos":
         return <CreditSettings />;
       case "planos":

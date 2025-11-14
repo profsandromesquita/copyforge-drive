@@ -27,12 +27,41 @@ serve(async (req) => {
     selectedModel
   } = body;
 
-  // Determinar modelo: manual (se fornecido) ou automático (baseado em copyType)
-  const modelToUse = selectedModel || (
-    (copyType === 'vsl' || copyType === 'landing_page') 
-      ? 'openai/gpt-5-mini' 
-      : 'google/gemini-2.5-flash'
-  );
+  // Determinar modelo: manual (se fornecido) ou automático (baseado em DB ou fallback)
+  let modelToUse = selectedModel;
+
+  if (!modelToUse) {
+    // Se não for manual, buscar do banco de dados primeiro
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { data: routingConfig } = await supabaseAdmin
+        .from('model_routing_config')
+        .select('default_model')
+        .eq('copy_type', copyType)
+        .single();
+      
+      if (routingConfig) {
+        modelToUse = routingConfig.default_model;
+        console.log('Modelo obtido do banco de dados:', modelToUse);
+      } else {
+        // Fallback para lógica hardcoded
+        modelToUse = (copyType === 'vsl' || copyType === 'landing_page' || copyType === 'webinar')
+          ? 'openai/gpt-5-mini'
+          : 'google/gemini-2.5-flash';
+        console.log('Usando fallback hardcoded:', modelToUse);
+      }
+    } else {
+      // Fallback se não tiver credenciais
+      modelToUse = (copyType === 'vsl' || copyType === 'landing_page' || copyType === 'webinar')
+        ? 'openai/gpt-5-mini'
+        : 'google/gemini-2.5-flash';
+      console.log('Usando fallback hardcoded (sem credenciais):', modelToUse);
+    }
+  }
 
   const wasAutoRouted = selectedModel === null || selectedModel === undefined;
 
