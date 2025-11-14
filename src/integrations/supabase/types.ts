@@ -203,11 +203,14 @@ export type Database = {
           description: string
           id: string
           is_active: boolean | null
+          is_user_customizable: boolean | null
           last_modified_by: string | null
           name: string
           prompt_key: string
           purpose: string
+          system_instructions: string | null
           updated_at: string | null
+          user_editable_prompt: string | null
         }
         Insert: {
           category: string
@@ -217,11 +220,14 @@ export type Database = {
           description: string
           id?: string
           is_active?: boolean | null
+          is_user_customizable?: boolean | null
           last_modified_by?: string | null
           name: string
           prompt_key: string
           purpose: string
+          system_instructions?: string | null
           updated_at?: string | null
+          user_editable_prompt?: string | null
         }
         Update: {
           category?: string
@@ -231,11 +237,14 @@ export type Database = {
           description?: string
           id?: string
           is_active?: boolean | null
+          is_user_customizable?: boolean | null
           last_modified_by?: string | null
           name?: string
           prompt_key?: string
           purpose?: string
+          system_instructions?: string | null
           updated_at?: string | null
+          user_editable_prompt?: string | null
         }
         Relationships: []
       }
@@ -1119,6 +1128,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_prompt_customizations: {
+        Row: {
+          created_at: string | null
+          custom_prompt: string
+          id: string
+          is_active: boolean | null
+          prompt_key: string
+          updated_at: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          custom_prompt: string
+          id?: string
+          is_active?: boolean | null
+          prompt_key: string
+          updated_at?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          custom_prompt?: string
+          id?: string
+          is_active?: boolean | null
+          prompt_key?: string
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_prompt_customizations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
