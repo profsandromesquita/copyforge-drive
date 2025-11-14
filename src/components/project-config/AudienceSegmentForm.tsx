@@ -424,7 +424,7 @@ export const AudienceSegmentForm = ({
             )}
           </div>
         )}
-        </TabsContent>
+      </TabsContent>
 
         <TabsContent value="analysis" className="mt-6">
           {segment && (
@@ -445,11 +445,13 @@ export const AudienceSegmentForm = ({
         </TabsContent>
       </Tabs>
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-border">
-        <Button variant="outline" onClick={handleClose}>
-          Fechar
-        </Button>
-      </div>
+      {segmentCreated && (
+        <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          <Button variant="outline" onClick={handleClose}>
+            Fechar
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

@@ -601,6 +601,12 @@ export const MethodologyForm = ({
             {allFieldsValid ? 'Concluir' : `Preencha todos os campos (mínimo ${MIN_CHARS} caracteres cada)`}
           </Button>
         </div>
+
+        <div className="flex gap-3 justify-end pt-4 border-t border-border">
+          <Button variant="outline" onClick={onCancel}>
+            Fechar
+          </Button>
+        </div>
       </div>
     </TooltipProvider>
   );
