@@ -833,6 +833,7 @@ export type Database = {
           created_by: string
           id: string
           keywords: string[] | null
+          methodology: Json | null
           name: string
           offers: Json | null
           sector: string | null
@@ -849,6 +850,7 @@ export type Database = {
           created_by: string
           id?: string
           keywords?: string[] | null
+          methodology?: Json | null
           name: string
           offers?: Json | null
           sector?: string | null
@@ -865,6 +867,7 @@ export type Database = {
           created_by?: string
           id?: string
           keywords?: string[] | null
+          methodology?: Json | null
           name?: string
           offers?: Json | null
           sector?: string | null
