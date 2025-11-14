@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock } from 'lucide-react';
+import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock, Settings } from 'lucide-react';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
