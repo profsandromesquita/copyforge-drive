@@ -45,6 +45,28 @@ export const OffersTab = () => {
     }
   }, [activeProject, EDITING_STORAGE_KEY]);
 
+  // Atualizar editingOffer quando offers mudar (autosave)
+  useEffect(() => {
+    if (editingOffer && offers.length > 0) {
+      const updatedOffer = offers.find(o => o.id === editingOffer.id);
+      if (updatedOffer && JSON.stringify(updatedOffer) !== JSON.stringify(editingOffer)) {
+        setEditingOffer(updatedOffer);
+      }
+    }
+  }, [offers, editingOffer]);
+
+  // Recarregar dados quando a aba ganha foco
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isFormOpen) {
+        refreshProjects();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isFormOpen, refreshProjects]);
+
   const handleAddOffer = () => {
     localStorage.removeItem(EDITING_STORAGE_KEY);
     setEditingOffer(null);
