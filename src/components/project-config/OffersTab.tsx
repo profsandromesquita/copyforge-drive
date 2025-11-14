@@ -96,12 +96,7 @@ export const OffersTab = () => {
       {!isFormOpen && (
         <>
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">Ofertas</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure suas ofertas, produtos ou serviços
-              </p>
-            </div>
+            <h2 className="text-xl font-bold">Ofertas</h2>
             {offers.length > 0 && (
               <Button onClick={handleAddOffer}>
                 <Plus size={20} className="mr-2" />

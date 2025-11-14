@@ -85,12 +85,7 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
       {!isFormOpen && (
         <>
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold">Público-alvo</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Defina os diferentes públicos-alvo que você deseja atingir
-              </p>
-            </div>
+            <h2 className="text-xl font-bold">Público-alvo</h2>
             {segments.length > 0 && (
               <Button onClick={handleAddSegment}>
                 <Plus size={20} className="mr-2" />
