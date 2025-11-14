@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { VoiceInput } from './VoiceInput';
+import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info, CheckCircle, Circle } from 'phosphor-react';
 import { Methodology } from '@/types/project-config';
@@ -29,7 +30,6 @@ export const MethodologyForm = ({
 }: MethodologyFormProps) => {
   const { activeProject, refreshProjects } = useProject();
   const [formData, setFormData] = useState<Partial<Methodology>>({
-    name: '',
     tese_central: '',
     mecanismo_primario: '',
     por_que_funciona: '',
@@ -277,12 +277,20 @@ export const MethodologyForm = ({
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.tese_central || ''}
-              onChange={(value) => handleInputChange('tese_central', value)}
-              placeholder="Digite ou grave a tese central..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.tese_central || ''}
+                onChange={(e) => handleInputChange('tese_central', e.target.value)}
+                placeholder="Digite ou grave a tese central..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  tese_central: prev.tese_central ? `${prev.tese_central} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
               {formData.tese_central?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
@@ -302,20 +310,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.primary_mechanism}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.primary_mechanism || '') ? (
+              {isFieldValid(formData.mecanismo_primario || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.primary_mechanism || ''}
-              onChange={(value) => handleInputChange('primary_mechanism', value)}
-              placeholder="Digite ou grave o mecanismo primário..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.mecanismo_primario || ''}
+                onChange={(e) => handleInputChange('mecanismo_primario', e.target.value)}
+                placeholder="Digite ou grave o mecanismo primário..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  mecanismo_primario: prev.mecanismo_primario ? `${prev.mecanismo_primario} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.primary_mechanism?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.mecanismo_primario?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -333,20 +349,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.how_it_works}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.how_it_works || '') ? (
+              {isFieldValid(formData.por_que_funciona || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.how_it_works || ''}
-              onChange={(value) => handleInputChange('how_it_works', value)}
-              placeholder="Digite ou grave por que funciona..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.por_que_funciona || ''}
+                onChange={(e) => handleInputChange('por_que_funciona', e.target.value)}
+                placeholder="Digite ou grave por que funciona..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  por_que_funciona: prev.por_que_funciona ? `${prev.por_que_funciona} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.how_it_works?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.por_que_funciona?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -364,20 +388,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.invisible_error}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.invisible_error || '') ? (
+              {isFieldValid(formData.erro_invisivel || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.invisible_error || ''}
-              onChange={(value) => handleInputChange('invisible_error', value)}
-              placeholder="Digite ou grave o erro invisível..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.erro_invisivel || ''}
+                onChange={(e) => handleInputChange('erro_invisivel', e.target.value)}
+                placeholder="Digite ou grave o erro invisível..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  erro_invisivel: prev.erro_invisivel ? `${prev.erro_invisivel} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.invisible_error?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.erro_invisivel?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -395,20 +427,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.differentiation}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.differentiation || '') ? (
+              {isFieldValid(formData.diferenciacao || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.differentiation || ''}
-              onChange={(value) => handleInputChange('differentiation', value)}
-              placeholder="Digite ou grave a diferenciação..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.diferenciacao || ''}
+                onChange={(e) => handleInputChange('diferenciacao', e.target.value)}
+                placeholder="Digite ou grave a diferenciação..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  diferenciacao: prev.diferenciacao ? `${prev.diferenciacao} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.differentiation?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.diferenciacao?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -426,20 +466,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.principles}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.principles || '') ? (
+              {isFieldValid(formData.principios_fundamentos || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.principles || ''}
-              onChange={(value) => handleInputChange('principles', value)}
-              placeholder="Digite ou grave os princípios..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.principios_fundamentos || ''}
+                onChange={(e) => handleInputChange('principios_fundamentos', e.target.value)}
+                placeholder="Digite ou grave os princípios..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  principios_fundamentos: prev.principios_fundamentos ? `${prev.principios_fundamentos} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.principles?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.principios_fundamentos?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -457,20 +505,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.stages}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.stages || '') ? (
+              {isFieldValid(formData.etapas_metodo || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.stages || ''}
-              onChange={(value) => handleInputChange('stages', value)}
-              placeholder="Digite ou grave as etapas..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.etapas_metodo || ''}
+                onChange={(e) => handleInputChange('etapas_metodo', e.target.value)}
+                placeholder="Digite ou grave as etapas..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  etapas_metodo: prev.etapas_metodo ? `${prev.etapas_metodo} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.stages?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.etapas_metodo?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -488,20 +544,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.transformation}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.transformation || '') ? (
+              {isFieldValid(formData.transformacao_real || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.transformation || ''}
-              onChange={(value) => handleInputChange('transformation', value)}
-              placeholder="Digite ou grave a transformação..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.transformacao_real || ''}
+                onChange={(e) => handleInputChange('transformacao_real', e.target.value)}
+                placeholder="Digite ou grave a transformação..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  transformacao_real: prev.transformacao_real ? `${prev.transformacao_real} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.transformation?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.transformacao_real?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
 
@@ -519,20 +583,28 @@ export const MethodologyForm = ({
                   <p className="whitespace-pre-wrap text-sm">{tooltips.proof}</p>
                 </TooltipContent>
               </Tooltip>
-              {isFieldValid(formData.proof || '') ? (
+              {isFieldValid(formData.prova_funcionamento || '') ? (
                 <CheckCircle size={16} className="text-green-500" weight="fill" />
               ) : (
                 <Circle size={16} className="text-muted-foreground" />
               )}
             </div>
-            <VoiceInput
-              value={formData.proof || ''}
-              onChange={(value) => handleInputChange('proof', value)}
-              placeholder="Digite ou grave as provas..."
-              minHeight="100px"
-            />
+            <div className="relative">
+              <Textarea
+                value={formData.prova_funcionamento || ''}
+                onChange={(e) => handleInputChange('prova_funcionamento', e.target.value)}
+                placeholder="Digite ou grave as provas..."
+                className="min-h-[100px] resize-none pr-12"
+              />
+              <VoiceInput
+                onTranscript={(text) => setFormData(prev => ({
+                  ...prev,
+                  prova_funcionamento: prev.prova_funcionamento ? `${prev.prova_funcionamento} ${text}` : text
+                }))}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
-              {formData.proof?.length || 0} / {MIN_CHARS} caracteres mínimos
+              {formData.prova_funcionamento?.length || 0} / {MIN_CHARS} caracteres mínimos
             </p>
           </div>
         </div>
