@@ -113,7 +113,7 @@ export const AudienceSegmentForm = ({
       if (identification && segmentCreated) {
         autoSaveToDatabase();
       }
-    }, 2000);
+    }, 3000); // Debounce de 3 segundos para melhor UX
     return () => clearTimeout(timer);
   }, [identification, formData, autoSaveToDatabase, segmentCreated]);
 

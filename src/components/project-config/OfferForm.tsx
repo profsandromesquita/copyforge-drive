@@ -64,7 +64,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
     }
   }, [formData, offer]);
 
-  // Auto-save to database
+  // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
     if (!activeProject || !offerCreated || !offer) return;
 
@@ -85,22 +85,24 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
         .update({ offers: updatedOffers as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      // Não chamar refreshProjects() aqui para evitar perda de foco
+      // Apenas atualizar o estado local
       onUpdate?.(updatedOffers);
     } catch (error) {
       console.error('Auto-save error:', error);
+      toast.error('Erro ao salvar automaticamente');
     } finally {
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [activeProject, offerCreated, offer, formData, identification, allOffers, refreshProjects, onUpdate, onAutoSavingChange]);
+  }, [activeProject, offerCreated, offer, formData, identification, allOffers, onUpdate, onAutoSavingChange]);
 
-  // Trigger auto-save periodically when editing
+  // Trigger auto-save com debounce de 3 segundos
   useEffect(() => {
     if (offer && offerCreated) {
       const timer = setTimeout(() => {
         autoSaveToDatabase();
-      }, 2000);
+      }, 3000); // Aumentado para 3 segundos para melhor UX
 
       return () => clearTimeout(timer);
     }

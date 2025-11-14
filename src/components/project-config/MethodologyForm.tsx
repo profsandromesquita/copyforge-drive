@@ -72,7 +72,7 @@ export const MethodologyForm = ({
     }
   }, [formData, editingMethodology]);
 
-  // Auto-save to database
+  // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
     if (!activeProject || !methodologyCreated || !editingMethodology) return;
 
@@ -95,22 +95,24 @@ export const MethodologyForm = ({
         .update({ methodology: updatedMethodologies as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      // Não chamar refreshProjects() aqui para evitar perda de foco
+      // Apenas atualizar o estado local
       onUpdate?.(updatedMethodologies);
     } catch (error) {
       console.error('Auto-save error:', error);
+      toast.error('Erro ao salvar automaticamente');
     } finally {
       setAutoSaving(false);
       onAutoSavingChange?.(false);
     }
-  }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, refreshProjects, onUpdate, onAutoSavingChange]);
+  }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange]);
 
-  // Trigger auto-save periodically when editing
+  // Trigger auto-save com debounce de 3 segundos
   useEffect(() => {
     if (editingMethodology && methodologyCreated) {
       const timer = setTimeout(() => {
         autoSaveToDatabase();
-      }, 2000);
+      }, 3000); // Aumentado para 3 segundos para melhor UX
 
       return () => clearTimeout(timer);
     }
