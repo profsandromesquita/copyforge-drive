@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +37,11 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   const [offerCreated, setOfferCreated] = useState(false);
   const [originalId, setOriginalId] = useState<string | null>(null);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
   // Load draft from localStorage or edit existing
   useEffect(() => {
     if (offer) {
@@ -44,6 +49,18 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       setIdentification(offer.name);
       setOfferCreated(true);
       setOriginalId(offer.id);
+
+      // Merge per-offer draft if exists (survives tab switches)
+      try {
+        const perOfferDraft = localStorage.getItem(`offer-draft-${offer.id}`);
+        if (perOfferDraft) {
+          const parsed = JSON.parse(perOfferDraft);
+          if (parsed?.formData) setFormData({ ...offer, ...parsed.formData });
+          if (parsed?.identification) setIdentification(parsed.identification);
+        }
+      } catch (e) {
+        console.error('Error loading per-offer draft:', e);
+      }
     } else {
       const draft = localStorage.getItem('offer-draft');
       if (draft) {
@@ -68,8 +85,10 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   const autoSaveToDatabase = useCallback(async () => {
     if (!activeProject || !offerCreated || !offer) return;
 
-    setAutoSaving(true);
-    onAutoSavingChange?.(true);
+    if (mountedRef.current) {
+      setAutoSaving(true);
+      onAutoSavingChange?.(true);
+    }
 
     try {
       const updatedOffer: Offer = {
@@ -85,15 +104,19 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
         .update({ offers: updatedOffers as any })
         .eq('id', activeProject.id);
 
-      // Não chamar refreshProjects() aqui para evitar perda de foco
-      // Apenas atualizar o estado local
+      // Atualizar o estado local sem perder foco
       onUpdate?.(updatedOffers);
+
+      // Limpa draft específico após salvar com sucesso
+      try { localStorage.removeItem(`offer-draft-${offer.id}`); } catch {}
     } catch (error) {
       console.error('Auto-save error:', error);
       toast.error('Erro ao salvar automaticamente');
     } finally {
-      setAutoSaving(false);
-      onAutoSavingChange?.(false);
+      if (mountedRef.current) {
+        setAutoSaving(false);
+        onAutoSavingChange?.(false);
+      }
     }
   }, [activeProject, offerCreated, offer, formData, identification, allOffers, onUpdate, onAutoSavingChange]);
 
@@ -107,6 +130,19 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       return () => clearTimeout(timer);
     }
   }, [formData, identification, offer, offerCreated, autoSaveToDatabase]);
+
+  // Flush auto-save on unmount and persist a local draft for existing offer
+  useEffect(() => {
+    return () => {
+      if (offer && offerCreated) {
+        try {
+          localStorage.setItem(`offer-draft-${offer.id}`, JSON.stringify({ formData, identification }));
+        } catch {}
+        // Fire-and-forget save to backend
+        void autoSaveToDatabase();
+      }
+    };
+  }, [offer, offerCreated, formData, identification, autoSaveToDatabase]);
 
   const handleCreateOffer = async () => {
     if (!identification.trim()) {
