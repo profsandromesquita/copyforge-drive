@@ -93,7 +93,7 @@ const ProjectConfig = () => {
       return;
     }
     if (value === 'offers' && !isOffersUnlocked) {
-      toast.error('Adicione pelo menos um Segmento de Público primeiro');
+      toast.error('Adicione pelo menos um Público-alvo primeiro');
       return;
     }
     if (value === 'methodology' && !isMethodologyUnlocked) {
@@ -159,7 +159,7 @@ const ProjectConfig = () => {
               <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
                 {!isAudienceUnlocked && <Lock size={14} className="md:hidden" />}
                 {!isAudienceUnlocked && <Lock size={16} className="hidden md:block" />}
-                <span className="hidden md:inline">Segmentos de Público</span>
+                <span className="hidden md:inline">Público-alvo</span>
                 <span className="md:hidden">Público</span>
               </span>
             </TabsTrigger>
