@@ -430,6 +430,12 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
               Concluir Oferta
             </Button>
           </div>
+
+          <div className="flex gap-3 justify-end pt-4 border-t border-border">
+            <Button variant="outline" onClick={handleClose}>
+              Fechar
+            </Button>
+          </div>
         </div>
       )}
     </div>
