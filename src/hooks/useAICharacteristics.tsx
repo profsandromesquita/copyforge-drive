@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 
 export interface AICharacteristic {
   id: string;
-  category: 'objetivos' | 'estilos' | 'tamanhos' | 'preferencias';
+  category: 'objetivos' | 'estilos' | 'tamanhos' | 'preferencias' | 'frameworks' | 'foco_emocional';
   value: string;
   label: string;
   description?: string;
