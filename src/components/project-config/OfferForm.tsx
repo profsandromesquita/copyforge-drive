@@ -332,7 +332,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Descrição Curta *</Label>
-                <span className={`text-xs font-medium ${getCharCount('short_description') >= 50 ? 'text-primary' : 'text-muted-foreground'}`}>
+                <span className={`text-xs font-medium ${getCharCount('short_description') >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                   {getCharCount('short_description')}/50
                 </span>
               </div>
@@ -358,7 +358,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Benefício Principal *</Label>
-                <span className={`text-xs font-medium ${getCharCount('main_benefit') >= 30 ? 'text-primary' : 'text-muted-foreground'}`}>
+                <span className={`text-xs font-medium ${getCharCount('main_benefit') >= 30 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                   {getCharCount('main_benefit')}/30
                 </span>
               </div>
