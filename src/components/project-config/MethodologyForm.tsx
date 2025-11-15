@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,7 @@ export const MethodologyForm = ({
   onCancel,
   onAutoSavingChange
 }: MethodologyFormProps) => {
-  const { activeProject, refreshProjects } = useProject();
+  const { activeProject, refreshProjects, setActiveProject } = useProject();
   const [formData, setFormData] = useState<Partial<Methodology>>({
     tese_central: '',
     mecanismo_primario: '',
@@ -46,12 +46,29 @@ export const MethodologyForm = ({
 
   const MIN_CHARS = 50;
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
   // Load draft from localStorage or edit existing
   useEffect(() => {
     if (editingMethodology) {
       setFormData(editingMethodology);
       setIdentification(editingMethodology.name);
       setMethodologyCreated(true);
+
+      // Merge per-methodology draft if exists (survives tab switches)
+      try {
+        const perMethodologyDraft = localStorage.getItem(`methodology-draft-${editingMethodology.id}`);
+        if (perMethodologyDraft) {
+          const parsed = JSON.parse(perMethodologyDraft);
+          if (parsed?.formData) setFormData({ ...editingMethodology, ...parsed.formData });
+          if (parsed?.identification) setIdentification(parsed.identification);
+        }
+      } catch (e) {
+        console.error('Error loading per-methodology draft:', e);
+      }
     } else {
       const draft = localStorage.getItem('methodology-draft');
       if (draft) {
@@ -76,8 +93,10 @@ export const MethodologyForm = ({
   const autoSaveToDatabase = useCallback(async () => {
     if (!activeProject || !methodologyCreated || !editingMethodology) return;
 
-    setAutoSaving(true);
-    onAutoSavingChange?.(true);
+    if (mountedRef.current) {
+      setAutoSaving(true);
+      onAutoSavingChange?.(true);
+    }
 
     try {
       const updatedMethodology: Methodology = {
@@ -95,17 +114,31 @@ export const MethodologyForm = ({
         .update({ methodology: updatedMethodologies as any })
         .eq('id', activeProject.id);
 
-      // Não chamar refreshProjects() aqui para evitar perda de foco
-      // Apenas atualizar o estado local
+      // Atualizar o estado local sem perder foco
       onUpdate?.(updatedMethodologies);
+
+      // Atualizar o contexto do projeto para manter sincronização entre abas
+      if (activeProject) {
+        setActiveProject({ ...activeProject, methodology: updatedMethodologies as any });
+      }
+
+      // Save per-methodology draft
+      if (editingMethodology) {
+        localStorage.setItem(`methodology-draft-${editingMethodology.id}`, JSON.stringify({
+          formData,
+          identification
+        }));
+      }
     } catch (error) {
       console.error('Auto-save error:', error);
       toast.error('Erro ao salvar automaticamente');
     } finally {
-      setAutoSaving(false);
-      onAutoSavingChange?.(false);
+      if (mountedRef.current) {
+        setAutoSaving(false);
+        onAutoSavingChange?.(false);
+      }
     }
-  }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange]);
+  }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange, setActiveProject]);
 
   // Trigger auto-save com debounce de 3 segundos
   useEffect(() => {
