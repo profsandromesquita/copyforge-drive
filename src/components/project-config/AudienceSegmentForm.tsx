@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ interface AudienceSegmentFormProps {
   segment: AudienceSegment | null;
   allSegments: AudienceSegment[];
   onSave: (segments: AudienceSegment[]) => void;
+  onUpdate?: (segments: AudienceSegment[]) => void;
   onCancel: () => void;
   onAutoSavingChange?: (isSaving: boolean) => void;
 }
@@ -20,11 +21,12 @@ interface AudienceSegmentFormProps {
 export const AudienceSegmentForm = ({ 
   segment, 
   allSegments, 
-  onSave, 
+  onSave,
+  onUpdate, 
   onCancel, 
   onAutoSavingChange 
 }: AudienceSegmentFormProps) => {
-  const { activeProject, refreshProjects } = useProject();
+  const { activeProject, refreshProjects, setActiveProject } = useProject();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
     id: '',
     who_is: '',
@@ -42,69 +44,105 @@ export const AudienceSegmentForm = ({
   const [segmentCreated, setSegmentCreated] = useState(!!segment);
   const [originalId, setOriginalId] = useState(segment?.id || '');
 
-  const STORAGE_KEY = `audience-segment-draft-${activeProject?.id}`;
   const MIN_CHARS = 50;
 
+  const mountedRef = useRef(true);
   useEffect(() => {
-    if (!segment) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Load draft from localStorage or edit existing
+  useEffect(() => {
+    if (segment) {
+      setFormData(segment);
+      setIdentification(segment.id);
+      setSegmentCreated(true);
+      setOriginalId(segment.id);
+
+      // Merge per-segment draft if exists (survives tab switches)
+      try {
+        const perSegmentDraft = localStorage.getItem(`audience-segment-draft-${segment.id}`);
+        if (perSegmentDraft) {
+          const parsed = JSON.parse(perSegmentDraft);
+          if (parsed?.formData) setFormData({ ...segment, ...parsed.formData });
+          if (parsed?.identification) setIdentification(parsed.identification);
+        }
+      } catch (e) {
+        console.error('Error loading per-segment draft:', e);
+      }
+    } else {
+      const draft = localStorage.getItem('audience-segment-draft');
+      if (draft) {
         try {
-          const parsed = JSON.parse(saved);
+          const parsed = JSON.parse(draft);
           setFormData(prev => ({ ...prev, ...parsed }));
         } catch (e) {
           console.error('Erro ao carregar rascunho:', e);
         }
       }
     }
-  }, [STORAGE_KEY, segment]);
+  }, [segment]);
 
+  // Save draft to localStorage
   useEffect(() => {
     if (!segment && Object.values(formData).some(v => v)) {
       const timer = setTimeout(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+        localStorage.setItem('audience-segment-draft', JSON.stringify(formData));
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [formData, segment, STORAGE_KEY]);
+  }, [formData, segment]);
 
+  // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
-    if (!identification || !activeProject || !segmentCreated) return;
+    if (!identification || !activeProject || !segmentCreated || !segment) return;
 
-    setAutoSaving(true);
-    onAutoSavingChange?.(true);
+    if (mountedRef.current) {
+      setAutoSaving(true);
+      onAutoSavingChange?.(true);
+    }
+
     try {
-      const segmentId = identification;
-      const newSegment: AudienceSegment = { ...formData, id: segmentId } as AudienceSegment;
+      const updatedSegment: AudienceSegment = {
+        ...segment,
+        ...formData,
+        id: identification || segment.id
+      } as AudienceSegment;
 
-      // Verificar se o segmento já existe no array usando o identification como ID
-      const existingSegmentIndex = allSegments.findIndex(s => s.id === segmentId);
-      
-      let updatedSegments: AudienceSegment[];
-      if (existingSegmentIndex >= 0) {
-        // Atualizar segmento existente
-        updatedSegments = allSegments.map(s => 
-          s.id === segmentId ? newSegment : s
-        );
-      } else {
-        // Isso não deveria acontecer porque handleCreateSegment já adiciona
-        // mas mantemos como fallback
-        updatedSegments = [...allSegments, newSegment];
-      }
+      const updatedSegments = allSegments.map(s => 
+        s.id === segment.id ? updatedSegment : s
+      );
 
       await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      // Não chamar refreshProjects aqui para evitar fechar o formulário
+      // Atualizar o estado local sem perder foco
+      onUpdate?.(updatedSegments);
+
+      // Atualizar o contexto do projeto para manter sincronização entre abas
+      if (activeProject) {
+        setActiveProject({ ...activeProject, audience_segments: updatedSegments });
+      }
+
+      // Save per-segment draft
+      if (segment) {
+        localStorage.setItem(`audience-segment-draft-${segment.id}`, JSON.stringify({
+          formData,
+          identification
+        }));
+      }
     } catch (error) {
-      console.error('Erro no auto-save:', error);
+      console.error('Auto-save error:', error);
+      toast.error('Erro ao salvar automaticamente');
     } finally {
-      setAutoSaving(false);
-      onAutoSavingChange?.(false);
+      if (mountedRef.current) {
+        setAutoSaving(false);
+        onAutoSavingChange?.(false);
+      }
     }
-  }, [identification, formData, activeProject, allSegments, onAutoSavingChange, segmentCreated]);
+  }, [identification, formData, activeProject, segment, allSegments, onUpdate, onAutoSavingChange, segmentCreated, setActiveProject]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -238,7 +276,7 @@ export const AudienceSegmentForm = ({
       
       // Limpar rascunho do localStorage
       if (!segment) {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('audience-segment-draft');
       }
       
       toast.success('Segmento concluído!');
@@ -259,7 +297,7 @@ export const AudienceSegmentForm = ({
     }
     
     if (!segment) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('audience-segment-draft');
     }
     
     onCancel();
