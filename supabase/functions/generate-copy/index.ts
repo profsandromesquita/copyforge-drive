@@ -15,10 +15,10 @@ serve(async (req) => {
   const body = await req.json();
   const { 
     copyType, 
-    objectives, 
+    framework,
+    objective,
     styles, 
-    size, 
-    preferences, 
+    emotionalFocus,
     prompt, 
     projectIdentity, 
     audienceSegment, 
@@ -119,11 +119,11 @@ serve(async (req) => {
       }
     }
 
-    // Mapear parâmetros do inglês para português e garantir que sejam arrays
-    const objetivos = Array.isArray(objectives) ? objectives : [];
+    // Mapear parâmetros e garantir que sejam arrays
+    const frameworkValue = framework || '';
+    const objetivoValue = objective || '';
     const estilos = Array.isArray(styles) ? styles : [];
-    const tamanhos = size ? [size] : [];
-    const preferencias = Array.isArray(preferences) ? preferences : [];
+    const focoEmocionalValue = emotionalFocus || '';
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -131,7 +131,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY não configurada");
     }
 
-    console.log("Gerando copy com parâmetros:", { copyType, objetivos, estilos, tamanhos, preferencias });
+    console.log("Gerando copy com parâmetros:", { copyType, frameworkValue, objetivoValue, estilos, focoEmocionalValue });
 
     // Buscar base prompt do banco de dados (com personalização se disponível)
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");

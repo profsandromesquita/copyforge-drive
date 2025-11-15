@@ -44,18 +44,18 @@ export const CopyAITab = () => {
   const { checkCopyAI } = usePlanLimits();
 
   // Carregar características dinâmicas do banco
+  const { characteristics: frameworksData, isLoading: loadingFrameworks } = useAICharacteristics('frameworks');
   const { characteristics: objetivosData, isLoading: loadingObjetivos } = useAICharacteristics('objetivos');
   const { characteristics: estilosData, isLoading: loadingEstilos } = useAICharacteristics('estilos');
-  const { characteristics: tamanhosData, isLoading: loadingTamanhos } = useAICharacteristics('tamanhos');
-  const { characteristics: preferenciasData, isLoading: loadingPreferencias } = useAICharacteristics('preferencias');
+  const { characteristics: focoEmocionalData, isLoading: loadingFocoEmocional } = useAICharacteristics('foco_emocional');
 
   // Mapear características para formato esperado pelos selects
+  const FRAMEWORKS = frameworksData.map(c => ({ value: c.value, label: c.label, description: c.description }));
   const OBJETIVOS = objetivosData.map(c => ({ value: c.value, label: c.label }));
   const ESTILOS = estilosData.map(c => ({ value: c.value, label: c.label }));
-  const TAMANHOS = tamanhosData.map(c => ({ value: c.value, label: c.label }));
-  const PREFERENCIAS = preferenciasData.map(c => ({ value: c.value, label: c.label }));
+  const FOCO_EMOCIONAL = focoEmocionalData.map(c => ({ value: c.value, label: c.label, description: c.description }));
 
-  const isLoadingCharacteristics = loadingObjetivos || loadingEstilos || loadingTamanhos || loadingPreferencias;
+  const isLoadingCharacteristics = loadingFrameworks || loadingObjetivos || loadingEstilos || loadingFocoEmocional;
 
   // Controle de abas
   const [activeTab, setActiveTab] = useState('criar');
@@ -67,10 +67,10 @@ export const CopyAITab = () => {
   // Estado para criação
   const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
   const [offerId, setOfferId] = useState<string>('');
-  const [objetivos, setObjetivos] = useState<string[]>([]);
+  const [estrutura, setEstrutura] = useState<string>('');
+  const [objetivo, setObjetivo] = useState<string>('');
   const [estilos, setEstilos] = useState<string[]>([]);
-  const [tamanho, setTamanho] = useState<string>('');
-  const [preferencias, setPreferencias] = useState<string[]>([]);
+  const [focoEmocional, setFocoEmocional] = useState<string>('');
   const [prompt, setPrompt] = useState('');
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -145,10 +145,10 @@ export const CopyAITab = () => {
     setEtapa(1);
     setAudienceSegmentId('');
     setOfferId('');
-    setObjetivos([]);
+    setEstrutura('');
+    setObjetivo('');
     setEstilos([]);
-    setTamanho('');
-    setPreferencias([]);
+    setFocoEmocional('');
     setPrompt('');
     setSelectedModel(null);
   };
@@ -207,10 +207,10 @@ export const CopyAITab = () => {
         body: {
           copyType: copyType || 'outro',
           prompt,
-          objectives: objetivos,
+          framework: estrutura,
+          objective: objetivo,
           styles: estilos,
-          size: tamanho,
-          preferences: preferencias,
+          emotionalFocus: focoEmocional,
           projectIdentity,
           audienceSegment,
           offer,
@@ -524,6 +524,27 @@ export const CopyAITab = () => {
         <ScrollArea className="h-[calc(100vh-12rem)]">
           <div className="space-y-6 p-4">
             <div className="space-y-2">
+              <Label className="font-semibold">Estrutura</Label>
+              <Select value={estrutura} onValueChange={setEstrutura}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a estrutura do copy" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FRAMEWORKS.map((framework) => (
+                    <SelectItem key={framework.value} value={framework.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{framework.label}</span>
+                        {framework.description && (
+                          <span className="text-xs text-muted-foreground">{framework.description}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label className="font-semibold">Público-Alvo</Label>
               <Select value={audienceSegmentId} onValueChange={setAudienceSegmentId}>
                 <SelectTrigger>
@@ -580,24 +601,20 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Objetivos
+                Objetivo
               </Label>
-              <ToggleGroup 
-                type="multiple" 
-                value={objetivos} 
-                onValueChange={setObjetivos} 
-                className="flex flex-wrap gap-2 justify-start"
-              >
-                {OBJETIVOS.map((obj) => (
-                  <ToggleGroupItem 
-                    key={obj.value} 
-                    value={obj.value} 
-                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
-                  >
-                    {obj.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <Select value={objetivo} onValueChange={setObjetivo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o objetivo principal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OBJETIVOS.map((obj) => (
+                    <SelectItem key={obj.value} value={obj.value}>
+                      {obj.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -624,46 +641,25 @@ export const CopyAITab = () => {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Tamanho
+                Foco Emocional
               </Label>
-              <ToggleGroup 
-                type="single" 
-                value={tamanho} 
-                onValueChange={setTamanho} 
-                className="flex flex-wrap gap-2 justify-start"
-              >
-                {TAMANHOS.map((tam) => (
-                  <ToggleGroupItem 
-                    key={tam.value} 
-                    value={tam.value} 
-                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
-                  >
-                    {tam.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Preferências
-              </Label>
-              <ToggleGroup 
-                type="multiple" 
-                value={preferencias} 
-                onValueChange={setPreferencias} 
-                className="flex flex-wrap gap-2 justify-start"
-              >
-                {PREFERENCIAS.map((pref) => (
-                  <ToggleGroupItem 
-                    key={pref.value} 
-                    value={pref.value} 
-                    className="rounded-full px-4 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary/20 transition-all hover-scale"
-                  >
-                    {pref.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <Select value={focoEmocional} onValueChange={setFocoEmocional}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o foco emocional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FOCO_EMOCIONAL.map((foco) => (
+                    <SelectItem key={foco.value} value={foco.value}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{foco.label}</span>
+                        {foco.description && (
+                          <span className="text-xs text-muted-foreground">{foco.description}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="pt-2">
