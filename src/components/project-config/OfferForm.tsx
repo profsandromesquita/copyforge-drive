@@ -467,44 +467,6 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
             </div>
           </div>
 
-          {/* Status Summary */}
-          <div className="bg-muted/30 border border-border/50 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-1 bg-primary rounded-full" />
-              <h3 className="font-semibold text-base">Status de Preenchimento</h3>
-            </div>
-            <div className="grid gap-3">
-              {fieldMinimums.map(({ field, min }) => {
-                const current = getCharCount(field as keyof Offer);
-                const isComplete = current >= min;
-                const percentage = Math.min((current / min) * 100, 100);
-                return (
-                  <div key={field} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {isComplete ? (
-                          <CheckCircle size={18} className="text-primary" weight="fill" />
-                        ) : (
-                          <Circle size={18} className="text-muted-foreground" />
-                        )}
-                        <span className={`text-sm font-medium ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {field === 'short_description' ? 'Descrição Curta' : 'Benefício Principal'}
-                        </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground font-medium">{current}/{min}</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300 rounded-full" 
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button 
