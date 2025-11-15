@@ -200,10 +200,10 @@ serve(async (req) => {
       audienceSegment,
       offer,
       characteristics: {
-        objectives: objetivos,
-        styles: estilos,
-        size: tamanhos[0],
-        preferences: preferencias
+        framework: framework,
+        objective: objective,
+        styles: styles,
+        emotionalFocus: emotionalFocus
       }
     });
     
@@ -217,7 +217,7 @@ serve(async (req) => {
       text_length: systemPrompt.length
     });
     
-    const userPrompt = buildUserPrompt({ objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer });
+    const userPrompt = buildUserPrompt({ framework, objective, styles, emotionalFocus, prompt, projectIdentity, audienceSegment, offer });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -397,10 +397,10 @@ serve(async (req) => {
           prompt,
           system_instruction: systemInstructionCompiled,
           parameters: {
-            objectives: objetivos,
-            styles: estilos,
-            size: tamanhos[0] || '',
-            preferences: preferencias,
+            framework: framework,
+            objective: objective,
+            styles: styles,
+            emotionalFocus: emotionalFocus,
             hasProjectIdentity: !!projectIdentity,
             hasAudienceSegment: !!audienceSegment,
             hasOffer: !!offer,
@@ -659,12 +659,12 @@ Especializado em mensagens diretas para WhatsApp/Telegram. Para mensagens:
 }
 
 function buildUserPrompt(params: any): string {
-  const { objetivos, estilos, tamanhos, preferencias, prompt, projectIdentity, audienceSegment, offer } = params;
+  const { framework, objective, styles, emotionalFocus, prompt, projectIdentity, audienceSegment, offer } = params;
 
-  const objetivosText = objetivos.length > 0 ? objetivos.join(", ") : "não especificado";
-  const estilosText = estilos.length > 0 ? estilos.join(", ") : "não especificado";
-  const tamanhosText = tamanhos.length > 0 ? tamanhos.join(", ") : "não especificado";
-  const preferenciasText = preferencias.length > 0 ? preferencias.join(", ") : "não especificado";
+  const frameworkText = framework || "não especificado";
+  const objectiveText = objective || "não especificado";
+  const stylesText = styles && styles.length > 0 ? styles.join(", ") : "não especificado";
+  const emotionalFocusText = emotionalFocus || "não especificado";
 
   let projectContext = "";
   if (projectIdentity) {
@@ -731,10 +731,10 @@ ${aa.anti_persona ? `\nAnti-Persona:\n${aa.anti_persona}` : ''}
 Crie uma copy em português brasileiro com as seguintes características:
 ${projectContext}${audienceContext}${offerContext}
 **PARÂMETROS DA COPY:**
-- Objetivos: ${objetivosText}
-- Estilo de Escrita: ${estilosText}
-- Tamanho: ${tamanhosText}
-- Preferências: ${preferenciasText}
+- Estrutura: ${frameworkText}
+- Objetivo: ${objectiveText}
+- Estilo de Escrita: ${stylesText}
+- Foco Emocional: ${emotionalFocusText}
 
 **DETALHES DA COPY:**
 ${prompt}

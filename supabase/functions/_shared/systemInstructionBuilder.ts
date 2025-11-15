@@ -34,10 +34,10 @@ interface Offer {
 }
 
 interface Characteristics {
-  objectives?: string[];
+  framework?: string;
+  objective?: string;
   styles?: string[];
-  size?: string;
-  preferences?: string[];
+  emotionalFocus?: string;
 }
 
 interface SystemInstructionContext {
@@ -177,20 +177,20 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
   if (context.characteristics && Object.keys(context.characteristics).length > 0) {
     sections.push("=== DIRETRIZES DE EXECUÇÃO ===");
     
-    if (context.characteristics.objectives && context.characteristics.objectives.length > 0) {
-      sections.push(`**Objetivos**: ${context.characteristics.objectives.join(', ')}`);
+    if (context.characteristics.framework) {
+      sections.push(`**Estrutura**: ${context.characteristics.framework}`);
+    }
+    
+    if (context.characteristics.objective) {
+      sections.push(`**Objetivo**: ${context.characteristics.objective}`);
     }
     
     if (context.characteristics.styles && context.characteristics.styles.length > 0) {
       sections.push(`**Estilos**: ${context.characteristics.styles.join(', ')}`);
     }
     
-    if (context.characteristics.size) {
-      sections.push(`**Tamanho**: ${context.characteristics.size}`);
-    }
-    
-    if (context.characteristics.preferences && context.characteristics.preferences.length > 0) {
-      sections.push(`**Preferências**: ${context.characteristics.preferences.join(', ')}`);
+    if (context.characteristics.emotionalFocus) {
+      sections.push(`**Foco Emocional**: ${context.characteristics.emotionalFocus}`);
     }
     
     sections.push("");
