@@ -3,9 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VoiceInput } from './VoiceInput';
-import { AdvancedAnalysisTab } from './AdvancedAnalysisTab';
 import { AudienceSegment } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/hooks/useProject';
@@ -311,145 +309,103 @@ export const AudienceSegmentForm = ({
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
-          <TabsTrigger 
-            value="analysis" 
-            disabled={!segment?.is_completed}
-          >
-            Análise Avançada
-          </TabsTrigger>
-        </TabsList>
+    <div className="max-w-3xl mx-auto space-y-8 pb-8">
+      {/* Identificação */}
+      <div className="space-y-4">
+        <div>
+          <Label className="text-lg font-semibold">Identificação do Público *</Label>
+          <p className="text-sm text-muted-foreground mt-1">
+            Escolha um nome que identifique claramente este público-alvo
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Input
+            value={identification}
+            onChange={(e) => setIdentification(e.target.value)}
+            placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
+            disabled={segmentCreated}
+            className="placeholder:text-xs"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !segmentCreated && identification.trim()) {
+                handleCreateSegment();
+              }
+            }}
+          />
+          {!segmentCreated ? (
+            <Button onClick={handleCreateSegment} disabled={!identification.trim()} size="lg">
+              Criar Público
+            </Button>
+          ) : (
+            identification !== originalId && (
+              <Button onClick={handleUpdateIdentification} variant="outline" size="lg">
+                Atualizar
+              </Button>
+            )
+          )}
+        </div>
+      </div>
 
-        <TabsContent value="basic" className="mt-6">
-          {/* Identificação */}
-          <div className="bg-card border border-border rounded-lg p-6 mb-6">
-            <Label className="text-base font-semibold">Identificação do Público *</Label>
-            <p className="text-sm text-muted-foreground mt-1 mb-3">
-              Escolha um nome que identifique claramente este público-alvo
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={identification}
-                onChange={(e) => setIdentification(e.target.value)}
-                placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
-                disabled={segmentCreated}
-                className="placeholder:text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !segmentCreated && identification.trim()) {
-                    handleCreateSegment();
-                  }
-                }}
-              />
-              {!segmentCreated ? (
-                <Button 
-                  onClick={handleCreateSegment}
-                  disabled={!identification.trim()}
-                  className="shrink-0"
-                >
-                  Criar Público-alvo
-                </Button>
-              ) : identification !== originalId && (
-                <Button 
-                  onClick={handleUpdateIdentification}
-                  disabled={!identification}
-                  className="shrink-0"
-                >
-                  Atualizar
-                </Button>
-              )}
-            </div>
-          </div>
-
-        {segmentCreated && (
-          <div className="bg-card border border-border rounded-xl p-4 md:p-6 space-y-6 shadow-sm">
-            {questions.map((question) => {
+      {/* Form fields - only show after segment is created */}
+      {segmentCreated && (
+        <div className="space-y-8">
+          {/* Card único com todos os campos */}
+          <div className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-6">
+            {questions.map((question, index) => {
               const charCount = getCharCount(question.id);
               const isValid = charCount >= MIN_CHARS;
               return (
-                <div key={question.id} className="space-y-2">
-                  <Label htmlFor={question.id} className="text-sm font-medium">
-                    {question.label}
-                  </Label>
-                  <div className="relative">
-                    <Textarea
-                      id={question.id}
-                      value={formData[question.id as keyof typeof formData] as string || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
-                      placeholder={question.placeholder}
-                      className="min-h-[100px] resize-none pr-12"
-                    />
-                    <VoiceInput
-                      onTranscript={(text) => setFormData(prev => ({
-                        ...prev,
-                        [question.id]: prev[question.id as keyof typeof prev] 
-                          ? `${prev[question.id as keyof typeof prev]} ${text}` 
-                          : text
-                      }))}
-                    />
+                <div key={question.id}>
+                  {index > 0 && <div className="border-t border-border mb-6" />}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">{question.label}</Label>
+                      <span className={`text-xs font-medium ${isValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                        {charCount}/{MIN_CHARS}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Textarea
+                        id={question.id}
+                        value={formData[question.id as keyof typeof formData] as string || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
+                        placeholder={question.placeholder}
+                        rows={4}
+                        className="pr-12 resize-none"
+                      />
+                      <VoiceInput
+                        onTranscript={(text) => setFormData(prev => ({
+                          ...prev,
+                          [question.id]: prev[question.id as keyof typeof prev] 
+                            ? `${prev[question.id as keyof typeof prev]} ${text}` 
+                            : text
+                        }))}
+                      />
+                    </div>
                   </div>
-                  <span className={`text-xs ${isValid ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {charCount}/{MIN_CHARS} caracteres mínimos
-                  </span>
                 </div>
               );
             })}
-
-            {!formData.is_completed && (
-              <div className="pt-4 border-t border-border">
-                <Button 
-                  onClick={handleComplete}
-                  disabled={!isAllFieldsFilled()}
-                  className="w-full"
-                  size="lg"
-                >
-                  Concluir Preenchimento
-                </Button>
-                {!isAllFieldsFilled() && (
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Preencha todos os campos com no mínimo {MIN_CHARS} caracteres para concluir
-                  </p>
-                )}
-              </div>
-            )}
-
-            {formData.is_completed && (
-              <div className="pt-4 border-t border-border bg-primary/5 rounded-lg p-4">
-                <p className="text-sm text-center font-medium text-primary">
-                  ✓ Preenchimento concluído! Agora você pode gerar a análise avançada IA.
-                </p>
-              </div>
-            )}
           </div>
-        )}
-      </TabsContent>
 
-        <TabsContent value="analysis" className="mt-6">
-          {segment && (
-            <div className="bg-card border border-border rounded-xl p-4 md:p-6">
-              <AdvancedAnalysisTab
-                segment={segment}
-                allSegments={allSegments}
-                onUpdate={(updatedSegments) => {
-                  // Atualizar o segmento local com os novos dados
-                  const updatedSegment = updatedSegments.find(s => s.id === segment.id);
-                  if (updatedSegment) {
-                    Object.assign(segment, updatedSegment);
-                  }
-                }}
-              />
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {segmentCreated && (
-        <div className="flex gap-3 justify-end pt-4 border-t border-border">
-          <Button variant="outline" onClick={handleClose}>
-            Fechar
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleClose} 
+              className="flex-1 h-11"
+              size="lg"
+            >
+              Salvar e Fechar
+            </Button>
+            <Button 
+              onClick={handleComplete} 
+              disabled={!isAllFieldsFilled()}
+              className="flex-1 h-11"
+              size="lg"
+            >
+              Concluir Público
+            </Button>
+          </div>
         </div>
       )}
     </div>
