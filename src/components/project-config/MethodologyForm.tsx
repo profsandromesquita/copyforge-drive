@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { VoiceInput } from './VoiceInput';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, CheckCircle, Circle } from 'phosphor-react';
+import { Info } from 'phosphor-react';
 import { Methodology } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
@@ -179,20 +179,16 @@ export const MethodologyForm = ({
     }
   };
 
-  const isFieldValid = (value: string) => {
-    return value.length >= MIN_CHARS;
-  };
-
   const allFieldsValid = 
-    isFieldValid(formData.tese_central || '') &&
-    isFieldValid(formData.mecanismo_primario || '') &&
-    isFieldValid(formData.por_que_funciona || '') &&
-    isFieldValid(formData.erro_invisivel || '') &&
-    isFieldValid(formData.diferenciacao || '') &&
-    isFieldValid(formData.principios_fundamentos || '') &&
-    isFieldValid(formData.etapas_metodo || '') &&
-    isFieldValid(formData.transformacao_real || '') &&
-    isFieldValid(formData.prova_funcionamento || '');
+    (formData.tese_central?.length || 0) >= MIN_CHARS &&
+    (formData.mecanismo_primario?.length || 0) >= MIN_CHARS &&
+    (formData.por_que_funciona?.length || 0) >= MIN_CHARS &&
+    (formData.erro_invisivel?.length || 0) >= MIN_CHARS &&
+    (formData.diferenciacao?.length || 0) >= MIN_CHARS &&
+    (formData.principios_fundamentos?.length || 0) >= MIN_CHARS &&
+    (formData.etapas_metodo?.length || 0) >= MIN_CHARS &&
+    (formData.transformacao_real?.length || 0) >= MIN_CHARS &&
+    (formData.prova_funcionamento?.length || 0) >= MIN_CHARS;
 
   const tooltips = {
     central_thesis: "A ideia-mãe do seu método. A frase que explica 'o porquê' da transformação acontecer. Ex: 'Você não engorda porque come muito, mas porque seu corpo perdeu sensibilidade à saciedade.'",
@@ -206,28 +202,93 @@ export const MethodologyForm = ({
     proof: "Evidências: princípios científicos, experiência prévia, validação psicológica, lógica operacional, estudos, testes iniciais, exemplos práticos."
   };
 
+  const fields = [
+    {
+      id: 'tese_central',
+      label: '1. Tese Central',
+      tooltip: tooltips.central_thesis,
+      placeholder: 'Digite ou grave a tese central...'
+    },
+    {
+      id: 'mecanismo_primario',
+      label: '2. Mecanismo Primário',
+      tooltip: tooltips.primary_mechanism,
+      placeholder: 'Digite ou grave o mecanismo primário...'
+    },
+    {
+      id: 'por_que_funciona',
+      label: '3. Por que Funciona',
+      tooltip: tooltips.how_it_works,
+      placeholder: 'Digite ou grave por que funciona...'
+    },
+    {
+      id: 'erro_invisivel',
+      label: '4. Erro Invisível',
+      tooltip: tooltips.invisible_error,
+      placeholder: 'Digite ou grave o erro invisível...'
+    },
+    {
+      id: 'diferenciacao',
+      label: '5. Diferenciação',
+      tooltip: tooltips.differentiation,
+      placeholder: 'Digite ou grave a diferenciação...'
+    },
+    {
+      id: 'principios_fundamentos',
+      label: '6. Princípios/Fundamentos',
+      tooltip: tooltips.principles,
+      placeholder: 'Digite ou grave os princípios...'
+    },
+    {
+      id: 'etapas_metodo',
+      label: '7. Etapas do Método',
+      tooltip: tooltips.stages,
+      placeholder: 'Digite ou grave as etapas...'
+    },
+    {
+      id: 'transformacao_real',
+      label: '8. Transformação Real',
+      tooltip: tooltips.transformation,
+      placeholder: 'Digite ou grave a transformação...'
+    },
+    {
+      id: 'prova_funcionamento',
+      label: '9. Prova de Funcionamento',
+      tooltip: tooltips.proof,
+      placeholder: 'Digite ou grave as provas...'
+    }
+  ];
+
+  const getCharCount = (fieldId: string) => {
+    return (formData[fieldId as keyof typeof formData] as string || '').length;
+  };
+
   if (!methodologyCreated) {
     return (
-      <div className="bg-card border border-border rounded-lg p-6">
-        <Label className="text-base font-semibold">Nome da Metodologia *</Label>
-        <p className="text-sm text-muted-foreground mt-1 mb-3">
-          Escolha um nome que identifique claramente esta metodologia
-        </p>
-        <div className="flex gap-2">
-          <Input
-            value={identification}
-            onChange={(e) => setIdentification(e.target.value)}
-            placeholder="Ex: Método de Emagrecimento Intuitivo"
-            className="placeholder:text-xs"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && identification.trim()) {
-                handleCreateMethodology();
-              }
-            }}
-          />
-          <Button onClick={handleCreateMethodology} disabled={!identification.trim()}>
-            Criar Metodologia
-          </Button>
+      <div className="max-w-3xl mx-auto space-y-8 pb-8">
+        <div className="space-y-4">
+          <div>
+            <Label className="text-lg font-semibold">Nome da Metodologia *</Label>
+            <p className="text-sm text-muted-foreground mt-1">
+              Escolha um nome que identifique claramente esta metodologia
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Input
+              value={identification}
+              onChange={(e) => setIdentification(e.target.value)}
+              placeholder="Ex: Método de Emagrecimento Intuitivo"
+              className="placeholder:text-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && identification.trim()) {
+                  handleCreateMethodology();
+                }
+              }}
+            />
+            <Button onClick={handleCreateMethodology} disabled={!identification.trim()} size="lg">
+              Criar Metodologia
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -235,379 +296,93 @@ export const MethodologyForm = ({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="max-w-3xl mx-auto space-y-8 pb-8">
+        {/* Identificação */}
+        <div className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold">{identification || 'Editar Metodologia'}</h2>
+            <Label className="text-lg font-semibold">Nome da Metodologia *</Label>
             <p className="text-sm text-muted-foreground mt-1">
               {autoSaving ? 'Salvando automaticamente...' : 'As alterações são salvas automaticamente'}
             </p>
           </div>
+          <Input
+            value={identification}
+            disabled
+            className="bg-muted"
+          />
         </div>
 
-        <div className="space-y-6">
-          {/* Tese Central */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Tese Central</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.central_thesis}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.tese_central || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.tese_central || ''}
-                onChange={(e) => handleInputChange('tese_central', e.target.value)}
-                placeholder="Digite ou grave a tese central..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  tese_central: prev.tese_central ? `${prev.tese_central} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.tese_central?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
+        {/* Form fields */}
+        <div className="space-y-8">
+          {/* Card único com todos os campos */}
+          <div className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-6">
+            {fields.map((field, index) => {
+              const charCount = getCharCount(field.id);
+              const isValid = charCount >= MIN_CHARS;
+              return (
+                <div key={field.id}>
+                  {index > 0 && <div className="border-t border-border mb-6" />}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-base font-medium">{field.label}</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="text-muted-foreground hover:text-foreground">
+                              <Info size={16} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-sm">
+                            <p className="whitespace-pre-wrap text-sm">{field.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <span className={`text-xs font-medium ${isValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                        {charCount}/{MIN_CHARS}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Textarea
+                        value={formData[field.id as keyof typeof formData] as string || ''}
+                        onChange={(e) => handleInputChange(field.id as keyof Methodology, e.target.value)}
+                        placeholder={field.placeholder}
+                        rows={4}
+                        className="pr-12 resize-none"
+                      />
+                      <VoiceInput
+                        onTranscript={(text) => setFormData(prev => ({
+                          ...prev,
+                          [field.id]: prev[field.id as keyof typeof prev] 
+                            ? `${prev[field.id as keyof typeof prev]} ${text}` 
+                            : text
+                        }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Mecanismo Primário */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Mecanismo Primário</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.primary_mechanism}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.mecanismo_primario || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.mecanismo_primario || ''}
-                onChange={(e) => handleInputChange('mecanismo_primario', e.target.value)}
-                placeholder="Digite ou grave o mecanismo primário..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  mecanismo_primario: prev.mecanismo_primario ? `${prev.mecanismo_primario} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.mecanismo_primario?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={onCancel} 
+              className="flex-1 h-11"
+              size="lg"
+            >
+              Salvar e Fechar
+            </Button>
+            <Button 
+              onClick={handleFinish} 
+              disabled={!allFieldsValid}
+              className="flex-1 h-11"
+              size="lg"
+            >
+              Concluir Metodologia
+            </Button>
           </div>
-
-          {/* Por que Funciona */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Por que Funciona</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.how_it_works}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.por_que_funciona || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.por_que_funciona || ''}
-                onChange={(e) => handleInputChange('por_que_funciona', e.target.value)}
-                placeholder="Digite ou grave por que funciona..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  por_que_funciona: prev.por_que_funciona ? `${prev.por_que_funciona} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.por_que_funciona?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Erro Invisível */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Erro Invisível</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.invisible_error}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.erro_invisivel || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.erro_invisivel || ''}
-                onChange={(e) => handleInputChange('erro_invisivel', e.target.value)}
-                placeholder="Digite ou grave o erro invisível..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  erro_invisivel: prev.erro_invisivel ? `${prev.erro_invisivel} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.erro_invisivel?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Diferenciação */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Diferenciação</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.differentiation}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.diferenciacao || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.diferenciacao || ''}
-                onChange={(e) => handleInputChange('diferenciacao', e.target.value)}
-                placeholder="Digite ou grave a diferenciação..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  diferenciacao: prev.diferenciacao ? `${prev.diferenciacao} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.diferenciacao?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Princípios/Fundamentos */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Princípios/Fundamentos</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.principles}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.principios_fundamentos || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.principios_fundamentos || ''}
-                onChange={(e) => handleInputChange('principios_fundamentos', e.target.value)}
-                placeholder="Digite ou grave os princípios..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  principios_fundamentos: prev.principios_fundamentos ? `${prev.principios_fundamentos} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.principios_fundamentos?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Etapas do Método */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Etapas do Método</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.stages}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.etapas_metodo || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.etapas_metodo || ''}
-                onChange={(e) => handleInputChange('etapas_metodo', e.target.value)}
-                placeholder="Digite ou grave as etapas..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  etapas_metodo: prev.etapas_metodo ? `${prev.etapas_metodo} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.etapas_metodo?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Transformação Real */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Transformação Real</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.transformation}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.transformacao_real || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.transformacao_real || ''}
-                onChange={(e) => handleInputChange('transformacao_real', e.target.value)}
-                placeholder="Digite ou grave a transformação..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  transformacao_real: prev.transformacao_real ? `${prev.transformacao_real} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.transformacao_real?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-
-          {/* Prova de Funcionamento */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label>Prova de Funcionamento</Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
-                    <Info size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-sm">
-                  <p className="whitespace-pre-wrap text-sm">{tooltips.proof}</p>
-                </TooltipContent>
-              </Tooltip>
-              {isFieldValid(formData.prova_funcionamento || '') ? (
-                <CheckCircle size={16} className="text-green-500" weight="fill" />
-              ) : (
-                <Circle size={16} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="relative">
-              <Textarea
-                value={formData.prova_funcionamento || ''}
-                onChange={(e) => handleInputChange('prova_funcionamento', e.target.value)}
-                placeholder="Digite ou grave as provas..."
-                className="min-h-[100px] resize-none pr-12"
-              />
-              <VoiceInput
-                onTranscript={(text) => setFormData(prev => ({
-                  ...prev,
-                  prova_funcionamento: prev.prova_funcionamento ? `${prev.prova_funcionamento} ${text}` : text
-                }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formData.prova_funcionamento?.length || 0} / {MIN_CHARS} caracteres mínimos
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-4 border-t">
-          <Button onClick={handleFinish} disabled={!allFieldsValid}>
-            {allFieldsValid ? 'Concluir' : `Preencha todos os campos (mínimo ${MIN_CHARS} caracteres cada)`}
-          </Button>
-        </div>
-
-        <div className="flex gap-3 justify-end pt-4 border-t border-border">
-          <Button variant="outline" onClick={onCancel}>
-            Fechar
-          </Button>
         </div>
       </div>
     </TooltipProvider>
