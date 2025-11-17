@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VoiceInput } from './VoiceInput';
+import { AdvancedAnalysisTab } from './AdvancedAnalysisTab';
 import { AudienceSegment } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/hooks/useProject';
@@ -384,67 +386,87 @@ export const AudienceSegmentForm = ({
       </div>
 
       {/* Form fields - only show after segment is created */}
-      {segmentCreated && (
-        <div className="space-y-8">
-          {/* Card único com todos os campos */}
-          <div className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-6">
-            {questions.map((question, index) => {
-              const charCount = getCharCount(question.id);
-              const isValid = charCount >= MIN_CHARS;
-              return (
-                <div key={question.id}>
-                  {index > 0 && <div className="border-t border-border mb-6" />}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-medium">{question.label}</Label>
-                      <span className={`text-xs font-medium ${isValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                        {charCount}/{MIN_CHARS}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <Textarea
-                        id={question.id}
-                        value={formData[question.id as keyof typeof formData] as string || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
-                        placeholder={question.placeholder}
-                        rows={4}
-                        className="pr-12 resize-none"
-                      />
-                      <VoiceInput
-                        onTranscript={(text) => setFormData(prev => ({
-                          ...prev,
-                          [question.id]: prev[question.id as keyof typeof prev] 
-                            ? `${prev[question.id as keyof typeof prev]} ${text}` 
-                            : text
-                        }))}
-                      />
+      {segmentCreated && segment && (
+        <Tabs defaultValue="basic" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
+            <TabsTrigger value="advanced">Informações Avançadas</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basic" className="space-y-8">
+            {/* Card único com todos os campos */}
+            <div className="bg-card border border-border rounded-xl p-6 md:p-8 space-y-6">
+              {questions.map((question, index) => {
+                const charCount = getCharCount(question.id);
+                const isValid = charCount >= MIN_CHARS;
+                return (
+                  <div key={question.id}>
+                    {index > 0 && <div className="border-t border-border mb-6" />}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-medium">{question.label}</Label>
+                        <span className={`text-xs font-medium ${isValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                          {charCount}/{MIN_CHARS}
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Textarea
+                          id={question.id}
+                          value={formData[question.id as keyof typeof formData] as string || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, [question.id]: e.target.value }))}
+                          placeholder={question.placeholder}
+                          rows={4}
+                          className="pr-12 resize-none"
+                        />
+                        <VoiceInput
+                          onTranscript={(text) => setFormData(prev => ({
+                            ...prev,
+                            [question.id]: prev[question.id as keyof typeof prev] 
+                              ? `${prev[question.id as keyof typeof prev]} ${text}` 
+                              : text
+                          }))}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={handleClose} 
-              className="flex-1 h-11"
-              size="lg"
-            >
-              Salvar e Fechar
-            </Button>
-            <Button 
-              onClick={handleComplete} 
-              disabled={!isAllFieldsFilled()}
-              className="flex-1 h-11"
-              size="lg"
-            >
-              Concluir Público
-            </Button>
-          </div>
-        </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={handleClose} 
+                className="flex-1 h-11"
+                size="lg"
+              >
+                Salvar e Fechar
+              </Button>
+              <Button 
+                onClick={handleComplete} 
+                disabled={!isAllFieldsFilled()}
+                className="flex-1 h-11"
+                size="lg"
+              >
+                Concluir Público
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="advanced">
+            <AdvancedAnalysisTab
+              segment={segment}
+              allSegments={allSegments}
+              onUpdate={(updatedSegments) => {
+                onUpdate?.(updatedSegments);
+                if (activeProject) {
+                  setActiveProject({ ...activeProject, audience_segments: updatedSegments });
+                }
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
