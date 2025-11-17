@@ -25,7 +25,8 @@ serve(async (req) => {
     offer,
     copyId,
     workspaceId,
-    selectedModel
+    selectedModel,
+    generatedSystemPrompt // Novo: system prompt gerado pelo GPT-4
   } = body;
 
   // Determinar modelo: manual (se fornecido) ou automático (baseado em DB ou fallback)

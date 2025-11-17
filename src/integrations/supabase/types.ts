@@ -72,6 +72,7 @@ export type Database = {
           prompt: string
           sessions: Json
           system_instruction: Json | null
+          system_prompt_model: string | null
           total_tokens: number | null
           tpc_snapshot: number | null
           was_auto_routed: boolean | null
@@ -98,6 +99,7 @@ export type Database = {
           prompt: string
           sessions: Json
           system_instruction?: Json | null
+          system_prompt_model?: string | null
           total_tokens?: number | null
           tpc_snapshot?: number | null
           was_auto_routed?: boolean | null
@@ -124,6 +126,7 @@ export type Database = {
           prompt?: string
           sessions?: Json
           system_instruction?: Json | null
+          system_prompt_model?: string | null
           total_tokens?: number | null
           tpc_snapshot?: number | null
           was_auto_routed?: boolean | null
@@ -251,57 +254,87 @@ export type Database = {
       copies: {
         Row: {
           copy_count: number | null
+          copy_emotional_focus: string | null
+          copy_framework: string | null
+          copy_objective: string | null
+          copy_styles: string[] | null
           copy_type: string | null
           created_at: string
           created_by: string
           folder_id: string | null
+          generated_system_prompt: string | null
           id: string
           is_public: boolean | null
           is_template: boolean | null
           project_id: string | null
           public_password: string | null
+          selected_audience_id: string | null
+          selected_offer_id: string | null
           sessions: Json
           show_in_discover: boolean | null
           status: string | null
           system_instruction: Json | null
+          system_prompt_context_hash: string | null
+          system_prompt_generated_at: string | null
+          system_prompt_model: string | null
           title: string
           updated_at: string
           workspace_id: string
         }
         Insert: {
           copy_count?: number | null
+          copy_emotional_focus?: string | null
+          copy_framework?: string | null
+          copy_objective?: string | null
+          copy_styles?: string[] | null
           copy_type?: string | null
           created_at?: string
           created_by: string
           folder_id?: string | null
+          generated_system_prompt?: string | null
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
           project_id?: string | null
           public_password?: string | null
+          selected_audience_id?: string | null
+          selected_offer_id?: string | null
           sessions?: Json
           show_in_discover?: boolean | null
           status?: string | null
           system_instruction?: Json | null
+          system_prompt_context_hash?: string | null
+          system_prompt_generated_at?: string | null
+          system_prompt_model?: string | null
           title?: string
           updated_at?: string
           workspace_id: string
         }
         Update: {
           copy_count?: number | null
+          copy_emotional_focus?: string | null
+          copy_framework?: string | null
+          copy_objective?: string | null
+          copy_styles?: string[] | null
           copy_type?: string | null
           created_at?: string
           created_by?: string
           folder_id?: string | null
+          generated_system_prompt?: string | null
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
           project_id?: string | null
           public_password?: string | null
+          selected_audience_id?: string | null
+          selected_offer_id?: string | null
           sessions?: Json
           show_in_discover?: boolean | null
           status?: string | null
           system_instruction?: Json | null
+          system_prompt_context_hash?: string | null
+          system_prompt_generated_at?: string | null
+          system_prompt_model?: string | null
           title?: string
           updated_at?: string
           workspace_id?: string
@@ -324,6 +357,13 @@ export type Database = {
           {
             foreignKeyName: "copies_project_id_fkey"
             columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_selected_audience_id_fkey"
+            columns: ["selected_audience_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
