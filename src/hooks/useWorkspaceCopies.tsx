@@ -43,7 +43,7 @@ export const useWorkspaceCopies = (params: UseWorkspaceCopiesParams) => {
         .select(`
           *,
           creator:profiles!copies_created_by_fkey(name, email, avatar_url),
-          project:projects(name)
+          project:projects!copies_project_id_fkey(name)
         `)
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });

@@ -3,6 +3,9 @@ project_id = "fnebftywudiyjguzrofg"
 [functions.generate-copy]
 verify_jwt = false
 
+[functions.generate-system-prompt]
+verify_jwt = true
+
 [functions.send-workspace-invite]
 verify_jwt = false
 
