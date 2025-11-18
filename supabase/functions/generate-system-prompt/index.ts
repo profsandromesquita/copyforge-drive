@@ -317,30 +317,34 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { projectId, copyContext } = await req.json();
+    // Extrair parâmetros enviados pelo frontend
+    const { 
+      copyType, 
+      framework, 
+      objective, 
+      styles, 
+      emotionalFocus,
+      projectIdentity,
+      audienceSegment,
+      offer,
+      copyId
+    } = await req.json();
 
-    if (!projectId) {
-      throw new Error('projectId is required');
-    }
+    console.log('📋 Generating system prompt with params:', { copyType, framework, objective, styles, emotionalFocus });
 
-    console.log('📋 Generating system prompt for project:', projectId);
+    // Construir copyContext a partir dos parâmetros
+    const copyContext = {
+      copyType: copyType || 'outro',
+      framework,
+      objective,
+      styles,
+      emotionalFocus
+    };
 
-    // Buscar dados do projeto
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single();
-
-    if (projectError) {
-      console.error('Error fetching project:', projectError);
-      throw new Error('Failed to fetch project data');
-    }
-
-    // Construir prompt_Projeto
-    const projectIdentity = extractProjectIdentity(project);
-    const projectMethodology = extractProjectMethodology(project);
-    const projectPrompt = buildProjectPrompt(projectIdentity, projectMethodology);
+    // Construir prompt_Projeto (se projectIdentity foi fornecido)
+    const projectPrompt = projectIdentity 
+      ? buildProjectPrompt(projectIdentity, null)
+      : '';
 
     console.log('📦 Project prompt built:', projectPrompt ? 'Yes' : 'Empty');
 
@@ -399,10 +403,10 @@ Deno.serve(async (req) => {
     console.log('✅ System prompt generated successfully');
 
     // Salvar system prompt no banco (copies table) antes de retornar
-    if (copyId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    if (copyId && supabaseUrl && supabaseKey) {
       console.log('💾 Salvando system prompt no banco...');
       
-      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
       
       const { error: updateError } = await supabaseAdmin
         .from('copies')

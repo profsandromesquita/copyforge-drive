@@ -221,13 +221,8 @@ serve(async (req) => {
       systemPrompt = getSystemInstructionText(systemInstructionCompiled);
     }
     
-    console.log("System instruction compiled:", {
-      has_project_identity: systemInstructionCompiled.has_project_identity,
-      has_audience_segment: systemInstructionCompiled.has_audience_segment,
-      has_offer: systemInstructionCompiled.has_offer,
-      has_characteristics: systemInstructionCompiled.has_characteristics,
-      text_length: systemPrompt.length
-    });
+    console.log("System prompt length:", systemPrompt.length);
+    console.log("Using generated system prompt:", !!generatedSystemPrompt);
     
     const userPrompt = buildUserPrompt({ framework, objective, styles, emotionalFocus, prompt, projectIdentity, audienceSegment, offer });
 
