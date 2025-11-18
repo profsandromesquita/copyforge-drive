@@ -279,6 +279,21 @@ O SYSTEM PROMPT que você gerar deve:
 
 AGORA, COM BASE NO CONTEXTO FORNECIDO (PROMPT_PROJETO + PROMPT_COPY), GERE O SYSTEM PROMPT FINAL.`;
 
+/**
+ * Edge Function: generate-system-prompt
+ * 
+ * Responsável por gerar system prompts customizados usando GPT-5-mini.
+ * 
+ * Fluxo:
+ * 1. Recebe projectId e copyContext
+ * 2. Busca dados do projeto no Supabase (se projectId fornecido)
+ * 3. Constrói prompt_Projeto (buildProjectPrompt) e prompt_Copy (buildCopyPrompt)
+ * 4. Gera contextHash (MD5 do contexto combinado)
+ * 5. Envia contexto + PROMPT_INSTRUCTION para GPT-5-mini via Lovable AI
+ * 6. Retorna system prompt gerado (~1000-2000 palavras)
+ * 
+ * Este system prompt será usado pelo generate-copy para criar a copy final.
+ */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
