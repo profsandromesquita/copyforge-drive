@@ -29,3 +29,12 @@ verify_jwt = true
 
 [functions.restore-default-prompt]
 verify_jwt = true
+
+[functions.copy-chat]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.activate-workspace-payment]
+verify_jwt = false
