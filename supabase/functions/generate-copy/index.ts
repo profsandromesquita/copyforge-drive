@@ -15,18 +15,12 @@ serve(async (req) => {
   const body = await req.json();
   const { 
     copyType, 
-    framework,
-    objective,
-    styles, 
-    emotionalFocus,
     prompt, 
-    projectIdentity, 
-    audienceSegment, 
-    offer,
     copyId,
     workspaceId,
+    userId,
     selectedModel,
-    generatedSystemPrompt // Novo: system prompt gerado pelo GPT-4
+    systemPrompt // System prompt já gerado pelo generate-system-prompt
   } = body;
 
   // Determinar modelo: manual (se fornecido) ou automático (baseado em DB ou fallback)
@@ -120,48 +114,22 @@ serve(async (req) => {
       }
     }
 
-    // Mapear parâmetros e garantir que sejam arrays
-    const frameworkValue = framework || '';
-    const objetivoValue = objective || '';
-    const estilos = Array.isArray(styles) ? styles : [];
-    const focoEmocionalValue = emotionalFocus || '';
-
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY não configurada");
       throw new Error("LOVABLE_API_KEY não configurada");
     }
 
-    console.log("Gerando copy com parâmetros:", { copyType, frameworkValue, objetivoValue, estilos, focoEmocionalValue });
+    // Usar system prompt fornecido do frontend ou fallback
+    let finalSystemPrompt = systemPrompt;
 
-    // Buscar base prompt do banco de dados (com personalização se disponível)
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const authHeader = req.headers.get('Authorization');
-    
-    let basePrompt = buildSystemPrompt(copyType); // Fallback padrão
-    let userId: string | null = null;
-    
-    // Extrair userId se tiver Authorization header
-    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabaseAuth.auth.getUser(token);
-        if (user) {
-          userId = user.id;
-          console.log('✓ Usuário autenticado detectado:', userId);
-        }
-      } catch (err) {
-        console.log('⚠️ Não foi possível extrair userId, usando prompt padrão');
-      }
-    }
-    
-    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      try {
+    if (!finalSystemPrompt) {
+      console.log('⚠️ System prompt não fornecido, usando fallback');
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        
-        // Mapear copyType para promptKey
         const promptKeyMap: Record<string, string> = {
           'anuncio': 'generate_copy_ad',
           'landing_page': 'generate_copy_landing_page',
@@ -174,57 +142,21 @@ serve(async (req) => {
         
         const promptKey = promptKeyMap[copyType] || 'generate_copy_base';
         
-        // Usar getFullPrompt se tiver userId e workspaceId, senão buscar só do template
         if (userId && workspaceId) {
-          basePrompt = await getFullPrompt(supabaseAdmin, promptKey, userId, workspaceId);
-          console.log(`✓ Usando prompt personalizado/completo para ${copyType}`);
+          finalSystemPrompt = await getFullPrompt(supabaseAdmin, promptKey, userId, workspaceId);
         } else {
-          // Buscar só o template padrão
           const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, copyType);
-          if (dynamicPrompt) {
-            basePrompt = dynamicPrompt;
-            console.log(`✓ Usando prompt padrão do banco para tipo: ${copyType}`);
-          } else {
-            console.log(`⚠️ Prompt não encontrado no banco, usando fallback para: ${copyType}`);
-          }
+          finalSystemPrompt = dynamicPrompt || buildSystemPrompt(copyType);
         }
-      } catch (error) {
-        console.error("Erro ao buscar prompt do banco, usando fallback:", error);
+      } else {
+        finalSystemPrompt = buildSystemPrompt(copyType);
       }
     }
     
-    // Construir system instruction contextualizada
-    // Se generatedSystemPrompt foi fornecido, usar ele; senão fallback
-    let systemPrompt;
-
-    if (generatedSystemPrompt) {
-      // Usar system prompt gerado pelo generate-system-prompt (GPT-5-mini)
-      systemPrompt = generatedSystemPrompt;
-      console.log('✓ Usando system prompt gerado pelo GPT-5-mini via generate-system-prompt');
-    } else {
-      // Fallback para lógica antiga se não tiver system prompt
-      console.log('⚠️ generatedSystemPrompt não fornecido, usando fallback buildContextualSystemInstruction');
-      const systemInstructionCompiled = buildContextualSystemInstruction({
-        copyType,
-        basePrompt,
-        projectIdentity,
-        audienceSegment,
-        offer,
-        characteristics: {
-          framework: framework,
-          objective: objective,
-          styles: styles,
-          emotionalFocus: emotionalFocus
-        }
-      });
-      
-      systemPrompt = getSystemInstructionText(systemInstructionCompiled);
-    }
+    console.log("System prompt length:", finalSystemPrompt.length);
+    console.log("Using pre-generated system prompt:", !!systemPrompt);
     
-    console.log("System prompt length:", systemPrompt.length);
-    console.log("Using generated system prompt:", !!generatedSystemPrompt);
-    
-    const userPrompt = buildUserPrompt({ framework, objective, styles, emotionalFocus, prompt, projectIdentity, audienceSegment, offer });
+    const userPrompt = prompt;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -404,17 +336,11 @@ serve(async (req) => {
           prompt,
           system_instruction: null, // System prompt agora salvo na tabela copies
           parameters: {
-            framework: framework,
-            objective: objective,
-            styles: styles,
-            emotionalFocus: emotionalFocus,
-            hasProjectIdentity: !!projectIdentity,
-            hasAudienceSegment: !!audienceSegment,
-            hasOffer: !!offer,
+            usedPreGeneratedSystemPrompt: !!systemPrompt
           },
-          project_identity: projectIdentity || null,
-          audience_segment: audienceSegment || null,
-          offer: offer || null,
+          project_identity: null,
+          audience_segment: null,
+          offer: null,
           sessions: sessionsWithIds,
           generation_type: 'create',
           model_used: modelToUse,
