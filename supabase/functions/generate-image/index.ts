@@ -146,7 +146,7 @@ serve(async (req) => {
         if (authHeader) {
           try {
             // Criar cliente Supabase com service role para verificar o token
-            const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+            const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
             const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
             
             // Obter usuário do token
