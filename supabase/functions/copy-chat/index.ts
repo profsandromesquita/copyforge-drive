@@ -89,6 +89,20 @@ serve(async (req) => {
 
     const workspaceId = copy.workspace_id;
 
+    // Buscar histórico de gerações (últimas 15 para balancear contexto vs tokens)
+    const { data: generationHistory, error: historyError } = await supabase
+      .from('ai_generation_history')
+      .select('id, generation_type, generation_category, created_at, prompt, model_used, sessions, original_content')
+      .eq('copy_id', copyId)
+      .order('created_at', { ascending: false })
+      .limit(15);
+
+    if (historyError) {
+      console.error('⚠️ Erro ao buscar histórico de gerações:', historyError);
+    }
+
+    console.log(`📚 Histórico carregado: ${generationHistory?.length || 0} gerações`);
+
     // Verificar créditos do workspace
     const { data: creditCheck, error: creditError } = await supabaseAdmin.rpc('check_workspace_credits', {
       p_workspace_id: workspaceId,
@@ -132,8 +146,11 @@ serve(async (req) => {
     // Construir contexto da copy
     const copyContext = buildCopyContext(copy);
 
-    // Construir system prompt especializado
-    const systemPrompt = buildSystemPrompt(copyContext);
+    // Construir contexto do histórico com compressão dinâmica
+    const historyContext = buildGenerationHistoryContext(generationHistory || []);
+
+    // Construir system prompt especializado COM histórico
+    const systemPrompt = buildSystemPrompt(copyContext, historyContext);
 
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
@@ -145,7 +162,7 @@ serve(async (req) => {
       { role: 'user' as const, content: message }
     ];
 
-    console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens`);
+    console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens (com histórico de ${generationHistory?.length || 0} gerações)`);
 
     // Chamar Lovable AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
