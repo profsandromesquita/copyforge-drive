@@ -90,15 +90,15 @@ serve(async (req) => {
     const workspaceId = copy.workspace_id;
 
     // Buscar histórico de gerações (últimas 15 para balancear contexto vs tokens)
-    const { data: generationHistory, error: historyError } = await supabase
+    const { data: generationHistory, error: genHistoryError } = await supabase
       .from('ai_generation_history')
       .select('id, generation_type, generation_category, created_at, prompt, model_used, sessions, original_content')
       .eq('copy_id', copyId)
       .order('created_at', { ascending: false })
       .limit(15);
 
-    if (historyError) {
-      console.error('⚠️ Erro ao buscar histórico de gerações:', historyError);
+    if (genHistoryError) {
+      console.error('⚠️ Erro ao buscar histórico de gerações:', genHistoryError);
     }
 
     console.log(`📚 Histórico carregado: ${generationHistory?.length || 0} gerações`);
@@ -132,15 +132,15 @@ serve(async (req) => {
     }
 
     // Buscar histórico recente de mensagens (últimas 20)
-    const { data: chatHistory, error: historyError } = await supabase
+    const { data: chatHistory, error: chatHistoryError } = await supabase
       .from('copy_chat_messages')
       .select('role, content, created_at')
       .eq('copy_id', copyId)
       .order('created_at', { ascending: true })
       .limit(20);
 
-    if (historyError) {
-      console.error('⚠️ Erro ao buscar histórico:', historyError);
+    if (chatHistoryError) {
+      console.error('⚠️ Erro ao buscar histórico:', chatHistoryError);
     }
 
     // Construir contexto da copy
@@ -299,20 +299,149 @@ function buildCopyContext(copy: any): string {
   return context;
 }
 
-function buildSystemPrompt(copyContext: string): string {
+function buildGenerationHistoryContext(history: any[], maxTokens: number = 3000): string {
+  if (!history || history.length === 0) {
+    return 'Sem histórico de gerações anteriores.';
+  }
+
+  let context = `HISTÓRICO DE GERAÇÕES (${history.length} gerações):\n\n`;
+  let estimatedTokens = context.length / 4;
+  
+  const processedHistory: string[] = [];
+  
+  for (let i = 0; i < history.length; i++) {
+    const gen = history[i];
+    const timeAgo = getTimeAgo(gen.created_at);
+    const genType = getGenerationTypeName(gen.generation_type);
+    const category = gen.generation_category || 'Geral';
+    
+    // Entrada básica
+    let entry = `${i + 1}. ${genType} - ${category} (${timeAgo})\n`;
+    entry += `   Modelo: ${gen.model_used || 'N/A'}\n`;
+    
+    // Prompt truncado baseado em espaço disponível
+    const remainingTokens = maxTokens - estimatedTokens;
+    const promptMaxLength = remainingTokens > 1000 ? 150 : (remainingTokens > 500 ? 100 : 50);
+    entry += `   Prompt: "${gen.prompt.substring(0, promptMaxLength)}${gen.prompt.length > promptMaxLength ? '...' : ''}"\n`;
+    
+    // Seções modificadas (se houver espaço)
+    if (gen.original_content && remainingTokens > 500) {
+      const affected = getAffectedSessions(gen.sessions, gen.original_content);
+      if (affected.length > 0) {
+        entry += `   Seções: ${affected.join(', ')}\n`;
+      }
+    }
+    
+    entry += `\n`;
+    
+    const entryTokens = entry.length / 4;
+    
+    // Parar se exceder limite
+    if (estimatedTokens + entryTokens > maxTokens) {
+      context += `... (${history.length - i} gerações mais antigas omitidas por limite de tokens)\n`;
+      break;
+    }
+    
+    processedHistory.push(entry);
+    estimatedTokens += entryTokens;
+  }
+  
+  return context + processedHistory.join('');
+}
+
+function getGenerationTypeName(type: string): string {
+  const types: Record<string, string> = {
+    'create': 'Criação',
+    'optimize': 'Otimização',
+    'regenerate': 'Variação',
+    'expand': 'Expansão',
+    'chat': 'Conversa'
+  };
+  return types[type] || type;
+}
+
+function getTimeAgo(timestamp: string): string {
+  const now = new Date();
+  const then = new Date(timestamp);
+  const diffMs = now.getTime() - then.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return 'agora';
+  if (diffMins < 60) return `há ${diffMins} min`;
+  
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `há ${diffHours}h`;
+  
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return 'ontem';
+  if (diffDays < 7) return `há ${diffDays} dias`;
+  if (diffDays < 30) return `há ${Math.floor(diffDays / 7)} semanas`;
+  
+  return `há ${Math.floor(diffDays / 30)} meses`;
+}
+
+function getAffectedSessions(newSessions: any, originalContent: any): string[] {
+  const affected: string[] = [];
+  
+  try {
+    const newData = typeof newSessions === 'string' ? JSON.parse(newSessions) : newSessions;
+    const oldData = typeof originalContent === 'string' ? JSON.parse(originalContent) : originalContent;
+    
+    if (Array.isArray(newData) && Array.isArray(oldData)) {
+      newData.forEach((session: any, idx: number) => {
+        if (oldData[idx]) {
+          // Comparação mais inteligente: verifica se os blocos mudaram
+          const newBlocks = JSON.stringify(session.blocks || []);
+          const oldBlocks = JSON.stringify(oldData[idx].blocks || []);
+          
+          if (newBlocks !== oldBlocks) {
+            affected.push(session.title || `Sessão ${idx + 1}`);
+          }
+        } else if (session) {
+          // Nova sessão adicionada
+          affected.push(`${session.title} (nova)` || `Sessão ${idx + 1} (nova)`);
+        }
+      });
+    }
+  } catch (e) {
+    console.error('⚠️ Erro ao comparar sessões:', e);
+  }
+  
+  return affected;
+}
+
+function buildSystemPrompt(copyContext: string, historyContext: string): string {
   return `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.
 
-CONTEXTO DA COPY:
+CONTEXTO DA COPY ATUAL:
 ${copyContext}
+
+${historyContext}
 
 SEU PAPEL:
 - Você é um assistente especializado focado EXCLUSIVAMENTE nesta copy
+- Você TEM ACESSO ao histórico completo de gerações e modificações desta copy
 - Analise a estrutura e conteúdo atual para dar sugestões contextualizadas
+- Use o histórico para entender a evolução e dar feedback mais preciso
 - Sugira melhorias de copywriting, estrutura, persuasão e conversão
 - Identifique pontos fracos e oportunidades de otimização
 - Seja direto, prático e orientado a resultados
 
-DIRETRIZES:
+CAPACIDADES ESPECIAIS COM HISTÓRICO:
+1. **Comparação de Versões**: Quando solicitado, compare o estado atual com versões anteriores
+2. **Análise de Evolução**: Identifique padrões nas mudanças e sugira próximos passos
+3. **Identificação de Retrocessos**: Alerte se uma mudança recente piorou algo que estava bom
+4. **Contexto Completo**: Use prompts anteriores para entender a intenção do usuário
+5. **Aprendizado Incremental**: Lembre-se do que já foi testado e evite sugestões repetidas
+
+DIRETRIZES DE USO DO HISTÓRICO:
+- Quando o usuário perguntar sobre "antes vs agora", busque no histórico
+- Se ele mencionar uma seção específica, identifique mudanças nessa seção
+- Ao sugerir otimizações, considere o que já foi tentado
+- Se houver muitas mudanças recentes, pergunte sobre os resultados
+- Use o histórico para contextualizar suas respostas
+
+DIRETRIZES GERAIS:
 1. Mantenha o foco na copy atual - não fale de outros projetos
 2. Base suas sugestões na estrutura existente
 3. Use princípios de copywriting comprovados (AIDA, PAS, storytelling, etc.)
@@ -322,9 +451,11 @@ DIRETRIZES:
 
 IMPORTANTE:
 - Você tem memória das conversas anteriores sobre esta copy
+- Você tem acesso ao histórico completo de modificações
 - Responda de forma conversacional e amigável
-- Se o usuário pedir para implementar mudanças, explique que ele pode usar os botões de IA do editor para fazer isso
+- Se o usuário pedir para implementar mudanças, explique que ele pode usar os botões de IA do editor
 - Quando sugerir mudanças, seja específico sobre onde e por quê
+- Se precisar de mais detalhes sobre uma geração específica, pergunte
 
 Agora responda à pergunta do usuário sobre esta copy:`;
 }
