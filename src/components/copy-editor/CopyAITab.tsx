@@ -203,6 +203,33 @@ export const CopyAITab = () => {
         }
       }
 
+      // PASSO 1: Gerar system prompt usando generate-system-prompt (GPT-5-mini)
+      console.log('📝 PASSO 1: Chamando generate-system-prompt...');
+      
+      const { data: systemPromptData, error: systemPromptError } = await supabase.functions.invoke('generate-system-prompt', {
+        body: {
+          copyType: copyType || 'outro',
+          framework: estrutura,
+          objective: objetivo,
+          styles: estilos,
+          emotionalFocus: focoEmocional,
+          projectIdentity,
+          audienceSegment,
+          offer,
+          copyId,
+        }
+      });
+
+      if (systemPromptError) {
+        console.error('⚠️ Erro ao gerar system prompt:', systemPromptError);
+      }
+
+      const generatedSystemPrompt = systemPromptData?.systemPrompt || null;
+      console.log('✓ System prompt gerado:', generatedSystemPrompt ? `${generatedSystemPrompt.length} caracteres` : 'null (usando fallback)');
+
+      // PASSO 2: Gerar copy usando o system prompt gerado
+      console.log('🚀 PASSO 2: Chamando generate-copy com system prompt...');
+
       const { data, error } = await supabase.functions.invoke('generate-copy', {
         body: {
           copyType: copyType || 'outro',
@@ -217,6 +244,7 @@ export const CopyAITab = () => {
           copyId,
           workspaceId: activeWorkspace.id,
           selectedModel,
+          generatedSystemPrompt, // ✅ Passar system prompt gerado pelo GPT-5-mini
         }
       });
 

@@ -194,21 +194,32 @@ serve(async (req) => {
     }
     
     // Construir system instruction contextualizada
-    const systemInstructionCompiled = buildContextualSystemInstruction({
-      copyType,
-      basePrompt,
-      projectIdentity,
-      audienceSegment,
-      offer,
-      characteristics: {
-        framework: framework,
-        objective: objective,
-        styles: styles,
-        emotionalFocus: emotionalFocus
-      }
-    });
-    
-    const systemPrompt = getSystemInstructionText(systemInstructionCompiled);
+    // Se generatedSystemPrompt foi fornecido, usar ele; senão fallback
+    let systemPrompt;
+
+    if (generatedSystemPrompt) {
+      // Usar system prompt gerado pelo generate-system-prompt (GPT-5-mini)
+      systemPrompt = generatedSystemPrompt;
+      console.log('✓ Usando system prompt gerado pelo GPT-5-mini via generate-system-prompt');
+    } else {
+      // Fallback para lógica antiga se não tiver system prompt
+      console.log('⚠️ generatedSystemPrompt não fornecido, usando fallback buildContextualSystemInstruction');
+      const systemInstructionCompiled = buildContextualSystemInstruction({
+        copyType,
+        basePrompt,
+        projectIdentity,
+        audienceSegment,
+        offer,
+        characteristics: {
+          framework: framework,
+          objective: objective,
+          styles: styles,
+          emotionalFocus: emotionalFocus
+        }
+      });
+      
+      systemPrompt = getSystemInstructionText(systemInstructionCompiled);
+    }
     
     console.log("System instruction compiled:", {
       has_project_identity: systemInstructionCompiled.has_project_identity,

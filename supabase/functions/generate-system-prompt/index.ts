@@ -398,6 +398,29 @@ Deno.serve(async (req) => {
 
     console.log('✅ System prompt generated successfully');
 
+    // Salvar system prompt no banco (copies table) antes de retornar
+    if (copyId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      console.log('💾 Salvando system prompt no banco...');
+      
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const { error: updateError } = await supabaseAdmin
+        .from('copies')
+        .update({ 
+          generated_system_prompt: generatedSystemPrompt,
+          system_prompt_context_hash: contextHash,
+          system_prompt_generated_at: new Date().toISOString(),
+          system_prompt_model: 'openai/gpt-5-mini'
+        })
+        .eq('id', copyId);
+      
+      if (updateError) {
+        console.error('❌ Erro ao salvar system prompt no banco:', updateError);
+      } else {
+        console.log('✓ System prompt salvo no banco (copy_id:', copyId, ')');
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
