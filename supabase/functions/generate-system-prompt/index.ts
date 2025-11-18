@@ -352,9 +352,19 @@ Deno.serve(async (req) => {
     const copyPrompt = buildCopyPrompt(copyContext);
     console.log('📝 Copy prompt built:', copyPrompt ? 'Yes' : 'Empty');
 
-    // Gerar hash do contexto
-    const contextHash = generateContextHash(projectPrompt, copyPrompt);
-    console.log('🔑 Context hash generated:', contextHash);
+    // ✅ Log de amostra do contexto para debug
+    console.log('📊 Context preview (first 200 chars):', 
+      `Project: ${projectPrompt.slice(0, 100)}... | Copy: ${copyPrompt.slice(0, 100)}...`);
+
+    // Gerar hash do contexto com tratamento de erro
+    let contextHash: string;
+    try {
+      contextHash = await generateContextHash(projectPrompt, copyPrompt);
+      console.log('🔑 Context hash generated:', contextHash);
+    } catch (hashError) {
+      console.error('❌ Failed to generate hash:', hashError);
+      throw new Error(`Hash generation failed: ${hashError instanceof Error ? hashError.message : 'Unknown error'}`);
+    }
 
     // Combinar prompts
     const fullContext = [projectPrompt, copyPrompt].filter(p => p).join('\n\n---\n\n');
@@ -394,11 +404,35 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const generatedSystemPrompt = aiData.choices?.[0]?.message?.content;
 
+    // ✅ Log detalhado da resposta
+    console.log('📦 AI Response Status:', aiResponse.status);
+    console.log('📦 AI Response Keys:', Object.keys(aiData));
+    console.log('📦 AI Choices Length:', aiData.choices?.length);
+
+    // Tentar extrair content de diferentes estruturas possíveis
+    let generatedSystemPrompt = 
+      aiData.choices?.[0]?.message?.content ||
+      aiData.choices?.[0]?.text ||
+      aiData.content ||
+      null;
+
+    // Validação robusta
     if (!generatedSystemPrompt) {
-      throw new Error('No system prompt generated from AI');
+      if (aiData.error) {
+        console.error('❌ API Error:', aiData.error);
+        throw new Error(`API Error: ${aiData.error.message || JSON.stringify(aiData.error)}`);
+      }
+      console.error('❌ Empty AI response. Full data:', JSON.stringify(aiData));
+      throw new Error('No system prompt generated - empty AI response');
     }
+
+    if (generatedSystemPrompt.trim().length < 100) {
+      console.warn('⚠️ System prompt is too short:', generatedSystemPrompt);
+      throw new Error('Generated system prompt is too short to be valid');
+    }
+
+    console.log('✅ System prompt generated successfully:', generatedSystemPrompt.length, 'characters');
 
     console.log('✅ System prompt generated successfully');
 

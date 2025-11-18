@@ -430,9 +430,19 @@ function formatDemographics(demographics: any): string {
   return parts.join(', ');
 }
 
-export function generateContextHash(projectPrompt: string, copyPrompt: string): string {
+export async function generateContextHash(projectPrompt: string, copyPrompt: string): Promise<string> {
   const context = `${projectPrompt}||${copyPrompt}`;
   
-  // Gerar hash simples (no ambiente Deno usaremos crypto.subtle)
-  return btoa(context).slice(0, 32);
+  // ✅ Usar TextEncoder nativo do Deno (suporta UTF-8)
+  const encoder = new TextEncoder();
+  const data = encoder.encode(context);
+  
+  // ✅ Gerar hash SHA-256 usando crypto.subtle
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  
+  // Converter para Base64
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashBase64 = btoa(String.fromCharCode(...hashArray));
+  
+  return hashBase64.slice(0, 32);
 }
