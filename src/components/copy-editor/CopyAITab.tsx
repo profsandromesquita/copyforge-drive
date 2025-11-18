@@ -22,7 +22,7 @@ import { ModelSelector } from './ModelSelector';
 import { SystemPromptEditorModal } from './SystemPromptEditorModal';
 import { AudienceSegment, Offer } from '@/types/project-config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AIModel, CopyType, getModelDisplayName, getAutoRoutedModel } from '@/lib/ai-models';
@@ -87,6 +87,11 @@ export const CopyAITab = () => {
   const [optimizedSessions, setOptimizedSessions] = useState<Session[]>([]);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
+
+  // Estados para system prompt gerado
+  const [generatedSystemPrompt, setGeneratedSystemPrompt] = useState<string | null>(null);
+  const [isGeneratingSystemPrompt, setIsGeneratingSystemPrompt] = useState(false);
+  const [showGeneratedPromptEditor, setShowGeneratedPromptEditor] = useState(false);
 
   // Histórico
   const [history, setHistory] = useState<any[]>([]);
@@ -158,6 +163,103 @@ export const CopyAITab = () => {
     setOptimizeAction(null);
     setOptimizeInstructions('');
     setOptimizedSessions([]);
+  };
+
+  // Gerar system prompt (Etapa 2 -> 3)
+  const handleGenerateSystemPrompt = async () => {
+    if (!copyId || !activeWorkspace || !user) {
+      toast({
+        title: 'Erro',
+        description: 'Informações do workspace não encontradas',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsGeneratingSystemPrompt(true);
+    try {
+      let projectIdentity = null;
+      let audienceSegment = null;
+      let offer = null;
+
+      if (activeProject) {
+        projectIdentity = {
+          brand_name: activeProject.brand_name,
+          sector: activeProject.sector,
+          central_purpose: activeProject.central_purpose,
+          brand_personality: activeProject.brand_personality,
+          keywords: activeProject.keywords,
+        };
+
+        if (audienceSegmentId) {
+          audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
+        }
+
+        if (offerId) {
+          offer = offers.find(o => o.id === offerId);
+        }
+      }
+
+      console.log('🎯 Gerando system prompt com GPT-5-mini...');
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        console.error('❌ Token JWT não encontrado!');
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Faça login novamente.',
+          variant: 'destructive',
+        });
+        setIsGeneratingSystemPrompt(false);
+        return;
+      }
+
+      const { data: systemPromptData, error: systemPromptError } = await supabase.functions.invoke('generate-system-prompt', {
+        body: {
+          copyType: copyType || 'outro',
+          framework: estrutura,
+          objective: objetivo,
+          styles: estilos,
+          emotionalFocus: focoEmocional,
+          projectIdentity,
+          audienceSegment,
+          offer,
+          copyId,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+
+      if (systemPromptError) {
+        console.error('❌ Erro ao gerar system prompt:', systemPromptError);
+        throw systemPromptError;
+      }
+
+      const generatedPrompt = systemPromptData?.systemPrompt || null;
+      
+      if (generatedPrompt) {
+        console.log('✅ System prompt gerado:', generatedPrompt.length, 'caracteres');
+        setGeneratedSystemPrompt(generatedPrompt);
+        setEtapa(3);
+        toast({
+          title: 'System Prompt Gerado!',
+          description: 'Prompt personalizado criado com sucesso.',
+        });
+      } else {
+        throw new Error('System prompt não retornado');
+      }
+    } catch (error) {
+      console.error('Erro ao gerar system prompt:', error);
+      toast({
+        title: 'Erro ao gerar system prompt',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingSystemPrompt(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -725,8 +827,19 @@ export const CopyAITab = () => {
             </div>
 
             <div className="pt-2">
-              <Button onClick={() => setEtapa(3)} className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow">
-                Próximo
+              <Button 
+                onClick={handleGenerateSystemPrompt}
+                disabled={isGeneratingSystemPrompt}
+                className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow"
+              >
+                {isGeneratingSystemPrompt ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Gerando System Prompt...
+                  </>
+                ) : (
+                  'Próximo'
+                )}
               </Button>
             </div>
           </div>
@@ -756,11 +869,12 @@ export const CopyAITab = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowPromptEditor(true)}
+                onClick={() => setShowGeneratedPromptEditor(true)}
+                disabled={!generatedSystemPrompt}
                 className="gap-2 text-xs"
               >
                 <Wand2 className="h-3.5 w-3.5" />
-                Personalizar Prompt Base
+                {generatedSystemPrompt ? 'Editar System Prompt' : 'Aguarde geração...'}
               </Button>
             </div>
             <div className="relative">
@@ -1228,6 +1342,34 @@ export const CopyAITab = () => {
         onClose={() => setShowPromptEditor(false)}
         copyType={copyType as any}
       />
+
+      <Dialog open={showGeneratedPromptEditor} onOpenChange={setShowGeneratedPromptEditor}>
+        <DialogContent className="max-w-3xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle>Editar System Prompt Gerado</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Este prompt foi gerado pelo GPT-5-mini baseado nas suas configurações
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={generatedSystemPrompt || ''}
+            onChange={(e) => setGeneratedSystemPrompt(e.target.value)}
+            rows={20}
+            className="font-mono text-sm"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowGeneratedPromptEditor(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              toast({ title: 'System Prompt atualizado!' });
+              setShowGeneratedPromptEditor(false);
+            }}>
+              Salvar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
         </>
       )}
     </>
