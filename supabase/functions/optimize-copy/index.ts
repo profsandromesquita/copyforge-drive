@@ -214,18 +214,34 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Missing authorization header');
+      console.error('Missing authorization header in optimize-copy');
+      return new Response(
+        JSON.stringify({ error: 'missing_authorization', message: 'Authorization header is required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.error('Unauthorized in optimize-copy:', userError || 'No user');
+      return new Response(
+        JSON.stringify({ error: 'unauthorized', message: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     const body: OptimizeRequest = await req.json();
