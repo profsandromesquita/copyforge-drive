@@ -487,6 +487,23 @@ export const CopyAITab = () => {
 
     setIsOptimizing(true);
     try {
+      // Obter sessão e token JWT
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        console.error('❌ Token JWT não encontrado!');
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Não foi possível autenticar. Por favor, faça login novamente.',
+          variant: 'destructive',
+        });
+        setIsOptimizing(false);
+        return;
+      }
+
+      console.log('🔑 Token JWT obtido para optimize-copy');
+
       const { data: copyData } = await supabase
         .from('copies')
         .select('workspace_id, project_id')
@@ -535,6 +552,9 @@ export const CopyAITab = () => {
           offer,
           copyId,
           workspaceId: copyData.workspace_id
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
         }
       });
 
@@ -610,6 +630,23 @@ export const CopyAITab = () => {
 
     setIsOptimizing(true);
     try {
+      // Obter sessão e token JWT
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        console.error('❌ Token JWT não encontrado!');
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Não foi possível autenticar. Por favor, faça login novamente.',
+          variant: 'destructive',
+        });
+        setIsOptimizing(false);
+        return;
+      }
+
+      console.log('🔑 Token JWT obtido para regenerate');
+
       const { data: copyData } = await supabase
         .from('copies')
         .select('workspace_id, project_id')
@@ -659,6 +696,9 @@ export const CopyAITab = () => {
           offer,
           copyId,
           workspaceId: copyData.workspace_id
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
         }
       });
 
