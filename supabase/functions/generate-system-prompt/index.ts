@@ -280,6 +280,35 @@ O SYSTEM PROMPT que você gerar deve:
 AGORA, COM BASE NO CONTEXTO FORNECIDO (PROMPT_PROJETO + PROMPT_COPY), GERE O SYSTEM PROMPT FINAL.`;
 
 /**
+ * Função de fallback para criar um system prompt determinístico quando o modelo falhar
+ */
+function buildFallbackSystemPrompt(fullContext: string): string {
+  const contextoLimitado = fullContext.slice(0, 4000);
+  return `
+Você é uma IA copywriter especializada em criar textos persuasivos e eficazes.
+
+Sua missão é gerar uma copy de alta qualidade baseada no contexto fornecido abaixo.
+
+CONTEXTO DO PROJETO E DA COPY:
+${contextoLimitado}
+
+INSTRUÇÕES:
+- Analise cuidadosamente todas as informações do contexto
+- Identifique o público-alvo, oferta, objetivo e tom de voz
+- Estruture a copy de forma clara e persuasiva
+- Use linguagem apropriada ao público e objetivo
+- Inclua CTAs (calls-to-action) quando relevante
+- Mantenha coerência com a identidade da marca (se fornecida)
+- Foque nos benefícios e no valor para o público
+
+FORMATO DA RESPOSTA:
+Gere a copy completa seguindo a estrutura adequada ao tipo de conteúdo solicitado.
+Use parágrafos, títulos e formatação apropriados.
+Seja persuasivo, claro e objetivo.
+  `.trim();
+}
+
+/**
  * Edge Function: generate-system-prompt
  * 
  * Responsável por gerar system prompts customizados usando GPT-5-mini.
@@ -380,7 +409,7 @@ Deno.serve(async (req) => {
           { role: 'system', content: PROMPT_INSTRUCTION },
           { role: 'user', content: `Contexto do Projeto e da Copy:\n\n${fullContext}\n\nGere o system prompt:` }
         ],
-        max_completion_tokens: 2000,
+        max_completion_tokens: 1200,
       }),
     });
 
@@ -404,19 +433,18 @@ Deno.serve(async (req) => {
       aiData.content ||
       null;
 
-    // Validação robusta
-    if (!generatedSystemPrompt) {
+    // Validação robusta com fallback
+    if (!generatedSystemPrompt || !generatedSystemPrompt.trim()) {
       if (aiData.error) {
         console.error('❌ API Error:', aiData.error);
-        throw new Error(`API Error: ${aiData.error.message || JSON.stringify(aiData.error)}`);
       }
-      console.error('❌ Empty AI response. Full data:', JSON.stringify(aiData));
-      throw new Error('No system prompt generated - empty AI response');
+      console.warn('⚠️ Empty AI response. Using fallback system prompt.');
+      generatedSystemPrompt = buildFallbackSystemPrompt(fullContext);
     }
 
     if (generatedSystemPrompt.trim().length < 100) {
-      console.warn('⚠️ System prompt is too short:', generatedSystemPrompt);
-      throw new Error('Generated system prompt is too short to be valid');
+      console.warn('⚠️ System prompt is too short. Using fallback system prompt.');
+      generatedSystemPrompt = buildFallbackSystemPrompt(fullContext);
     }
 
     console.log('✅ System prompt generated successfully:', generatedSystemPrompt.length, 'characters');
