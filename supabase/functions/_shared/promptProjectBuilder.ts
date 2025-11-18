@@ -19,6 +19,18 @@ interface ProjectMethodology {
   additional_context?: string;
 }
 
+/**
+ * Constrói o prompt completo do projeto combinando Identidade e Metodologia.
+ * Este é o "prompt_Projeto" que será enviado ao generate-system-prompt.
+ * 
+ * O prompt resultante contém:
+ * - Identidade da Marca: Nome, setor, propósito, tom de voz, personalidade, palavras-chave
+ * - Metodologia: Abordagem de mercado, diferenciais, princípios de comunicação
+ * 
+ * @param identity - Dados de identidade da marca (opcional)
+ * @param methodology - Dados de metodologia do projeto (opcional)
+ * @returns Prompt completo (~800-1200 palavras quando completo, vazio se nenhum parâmetro fornecido)
+ */
 export function buildProjectPrompt(
   identity?: ProjectIdentity,
   methodology?: ProjectMethodology
@@ -86,6 +98,12 @@ export function buildProjectPrompt(
   return parts.join('\n\n');
 }
 
+/**
+ * Extrai os dados de Identidade do projeto a partir do objeto do banco.
+ * 
+ * @param project - Objeto do projeto retornado do Supabase
+ * @returns Objeto ProjectIdentity ou undefined se projeto não fornecido
+ */
 export function extractProjectIdentity(project: any): ProjectIdentity | undefined {
   if (!project) return undefined;
 
@@ -105,6 +123,12 @@ export function extractProjectIdentity(project: any): ProjectIdentity | undefine
   };
 }
 
+/**
+ * Extrai os dados de Metodologia do projeto a partir do objeto do banco.
+ * 
+ * @param project - Objeto do projeto retornado do Supabase
+ * @returns Objeto ProjectMethodology ou undefined se não houver metodologia
+ */
 export function extractProjectMethodology(project: any): ProjectMethodology | undefined {
   if (!project?.methodology) return undefined;
 
