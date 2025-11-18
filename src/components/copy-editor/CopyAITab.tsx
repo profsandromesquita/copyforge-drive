@@ -380,7 +380,7 @@ export const CopyAITab = () => {
           copyId,
           workspaceId: activeWorkspace.id,
           selectedModel,
-          generatedSystemPrompt, // ✅ Passar system prompt gerado pelo GPT-5-mini
+          systemPrompt: generatedSystemPrompt, // ✅ Passar system prompt gerado pelo GPT-5-mini
         }
       });
 
