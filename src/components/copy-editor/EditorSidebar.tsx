@@ -1,8 +1,10 @@
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ListBullets, Sparkle } from 'phosphor-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ListBullets, Sparkle, ChatCircle } from 'phosphor-react';
 import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
+import { CopyChatTab } from './CopyChatTab';
 import { ImageAITab } from './ImageAITab';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useEffect, useState } from 'react';
@@ -33,9 +35,28 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
   const sidebarContent = (
     <div className="h-full flex flex-col relative">
       <div className="flex-1 overflow-hidden">
-        <div className="h-full p-4 overflow-y-auto">
-          <CopyAITab />
-        </div>
+        <Tabs defaultValue="ai" className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4">
+            <TabsTrigger value="ai" className="gap-2">
+              <Sparkle size={16} weight="fill" />
+              Copy IA
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="gap-2">
+              <ChatCircle size={16} weight="fill" />
+              Chat
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
+            <div className="h-full p-4 overflow-y-auto">
+              <CopyAITab />
+            </div>
+          </TabsContent>
+          <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
+            <div className="h-full">
+              <CopyChatTab />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {showImageAI && imageBlockId && (
