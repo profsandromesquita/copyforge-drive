@@ -46,14 +46,14 @@ serve(async (req) => {
       } else {
         // Fallback para lógica hardcoded
         modelToUse = (copyType === 'vsl' || copyType === 'landing_page' || copyType === 'webinar')
-          ? 'openai/gpt-5-mini'
+          ? 'openai/gpt-5'
           : 'google/gemini-2.5-flash';
         console.log('Usando fallback hardcoded:', modelToUse);
       }
     } else {
       // Fallback se não tiver credenciais
       modelToUse = (copyType === 'vsl' || copyType === 'landing_page' || copyType === 'webinar')
-        ? 'openai/gpt-5-mini'
+        ? 'openai/gpt-5'
         : 'google/gemini-2.5-flash';
       console.log('Usando fallback hardcoded (sem credenciais):', modelToUse);
     }
@@ -86,7 +86,7 @@ serve(async (req) => {
         const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         
         // Use model-specific estimated tokens
-        const estimatedTokens = modelToUse === 'openai/gpt-5-mini' ? 7000 : 5000;
+        const estimatedTokens = modelToUse === 'openai/gpt-5' ? 7000 : 5000;
         
         const { data: creditCheck, error: creditCheckError } = await supabaseAdmin
           .rpc('check_workspace_credits', {

@@ -16,7 +16,7 @@ export function useModelSwitchNotification() {
     if (previousModel && previousModel !== newModel) {
       const modelName = getModelDisplayName(newModel);
       
-      if (newModel === 'openai/gpt-5-mini') {
+      if (newModel === 'openai/gpt-5') {
         toast.info(
           'Usando modelo mais inteligente para otimizar a qualidade da entrega, logo o consumo de créditos será maior',
           { 

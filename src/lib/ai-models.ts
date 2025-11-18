@@ -1,6 +1,6 @@
 // AI Model Configuration for Copy Generation
 
-export type AIModel = 'google/gemini-2.5-flash' | 'openai/gpt-5-mini';
+export type AIModel = 'google/gemini-2.5-flash' | 'openai/gpt-5';
 
 export interface ModelConfig {
   displayName: string;
@@ -20,13 +20,13 @@ export const MODEL_CONFIG: Record<AIModel, ModelConfig> = {
     recommended: 'Ideal para anúncios, emails e conteúdo geral',
     estimatedCostMultiplier: 1,
   },
-  'openai/gpt-5-mini': {
-    displayName: 'GPT-5 Mini',
-    description: 'Modelo premium - Maior qualidade de escrita',
+  'openai/gpt-5': {
+    displayName: 'GPT-5',
+    description: 'Modelo premium - Máxima qualidade de escrita',
     badge: 'Premium',
     badgeColor: 'purple',
     recommended: 'Ideal para VSL, Landing Pages e conteúdo crítico',
-    estimatedCostMultiplier: 13,
+    estimatedCostMultiplier: 3,
   },
 };
 
@@ -64,7 +64,7 @@ export async function getAutoRoutedModelFromDB(copyType: CopyType): Promise<AIMo
  */
 export function getAutoRoutedModel(copyType: CopyType): AIModel {
   if (copyType === 'vsl' || copyType === 'landing_page' || copyType === 'webinar') {
-    return 'openai/gpt-5-mini';
+    return 'openai/gpt-5';
   }
   return 'google/gemini-2.5-flash';
 }
