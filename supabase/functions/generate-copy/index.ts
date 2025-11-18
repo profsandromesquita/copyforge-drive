@@ -430,6 +430,43 @@ serve(async (req) => {
       // Não falhar a requisição se o histórico falhar
     }
 
+    // Salvar system instruction na copy para uso futuro em otimização/variação
+    if (copyId && systemPrompt) {
+      try {
+        console.log('💾 Salvando system_instruction na copy...');
+        
+        const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+        const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        
+        if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+          const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+          
+          const { error: updateError } = await supabaseAdmin
+            .from('copies')
+            .update({ 
+              system_instruction: {
+                text: finalSystemPrompt,
+                compiled_at: new Date().toISOString(),
+                model: 'openai/gpt-5-mini',
+                copy_type: copyType
+              },
+              system_prompt_generated_at: new Date().toISOString(),
+              system_prompt_model: 'openai/gpt-5-mini'
+            })
+            .eq('id', copyId);
+          
+          if (updateError) {
+            console.error('❌ Erro ao salvar system_instruction na copy:', updateError);
+          } else {
+            console.log('✅ System instruction salva com sucesso na copy');
+          }
+        }
+      } catch (saveError) {
+        console.error('❌ Erro ao salvar system_instruction:', saveError);
+        // Não falhar a requisição se salvar falhar
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         sessions: sessionsWithIds,
