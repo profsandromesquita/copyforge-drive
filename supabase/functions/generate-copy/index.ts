@@ -402,7 +402,7 @@ serve(async (req) => {
           created_by: userId,
           copy_type: copyType,
           prompt,
-          system_instruction: systemInstructionCompiled,
+          system_instruction: null, // System prompt agora salvo na tabela copies
           parameters: {
             framework: framework,
             objective: objective,

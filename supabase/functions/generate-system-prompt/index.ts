@@ -1,5 +1,5 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { buildProjectPrompt, extractProjectIdentity, extractProjectMethodology } from '../_shared/promptProjectBuilder.ts';
 import { buildCopyPrompt, generateContextHash } from '../_shared/promptCopyBuilder.ts';
 
@@ -343,7 +343,7 @@ Deno.serve(async (req) => {
 
     // Construir prompt_Projeto (se projectIdentity foi fornecido)
     const projectPrompt = projectIdentity 
-      ? buildProjectPrompt(projectIdentity, null)
+      ? buildProjectPrompt(projectIdentity, undefined)
       : '';
 
     console.log('📦 Project prompt built:', projectPrompt ? 'Yes' : 'Empty');
