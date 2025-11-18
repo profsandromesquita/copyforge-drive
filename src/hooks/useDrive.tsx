@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from './useWorkspace';
 import { useProject } from './useProject';
@@ -61,12 +61,28 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  // Refs para controlar fetches duplicados e prevenir race conditions
+  const fetchingRef = useRef(false);
+  const lastFetchParamsRef = useRef<string>('');
 
   const fetchDriveContent = useCallback(async (folderId: string | null = null) => {
     if (!activeWorkspace?.id) return;
 
+    // Prevenir chamadas duplicadas simultâneas
+    const fetchKey = `${activeWorkspace.id}-${activeProject?.id || 'none'}-${folderId || 'root'}`;
+    if (fetchingRef.current && lastFetchParamsRef.current === fetchKey) {
+      console.log('⏭️ Fetch já em andamento, ignorando...');
+      return;
+    }
+
+    fetchingRef.current = true;
+    lastFetchParamsRef.current = fetchKey;
     setLoading(true);
+    
     try {
+      // Forçar bypass de cache
+      const timestamp = Date.now();
       // Fetch folders
       const foldersQuery = supabase
         .from('folders')
@@ -111,6 +127,8 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: copiesData, error: copiesError } = await copiesQuery;
       if (copiesError) throw copiesError;
 
+      console.log(`✅ Fetched ${copiesData?.length || 0} copies (timestamp: ${timestamp})`);
+
       setFolders(foldersData || []);
       setCopies(copiesData || []);
 
@@ -135,6 +153,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Erro ao carregar conteúdo');
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [activeWorkspace?.id, activeProject?.id]);
 
@@ -162,7 +181,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchDriveContent(currentFolder?.id || null);
-  }, [fetchDriveContent, currentFolder?.id]);
+  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]);
 
   const navigateToFolder = useCallback((folderId: string | null) => {
     if (folderId === null) {
@@ -279,14 +298,31 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteCopy = useCallback(async (copyId: string) => {
     try {
+      // 1. ATUALIZAÇÃO OTIMISTA: Remover do estado imediatamente
+      setCopies(prevCopies => {
+        const filtered = prevCopies.filter(c => c.id !== copyId);
+        console.log(`🗑️ Removendo copy ${copyId} do estado (${prevCopies.length} -> ${filtered.length})`);
+        return filtered;
+      });
+
+      // 2. Deletar no banco
+      console.log(`🔥 Deletando copy ${copyId} no banco...`);
       const { error } = await supabase
         .from('copies')
         .delete()
         .eq('id', copyId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao deletar:', error);
+        // 3. ROLLBACK: Se falhar, recarregar do banco
+        await fetchDriveContent(currentFolder?.id || null);
+        throw error;
+      }
 
+      console.log(`✅ Copy ${copyId} deletada com sucesso`);
       toast.success('Copy excluída com sucesso!');
+      
+      // 4. Refetch para garantir sincronização
       await fetchDriveContent(currentFolder?.id || null);
     } catch (error) {
       console.error('Error deleting copy:', error);
