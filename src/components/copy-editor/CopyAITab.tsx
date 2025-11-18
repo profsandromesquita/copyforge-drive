@@ -205,7 +205,25 @@ export const CopyAITab = () => {
 
       // PASSO 1: Gerar system prompt usando generate-system-prompt (GPT-5-mini)
       console.log('📝 PASSO 1: Chamando generate-system-prompt...');
+      console.log('📋 Payload:', { copyType, estrutura, objetivo, estilos, focoEmocional, hasProject: !!activeProject });
       
+      // Obter sessão e token JWT explicitamente
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        console.error('❌ Token JWT não encontrado!');
+        toast({
+          title: 'Erro de autenticação',
+          description: 'Não foi possível autenticar. Por favor, faça login novamente.',
+          variant: 'destructive',
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      console.log('🔑 Token JWT obtido, comprimento:', accessToken.length);
+
       const { data: systemPromptData, error: systemPromptError } = await supabase.functions.invoke('generate-system-prompt', {
         body: {
           copyType: copyType || 'outro',
@@ -217,15 +235,31 @@ export const CopyAITab = () => {
           audienceSegment,
           offer,
           copyId,
+        },
+        headers: {
+          Authorization: `Bearer ${accessToken}`
         }
       });
 
       if (systemPromptError) {
-        console.error('⚠️ Erro ao gerar system prompt:', systemPromptError);
+        console.error('❌ Erro ao gerar system prompt:', systemPromptError);
+        console.error('📦 Detalhes do erro:', {
+          message: systemPromptError.message,
+          context: systemPromptError.context,
+          status: (systemPromptError as any).status,
+          full: JSON.stringify(systemPromptError, null, 2)
+        });
       }
 
+      console.log('📦 System Prompt Data recebido:', systemPromptData);
       const generatedSystemPrompt = systemPromptData?.systemPrompt || null;
-      console.log('✓ System prompt gerado:', generatedSystemPrompt ? `${generatedSystemPrompt.length} caracteres` : 'null (usando fallback)');
+      
+      if (generatedSystemPrompt) {
+        console.log('✅ System prompt gerado com SUCESSO:', generatedSystemPrompt.length, 'caracteres');
+        console.log('📝 Preview (primeiros 200 chars):', generatedSystemPrompt.substring(0, 200) + '...');
+      } else {
+        console.warn('⚠️ System prompt NULL - usando fallback do generate-copy');
+      }
 
       // PASSO 2: Gerar copy usando o system prompt gerado
       console.log('🚀 PASSO 2: Chamando generate-copy com system prompt...');
