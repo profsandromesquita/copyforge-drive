@@ -300,22 +300,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
+    // Obter variáveis de ambiente necessárias
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Verificar autenticação
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
 
     // Extrair parâmetros enviados pelo frontend
     const { 
@@ -374,7 +362,6 @@ Deno.serve(async (req) => {
     }
 
     // Chamar GPT-4 mini via Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
@@ -476,6 +463,11 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('❌ Error in generate-system-prompt:', error);
     
+    // Detectar erros de autenticação e retornar 401
+    const isAuthError = error instanceof Error && 
+      (error.message.includes('Unauthorized') || 
+       error.message.includes('Missing authorization'));
+    
     return new Response(
       JSON.stringify({ 
         success: false,
@@ -484,7 +476,7 @@ Deno.serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: isAuthError ? 401 : 500 
       }
     );
   }
