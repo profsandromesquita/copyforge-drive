@@ -260,19 +260,40 @@ Deno.serve(async (req) => {
         .single();
       
       if (copyData?.system_instruction) {
-        console.log('✓ System instruction encontrada na copy, usando contexto salvo');
+        console.log('✅ System instruction encontrada na copy');
+        console.log('📊 Contexto recuperado:', {
+          model: copyData.system_instruction.model || 'desconhecido',
+          copy_type: copyData.system_instruction.copy_type,
+          has_project_identity: !!copyData.system_instruction.project_identity,
+          has_audience: !!copyData.system_instruction.audience_segment,
+          has_offer: !!copyData.system_instruction.offer,
+          compiled_at: copyData.system_instruction.compiled_at
+        });
+        
         savedSystemInstruction = copyData.system_instruction;
         const savedInstruction = getSystemInstructionText(copyData.system_instruction);
         
         // Adicionar instruções específicas da operação ao contexto salvo
         const operationGuidance = action === 'otimizar'
-          ? `\n\n=== INSTRUÇÃO DE OTIMIZAÇÃO ===\nOtimize o conteúdo mantendo a estrutura similar mas melhorando clareza, impacto, persuasão e flow. Preserve a essência e quantidade de blocos.`
-          : `\n\n=== INSTRUÇÃO DE VARIAÇÃO ===\nCrie uma variação do conteúdo explorando ângulos e formatos diferentes. Mantenha o objetivo mas sinta-se livre para reorganizar e experimentar.`;
+          ? `\n\n=== INSTRUÇÃO DE OTIMIZAÇÃO ===
+Você está otimizando uma copy que foi originalmente criada com o contexto acima.
+MANTENHA a estrutura similar mas MELHORE:
+- Clareza e impacto de cada frase
+- Persuasão e conexão emocional
+- Flow e transições entre blocos
+- Preserve a essência e quantidade de blocos`
+          : `\n\n=== INSTRUÇÃO DE VARIAÇÃO ===
+Você está criando uma VARIAÇÃO de uma copy existente.
+Com base no contexto original acima, crie uma abordagem ALTERNATIVA:
+- Explore ângulos e formatos diferentes
+- Mantenha o objetivo mas reorganize livremente
+- Experimente hooks, transições e CTAs alternativos
+- Pode adicionar ou remover blocos se fizer sentido`;
         
         systemPrompt = savedInstruction + operationGuidance;
-        console.log('System prompt length with saved context:', systemPrompt.length);
+        console.log('📏 System prompt length with saved context:', systemPrompt.length);
       } else {
-        console.log('⚠️ Copy sem system_instruction salva, usando prompt do banco');
+        console.log('⚠️ Copy sem system_instruction salva, usando prompt genérico do banco');
         // Buscar prompt do banco de dados
         const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
         const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

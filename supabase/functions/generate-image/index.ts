@@ -6,6 +6,52 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function buildImageSystemPrompt(projectIdentity?: any): string {
+  let systemPrompt = `You are a professional image generation AI specialized in creating high-quality, impactful images for marketing and copywriting.
+
+=== IMAGE QUALITY STANDARDS ===
+- Generate photorealistic, high-resolution images (1024x1024 minimum)
+- Ensure proper lighting, composition, and color balance
+- Avoid text, watermarks, or low-quality artifacts
+- Focus on emotional impact and visual storytelling
+
+=== STYLE GUIDELINES ===
+- Professional and modern aesthetic
+- Clean, uncluttered compositions
+- Strong focal points and visual hierarchy
+- Color palettes that evoke the desired emotion
+
+=== TECHNICAL REQUIREMENTS ===
+- Sharp focus on main subject
+- Proper depth of field
+- Natural lighting when appropriate
+- Consistent style within a project`;
+
+  if (projectIdentity) {
+    systemPrompt += `\n\n=== PROJECT CONTEXT ===`;
+    
+    if (projectIdentity.brand_name) {
+      systemPrompt += `\nBrand: ${projectIdentity.brand_name}`;
+    }
+    
+    if (projectIdentity.sector) {
+      systemPrompt += `\nSector: ${projectIdentity.sector}`;
+    }
+    
+    if (projectIdentity.brand_personality && projectIdentity.brand_personality.length > 0) {
+      systemPrompt += `\nBrand Personality: ${projectIdentity.brand_personality.join(', ')}`;
+    }
+    
+    if (projectIdentity.central_purpose) {
+      systemPrompt += `\nPurpose: ${projectIdentity.central_purpose}`;
+    }
+    
+    systemPrompt += `\n\nGenerate images that align with this brand identity and visual style.`;
+  }
+  
+  return systemPrompt;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -23,18 +69,76 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    // Criar prompt para geração de imagem
-    let enhancedPrompt = '';
+    // Buscar contexto da copy se copyId foi fornecido
+    let projectIdentity = null;
+    let copyContext = null;
     
-    if (type === 'generate') {
-      enhancedPrompt = `Generate a high-quality, detailed image: ${prompt}`;
-    } else if (type === 'optimize') {
-      enhancedPrompt = `Improve this image based on: ${prompt}. Enhance quality and details.`;
-    } else {
-      enhancedPrompt = `Create a variation of this image: ${prompt}. Generate a creative alternative version.`;
+    if (copyId) {
+      console.log('🔍 Buscando contexto da copy:', copyId);
+      
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { data: copyData, error: copyError } = await supabaseClient
+          .from('copies')
+          .select(`
+            id,
+            title,
+            copy_type,
+            project_id,
+            projects (
+              brand_name,
+              sector,
+              central_purpose,
+              brand_personality,
+              voice_tones,
+              keywords
+            )
+          `)
+          .eq('id', copyId)
+          .single();
+        
+        if (copyError) {
+          console.error('⚠️ Erro ao buscar contexto da copy:', copyError);
+        } else if (copyData) {
+          console.log('✅ Contexto da copy recuperado');
+          copyContext = {
+            title: copyData.title,
+            copy_type: copyData.copy_type
+          };
+          
+          if (copyData.projects) {
+            projectIdentity = {
+              brand_name: copyData.projects.brand_name,
+              sector: copyData.projects.sector,
+              central_purpose: copyData.projects.central_purpose,
+              brand_personality: copyData.projects.brand_personality,
+              voice_tones: copyData.projects.voice_tones,
+              keywords: copyData.projects.keywords
+            };
+            console.log('📊 Project identity:', projectIdentity);
+          }
+        }
+      }
+    }
+
+    // Construir enhanced prompt com contexto
+    let enhancedPrompt = prompt;
+    
+    if (copyContext) {
+      enhancedPrompt = `Context: Creating image for "${copyContext.title}" (${copyContext.copy_type})\n\n${prompt}`;
     }
     
-    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem com prompt:`, enhancedPrompt);
+    // Adicionar system prompt
+    const systemPrompt = buildImageSystemPrompt(projectIdentity);
+    
+    console.log('📝 System prompt length:', systemPrompt.length);
+    console.log('📝 User prompt:', enhancedPrompt.substring(0, 100) + '...');
+    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem`);
 
     const messageContent: any = type === 'generate' 
       ? enhancedPrompt 
@@ -51,6 +155,18 @@ serve(async (req) => {
           }
         ];
 
+    // Preparar mensagens com system prompt
+    const messages = [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
+        role: 'user',
+        content: messageContent
+      }
+    ];
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -59,12 +175,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: messageContent
-          }
-        ],
+        messages: messages,
         modalities: ['image', 'text']
       }),
     });

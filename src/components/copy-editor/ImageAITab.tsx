@@ -38,35 +38,60 @@ export const ImageAITab = ({ block, onClose }: ImageAITabProps) => {
   };
 
   const handleGenerate = async (type: 'generate' | 'optimize' | 'variation') => {
-    const prompt = type === 'generate' ? generatePrompt : type === 'optimize' ? optimizePrompt : variationPrompt;
-    
-    if (!prompt.trim()) {
-      toast.error('Por favor, descreva a imagem que deseja gerar');
+    // Validação
+    if (type === 'generate' && !generatePrompt.trim()) {
+      toast.error('Digite um prompt para gerar a imagem');
       return;
     }
-
+    
     if ((type === 'optimize' || type === 'variation') && !hasImage) {
-      toast.error('Nenhuma imagem disponível para editar');
+      toast.error('Este bloco não possui uma imagem');
       return;
     }
 
     setIsGenerating(true);
     try {
-      const body: any = { prompt };
+      let finalPrompt = '';
+      let imageUrlToUse = block.config.imageUrl;
       
-      if (type === 'optimize' || type === 'variation') {
-        body.imageUrl = block.config.imageUrl;
-        body.type = type;
-      }
+      // Construir prompt baseado no tipo
+      switch (type) {
+        case 'generate':
+          finalPrompt = generatePrompt.trim();
+          imageUrlToUse = undefined;
+          break;
+          
+        case 'optimize':
+          finalPrompt = optimizePrompt.trim() || 
+            `Enhance and optimize this image maintaining its core concept but improving:
+- Overall visual quality and sharpness
+- Color balance and lighting
+- Composition and framing
+- Professional aesthetic
+- Emotional impact
 
-      console.log('=== DEBUG FRONTEND IMAGE ===');
-      console.log('copyId:', copyId);
-      console.log('workspaceId:', activeWorkspace?.id);
-      console.log('body:', body);
+${optimizePrompt.trim() ? `Additional instructions: ${optimizePrompt.trim()}` : ''}`;
+          break;
+          
+        case 'variation':
+          finalPrompt = variationPrompt.trim() || 
+            `Create an alternative version of this image exploring:
+- Different angle or perspective
+- Alternative color palette or mood
+- Different composition while keeping the main concept
+- Fresh creative approach
+
+${variationPrompt.trim() ? `Additional instructions: ${variationPrompt.trim()}` : ''}`;
+          break;
+      }
+      
+      console.log('🎨 Gerando imagem:', { type, prompt: finalPrompt.substring(0, 100) });
 
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: {
-          ...body,
+          prompt: finalPrompt,
+          imageUrl: imageUrlToUse,
+          type: type,
           copyId,
           workspaceId: activeWorkspace?.id,
         }
