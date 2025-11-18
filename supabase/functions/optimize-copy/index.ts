@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { getSystemInstructionText } from '../_shared/systemInstructionBuilder.ts';
 
 const corsHeaders = {
