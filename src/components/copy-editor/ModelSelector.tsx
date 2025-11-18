@@ -77,11 +77,11 @@ export const ModelSelector = ({
                 Selecionado automaticamente para {getCopyTypeName()}
               </p>
             </div>
-            {autoRoutedModel === 'openai/gpt-5-mini' ? <Sparkles className="h-5 w-5 text-purple-500" /> : <Zap className="h-5 w-5 text-green-500" />}
+            {autoRoutedModel === 'openai/gpt-5' ? <Sparkles className="h-5 w-5 text-purple-500" /> : <Zap className="h-5 w-5 text-green-500" />}
           </div>
           
           <div className="text-xs text-muted-foreground p-2 bg-background rounded border mt-2">
-            {autoRoutedModel === 'openai/gpt-5-mini' ? <p>🧠 Usando modelo mais inteligente para otimizar a qualidade da entrega, logo o consumo de créditos será maior</p> : <p>⚡ Usando o modelo mais econômico e rápido para otimizar seu tempo e consumo dos créditos</p>}
+            {autoRoutedModel === 'openai/gpt-5' ? <p>🧠 Usando modelo mais inteligente para otimizar a qualidade da entrega, logo o consumo de créditos será maior</p> : <p>⚡ Usando o modelo mais econômico e rápido para otimizar seu tempo e consumo dos créditos</p>}
           </div>
         </>}
       
