@@ -144,7 +144,7 @@ export const useAdminCopyDetails = (generationId: string) => {
           ? supabase.from("workspaces").select("name, avatar_url").eq("id", historyData.workspace_id).single()
           : Promise.resolve({ data: null, error: null }),
         historyData.copy_id
-          ? supabase.from("copies").select("title").eq("id", historyData.copy_id).maybeSingle()
+          ? supabase.from("copies").select("title, generated_system_prompt").eq("id", historyData.copy_id).maybeSingle()
           : Promise.resolve({ data: null, error: null })
       ]);
 
@@ -153,7 +153,9 @@ export const useAdminCopyDetails = (generationId: string) => {
         profiles: profileRes.data,
         workspaces: workspaceRes.data,
         copies: copyRes.data,
-      } as any as CopyGeneration & { copies: { title: string } };
+        // Se temos o generated_system_prompt da copy, usar ele
+        system_instruction: copyRes.data?.generated_system_prompt || historyData.system_instruction,
+      } as any as CopyGeneration & { copies: { title: string; generated_system_prompt?: string } };
     },
     enabled: !!generationId,
   });
