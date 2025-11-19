@@ -20,6 +20,7 @@ interface EditorSidebarProps {
 export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpen = true, onToggle }: EditorSidebarProps) => {
   const { sessions, selectedBlockId, selectBlock } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -35,7 +36,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
   const sidebarContent = (
     <div className="h-full flex flex-col relative">
       <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="ai" className="h-full flex flex-col">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
           <TabsList className="grid w-full grid-cols-2 mx-4 mt-4">
             <TabsTrigger value="ai" className="gap-2">
               <Sparkle size={16} weight="fill" />
@@ -53,7 +54,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
           </TabsContent>
           <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
             <div className="h-full">
-              <CopyChatTab />
+              <CopyChatTab isActive={activeTab === 'chat'} />
             </div>
           </TabsContent>
         </Tabs>
