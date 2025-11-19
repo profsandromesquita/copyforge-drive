@@ -31,7 +31,7 @@ export const PromptVisualizationTab = ({
   };
 
   const exportPrompts = () => {
-    const fullText = `=== SYSTEM INSTRUCTION ===\n\n${formatJsonForDisplay(systemInstruction)}\n\n=== USER PROMPT ===\n\n${userPrompt}`;
+    const fullText = `=== SYSTEM PROMPT ===\n\n${formatJsonForDisplay(systemInstruction)}\n\n=== USER PROMPT ===\n\n${userPrompt}`;
     const blob = new Blob([fullText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -65,9 +65,9 @@ export const PromptVisualizationTab = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {systemInstruction ? (
-            <Badge variant="default">System Instruction Disponível</Badge>
+            <Badge variant="default">System Prompt Disponível</Badge>
           ) : (
-            <Badge variant="secondary">System Instruction Não Salvo</Badge>
+            <Badge variant="secondary">System Prompt Não Salvo</Badge>
           )}
         </div>
         <Button onClick={exportPrompts} variant="outline" size="sm">
@@ -78,7 +78,7 @@ export const PromptVisualizationTab = ({
 
       <Tabs defaultValue="system" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="system">System Instruction</TabsTrigger>
+          <TabsTrigger value="system">System Prompt</TabsTrigger>
           <TabsTrigger value="user">User Prompt</TabsTrigger>
           <TabsTrigger value="complete">Visualização Completa</TabsTrigger>
         </TabsList>
@@ -87,7 +87,7 @@ export const PromptVisualizationTab = ({
           {!systemInstruction ? (
             <Card>
               <CardHeader>
-                <CardTitle>System Instruction Não Disponível</CardTitle>
+                <CardTitle>System Prompt Não Disponível</CardTitle>
                 <CardDescription>
                   Esta geração foi feita antes da implementação do sistema de contexto persistente.
                 </CardDescription>
@@ -96,9 +96,9 @@ export const PromptVisualizationTab = ({
           ) : sections.length === 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>System Instruction Disponível</CardTitle>
+                <CardTitle>System Prompt Disponível</CardTitle>
                 <CardDescription>
-                  System instruction salvo em formato não estruturado
+                  System prompt salvo em formato não estruturado
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -116,7 +116,7 @@ export const PromptVisualizationTab = ({
                   </div>
                 </ScrollArea>
                 <Button
-                  onClick={() => copyToClipboard(formatJsonForDisplay(systemInstruction), "System Instruction")}
+                  onClick={() => copyToClipboard(formatJsonForDisplay(systemInstruction), "System Prompt")}
                   variant="outline"
                   size="sm"
                   className="mt-4"
@@ -191,7 +191,7 @@ export const PromptVisualizationTab = ({
             <CardHeader>
               <CardTitle>Visualização Completa</CardTitle>
               <CardDescription>
-                System Instruction + User Prompt combinados
+                System Prompt + User Prompt combinados
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -200,7 +200,7 @@ export const PromptVisualizationTab = ({
                   <div>
                     <h4 className="font-semibold mb-2 flex items-center gap-2">
                       <span>🤖</span>
-                      System Instruction
+                      System Prompt
                     </h4>
                     <div className="h-[300px] overflow-auto bg-muted rounded-lg">
                       <pre className="p-4 text-sm whitespace-pre-wrap break-words">

@@ -25,12 +25,14 @@ interface CopyGenerationDetailsModalProps {
   generation: CopyGeneration & { copies?: { title: string } } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isLoading?: boolean;
 }
 
 export const CopyGenerationDetailsModal = ({
   generation,
   open,
   onOpenChange,
+  isLoading = false,
 }: CopyGenerationDetailsModalProps) => {
   if (!generation) return null;
 

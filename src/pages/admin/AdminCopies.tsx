@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, ArrowsClockwise } from "phosphor-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useAdminCopies } from "@/hooks/useAdminCopies";
+import { useAdminCopies, useAdminCopyDetails } from "@/hooks/useAdminCopies";
 import { CopyGenerationFilters } from "@/components/admin/CopyGenerationFilters";
 import { CopyGenerationDetailsModal } from "@/components/admin/CopyGenerationDetailsModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,11 +35,13 @@ export default function AdminCopies() {
   const [filters, setFilters] = useState({});
   const [page, setPage] = useState(1);
   const [selectedGeneration, setSelectedGeneration] = useState<any>(null);
+  const [selectedGenerationId, setSelectedGenerationId] = useState<string>("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = useAdminCopies(filters, page, 20);
+  const { data: generationDetails, isLoading: isDetailsLoading } = useAdminCopyDetails(selectedGenerationId);
 
   useEffect(() => {
     fetchExchangeRate();
@@ -119,7 +121,13 @@ export default function AdminCopies() {
 
   const handleViewDetails = (generation: any) => {
     setSelectedGeneration(generation);
+    setSelectedGenerationId(generation.id);
     setDetailsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsOpen(false);
+    setSelectedGenerationId("");
   };
 
   return (
@@ -381,9 +389,10 @@ export default function AdminCopies() {
       </div>
 
       <CopyGenerationDetailsModal
-        generation={selectedGeneration}
+        generation={generationDetails || selectedGeneration}
         open={detailsOpen}
-        onOpenChange={setDetailsOpen}
+        onOpenChange={handleCloseDetails}
+        isLoading={isDetailsLoading}
       />
     </AdminLayout>
   );
