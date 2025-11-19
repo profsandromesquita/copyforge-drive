@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -46,8 +45,12 @@ export function CopyChatTab() {
 
   // Auto-scroll para última mensagem
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current && chatHistory.length > 0) {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 0);
     }
   }, [chatHistory]);
 
@@ -176,7 +179,7 @@ export function CopyChatTab() {
       </div>
 
       {/* Chat Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1 p-4">
+      <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto">
         {loadingHistory ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -234,7 +237,7 @@ export function CopyChatTab() {
             )}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Input Area */}
       <div className="border-t p-4 space-y-2">
