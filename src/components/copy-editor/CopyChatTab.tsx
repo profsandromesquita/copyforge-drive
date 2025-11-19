@@ -16,7 +16,11 @@ interface ChatMessage {
   created_at: string;
 }
 
-export function CopyChatTab() {
+interface CopyChatTabProps {
+  isActive?: boolean;
+}
+
+export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -43,16 +47,29 @@ export function CopyChatTab() {
     enabled: !!copyId,
   });
 
-  // Auto-scroll para última mensagem
+  // Função para rolar até o final
+  const scrollToBottom = () => {
+    if (!scrollRef.current) return;
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 0);
+  };
+
+  // Auto-scroll quando o histórico muda (nova mensagem ou resposta)
   useEffect(() => {
-    if (scrollRef.current && chatHistory.length > 0) {
-      setTimeout(() => {
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-      }, 0);
+    if (chatHistory.length > 0) {
+      scrollToBottom();
     }
   }, [chatHistory]);
+
+  // Auto-scroll quando a aba Chat fica ativa
+  useEffect(() => {
+    if (isActive && chatHistory.length > 0) {
+      scrollToBottom();
+    }
+  }, [isActive, chatHistory.length]);
 
   // Enviar mensagem
   const sendMessageMutation = useMutation({
