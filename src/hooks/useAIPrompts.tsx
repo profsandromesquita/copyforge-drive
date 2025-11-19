@@ -9,15 +9,38 @@ export function useAIPrompts() {
   const listPrompts = useQuery({
     queryKey: ['ai-prompts'],
     queryFn: async () => {
+      console.log('🔍 [useAIPrompts] Buscando prompts AI...');
+      
+      // Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 [useAIPrompts] Usuário autenticado:', user?.id, user?.email);
+      
+      if (!user) {
+        console.error('❌ [useAIPrompts] Usuário não autenticado');
+        throw new Error('Usuário não autenticado');
+      }
+
       const { data, error } = await supabase
         .from('ai_prompt_templates')
         .select('*')
         .order('category', { ascending: true })
         .order('name', { ascending: true });
       
-      if (error) throw error;
+      console.log('📊 [useAIPrompts] Resultado da query:', {
+        total: data?.length || 0,
+        error: error,
+        hasData: !!data
+      });
+      
+      if (error) {
+        console.error('❌ [useAIPrompts] Erro ao buscar prompts:', error);
+        throw error;
+      }
+      
       return data as AIPromptTemplate[];
-    }
+    },
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
   const updatePrompt = useMutation({
@@ -119,6 +142,8 @@ export function useAIPrompts() {
   return {
     prompts: listPrompts.data || [],
     isLoading: listPrompts.isLoading,
+    error: listPrompts.error,
+    refetch: listPrompts.refetch,
     updatePrompt,
     restoreDefault
   };
