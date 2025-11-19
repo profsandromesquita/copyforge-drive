@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Upload, ShareNetwork, Gear } from 'phosphor-react';
+import { ArrowLeft, Eye, Upload, ShareNetwork, Gear, Code } from 'phosphor-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,9 +19,13 @@ import { ImportModal } from './ImportModal';
 import { ShareModal } from './ShareModal';
 import { Session } from '@/types/copy-editor';
 
-export const EditorHeader = () => {
+interface EditorHeaderProps {
+  onGenerateWebPage?: () => void;
+}
+
+export const EditorHeader = ({ onGenerateWebPage }: EditorHeaderProps) => {
   const navigate = useNavigate();
-  const { copyId, copyTitle, setCopyTitle, isSaving, sessions, status, updateStatus, importSessions } = useCopyEditor();
+  const { copyId, copyTitle, copyType, setCopyTitle, isSaving, sessions, status, updateStatus, importSessions } = useCopyEditor();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -117,6 +121,18 @@ export const EditorHeader = () => {
       </div>
 
       <div className="flex items-center gap-2">
+        {copyType === 'landing_page' && onGenerateWebPage && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onGenerateWebPage}
+            className="gap-2"
+          >
+            <Code size={18} />
+            <span className="hidden md:inline">Gerar Landing Page Web</span>
+          </Button>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
