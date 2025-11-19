@@ -6,6 +6,7 @@ import { BlockToolbar } from '@/components/copy-editor/BlockToolbar';
 import { SessionCanvas } from '@/components/copy-editor/SessionCanvas';
 import { EditorSidebar } from '@/components/copy-editor/EditorSidebar';
 import { CopyEditorLoading } from '@/components/copy-editor/CopyEditorLoading';
+import { GenerateWebPageModal } from '@/components/copy-editor/GenerateWebPageModal';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { Block } from '@/types/copy-editor';
 import { InsufficientCreditsModal } from '@/components/credits/InsufficientCreditsModal';
@@ -20,6 +21,7 @@ const CopyEditorContent = () => {
   const [showImageAI, setShowImageAI] = useState(false);
   const [imageBlockId, setImageBlockId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showWebPageModal, setShowWebPageModal] = useState(false);
   const prevSelectedBlockId = useRef<string | null>(null);
   const { insufficientCredits, creditInfo, closeInsufficientCreditsModal } = useCopyGeneration();
 
@@ -206,7 +208,7 @@ const CopyEditorContent = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="h-screen flex flex-col">
-        <EditorHeader />
+        <EditorHeader onGenerateWebPage={() => setShowWebPageModal(true)} />
         <BlockToolbar />
         <div className="flex flex-1 overflow-hidden relative">
           <SessionCanvas onShowImageAI={handleShowImageAI} />
@@ -237,6 +239,11 @@ const CopyEditorContent = () => {
         onOpenChange={closeInsufficientCreditsModal}
         currentBalance={creditInfo?.current_balance || 0}
         estimatedCost={creditInfo?.estimated_debit || 0}
+      />
+      
+      <GenerateWebPageModal
+        open={showWebPageModal}
+        onOpenChange={setShowWebPageModal}
       />
     </DndContext>
   );
