@@ -180,6 +180,77 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
                   psychological_resistances: {
                     type: "string",
                     description: "Barreiras emocionais e auto-sabotagem: resistências emocionais específicas a mudanças, padrões de auto-sabotagem quando está perto de avançar, objeções internas antes de agir, mecanismos de defesa psicológica."
+                  },
+                  mental_triggers: {
+                    type: "object",
+                    description: "Gatilhos mentais mais efetivos para este público, ranqueados de 1 a 8 por efetividade.",
+                    properties: {
+                      escassez: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      autoridade: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      prova_social: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      reciprocidade: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      consistencia: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      afinidade: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      antecipacao: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      },
+                      exclusividade: {
+                        type: "object",
+                        properties: {
+                          rank: { type: "number", description: "Posição 1-8 de efetividade" },
+                          justificativa: { type: "string", description: "Por que este gatilho funciona (ou não) para este público" }
+                        },
+                        required: ["rank", "justificativa"]
+                      }
+                    },
+                    required: ["escassez", "autoridade", "prova_social", "reciprocidade", "consistencia", "afinidade", "antecipacao", "exclusividade"]
                   }
                 },
                 required: [
@@ -197,7 +268,8 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
                   "dominant_behavior",
                   "decision_trigger",
                   "communication_style",
-                  "psychological_resistances"
+                  "psychological_resistances",
+                  "mental_triggers"
                 ]
               }
             }
