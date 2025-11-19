@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PromptCard } from "@/components/admin/ai-prompts/PromptCard";
 import { PromptEditorModal } from "@/components/admin/ai-prompts/PromptEditorModal";
 import { PromptHistoryModal } from "@/components/admin/ai-prompts/PromptHistoryModal";
@@ -10,7 +11,7 @@ import { AIPromptTemplate } from "@/types/ai-prompts";
 import { Brain, Sliders } from "phosphor-react";
 
 export const PromptsSettings = () => {
-  const { prompts, isLoading, updatePrompt, restoreDefault } = useAIPrompts();
+  const { prompts, isLoading, error, refetch, updatePrompt, restoreDefault } = useAIPrompts();
   const [selectedPrompt, setSelectedPrompt] = useState<AIPromptTemplate | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -58,6 +59,54 @@ export const PromptsSettings = () => {
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
         <p className="text-muted-foreground mt-4">Carregando prompts...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 px-4">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-destructive mb-2">Erro ao carregar prompts</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : 'Erro desconhecido ao buscar prompts'}
+          </p>
+          <Button onClick={() => refetch()} variant="outline">
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug visual
+  console.log('📝 [PromptsSettings] Prompts carregados:', {
+    total: prompts.length,
+    generate_copy: generateCopyPrompts.length,
+    optimize_copy: optimizeCopyPrompts.length,
+    analyze_audience: analyzeAudiencePrompts.length,
+    base: basePrompt?.name,
+    anuncios: anuncioPrompts.length,
+    landing: landingPrompts.length,
+    vsl: vslPrompts.length,
+    email: emailPrompts.length,
+    webinar: webinarPrompts.length,
+    conteudo: conteudoPrompts.length,
+    mensagens: mensagemPrompts.length
+  });
+
+  if (prompts.length === 0) {
+    return (
+      <div className="text-center py-12 px-4">
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-6 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-amber-600 mb-2">Nenhum prompt encontrado</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Não foram encontrados prompts no banco de dados. Verifique se você tem permissão de super_admin.
+          </p>
+          <Button onClick={() => refetch()} variant="outline">
+            Tentar novamente
+          </Button>
+        </div>
       </div>
     );
   }
