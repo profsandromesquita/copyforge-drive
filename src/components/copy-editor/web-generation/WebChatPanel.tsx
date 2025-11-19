@@ -24,9 +24,10 @@ interface Message {
 }
 
 const QUICK_SUGGESTIONS = [
-  'Gere a landing page inicial com base na copy',
   'Adicione um formulário de captura de email',
   'Melhore o design do hero section',
+  'Adicione uma seção de depoimentos',
+  'Inclua um contador de tempo limitado',
   'Adicione animações suaves nos elementos',
 ];
 
@@ -136,31 +137,39 @@ export function WebChatPanel({
       {/* Histórico de mensagens */}
       <ScrollArea className="flex-1 p-4">
         <div ref={scrollRef} className="space-y-4">
-          {messages.length === 0 && (
+          {messages.length === 0 && !isGenerating && (
             <div className="text-center py-8 space-y-4">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
                 <Sparkle size={24} weight="fill" className="text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium">Comece a conversa</p>
+                <p className="text-sm font-medium">✨ Gerando preview inicial...</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Peça para a IA gerar sua landing page com base na copy
+                  Estou criando sua landing page com base na copy. Aguarde alguns instantes.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 justify-center mt-4">
-                {QUICK_SUGGESTIONS.map((suggestion, idx) => (
-                  <Button
-                    key={idx}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickSuggestion(suggestion)}
-                    disabled={isGenerating}
-                    className="text-xs"
-                  >
-                    {suggestion}
-                  </Button>
-                ))}
+            </div>
+          )}
+
+          {messages.length === 0 && isGenerating && (
+            <div className="text-center py-8 space-y-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+                <Sparkle size={24} weight="fill" className="text-primary animate-pulse" />
               </div>
+              <div>
+                <p className="text-sm font-medium">Aguarde...</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Gerando seu preview inicial
+                </p>
+              </div>
+            </div>
+          )}
+
+          {messages.length > 0 && messages.length === 1 && messages[0].role === 'assistant' && (
+            <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                ✅ Preview gerado! Você pode pedir ajustes como: "adicione um formulário", "mude as cores", "adicione animações", etc.
+              </p>
             </div>
           )}
 
@@ -206,14 +215,14 @@ export function WebChatPanel({
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Descreva como deseja a página ou peça ajustes..."
-            className="min-h-[80px] resize-none"
+            className="min-h-[100px] max-h-[200px] resize-none overflow-y-auto"
             disabled={isGenerating}
           />
           <Button
             onClick={handleSend}
             disabled={!message.trim() || isGenerating}
             size="icon"
-            className="h-[80px] w-[80px]"
+            className="h-[100px] w-[100px]"
           >
             <PaperPlaneRight size={20} weight="fill" />
           </Button>

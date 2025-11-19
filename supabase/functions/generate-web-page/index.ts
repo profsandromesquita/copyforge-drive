@@ -70,8 +70,8 @@ serve(async (req) => {
     const { data: creditCheck, error: creditError } = await supabaseClient
       .rpc('check_workspace_credits', {
         p_workspace_id: workspaceMember.workspace_id,
-        estimated_tokens: 3000,
-        p_model_name: 'google/gemini-2.5-flash'
+        estimated_tokens: 5000,
+        p_model_name: 'openai/gpt-5'
       });
 
     if (creditError || !creditCheck?.has_sufficient_credits) {
@@ -97,7 +97,7 @@ serve(async (req) => {
       { role: 'user', content: userInstruction }
     ];
 
-    // Chamar Lovable AI
+    // Chamar Lovable AI com GPT-5
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -106,8 +106,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'openai/gpt-5',
         messages,
+        max_completion_tokens: 4000,
       }),
     });
 
@@ -134,7 +135,7 @@ serve(async (req) => {
         workspace_id: workspaceMember.workspace_id,
         created_by: user.id,
         generation_type: 'web_page',
-        model_used: 'google/gemini-2.5-flash',
+        model_used: 'openai/gpt-5',
         prompt: userInstruction,
         sessions: { html, css },
         input_tokens: usage.prompt_tokens,
@@ -147,7 +148,7 @@ serve(async (req) => {
     if (generation) {
       await supabaseClient.rpc('debit_workspace_credits', {
         p_workspace_id: workspaceMember.workspace_id,
-        p_model_name: 'google/gemini-2.5-flash',
+        p_model_name: 'openai/gpt-5',
         tokens_used: usage.total_tokens,
         p_input_tokens: usage.prompt_tokens,
         p_output_tokens: usage.completion_tokens,
@@ -184,24 +185,84 @@ function buildCopyContext(title: string, type: string | null, sessions: Session[
 }
 
 function buildSystemPrompt(copyContext: string, previousCode: any): string {
-  let prompt = `Você é um especialista em desenvolvimento web focado em criar landing pages HTML/CSS de alta conversão.
+  let prompt = `Você é um especialista em desenvolvimento web focado em criar landing pages modernas e de alta conversão.
 
 CONTEXTO DA COPY:
 ${copyContext}
 
-SUAS RESPONSABILIDADES:
-1. Criar código HTML semântico e CSS moderno
-2. Garantir design responsivo (mobile-first)
-3. Usar as cores e estilos apropriados para o tipo de negócio
-4. Manter hierarquia visual clara
-5. Adicionar animações suaves quando apropriado
-6. Otimizar para conversão (CTAs destacados, prova social, etc)
+SUA RESPONSABILIDADE:
+Gerar código HTML e CSS profissional, responsivo e otimizado para conversão de visitantes em leads/clientes.
+
+DIRETRIZES DE DESIGN OBRIGATÓRIAS:
+
+1. **Hero Section Impactante**:
+   - Headline clara e persuasiva
+   - Subheadline complementar
+   - CTA principal destacado
+   - Imagem/visual de impacto
+   - Valor único evidente
+
+2. **Estrutura de Conversão**:
+   - Above the fold otimizado
+   - Hierarquia visual clara
+   - Flow de leitura natural (Z-pattern ou F-pattern)
+   - CTAs estrategicamente posicionados
+   - Seções com propósito definido
+
+3. **Design Responsivo Mobile-First**:
+   - Adaptação fluida para mobile, tablet e desktop
+   - Touch-friendly (botões > 44px)
+   - Imagens otimizadas para cada viewport
+   - Tipografia escalável
+
+4. **Tipografia Profissional**:
+   - Google Fonts (Poppins, Inter, Montserrat, etc.)
+   - Hierarquia: H1 (48-64px) > H2 (36-48px) > H3 (24-32px) > Body (16-18px)
+   - Line-height: 1.5-1.8 para legibilidade
+   - Contraste adequado (WCAG AA mínimo)
+
+5. **Paleta de Cores Harmoniosa**:
+   - Cor primária (brand)
+   - Cor secundária (complementar)
+   - Cor de ação (CTAs)
+   - Cores neutras (backgrounds, textos)
+   - Máximo 4-5 cores principais
+
+6. **Espaçamentos e Layout**:
+   - Breathing room generoso (padding: 80-120px vertical nas seções)
+   - Grid system consistente
+   - Container max-width: 1200-1400px
+   - Margens laterais adequadas
+
+7. **CTAs Estratégicos**:
+   - Botões com contraste forte
+   - Textos orientados à ação ("Comece Agora", "Garantir Minha Vaga")
+   - Hover states atrativos
+   - Múltiplos CTAs ao longo da página
+
+8. **Elementos de Conversão**:
+   - Provas sociais (depoimentos, logos, números)
+   - Benefícios claros (features → benefits)
+   - Urgência/escassez quando apropriado
+   - Garantias e eliminação de objeções
+   - Formulários simples e otimizados
+
+9. **Recursos Visuais**:
+   - Use placeholders descritivos: https://placehold.co/WIDTHxHEIGHT/BGCOLOR/TEXTCOLOR?text=DESCRIPTION
+   - Ícones: Font Awesome ou Heroicons via CDN
+   - Imagens de alta qualidade (sugeridas via placeholders)
+
+10. **Performance e Acessibilidade**:
+    - Semântica HTML5 correta (<header>, <main>, <section>, <article>)
+    - Alt text descritivos em imagens
+    - Contrast ratio adequado
+    - CSS otimizado e organizado
 
 ESTRUTURA DE RESPOSTA:
 Sempre retorne sua resposta neste formato EXATO:
 
 MENSAGEM:
-[Sua explicação sobre o que foi feito]
+[Breve explicação do que foi criado/modificado]
 
 HTML:
 \`\`\`html
@@ -219,7 +280,7 @@ REGRAS IMPORTANTES:
 - Seja criativo mas profissional
 - Priorize legibilidade e manutenibilidade`;
 
-  if (previousCode) {
+  if (previousCode?.html) {
     prompt += `\n\nCÓDIGO ANTERIOR:
 HTML:
 ${previousCode.html}
@@ -227,7 +288,7 @@ ${previousCode.html}
 CSS:
 ${previousCode.css}
 
-Faça as modificações solicitadas mantendo o que já está bom.`;
+Faça as modificações solicitadas mantendo o que já está bom e melhorando onde necessário.`;
   }
 
   return prompt;
