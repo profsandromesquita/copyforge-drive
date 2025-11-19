@@ -122,6 +122,11 @@ const analysisFieldGroups = [
       },
     ],
   },
+  {
+    title: 'Gatilhos Mentais',
+    special: 'mental_triggers',
+    fields: [],
+  },
 ];
 
 export function AdvancedAnalysisView({
@@ -140,50 +145,109 @@ export function AdvancedAnalysisView({
 
   const analysis = isEditing ? editedAnalysis : segment.advanced_analysis;
 
+  const mentalTriggerLabels: Record<string, string> = {
+    escassez: 'Escassez',
+    autoridade: 'Autoridade',
+    prova_social: 'Prova Social',
+    reciprocidade: 'Reciprocidade',
+    consistencia: 'Consistência',
+    afinidade: 'Afinidade',
+    antecipacao: 'Antecipação',
+    exclusividade: 'Exclusividade',
+  };
+
+  // Ordenar gatilhos mentais por rank se disponível
+  const sortedTriggers = analysis.mental_triggers 
+    ? Object.entries(analysis.mental_triggers)
+        .sort(([, a]: any, [, b]: any) => a.rank - b.rank)
+    : [];
+
   return (
     <div className="space-y-8">
-      {analysisFieldGroups.map((group) => (
-        <div key={group.title} className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground border-b pb-2">
-            {group.title}
-          </h3>
-          <div className="space-y-4">
-            {group.fields.map((field) => (
-              <Card key={field.key} className="p-4">
-                <div className="space-y-2">
-                  <div>
-                    <Label className="text-base font-semibold">{field.label}</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {field.description}
-                    </p>
-                  </div>
-                  
-                  {isEditing ? (
-                    <Textarea
-                      value={analysis[field.key] || ''}
-                      onChange={(e) => onFieldChange(field.key, e.target.value)}
-                      className="min-h-[120px] resize-none font-mono text-sm"
-                      placeholder={`Digite ${field.label.toLowerCase()}...`}
-                    />
-                  ) : (
-                    <div className="bg-muted/30 rounded-md p-4 prose prose-sm max-w-none dark:prose-invert">
-                      <ReactMarkdown>
-                        {analysis[field.key] || 'Não preenchido'}
-                      </ReactMarkdown>
+      {analysisFieldGroups.map((group) => {
+        // Renderizar seção especial de gatilhos mentais
+        if (group.special === 'mental_triggers') {
+          if (!analysis.mental_triggers) return null;
+          
+          return (
+            <div key={group.title} className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground border-b pb-2">
+                {group.title}
+              </h3>
+              <div className="text-sm text-muted-foreground mb-4">
+                Gatilhos mentais mais efetivos para este público, ranqueados por ordem de efetividade (1 = mais efetivo, 8 = menos efetivo)
+              </div>
+              <div className="grid gap-3">
+                {sortedTriggers.map(([key, trigger]: any) => (
+                  <Card key={key} className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-lg font-bold text-primary">#{trigger.rank}</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="font-semibold text-foreground">
+                          {mentalTriggerLabels[key] || key}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <ReactMarkdown>
+                            {trigger.justificativa}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  
-                  {isEditing && (
-                    <p className="text-xs text-muted-foreground text-right">
-                      {(analysis[field.key] || '').length} / {field.minChars} caracteres mínimos
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        // Renderizar grupos normais de campos
+        return (
+          <div key={group.title} className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground border-b pb-2">
+              {group.title}
+            </h3>
+            <div className="space-y-4">
+              {group.fields.map((field) => (
+                <Card key={field.key} className="p-4">
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-base font-semibold">{field.label}</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {field.description}
+                      </p>
+                    </div>
+                    
+                    {isEditing ? (
+                      <Textarea
+                        value={analysis[field.key] || ''}
+                        onChange={(e) => onFieldChange(field.key, e.target.value)}
+                        className="min-h-[120px] resize-none font-mono text-sm"
+                        placeholder={`Digite ${field.label.toLowerCase()}...`}
+                      />
+                    ) : (
+                      <div className="bg-muted/30 rounded-md p-4 prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown>
+                          {analysis[field.key] || 'Não preenchido'}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                    
+                    {isEditing && (
+                      <p className="text-xs text-muted-foreground text-right">
+                        {(analysis[field.key] || '').length} / {field.minChars} caracteres mínimos
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

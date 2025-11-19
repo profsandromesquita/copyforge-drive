@@ -24,7 +24,7 @@ export interface AudienceSegment {
   journey: string; // Onde ela está e onde quer chegar?
   is_completed?: boolean; // Se o usuário concluiu o preenchimento
   
-  // FASE 2 - Análise gerada por IA (estruturada) - 15 dimensões psicológicas
+  // FASE 2 - Análise gerada por IA (estruturada) - 16 dimensões psicológicas
   advanced_analysis?: {
     // Core psicológico
     psychographic_profile: string; // Valores centrais, estilo de vida, personalidade
@@ -48,6 +48,18 @@ export interface AudienceSegment {
     decision_trigger: string; // O que faz finalmente tomar ação
     communication_style: string; // Vocabulário, tom, expressões naturais
     psychological_resistances: string; // Barreiras emocionais, auto-sabotagem
+    
+    // Gatilhos Mentais (ranqueados 1-8 por efetividade)
+    mental_triggers?: {
+      escassez: { rank: number; justificativa: string };
+      autoridade: { rank: number; justificativa: string };
+      prova_social: { rank: number; justificativa: string };
+      reciprocidade: { rank: number; justificativa: string };
+      consistencia: { rank: number; justificativa: string };
+      afinidade: { rank: number; justificativa: string };
+      antecipacao: { rank: number; justificativa: string };
+      exclusividade: { rank: number; justificativa: string };
+    };
   };
   analysis_generated_at?: string;
 }
