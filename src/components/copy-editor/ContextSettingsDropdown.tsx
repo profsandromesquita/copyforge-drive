@@ -122,11 +122,6 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
           methodologyId: newMethodologyId 
         });
       }
-      
-      toast({
-        title: 'Contexto atualizado',
-        description: 'Suas próximas gerações usarão este contexto.',
-      });
     } catch (error) {
       console.error('Erro ao salvar contexto:', error);
       toast({
