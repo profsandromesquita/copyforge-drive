@@ -208,7 +208,11 @@ const CopyEditorContent = () => {
       onDragEnd={handleDragEnd}
     >
       <div className="h-screen flex flex-col">
-        <EditorHeader onGenerateWebPage={() => setShowWebPageModal(true)} />
+        <EditorHeader 
+          onGenerateWebPage={() => setShowWebPageModal(true)} 
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          isSidebarOpen={sidebarOpen}
+        />
         <BlockToolbar />
         <div className="flex flex-1 overflow-hidden relative">
           <SessionCanvas onShowImageAI={handleShowImageAI} />

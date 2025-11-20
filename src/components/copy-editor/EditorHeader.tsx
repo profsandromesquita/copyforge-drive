@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, Upload, ShareNetwork, Gear, Code } from 'phosphor-react';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,9 +22,11 @@ import { Session } from '@/types/copy-editor';
 
 interface EditorHeaderProps {
   onGenerateWebPage?: () => void;
+  onToggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
-export const EditorHeader = ({ onGenerateWebPage }: EditorHeaderProps) => {
+export const EditorHeader = ({ onGenerateWebPage, onToggleSidebar, isSidebarOpen = true }: EditorHeaderProps) => {
   const navigate = useNavigate();
   const { copyId, copyTitle, copyType, setCopyTitle, isSaving, sessions, status, updateStatus, importSessions } = useCopyEditor();
   const { user } = useAuth();
@@ -130,6 +133,21 @@ export const EditorHeader = ({ onGenerateWebPage }: EditorHeaderProps) => {
           >
             <Code size={18} />
             <span className="hidden md:inline">Gerar Landing Page Web</span>
+          </Button>
+        )}
+        
+        {onToggleSidebar && (
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onToggleSidebar}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {isSidebarOpen ? (
+              <PanelRightClose className="h-5 w-5" />
+            ) : (
+              <PanelRightOpen className="h-5 w-5" />
+            )}
           </Button>
         )}
         
