@@ -1,3 +1,5 @@
+import type { BlockType } from '@/types/copy-editor';
+
 export interface ParsedContent {
   id: string;
   type: 'headline' | 'text' | 'ad' | 'list' | 'unknown';
@@ -12,6 +14,14 @@ export interface ParsedMessage {
   hasActionableContent: boolean;
   blocks: ParsedContent[];
   explanation?: string;
+}
+
+export interface ExpectedStructure {
+  sessions: Array<{
+    title: string;
+    blockCount: number;
+    blockTypes: BlockType[];
+  }>;
 }
 
 // Helper to detect if a title indicates a high-level independent item
@@ -262,6 +272,127 @@ export function cleanContent(rawContent: string): string {
 }
 
 // Função para converter blocos parseados em estrutura Session[] otimizada com sessões inteligentes
+/**
+ * Parse AI response with forced structure matching
+ * Forces the parsed content to match expected session/block structure
+ */
+export function parseAIResponseWithStructure(
+  markdown: string,
+  expectedStructure: ExpectedStructure
+): ParsedMessage {
+  // 1. Try normal parsing first
+  const normalParsed = parseAIResponse(markdown);
+
+  // 2. Calculate expected total blocks
+  const expectedTotalBlocks = expectedStructure.sessions.reduce(
+    (sum, s) => sum + s.blockCount,
+    0
+  );
+
+  // 3. If structure matches, return normal result
+  if (normalParsed.blocks.length === expectedTotalBlocks) {
+    return normalParsed;
+  }
+
+  // 4. Force structure: intelligently split markdown to match expected structure
+  const forcedBlocks: ParsedContent[] = [];
+  const lines = markdown.split('\n');
+
+  // Find all potential section headings
+  const headingIndices: number[] = [];
+  lines.forEach((line, index) => {
+    if (line.match(/^#{1,3}\s+/)) {
+      headingIndices.push(index);
+    }
+  });
+
+  // If we have the right number of headings for sessions, use them
+  if (headingIndices.length === expectedStructure.sessions.length) {
+    expectedStructure.sessions.forEach((expectedSession, sessionIndex) => {
+      const startLine = headingIndices[sessionIndex];
+      const endLine =
+        sessionIndex < headingIndices.length - 1
+          ? headingIndices[sessionIndex + 1]
+          : lines.length;
+
+      const sessionContent = lines.slice(startLine, endLine).join('\n');
+      const title = lines[startLine].replace(/^#{1,3}\s+/, '').trim();
+
+      // Split session content into expected number of blocks
+      const sessionLines = lines.slice(startLine + 1, endLine);
+      const blockSize = Math.ceil(sessionLines.length / expectedSession.blockCount);
+
+      for (let i = 0; i < expectedSession.blockCount; i++) {
+        const blockStart = i * blockSize;
+        const blockEnd = Math.min((i + 1) * blockSize, sessionLines.length);
+        const blockContent = sessionLines.slice(blockStart, blockEnd).join('\n').trim();
+
+        if (blockContent) {
+          // Map expected block type to ParsedContent type
+          const expectedType = expectedSession.blockTypes[i];
+          const blockType: ParsedContent['type'] = 
+            expectedType === 'headline' || expectedType === 'text' || expectedType === 'list'
+              ? expectedType
+              : expectedType === 'subheadline'
+              ? 'headline'
+              : 'text';
+
+          forcedBlocks.push({
+            id: `forced-block-${sessionIndex}-${i}`,
+            type: blockType,
+            title: i === 0 ? title : `${title} - Parte ${i + 1}`,
+            content: blockContent,
+            rawContent: blockContent,
+            startIndex: startLine + blockStart,
+            endIndex: startLine + blockEnd,
+          });
+        }
+      }
+    });
+  } else {
+    // Fallback: split content evenly across expected blocks
+    const contentPerBlock = Math.ceil(lines.length / expectedTotalBlocks);
+    let blockIndex = 0;
+
+    expectedStructure.sessions.forEach((expectedSession, sessionIndex) => {
+      for (let i = 0; i < expectedSession.blockCount; i++) {
+        const startLine = blockIndex * contentPerBlock;
+        const endLine = Math.min((blockIndex + 1) * contentPerBlock, lines.length);
+        const blockContent = lines.slice(startLine, endLine).join('\n').trim();
+
+        if (blockContent) {
+          // Map expected block type to ParsedContent type
+          const expectedType = expectedSession.blockTypes[i];
+          const blockType: ParsedContent['type'] = 
+            expectedType === 'headline' || expectedType === 'text' || expectedType === 'list'
+              ? expectedType
+              : expectedType === 'subheadline'
+              ? 'headline'
+              : 'text';
+
+          forcedBlocks.push({
+            id: `forced-block-${sessionIndex}-${i}`,
+            type: blockType,
+            title: expectedSession.title || `Sessão ${sessionIndex + 1}`,
+            content: blockContent,
+            rawContent: blockContent,
+            startIndex: startLine,
+            endIndex: endLine,
+          });
+        }
+
+        blockIndex++;
+      }
+    });
+  }
+
+  return {
+    hasActionableContent: forcedBlocks.length > 0,
+    blocks: forcedBlocks,
+    explanation: normalParsed.explanation,
+  };
+}
+
 export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   if (blocks.length === 0) return [];
 
