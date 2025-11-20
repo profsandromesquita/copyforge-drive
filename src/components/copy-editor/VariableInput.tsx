@@ -116,6 +116,70 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
       return htmlToText(preCaretRange.cloneContents() as any as HTMLDivElement).length;
     };
 
+    // Converter variáveis válidas em chips
+    const convertValidVariablesToChips = () => {
+      if (!divRef.current) return;
+      
+      const currentText = htmlToText(divRef.current);
+      const caretPos = getCaretPosition();
+      
+      // Atualizar o HTML (isso vai converter variáveis válidas em chips)
+      divRef.current.innerHTML = textToHTML(currentText);
+      
+      // Restaurar posição do cursor
+      try {
+        const selection = window.getSelection();
+        if (selection && divRef.current.childNodes.length > 0) {
+          let currentPos = 0;
+          let targetNode: Node | null = null;
+          let targetOffset = 0;
+          
+          const findPosition = (node: Node) => {
+            if (currentPos >= caretPos) return;
+            
+            if (node.nodeType === Node.TEXT_NODE) {
+              const length = node.textContent?.length || 0;
+              if (currentPos + length >= caretPos) {
+                targetNode = node;
+                targetOffset = caretPos - currentPos;
+                return;
+              }
+              currentPos += length;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as HTMLElement;
+              if (el.classList?.contains('variable-chip')) {
+                const varLength = (el.dataset.variable || '').length;
+                if (currentPos + varLength >= caretPos) {
+                  // Se o cursor estava dentro/depois da variável, coloca depois do chip
+                  targetNode = el.nextSibling || el.parentNode;
+                  targetOffset = 0;
+                  return;
+                }
+                currentPos += varLength;
+              } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                  findPosition(node.childNodes[i]);
+                  if (targetNode) return;
+                }
+              }
+            }
+          };
+          
+          findPosition(divRef.current);
+          
+          if (targetNode) {
+            const newRange = document.createRange();
+            newRange.setStart(targetNode, targetOffset);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+          }
+        }
+      } catch (e) {
+        // Ignorar erros de restauração de cursor
+      }
+    };
+
     // Handler de input
     const handleInput = () => {
       if (!divRef.current || disabled) return;
@@ -172,6 +236,13 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
     // Handler de teclas
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (disabled) return;
+
+      // Ao digitar espaço, enter ou vírgula, converter variáveis válidas em chips
+      if (e.key === ' ' || e.key === 'Enter' || e.key === ',' || e.key === '.') {
+        setTimeout(() => {
+          convertValidVariablesToChips();
+        }, 0);
+      }
 
       // Prevenir edição dentro de chips de variável
       const selection = window.getSelection();
