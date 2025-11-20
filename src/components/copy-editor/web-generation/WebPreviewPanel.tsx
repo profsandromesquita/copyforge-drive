@@ -19,6 +19,35 @@ export function WebPreviewPanel({ generatedCode, isGenerating, copyTitle }: WebP
   const [showCode, setShowCode] = useState(false);
   const { toast } = useToast();
 
+  // Função para criar HTML completo com CSS injetado no <head>
+  const createFullHTML = (html: string, css: string): string => {
+    // Procurar pela tag </head> no HTML
+    const headEndIndex = html.indexOf('</head>');
+    
+    if (headEndIndex !== -1) {
+      // Se encontrou </head>, injeta o CSS antes dela
+      return html.slice(0, headEndIndex) + 
+        `  <style>\n${css}\n  </style>\n` + 
+        html.slice(headEndIndex);
+    } else {
+      // Se não encontrou </head>, cria uma estrutura HTML completa
+      return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${copyTitle}</title>
+  <style>
+${css}
+  </style>
+</head>
+<body>
+${html}
+</body>
+</html>`;
+    }
+  };
+
   const getDeviceWidth = () => {
     switch (device) {
       case 'mobile':
@@ -167,19 +196,7 @@ export function WebPreviewPanel({ generatedCode, isGenerating, copyTitle }: WebP
               }}
             >
               <iframe
-                srcDoc={`
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <meta charset="UTF-8">
-                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                      <style>${generatedCode.css}</style>
-                    </head>
-                    <body>
-                      ${generatedCode.html}
-                    </body>
-                  </html>
-                `}
+                srcDoc={createFullHTML(generatedCode.html, generatedCode.css)}
                 style={{
                   width: '100%',
                   minHeight: '600px',
