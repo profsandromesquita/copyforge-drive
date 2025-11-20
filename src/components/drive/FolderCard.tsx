@@ -89,7 +89,7 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
           isOver ? 'ring-2 ring-primary shadow-lg scale-102' : ''
         } ${isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
         style={{
-          backgroundColor: '#F8E9E7',
+          backgroundColor: 'rgb(231, 237, 248)',
           opacity: isDragging ? 0.5 : 1
         }}
       >

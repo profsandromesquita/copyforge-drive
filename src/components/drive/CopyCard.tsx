@@ -124,7 +124,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         }`}
       >
         {/* Header Section - Icon, Title and Menu */}
-        <div className="p-3 pb-2 border-b" style={{ backgroundColor: '#F8E9E7' }}>
+        <div className="p-3 pb-2 border-b" style={{ backgroundColor: 'rgb(231, 237, 248)' }}>
           <div className="flex items-start gap-2">
             <div className="text-primary shrink-0 mt-0.5">
               <FileText size={20} weight="duotone" />
