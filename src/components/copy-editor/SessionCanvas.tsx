@@ -188,7 +188,7 @@ export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
             ))}
           </SortableContext>
 
-          <Button variant="outline" onClick={addSession} className="w-full">
+          <Button variant="ghost" onClick={addSession} className="w-full">
             <Plus size={20} className="mr-2" />
             Adicionar Sessão
           </Button>
