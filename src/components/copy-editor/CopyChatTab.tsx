@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Trash2, Loader2, Check, X, MousePointer } from 'lucide-react';
+import { Send, Trash2, Loader2, Check, X, MousePointer, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -255,17 +255,33 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
               Converse sobre esta copy com a IA
             </p>
           </div>
-          {chatHistory.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => clearHistoryMutation.mutate()}
-              disabled={clearHistoryMutation.isPending}
+              onClick={() => {
+                // TODO: Abrir modal de histórico
+                toast({
+                  title: 'Em breve',
+                  description: 'Funcionalidade de histórico será implementada em breve.',
+                });
+              }}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpar
+              <History className="h-4 w-4 mr-2" />
+              Histórico
             </Button>
-          )}
+            {chatHistory.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => clearHistoryMutation.mutate()}
+                disabled={clearHistoryMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Chat Messages */}
