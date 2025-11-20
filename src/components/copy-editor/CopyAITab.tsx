@@ -102,7 +102,27 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
 
-  // Sincronizar com contextSettings quando mudar
+  // Carregar contexto automaticamente do banco
+  useEffect(() => {
+    const loadCopyContext = async () => {
+      if (!copyId) return;
+      
+      const { data: copy } = await supabase
+        .from('copies')
+        .select('selected_audience_id, selected_offer_id')
+        .eq('id', copyId)
+        .single();
+      
+      if (copy) {
+        setAudienceSegmentId(copy.selected_audience_id || '');
+        setOfferId(copy.selected_offer_id || '');
+      }
+    };
+    
+    loadCopyContext();
+  }, [copyId]);
+
+  // Sincronizar com contextSettings quando mudar (fallback)
   useEffect(() => {
     if (contextSettings) {
       if (contextSettings.audienceSegmentId) {
@@ -128,8 +148,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
 
   const resetForm = () => {
     setEtapa(1);
-    setAudienceSegmentId('');
-    setOfferId('');
+    // audienceSegmentId e offerId não são resetados - sempre carregados do banco
     setEstrutura('');
     setObjetivo('');
     setEstilos([]);
@@ -697,13 +716,50 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   };
 
   const renderCriarTab = () => {
-    // Etapa 1
+    // Etapa 1 - Informativa sobre contexto
     if (etapa === 1) {
       return (
         <ScrollArea className="h-[calc(100vh-12rem)]">
           <div className="space-y-6 p-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-primary">Contexto de Criação</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Configure o Público-Alvo e a Oferta através do ícone de engrenagem 
+                no canto superior direito do editor para personalizar o contexto da sua copy.
+              </p>
+            </div>
+
+            <Button onClick={() => setEtapa(2)} className="w-full">
+              Iniciar Criação
+            </Button>
+          </div>
+        </ScrollArea>
+      );
+    }
+
+    // Etapa 2 - Com Estrutura + Objetivo + Estilos + Foco Emocional
+    if (etapa === 2) {
+      return (
+        <ScrollArea className="h-[calc(100vh-12rem)]">
+          <div className="space-y-5 p-4 animate-fade-in">
+            <Button 
+              variant="ghost" 
+              onClick={() => setEtapa(1)} 
+              className="group -ml-2 px-2 text-muted-foreground hover:text-foreground transition-colors"
+              size="sm"
+            >
+              <span className="transition-transform group-hover:-translate-x-1 inline-block">←</span>
+              <span className="ml-2">Voltar</span>
+            </Button>
+
+            {/* NOVO: Campo Estrutura */}
             <div className="space-y-2">
-              <Label className="font-semibold">Estrutura</Label>
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Estrutura
+              </Label>
               <Select value={estrutura} onValueChange={setEstrutura}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a estrutura do copy" />
@@ -722,61 +778,6 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label className="font-semibold">Público-Alvo</Label>
-              <Select value={audienceSegmentId} onValueChange={setAudienceSegmentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o público-alvo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {audienceSegments.map((segment: AudienceSegment) => (
-                    <SelectItem key={segment.id} value={segment.id}>
-                      {segment.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-semibold">Oferta</Label>
-              <Select value={offerId} onValueChange={setOfferId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a oferta" />
-                </SelectTrigger>
-                <SelectContent>
-                  {offers.map((offer: Offer) => (
-                    <SelectItem key={offer.id} value={offer.id}>
-                      {offer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button onClick={() => setEtapa(2)} className="w-full">
-              Próximo
-            </Button>
-          </div>
-        </ScrollArea>
-      );
-    }
-
-    // Etapa 2
-    if (etapa === 2) {
-      return (
-        <ScrollArea className="h-[calc(100vh-12rem)]">
-          <div className="space-y-5 p-4 animate-fade-in">
-            <Button 
-              variant="ghost" 
-              onClick={() => setEtapa(1)} 
-              className="group -ml-2 px-2 text-muted-foreground hover:text-foreground transition-colors"
-              size="sm"
-            >
-              <span className="transition-transform group-hover:-translate-x-1 inline-block">←</span>
-              <span className="ml-2">Voltar</span>
-            </Button>
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
