@@ -109,7 +109,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     <>
       {/* Sidebar with slide animation */}
       {isOpen && (
-        <aside className="w-[416px] border-l bg-background flex-shrink-0">
+        <aside className="w-[478px] border-l bg-background flex-shrink-0">
           {sidebarContent}
         </aside>
       )}
