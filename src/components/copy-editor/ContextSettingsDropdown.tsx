@@ -32,6 +32,16 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
   const offers = (activeProject?.offers as Offer[]) || [];
   const methodology = activeProject?.methodology as any;
 
+  // Debug: verificar IDs dos segments
+  useEffect(() => {
+    if (audienceSegments.length > 0) {
+      console.log('📊 Audience Segments:', audienceSegments.map(s => ({ id: s.id, who_is: s.who_is })));
+    }
+    if (offers.length > 0) {
+      console.log('🎯 Offers:', offers.map(o => ({ id: o.id, name: o.name })));
+    }
+  }, [audienceSegments, offers]);
+
 
   // Carregar contexto atual da copy
   useEffect(() => {
@@ -53,6 +63,12 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
     loadCurrentContext();
   }, [copyId]);
 
+  // Função para validar UUID
+  const isValidUUID = (str: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   // Salvar contexto quando mudar
   const handleContextChange = async (field: 'audience' | 'offer' | 'methodology', value: string) => {
     if (!copyId) return;
@@ -60,28 +76,65 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
     setIsSaving(true);
     try {
       const updateData: any = {};
+      let newAudienceId = audienceSegmentId;
+      let newOfferId = offerId;
+      let newMethodologyId = methodologyId;
       
       if (field === 'audience') {
+        // Validar se é um UUID válido antes de salvar
+        if (value && !isValidUUID(value)) {
+          console.error('ID de audience segment inválido:', value);
+          toast({
+            title: 'Erro ao salvar',
+            description: 'ID do público-alvo inválido. Por favor, reconfigure seu projeto.',
+            variant: 'destructive',
+          });
+          setIsSaving(false);
+          return;
+        }
+        newAudienceId = value;
         setAudienceSegmentId(value);
         updateData.selected_audience_id = value || null;
       } else if (field === 'offer') {
+        // Validar se é um UUID válido antes de salvar
+        if (value && !isValidUUID(value)) {
+          console.error('ID de oferta inválido:', value);
+          toast({
+            title: 'Erro ao salvar',
+            description: 'ID da oferta inválido. Por favor, reconfigure seu projeto.',
+            variant: 'destructive',
+          });
+          setIsSaving(false);
+          return;
+        }
+        newOfferId = value;
         setOfferId(value);
         updateData.selected_offer_id = value || null;
       } else if (field === 'methodology') {
+        newMethodologyId = value;
         setMethodologyId(value);
         // Metodologia não é salva na copy ainda, mas pode ser no futuro
       }
       
-      const { error } = await supabase
-        .from('copies')
-        .update(updateData)
-        .eq('id', copyId);
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from('copies')
+          .update(updateData)
+          .eq('id', copyId);
+        
+        if (error) {
+          console.error('Erro ao atualizar copy:', error);
+          throw error;
+        }
+      }
       
-      if (error) throw error;
-      
-      // Notificar mudança
+      // Notificar mudança com valores atualizados
       if (onContextChange) {
-        onContextChange({ audienceSegmentId, offerId, methodologyId });
+        onContextChange({ 
+          audienceSegmentId: newAudienceId, 
+          offerId: newOfferId, 
+          methodologyId: newMethodologyId 
+        });
       }
       
       toast({
@@ -133,11 +186,17 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
                   <SelectValue placeholder="Nenhum selecionado" />
                 </SelectTrigger>
                 <SelectContent>
-                  {audienceSegments.map((segment) => (
-                    <SelectItem key={segment.id} value={segment.id}>
-                      {segment.who_is ? `${segment.who_is.substring(0, 50)}...` : segment.id}
-                    </SelectItem>
-                  ))}
+                  {audienceSegments.length === 0 ? (
+                    <div className="p-2 text-xs text-muted-foreground">
+                      Nenhum público configurado
+                    </div>
+                  ) : (
+                    audienceSegments.map((segment) => (
+                      <SelectItem key={segment.id} value={segment.id}>
+                        {segment.who_is ? `${segment.who_is.substring(0, 50)}...` : segment.id}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -154,11 +213,17 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
-                  {offers.map((offer) => (
-                    <SelectItem key={offer.id} value={offer.id}>
-                      {offer.name}
-                    </SelectItem>
-                  ))}
+                  {offers.length === 0 ? (
+                    <div className="p-2 text-xs text-muted-foreground">
+                      Nenhuma oferta configurada
+                    </div>
+                  ) : (
+                    offers.map((offer) => (
+                      <SelectItem key={offer.id} value={offer.id}>
+                        {offer.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
