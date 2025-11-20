@@ -54,6 +54,7 @@ All colors MUST be HSL.
     --sidebar-ring: 7 100% 50%;
 
     --canvas-background: 224 10% 92%;
+    --chat-input: 220 7% 92%;
   }
 
   .dark {
@@ -98,6 +99,7 @@ All colors MUST be HSL.
     --sidebar-ring: 7 100% 50%;
 
     --canvas-background: 0 0% 18%;
+    --chat-input: 220 7% 92%;
   }
 }
 
