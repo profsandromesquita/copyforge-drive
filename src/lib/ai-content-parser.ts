@@ -14,6 +14,17 @@ export interface ParsedMessage {
   explanation?: string;
 }
 
+// Helper to detect if a title indicates a high-level independent item
+function isHighLevelTitle(title: string): boolean {
+  const lower = title.toLowerCase();
+  const highLevelKeywords = [
+    'anúncio', 'anuncio', 'roteiro', 'vídeo', 'video',
+    'script', 'variação', 'variacao', 'copy', 'versão', 'versao',
+    'headline', 'título', 'titulo', 'email', 'post'
+  ];
+  return highLevelKeywords.some(k => lower.includes(k));
+}
+
 export function parseAIResponse(markdown: string): ParsedMessage {
   const blocks: ParsedContent[] = [];
   let explanation = '';
@@ -30,7 +41,9 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       explanation = markdown.substring(0, firstMatch.index).trim();
     }
 
-    // Processar cada bloco numerado
+    // Processar cada bloco numerado com agrupamento inteligente
+    let currentBlock: ParsedContent | null = null;
+    
     matches.forEach((match, index) => {
       const number = match[1];
       const title = match[2].trim();
@@ -52,18 +65,28 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       contentLines.shift(); // Remove primeira linha (o título numerado)
       const cleanedContent = contentLines.join('\n').trim();
 
-      // Inferir tipo baseado no conteúdo
-      const type = inferBlockType(cleanedContent, title);
-
-      blocks.push({
-        id: `block-${Date.now()}-${index}`,
-        type,
-        title: `${number}. ${title}`,
-        content: cleanedContent,
-        rawContent: fullBlockContent,
-        startIndex,
-        endIndex,
-      });
+      // Check if this is a high-level item or if we don't have a current block yet
+      if (isHighLevelTitle(title) || !currentBlock) {
+        // Create a new block for high-level items
+        const type = inferBlockType(cleanedContent, title);
+        
+        currentBlock = {
+          id: `block-${Date.now()}-${index}`,
+          type,
+          title: `${number}. ${title}`,
+          content: cleanedContent,
+          rawContent: fullBlockContent,
+          startIndex,
+          endIndex,
+        };
+        
+        blocks.push(currentBlock);
+      } else {
+        // This is a sub-item (like a scene), append to current block
+        currentBlock.content += '\n\n' + cleanedContent;
+        currentBlock.rawContent += '\n\n' + fullBlockContent;
+        currentBlock.endIndex = endIndex;
+      }
     });
   }
   // Detectar blocos de código
@@ -231,10 +254,16 @@ export function cleanContent(rawContent: string): string {
 export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   if (blocks.length === 0) return [];
 
-  // Detectar se são múltiplos itens independentes (anúncios, headlines, etc)
-  const shouldCreateMultipleSessions = blocks.length > 1 && blocks.every(b => 
-    b.type === 'headline' || b.type === 'ad' || b.title
-  );
+  // Check if we should create multiple sessions (one per block)
+  // Only do this for a reasonable number of blocks to avoid explosion
+  const shouldCreateMultipleSessions = 
+    blocks.length > 1 && 
+    blocks.length <= 10 && 
+    blocks.every(b => 
+      b.type === 'headline' || 
+      b.type === 'ad' || 
+      (b.title && isHighLevelTitle(b.title) && b.content.length > 150)
+    );
 
   if (shouldCreateMultipleSessions) {
     // Criar uma sessão para cada item
