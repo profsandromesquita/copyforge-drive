@@ -3,9 +3,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Sparkles, Wand2, Eye } from 'lucide-react';
+import { Loader2, Wand2, Eye } from 'lucide-react';
 import { Copy as CopyIcon } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
 
@@ -59,51 +59,45 @@ export function HistorySheet({
                 <p>Nenhuma geração anterior</p>
               </div>
             ) : (
-              <div className="grid gap-3 pr-4">
+              <div className="grid gap-2 pr-4">
                 {history.map((item) => (
                   <div
                     key={item.id}
-                    className="group w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:border-primary/30"
+                    className="group w-full text-left p-3 rounded-lg border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:border-primary/30"
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Header com tipo e data */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           {item.generation_type === 'optimize' ? (
                             <>
-                              <Wand2 className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Otimização</Badge>
+                              <Wand2 className="h-3.5 w-3.5 text-primary" />
+                              <Badge variant="secondary" className="text-xs py-0 h-5">Otimização</Badge>
                             </>
                           ) : item.generation_type === 'variation' ? (
                             <>
-                              <CopyIcon className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Variação</Badge>
+                              <CopyIcon className="h-3.5 w-3.5 text-primary" />
+                              <Badge variant="secondary" className="text-xs py-0 h-5">Variação</Badge>
                             </>
                           ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Criação</Badge>
-                            </>
+                            <Badge variant="secondary" className="text-xs py-0 h-5">Criação</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-6 w-6"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedPromptItem(item);
                               setShowPromptDialog(true);
                             }}
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDistanceToNow(new Date(item.created_at), { 
-                              addSuffix: true,
-                              locale: ptBR 
-                            })}
+                            {format(new Date(item.created_at), "MMM d, h:mm a", { locale: ptBR })}
                           </span>
                         </div>
                       </div>
@@ -113,33 +107,28 @@ export function HistorySheet({
                         onClick={() => onHistoryItemClick(item)}
                         className="w-full text-left"
                       >
-                        <p className="text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-primary transition-colors">
+                        <p className="text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                           {item.prompt}
                         </p>
                       </button>
 
                       {/* Footer com informações adicionais */}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                          <span className="px-2 py-1 bg-muted rounded">
+                        <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">
+                          <span className="px-2 py-0.5 bg-muted rounded text-xs">
                             {item.sessions?.length || 0} sessão(ões)
                           </span>
                           {item.copy_type && (
-                            <span className="px-2 py-1 bg-muted rounded capitalize">
+                            <span className="px-2 py-0.5 bg-muted rounded capitalize text-xs">
                               {item.copy_type.replace('_', ' ')}
                             </span>
-                          )}
-                          {item.was_auto_routed && (
-                            <Badge variant="outline" className="text-xs">
-                              Auto
-                            </Badge>
                           )}
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => onHistoryItemClick(item)}
-                          className="text-xs"
+                          className="text-xs h-7"
                         >
                           Visualizar Copy
                         </Button>
