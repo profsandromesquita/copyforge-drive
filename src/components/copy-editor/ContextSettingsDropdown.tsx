@@ -153,8 +153,8 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <h4 className="font-semibold text-sm">Contexto de Criação</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <h4 className="font-semibold text-base text-orange-500">Contexto de Criação</h4>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
               Selecione o contexto que será usado para gerar suas copies
             </p>
           </div>
