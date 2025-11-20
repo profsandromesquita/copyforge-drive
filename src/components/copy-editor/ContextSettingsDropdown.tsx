@@ -125,15 +125,14 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
             <div className="space-y-1.5">
               <Label htmlFor="audience" className="text-xs">Público-alvo</Label>
               <Select 
-                value={audienceSegmentId} 
+                value={audienceSegmentId || undefined} 
                 onValueChange={(value) => handleContextChange('audience', value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="audience" className="h-9">
-                  <SelectValue placeholder="Selecione o público" />
+                  <SelectValue placeholder="Nenhum selecionado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
                   {audienceSegments.map((segment) => (
                     <SelectItem key={segment.id} value={segment.id}>
                       {segment.who_is ? `${segment.who_is.substring(0, 50)}...` : segment.id}
@@ -147,15 +146,14 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
             <div className="space-y-1.5">
               <Label htmlFor="offer" className="text-xs">Oferta</Label>
               <Select 
-                value={offerId} 
+                value={offerId || undefined} 
                 onValueChange={(value) => handleContextChange('offer', value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="offer" className="h-9">
-                  <SelectValue placeholder="Selecione a oferta" />
+                  <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma</SelectItem>
                   {offers.map((offer) => (
                     <SelectItem key={offer.id} value={offer.id}>
                       {offer.name}
@@ -169,15 +167,14 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
             <div className="space-y-1.5">
               <Label htmlFor="methodology" className="text-xs">Metodologia</Label>
               <Select 
-                value={methodologyId} 
+                value={methodologyId || undefined} 
                 onValueChange={(value) => handleContextChange('methodology', value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="methodology" className="h-9">
-                  <SelectValue placeholder="Selecione a metodologia" />
+                  <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma</SelectItem>
                   {methodology && (
                     <SelectItem value={methodology.id || 'methodology'}>
                       {methodology.name}
