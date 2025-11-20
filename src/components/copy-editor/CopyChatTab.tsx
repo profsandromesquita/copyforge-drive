@@ -359,44 +359,24 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
           )}
         </div>
 
-        {/* Botão Selecionar e Input */}
-        <div className="px-4 pt-4 pb-2 border-t">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={isSelectionMode ? "default" : "outline"}
-                size="sm"
-                onClick={toggleSelectionMode}
-                className="w-full mb-2"
-              >
-                {isSelectionMode ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Modo Seleção ({selectedItems.length})
-                  </>
-                ) : (
-                  <>
-                    <MousePointer className="h-4 w-4 mr-2" />
-                    Selecionar Blocos/Sessões
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Selecione blocos ou sessões (Ctrl+Shift+S)</p>
-            </TooltipContent>
-          </Tooltip>
-
+        {/* Input Area */}
+        <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          {/* Selected Items Display */}
           {selectedItems.length > 0 && (
-            <div className="mb-2 p-2 bg-muted/50 rounded-md">
-              <p className="text-xs text-muted-foreground mb-1">Selecionados:</p>
-              <div className="flex flex-wrap gap-1">
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex flex-wrap gap-1.5">
                 {selectedItems.map((item) => {
                   const session = sessions.find(s => s.id === item.sessionId || s.id === item.id);
                   return (
-                    <div key={item.id} className="flex items-center gap-1 px-2 py-1 bg-background rounded text-xs">
-                      <span>{item.type === 'session' ? '📋' : '📝'}</span>
-                      <button onClick={() => toggleItemSelection(item.id, item.type, item.sessionId)}>
+                    <div 
+                      key={item.id} 
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors"
+                    >
+                      <span className="text-xs">{item.type === 'session' ? '📋' : '📝'}</span>
+                      <button 
+                        onClick={() => toggleItemSelection(item.id, item.type, item.sessionId)}
+                        className="hover:opacity-70 transition-opacity"
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -405,23 +385,60 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
               </div>
             </div>
           )}
-        </div>
 
-        <div className="p-4 pt-0 space-y-2">
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Digite sua mensagem..."
-            className="min-h-[80px] resize-none"
-            disabled={isLoading}
-          />
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">{message.length}/2000</span>
-            <Button onClick={handleSend} disabled={!message.trim() || isLoading} size="sm">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Enviar
-            </Button>
+          {/* Input Container */}
+          <div className="px-4 py-3">
+            <div className="relative">
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Digite sua mensagem..."
+                className="min-h-[100px] resize-none pr-24 border-border/50 focus:border-primary/50 bg-background"
+                disabled={isLoading}
+              />
+              
+              {/* Action Buttons Overlay */}
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleSelectionMode}
+                      className={`h-8 w-8 ${isSelectionMode ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {isSelectionMode ? <Check className="h-4 w-4" /> : <MousePointer className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">
+                      {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Button 
+                  onClick={handleSend} 
+                  disabled={!message.trim() || isLoading} 
+                  size="icon"
+                  className="h-8 w-8 rounded-lg"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Character Count */}
+            <div className="flex justify-end mt-1.5">
+              <span className="text-[10px] text-muted-foreground/70 font-mono">
+                {message.length}/2000
+              </span>
+            </div>
           </div>
         </div>
 
