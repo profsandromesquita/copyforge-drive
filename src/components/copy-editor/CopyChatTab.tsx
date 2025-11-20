@@ -313,7 +313,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
         {/* Chat Messages */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-4 pb-40 space-y-4"
+          className="flex-1 overflow-y-auto p-4 pb-48 space-y-4"
         >
           {loadingChatHistory ? (
             <div className="flex items-center justify-center h-full">
@@ -368,84 +368,86 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
         </div>
 
         {/* Input Area - Floating */}
-        <div className="absolute bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.3)]">
-          {/* Selected Items Display */}
-          {selectedItems.length > 0 && (
-            <div className="px-4 pt-3 pb-2 border-b border-border/40 animate-fade-in">
-              <div className="flex flex-wrap gap-1.5">
-                {selectedItems.map((item) => {
-                  const session = sessions.find(s => s.id === item.sessionId || s.id === item.id);
-                  return (
-                    <div 
-                      key={item.id} 
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors"
-                    >
-                      {item.type === 'session' ? <Layers className="h-3 w-3" /> : <Square className="h-3 w-3" />}
-                      <button
-                        onClick={() => toggleItemSelection(item.id, item.type, item.sessionId)}
-                        className="hover:opacity-70 transition-opacity"
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="bg-background border border-border rounded-xl shadow-lg backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
+            {/* Selected Items Display */}
+            {selectedItems.length > 0 && (
+              <div className="px-4 pt-3 pb-2 border-b border-border/40 animate-fade-in">
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedItems.map((item) => {
+                    const session = sessions.find(s => s.id === item.sessionId || s.id === item.id);
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors"
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  );
-                })}
+                        {item.type === 'session' ? <Layers className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                        <button
+                          onClick={() => toggleItemSelection(item.id, item.type, item.sessionId)}
+                          className="hover:opacity-70 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Input Container */}
-          <div className="px-4 py-3">
-            <div className="relative">
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
-                className="min-h-[100px] resize-none pr-24 border-border/50 focus:border-primary/50 bg-background shadow-sm"
-                disabled={isLoading}
-              />
-              
-              {/* Action Buttons Overlay */}
-              <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleSelectionMode}
-                      className={`h-8 w-8 transition-all ${isSelectionMode ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                      {isSelectionMode ? <Check className="h-4 w-4" /> : <MousePointer className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">
-                      {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
+            {/* Input Container */}
+            <div className="px-4 py-3">
+              <div className="relative">
+                <Textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Digite sua mensagem..."
+                  className="min-h-[100px] resize-none pr-24 border-border/50 focus:border-primary/50 bg-background/50"
+                  disabled={isLoading}
+                />
+                
+                {/* Action Buttons Overlay */}
+                <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleSelectionMode}
+                        className={`h-8 w-8 transition-all ${isSelectionMode ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        {isSelectionMode ? <Check className="h-4 w-4" /> : <MousePointer className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
 
-                <Button 
-                  onClick={handleSend} 
-                  disabled={!message.trim() || isLoading} 
-                  size="icon"
-                  className="h-8 w-8 rounded-lg shadow-sm hover:shadow-md transition-all"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+                  <Button 
+                    onClick={handleSend} 
+                    disabled={!message.trim() || isLoading} 
+                    size="icon"
+                    className="h-8 w-8 rounded-lg shadow-sm hover:shadow-md transition-all"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
-            </div>
 
-            {/* Character Count */}
-            <div className="flex justify-end mt-1.5">
-              <span className="text-[10px] text-muted-foreground/70 font-mono">
-                {message.length}/2000
-              </span>
+              {/* Character Count */}
+              <div className="flex justify-end mt-1.5">
+                <span className="text-[10px] text-muted-foreground/70 font-mono">
+                  {message.length}/2000
+                </span>
+              </div>
             </div>
           </div>
         </div>
