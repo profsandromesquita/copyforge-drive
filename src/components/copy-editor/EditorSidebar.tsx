@@ -6,6 +6,7 @@ import { BlockSettings } from './BlockSettings';
 import { CopyAITab } from './CopyAITab';
 import { CopyChatTab } from './CopyChatTab';
 import { ImageAITab } from './ImageAITab';
+import { ContextSettingsDropdown } from './ContextSettingsDropdown';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useEffect, useState } from 'react';
 
@@ -21,6 +22,11 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
   const { sessions, selectedBlockId, selectBlock } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
+  const [contextSettings, setContextSettings] = useState({
+    audienceSegmentId: '',
+    offerId: '',
+    methodologyId: ''
+  });
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -38,25 +44,28 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
           <div className="px-4 pt-4 pb-2">
-            <TabsList className="grid w-full grid-cols-2 border-2 border-border/60" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
-            <TabsTrigger value="ai" className="gap-2">
-              <Sparkle size={16} weight="fill" />
-              Copy IA
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="gap-2">
-              <ChatCircle size={16} weight="fill" />
-              Chat
-            </TabsTrigger>
-          </TabsList>
+            <div className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-2 border-2 border-border/60 flex-1" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
+                <TabsTrigger value="ai" className="gap-2">
+                  <Sparkle size={16} weight="fill" />
+                  Copy IA
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="gap-2">
+                  <ChatCircle size={16} weight="fill" />
+                  Chat
+                </TabsTrigger>
+              </TabsList>
+              <ContextSettingsDropdown onContextChange={setContextSettings} />
+            </div>
           </div>
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
             <div className="h-full p-4 overflow-y-auto">
-              <CopyAITab />
+              <CopyAITab contextSettings={contextSettings} />
             </div>
           </TabsContent>
           <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
             <div className="h-full">
-              <CopyChatTab isActive={activeTab === 'chat'} />
+              <CopyChatTab isActive={activeTab === 'chat'} contextSettings={contextSettings} />
             </div>
           </TabsContent>
         </Tabs>

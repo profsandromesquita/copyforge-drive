@@ -37,9 +37,14 @@ interface ChatMessage {
 
 interface CopyChatTabProps {
   isActive?: boolean;
+  contextSettings?: {
+    audienceSegmentId: string;
+    offerId: string;
+    methodologyId: string;
+  };
 }
 
-export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
+export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);

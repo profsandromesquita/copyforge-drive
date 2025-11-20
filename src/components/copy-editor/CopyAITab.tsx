@@ -34,7 +34,15 @@ import { VoiceInput } from '@/components/project-config/VoiceInput';
 
 type Etapa = 1 | 2 | 3;
 
-export const CopyAITab = () => {
+interface CopyAITabProps {
+  contextSettings?: {
+    audienceSegmentId: string;
+    offerId: string;
+    methodologyId: string;
+  };
+}
+
+export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   const { copyId, copyType, sessions: copySessions, importSessions, updateSession } = useCopyEditor();
   const { activeProject } = useProject();
   const { activeWorkspace } = useWorkspace();
@@ -93,6 +101,18 @@ export const CopyAITab = () => {
 
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
+
+  // Sincronizar com contextSettings quando mudar
+  useEffect(() => {
+    if (contextSettings) {
+      if (contextSettings.audienceSegmentId) {
+        setAudienceSegmentId(contextSettings.audienceSegmentId);
+      }
+      if (contextSettings.offerId) {
+        setOfferId(contextSettings.offerId);
+      }
+    }
+  }, [contextSettings]);
 
   // Verificar acesso Copy IA ao carregar
   useEffect(() => {
