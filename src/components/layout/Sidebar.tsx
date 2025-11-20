@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus, Crown, Buildings } from "phosphor-react";
+import { FileText, Folder, Lightbulb, Sparkle, Plus, FolderPlus, Crown, Buildings, SquaresFour } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import copyDriveLogo from "@/assets/copydrive-logo.png";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { UpgradeModal } from "@/components/workspace/UpgradeModal";
 const menuItems = [
   { icon: Buildings, label: "Meu Projeto", path: "/my-project" },
   { icon: Folder, label: "Drive", path: "/drive" },
-  { icon: Sparkle, label: "Modelos", path: "/templates" },
+  { icon: SquaresFour, label: "Modelos", path: "/templates" },
   { icon: Lightbulb, label: "Descobrir", path: "/discover" },
 ];
 
