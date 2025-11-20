@@ -96,7 +96,21 @@ export function WebChatPanel({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na função:', error);
+        
+        // Detectar tipo de erro e fornecer feedback específico
+        if (error.message?.includes('AI_GENERATION_FAILED')) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: '❌ A IA não conseguiu gerar o código corretamente.\n\n💡 **Tente reformular seu pedido**:\n\n✅ Ao invés de: "Deixe mais bonito"\n✅ Tente: "Mude o fundo para gradiente azul e adicione sombras nos botões"\n\n✅ Ao invés de: "Melhore"\n✅ Tente: "Aumente o título, centralize o texto e adicione espaçamento"'
+          }]);
+          setIsGenerating(false);
+          return;
+        }
+        
+        throw error;
+      }
 
       if (data?.error) {
         let errorMessage = 'Erro ao gerar a página. Tente novamente.';
@@ -107,11 +121,27 @@ export function WebChatPanel({
           errorMessage = 'Problema interno de configuração da IA. Contate o suporte.';
         } else if (data.error.includes('AI API error')) {
           errorMessage = 'Falha temporária no modelo de IA. Tente novamente em alguns instantes.';
-        } else if (data.error.includes('AI did not return valid HTML/CSS')) {
-          errorMessage = 'A IA não retornou um código válido. Tente reformular sua solicitação.';
+        } else if (data.error === 'AI_GENERATION_FAILED') {
+          errorMessage = 'A IA não conseguiu gerar o código. Tente ser mais específico em sua solicitação.';
         }
         
         throw new Error(errorMessage);
+      }
+
+      // Validar dados retornados
+      if (!data?.html || data.html.trim() === '') {
+        console.error('Resposta sem HTML');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '❌ A IA retornou uma resposta inválida (sem código HTML).\n\n💡 **Dica**: Seja mais específico no seu pedido. Exemplos:\n- "Mude a cor do fundo para azul"\n- "Adicione um botão laranja com o texto \'Começar Agora\'"\n- "Aumente o tamanho do título principal"'
+        }]);
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validar se CSS está presente (aviso mas não bloqueia)
+      if (!data?.css || data.css.trim() === '') {
+        console.warn('Resposta sem CSS, usando CSS padrão');
       }
 
       const assistantMessage: Message = {
