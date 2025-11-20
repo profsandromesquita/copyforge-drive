@@ -418,7 +418,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         </div>
 
         {/* Input Area - Floating */}
-        <div className="absolute bottom-0 left-0 right-0 p-4">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background">
           <div className="border-2 border-border/60 rounded-xl" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
             {/* Selected Items Display */}
             {selectedItems.length > 0 && (
