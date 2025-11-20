@@ -94,6 +94,19 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
       }
     }, [value]);
 
+    // Calcular posição do cursor no texto completo
+    const getCaretPosition = (): number => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || !divRef.current) return 0;
+      
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(divRef.current);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      
+      return htmlToText(preCaretRange.cloneContents() as any as HTMLDivElement).length;
+    };
+
     // Handler de input
     const handleInput = () => {
       if (!divRef.current || disabled) return;
@@ -103,22 +116,19 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
       onChange(newText);
       
       // Detectar se está digitando após #
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const textBeforeCursor = newText.substring(0, range.startOffset);
-        const lastHashIndex = textBeforeCursor.lastIndexOf('#');
-        
-        if (lastHashIndex !== -1) {
-          const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
-          if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
-            onVariableSearch?.(textAfterHash, true);
-          } else {
-            onVariableSearch?.('', false);
-          }
+      const caretPos = getCaretPosition();
+      const textBeforeCursor = newText.substring(0, caretPos);
+      const lastHashIndex = textBeforeCursor.lastIndexOf('#');
+      
+      if (lastHashIndex !== -1) {
+        const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
+        if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
+          onVariableSearch?.(textAfterHash, true);
         } else {
           onVariableSearch?.('', false);
         }
+      } else {
+        onVariableSearch?.('', false);
       }
       
       setTimeout(() => {
