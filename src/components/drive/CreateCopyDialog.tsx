@@ -71,6 +71,17 @@ const copyTypes: CopyTypeOption[] = [
   },
 ];
 
+const copyTypePlaceholders: Record<CopyType, string> = {
+  landing_page: 'Ex: Landing Page Produto X',
+  anuncio: 'Ex: Anúncio Facebook - Lançamento',
+  vsl: 'Ex: VSL Curso de Marketing',
+  email: 'Ex: Email Boas-vindas',
+  webinar: 'Ex: Webinar Estratégias 2025',
+  conteudo: 'Ex: Artigo sobre SEO',
+  mensagem: 'Ex: Mensagem WhatsApp - Follow Up',
+  outro: 'Ex: Nome da sua copy',
+};
+
 interface CreateCopyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -136,7 +147,7 @@ export function CreateCopyDialog({ open, onOpenChange, onCreateCopy }: CreateCop
             <Label htmlFor="copy-name">Nome da Copy</Label>
             <Input
               id="copy-name"
-              placeholder="Ex: Landing Page - Produto X"
+              placeholder={copyTypePlaceholders[selectedType]}
               value={copyName}
               onChange={(e) => setCopyName(e.target.value)}
               onKeyDown={(e) => {
