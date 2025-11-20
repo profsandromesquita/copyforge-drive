@@ -25,21 +25,15 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Autorização necessária');
+    // Criar cliente admin com service role
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Configuração do backend ausente');
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const {
       copyId,
@@ -49,27 +43,18 @@ serve(async (req) => {
       userInstruction,
       previousCode,
       conversationHistory,
+      workspaceId,
+      userId,
     } = await req.json();
 
-    if (!copyId || !sessions) {
-      throw new Error('Dados inválidos');
-    }
-
-    // Buscar workspace do usuário
-    const { data: workspaceMember } = await supabaseClient
-      .from('workspace_members')
-      .select('workspace_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!workspaceMember) {
-      throw new Error('Workspace não encontrado');
+    if (!copyId || !sessions || !workspaceId || !userId) {
+      throw new Error('Dados inválidos: copyId, sessions, workspaceId e userId são obrigatórios');
     }
 
     // Verificar créditos
-    const { data: creditCheck, error: creditError } = await supabaseClient
+    const { data: creditCheck, error: creditError } = await supabaseAdmin
       .rpc('check_workspace_credits', {
-        p_workspace_id: workspaceMember.workspace_id,
+        p_workspace_id: workspaceId,
         estimated_tokens: 5000,
         p_model_name: 'openai/gpt-5'
       });
@@ -128,32 +113,35 @@ serve(async (req) => {
     const usage = aiData.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
     
     // Criar registro de geração
-    const { data: generation } = await supabaseClient
+    const { data: generation } = await supabaseAdmin
       .from('ai_generation_history')
       .insert({
         copy_id: copyId,
-        workspace_id: workspaceMember.workspace_id,
-        created_by: user.id,
+        workspace_id: workspaceId,
+        created_by: userId,
         generation_type: 'web_page',
         model_used: 'openai/gpt-5',
+        generation_category: 'web_page',
         prompt: userInstruction,
         sessions: { html, css },
         input_tokens: usage.prompt_tokens,
         output_tokens: usage.completion_tokens,
         total_tokens: usage.total_tokens,
+        system_instruction: { system_prompt: systemPrompt },
       })
       .select()
       .single();
 
+    // Debitar créditos
     if (generation) {
-      await supabaseClient.rpc('debit_workspace_credits', {
-        p_workspace_id: workspaceMember.workspace_id,
+      await supabaseAdmin.rpc('debit_workspace_credits', {
+        p_workspace_id: workspaceId,
         p_model_name: 'openai/gpt-5',
         tokens_used: usage.total_tokens,
         p_input_tokens: usage.prompt_tokens,
         p_output_tokens: usage.completion_tokens,
         generation_id: generation.id,
-        p_user_id: user.id,
+        p_user_id: userId,
       });
     }
 
