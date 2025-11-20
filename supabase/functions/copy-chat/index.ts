@@ -72,6 +72,17 @@ serve(async (req) => {
       );
     }
 
+    // Extrair contexto de seleção se existir e limpar da mensagem visível
+    const selectionMarker = '**CONTEXTO DOS ELEMENTOS SELECIONADOS:**';
+    let cleanMessage = message;
+    let selectionContext = '';
+    
+    if (message.includes(selectionMarker)) {
+      const parts = message.split(selectionMarker);
+      cleanMessage = parts[0].trim(); // Mensagem sem o contexto
+      selectionContext = selectionMarker + parts[1]; // Contexto completo
+    }
+
     // Buscar dados da copy
     const { data: copy, error: copyError } = await supabase
       .from('copies')
@@ -218,7 +229,7 @@ serve(async (req) => {
         workspace_id: workspaceId,
         user_id: userId,
         role: 'user',
-        content: message,
+        content: cleanMessage, // Salvar apenas a mensagem sem o contexto de seleção
       });
 
     if (userMsgError) {
