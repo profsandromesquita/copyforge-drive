@@ -30,7 +30,13 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
 
   const audienceSegments = (activeProject?.audience_segments as AudienceSegment[]) || [];
   const offers = (activeProject?.offers as Offer[]) || [];
-  const methodology = activeProject?.methodology as any;
+  
+  // Metodologia pode ser array ou objeto singular, normalizar para array
+  const methodologies = activeProject?.methodology 
+    ? (Array.isArray(activeProject.methodology) 
+        ? activeProject.methodology 
+        : [activeProject.methodology])
+    : [];
 
   // Debug: verificar IDs dos segments
   useEffect(() => {
@@ -220,10 +226,16 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
-                  {methodology && (
-                    <SelectItem value={methodology.id || 'methodology'}>
-                      {methodology.name}
-                    </SelectItem>
+                  {methodologies.length === 0 ? (
+                    <div className="p-2 text-xs text-muted-foreground">
+                      Nenhuma metodologia configurada
+                    </div>
+                  ) : (
+                    methodologies.map((methodology: any) => (
+                      <SelectItem key={methodology.id} value={methodology.id}>
+                        {methodology.name}
+                      </SelectItem>
+                    ))
                   )}
                 </SelectContent>
               </Select>
