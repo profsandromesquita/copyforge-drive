@@ -105,16 +105,6 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
 
   return (
     <>
-      {/* Floating toggle button - always visible */}
-      <Button
-        variant="default"
-        size="icon"
-        onClick={onToggle}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
-      >
-        <Sparkle size={24} weight="fill" />
-      </Button>
-
       {/* Sidebar with slide animation */}
       {isOpen && (
         <aside className="w-[416px] border-l bg-background flex-shrink-0">
