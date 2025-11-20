@@ -56,7 +56,7 @@ serve(async (req) => {
       .rpc('check_workspace_credits', {
         p_workspace_id: workspaceId,
         estimated_tokens: 5000,
-        p_model_name: 'openai/gpt-5'
+        p_model_name: 'google/gemini-2.5-flash'
       });
 
     if (creditError || !creditCheck?.has_sufficient_credits) {
@@ -100,7 +100,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5',
+        model: 'google/gemini-2.5-flash',
         messages,
         max_completion_tokens: 4000,
       }),
@@ -118,12 +118,18 @@ serve(async (req) => {
     const aiData = await response.json();
     const aiResponse = aiData.choices[0].message.content;
 
+    console.log('AI Response length:', aiResponse?.length || 0);
+    console.log('AI Response preview:', aiResponse?.substring(0, 200));
+
     // Extrair HTML e CSS da resposta
     const { html, css, message } = extractCode(aiResponse);
     
+    console.log('Extracted HTML length:', html?.length || 0);
+    console.log('Extracted CSS length:', css?.length || 0);
+    
     // Validar se HTML e CSS foram extraídos
     if (!html || !css || html.trim() === '' || css.trim() === '') {
-      console.error('IA não retornou HTML/CSS válido:', aiResponse.substring(0, 500));
+      console.error('IA não retornou HTML/CSS válido. Full response:', aiResponse);
       return new Response(
         JSON.stringify({ error: 'AI did not return valid HTML/CSS. Please try again.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -141,7 +147,7 @@ serve(async (req) => {
         workspace_id: workspaceId,
         created_by: userId,
         generation_type: 'web_page',
-        model_used: 'openai/gpt-5',
+        model_used: 'google/gemini-2.5-flash',
         generation_category: 'web_page',
         prompt: userInstruction,
         sessions: { html, css },
@@ -157,7 +163,7 @@ serve(async (req) => {
     if (generation) {
       await supabaseAdmin.rpc('debit_workspace_credits', {
         p_workspace_id: workspaceId,
-        p_model_name: 'openai/gpt-5',
+        p_model_name: 'google/gemini-2.5-flash',
         tokens_used: usage.total_tokens,
         p_input_tokens: usage.prompt_tokens,
         p_output_tokens: usage.completion_tokens,
@@ -194,156 +200,170 @@ function buildCopyContext(title: string, type: string | null, sessions: Session[
 }
 
 function buildSystemPrompt(copyContext: string, previousCode: any): string {
-  let prompt = `Você é um especialista em desenvolvimento web focado em criar landing pages modernas e de alta conversão.
+  let prompt = `Você é um especialista em desenvolvimento web. Crie landing pages modernas, responsivas e otimizadas para conversão.
 
 CONTEXTO DA COPY:
 ${copyContext}
 
-SUA RESPONSABILIDADE:
-Gerar código HTML e CSS profissional, responsivo e otimizado para conversão de visitantes em leads/clientes.
+OBJETIVO:
+Gerar código HTML5 e CSS3 puro, profissional e funcional.
 
-DIRETRIZES DE DESIGN OBRIGATÓRIAS:
+REQUISITOS ESSENCIAIS:
 
-1. **Hero Section Impactante**:
-   - Headline clara e persuasiva
-   - Subheadline complementar
-   - CTA principal destacado
-   - Imagem/visual de impacto
-   - Valor único evidente
+1. **Hero Section**: Headline impactante, CTA destacado, imagem/visual atraente
+2. **Layout Responsivo**: Mobile-first, funciona perfeitamente em todos os dispositivos
+3. **Tipografia**: Google Fonts, hierarquia clara (H1: 48-64px, H2: 36-48px, Body: 16-18px)
+4. **Cores**: Paleta harmoniosa (primária, secundária, ação, neutras)
+5. **Espaçamento**: Seções bem espaçadas (80-120px padding vertical)
+6. **CTAs**: Botões com alto contraste, textos orientados à ação
+7. **Elementos Visuais**: 
+   - Placeholders: https://placehold.co/WIDTHxHEIGHT/BGCOLOR/TEXTCOLOR?text=DESCRIPTION
+   - Ícones: Font Awesome via CDN
+8. **Acessibilidade**: Semântica HTML5, alt texts, contraste adequado
 
-2. **Estrutura de Conversão**:
-   - Above the fold otimizado
-   - Hierarquia visual clara
-   - Flow de leitura natural (Z-pattern ou F-pattern)
-   - CTAs estrategicamente posicionados
-   - Seções com propósito definido
+ESTRUTURA DE RESPOSTA OBRIGATÓRIA:
+Retorne APENAS os blocos de código, sem explicações adicionais fora dos blocos:
 
-3. **Design Responsivo Mobile-First**:
-   - Adaptação fluida para mobile, tablet e desktop
-   - Touch-friendly (botões > 44px)
-   - Imagens otimizadas para cada viewport
-   - Tipografia escalável
-
-4. **Tipografia Profissional**:
-   - Google Fonts (Poppins, Inter, Montserrat, etc.)
-   - Hierarquia: H1 (48-64px) > H2 (36-48px) > H3 (24-32px) > Body (16-18px)
-   - Line-height: 1.5-1.8 para legibilidade
-   - Contraste adequado (WCAG AA mínimo)
-
-5. **Paleta de Cores Harmoniosa**:
-   - Cor primária (brand)
-   - Cor secundária (complementar)
-   - Cor de ação (CTAs)
-   - Cores neutras (backgrounds, textos)
-   - Máximo 4-5 cores principais
-
-6. **Espaçamentos e Layout**:
-   - Breathing room generoso (padding: 80-120px vertical nas seções)
-   - Grid system consistente
-   - Container max-width: 1200-1400px
-   - Margens laterais adequadas
-
-7. **CTAs Estratégicos**:
-   - Botões com contraste forte
-   - Textos orientados à ação ("Comece Agora", "Garantir Minha Vaga")
-   - Hover states atrativos
-   - Múltiplos CTAs ao longo da página
-
-8. **Elementos de Conversão**:
-   - Provas sociais (depoimentos, logos, números)
-   - Benefícios claros (features → benefits)
-   - Urgência/escassez quando apropriado
-   - Garantias e eliminação de objeções
-   - Formulários simples e otimizados
-
-9. **Recursos Visuais**:
-   - Use placeholders descritivos: https://placehold.co/WIDTHxHEIGHT/BGCOLOR/TEXTCOLOR?text=DESCRIPTION
-   - Ícones: Font Awesome ou Heroicons via CDN
-   - Imagens de alta qualidade (sugeridas via placeholders)
-
-10. **Performance e Acessibilidade**:
-    - Semântica HTML5 correta (<header>, <main>, <section>, <article>)
-    - Alt text descritivos em imagens
-    - Contrast ratio adequado
-    - CSS otimizado e organizado
-
-ESTRUTURA DE RESPOSTA:
-Sempre retorne sua resposta neste formato EXATO:
-
-MENSAGEM:
-[Breve explicação do que foi criado/modificado]
-
-HTML:
 \`\`\`html
-[código HTML completo]
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Título da Página</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Seu código HTML completo aqui -->
+</body>
+</html>
 \`\`\`
 
-CSS:
 \`\`\`css
-[código CSS completo]
+/* Seu código CSS completo aqui */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+}
+/* ... resto do CSS */
 \`\`\`
 
-REGRAS IMPORTANTES:
-- Use apenas HTML5 e CSS3 puro (sem frameworks)
-- CSS inline não é permitido, use classes
-- Seja criativo mas profissional
-- Priorize legibilidade e manutenibilidade`;
+REGRAS:
+- Apenas HTML5 e CSS3 puro (sem frameworks como Bootstrap ou Tailwind)
+- CSS em arquivo separado, sem inline styles
+- Código limpo, organizado e bem comentado
+- Totalmente funcional e pronto para uso`;
 
   if (previousCode?.html) {
-    prompt += `\n\nCÓDIGO ANTERIOR:
-HTML:
+    prompt += `\n\nCÓDIGO ANTERIOR PARA EDIÇÃO:
+\`\`\`html
 ${previousCode.html}
+\`\`\`
 
-CSS:
+\`\`\`css
 ${previousCode.css}
+\`\`\`
 
-Faça as modificações solicitadas mantendo o que já está bom e melhorando onde necessário.`;
+Mantenha o que está bom e aplique as modificações solicitadas pelo usuário.`;
   }
 
   return prompt;
 }
 
 function extractCode(aiResponse: string): { html: string; css: string; message: string } {
-  let message = '';
+  let message = 'Página gerada com sucesso!';
   let html = '';
   let css = '';
 
-  // Extrair mensagem
-  const messageMatch = aiResponse.match(/MENSAGEM:\s*\n([\s\S]*?)(?=HTML:|CSS:|$)/);
+  if (!aiResponse) {
+    console.error('extractCode: aiResponse is empty or undefined');
+    return { html, css, message };
+  }
+
+  // Try to extract message if present
+  const messageMatch = aiResponse.match(/MENSAGEM:\s*\n([\s\S]*?)(?=HTML:|CSS:|```|$)/);
   if (messageMatch) {
     message = messageMatch[1].trim();
   }
 
-  // Extrair HTML
-  const htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)\n```/);
+  // Extract HTML - try multiple patterns
+  // Pattern 1: ```html ... ```
+  let htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)\n```/);
   if (htmlMatch) {
     html = htmlMatch[1].trim();
   }
+  
+  // Pattern 2: ```html (without newline before closing)
+  if (!html) {
+    htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)```/);
+    if (htmlMatch) {
+      html = htmlMatch[1].trim();
+    }
+  }
 
-  // Extrair CSS
-  const cssMatch = aiResponse.match(/```css\s*\n([\s\S]*?)\n```/);
+  // Pattern 3: Any code block starting with <!DOCTYPE
+  if (!html) {
+    htmlMatch = aiResponse.match(/```(?:html)?\s*\n?(<!DOCTYPE[\s\S]*?)```/);
+    if (htmlMatch) {
+      html = htmlMatch[1].trim();
+    }
+  }
+
+  // Pattern 4: Find <!DOCTYPE without code block
+  if (!html) {
+    htmlMatch = aiResponse.match(/(<!DOCTYPE html>[\s\S]*?<\/html>)/);
+    if (htmlMatch) {
+      html = htmlMatch[1].trim();
+    }
+  }
+
+  // Extract CSS - try multiple patterns
+  // Pattern 1: ```css ... ```
+  let cssMatch = aiResponse.match(/```css\s*\n([\s\S]*?)\n```/);
   if (cssMatch) {
     css = cssMatch[1].trim();
   }
 
-  // Fallback: se não encontrou no formato esperado, tentar extrair de qualquer código
-  if (!html) {
-    const anyHtmlMatch = aiResponse.match(/```(?:html)?\s*\n(<!DOCTYPE html>[\s\S]*?)\n```/);
-    if (anyHtmlMatch) {
-      html = anyHtmlMatch[1].trim();
-    }
-  }
-
+  // Pattern 2: ```css (without newline before closing)
   if (!css) {
-    const anyCssMatch = aiResponse.match(/```(?:css)?\s*\n([^`]*?{[^`]*?}[^`]*?)\n```/);
-    if (anyCssMatch) {
-      css = anyCssMatch[1].trim();
+    cssMatch = aiResponse.match(/```css\s*\n([\s\S]*?)```/);
+    if (cssMatch) {
+      css = cssMatch[1].trim();
     }
   }
 
-  if (!message) {
-    message = 'Página gerada com sucesso!';
+  // Pattern 3: Any code block with CSS selectors
+  if (!css) {
+    cssMatch = aiResponse.match(/```(?:css)?\s*\n?([^`]*?{[^`]*?}[^`]*?)```/);
+    if (cssMatch) {
+      css = cssMatch[1].trim();
+    }
   }
+
+  // Pattern 4: Find <style> tag content
+  if (!css) {
+    cssMatch = aiResponse.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+    if (cssMatch) {
+      css = cssMatch[1].trim();
+    }
+  }
+
+  console.log('extractCode results:', {
+    foundMessage: !!message,
+    htmlLength: html.length,
+    cssLength: css.length,
+    htmlPreview: html.substring(0, 100),
+    cssPreview: css.substring(0, 100)
+  });
 
   return { html, css, message };
 }
