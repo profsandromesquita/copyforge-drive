@@ -1,6 +1,7 @@
 import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isValidVariable } from '@/lib/context-variables';
 
 interface VariableInputProps {
   value: string;
@@ -33,9 +34,17 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
       const variableRegex = /#[a-zA-Z_áéíóúàèìòùâêîôûãõç]+/g;
       let html = text;
       
-      // Substituir variáveis por spans com data-variable
+      // Substituir apenas variáveis VÁLIDAS por spans com data-variable
       html = html.replace(variableRegex, (match) => {
-        return `<span class="variable-chip" contenteditable="false" data-variable="${match}">${match}<span class="remove-btn">×</span></span>`;
+        const varName = match.substring(1); // Remove o #
+        
+        // Só transforma em chip se for uma variável válida
+        if (isValidVariable(varName)) {
+          return `<span class="variable-chip" contenteditable="false" data-variable="${match}">${match}<span class="remove-btn">×</span></span>`;
+        }
+        
+        // Se não for válida, mantém como texto normal
+        return match;
       });
       
       // Preservar quebras de linha
