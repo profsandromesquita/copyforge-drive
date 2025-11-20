@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Send, Trash2, Loader2, Check, X, MousePointer, History, Layers, Square, Hash, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { VariableInput } from './VariableInput';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -412,47 +412,35 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     });
   }, [selectedItems, updateBlock, sessions, clearSelection, toast]);
 
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    const cursorPos = e.target.selectionStart;
-    
+  const handleMessageChange = (value: string) => {
     setMessage(value);
-    
-    // Detectar se está digitando após #
-    const textBeforeCursor = value.substring(0, cursorPos);
-    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
-    
-    if (lastHashIndex !== -1) {
-      const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
-      // Se não há espaço após #, mostrar sugestões
-      if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
-        setVariableSearch(textAfterHash);
-        setShowVariableSuggestions(true);
-        return;
-      }
-    }
-    
-    setShowVariableSuggestions(false);
+  };
+
+  const handleVariableSearch = (search: string, show: boolean) => {
+    setVariableSearch(search);
+    setShowVariableSuggestions(show);
   };
 
   const insertVariable = (variable: string) => {
     if (!textareaRef.current) return;
     
-    const cursorPos = textareaRef.current.selectionStart;
-    const textBeforeCursor = message.substring(0, cursorPos);
-    const textAfterCursor = message.substring(cursorPos);
-    
     // Encontrar onde começa o #
-    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
-    const newText = 
-      textBeforeCursor.substring(0, lastHashIndex) + 
-      variable + ' ' + 
-      textAfterCursor;
+    const lastHashIndex = message.lastIndexOf('#');
     
-    setMessage(newText);
+    if (lastHashIndex === -1) {
+      // Se não há #, apenas adicionar a variável no final
+      setMessage(message + variable + ' ');
+    } else {
+      // Substituir de # até o cursor pela variável
+      const textBeforeHash = message.substring(0, lastHashIndex);
+      const textAfterCursor = message.substring(message.length);
+      const newText = textBeforeHash + variable + ' ' + textAfterCursor;
+      setMessage(newText);
+    }
+    
     setShowVariableSuggestions(false);
     
-    // Refocar no textarea
+    // Refocar no input
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 0);
@@ -662,13 +650,14 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
             {/* Input Container */}
             <div className="p-4">
               <div className="relative">
-                <Textarea
+                <VariableInput
                   ref={textareaRef}
                   value={message}
                   onChange={handleMessageChange}
                   onKeyDown={handleKeyDown}
+                  onVariableSearch={handleVariableSearch}
                   placeholder="Digite sua mensagem... (Use # para variáveis contextuais)"
-                  className="min-h-[100px] resize-none pr-32 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/60"
+                  className="pr-32 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                   disabled={isLoading}
                 />
 
