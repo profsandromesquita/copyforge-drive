@@ -34,10 +34,10 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     .find(b => b.id === selectedBlockId);
 
   const sidebarContent = (
-    <div className="h-full flex flex-col relative bg-muted/90">
+    <div className="h-full flex flex-col relative bg-slate-950 dark:bg-slate-950">
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 bg-muted/90">
+          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 bg-slate-900 border-slate-800">
             <TabsTrigger value="ai" className="gap-2">
               <Sparkle size={16} weight="fill" />
               Copy IA
@@ -107,7 +107,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     <>
       {/* Sidebar with slide animation */}
       {isOpen && (
-        <aside className="w-[416px] border-l bg-muted/90 flex-shrink-0">
+        <aside className="w-[416px] border-l bg-slate-950 dark:bg-slate-950 border-slate-800 flex-shrink-0">
           {sidebarContent}
         </aside>
       )}
