@@ -181,42 +181,54 @@ function inferBlockType(content: string, context: string): ParsedContent['type']
   // Verificar características do conteúdo
   const lines = content.split('\n').filter(l => l.trim());
   
-  // Headlines são geralmente curtas (< 150 chars) e uma linha
+  // Headlines são geralmente curtas (< 150 chars), uma linha, e podem ter aspas
   if (lines.length === 1 && content.length < 150) {
+    // Se tem aspas, é definitivamente headline
+    if (content.includes('"') || content.includes('"') || content.includes('"')) {
+      return 'headline';
+    }
+    // Se é curto e enfático, também é headline
+    if (content.includes('?') || content.includes('!')) {
+      return 'headline';
+    }
     return 'headline';
+  }
+
+  // Detectar listas: items começando com -, •, *, ou números
+  const listPatterns = /^[\s]*[-•*\d+.]/;
+  const hasListMarkers = lines.some(line => listPatterns.test(line));
+  if (hasListMarkers && lines.length > 1) {
+    return 'list';
   }
 
   // Anúncios geralmente têm múltiplas linhas e campos estruturados
   if (
     lowerContent.includes('título:') || 
     lowerContent.includes('descrição:') ||
-    lowerContent.includes('cta:')
+    lowerContent.includes('cta:') ||
+    lowerContent.includes('chamada:')
   ) {
     return 'ad';
   }
 
-  // Listas têm múltiplos items curtos
-  if (lines.length > 2 && lines.every(l => l.length < 100)) {
-    return 'list';
-  }
-
-  // Texto longo
-  if (content.length > 200) {
+  // Texto longo (múltiplos parágrafos)
+  if (lines.length > 3 || content.length > 200) {
     return 'text';
   }
 
+  // Fallback para texto padrão
   return 'text';
 }
 
 export function cleanContent(rawContent: string): string {
   return rawContent
-    .replace(/^\*\*/g, '')
-    .replace(/\*\*$/g, '')
-    .replace(/^["']|["']$/g, '')
+    .replace(/^\*\*(.+?)\*\*$/g, '$1') // Remove ** de títulos
+    .replace(/^["'"'](.+?)["'"']$/g, '$1') // Remove aspas externas (todos os tipos)
+    .replace(/^\s+|\s+$/g, '') // Trim espaços
     .trim();
 }
 
-// Função para converter blocos parseados em estrutura Session[]
+// Função para converter blocos parseados em estrutura Session[] otimizada
 export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   if (blocks.length === 0) return [];
 
@@ -224,15 +236,72 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   const session = {
     id: `session-${Date.now()}`,
     title: 'Conteúdo Gerado pela IA',
-    blocks: blocks.map((block, index) => ({
-      id: `block-${Date.now()}-${index}`,
-      type: block.type === 'headline' ? 'text' as const : 
-            block.type === 'list' ? 'list' as const : 'text' as const,
-      content: block.content,
-      config: block.type === 'list' 
-        ? { listStyle: 'bullet' }
-        : { fontSize: 16, fontWeight: block.type === 'headline' ? 'bold' : 'normal' }
-    }))
+    blocks: blocks.map((block, index) => {
+      const baseBlock = {
+        id: `block-${Date.now()}-${index}`,
+      };
+
+      // Configurar bloco baseado no tipo inferido
+      switch (block.type) {
+        case 'headline':
+          return {
+            ...baseBlock,
+            type: 'headline' as const,
+            content: cleanContent(block.content),
+            config: {
+              fontSize: 'large',
+              fontWeight: 'bold',
+              textAlign: 'left',
+            }
+          };
+
+        case 'ad':
+          // Anúncios podem ter múltiplas linhas estruturadas
+          return {
+            ...baseBlock,
+            type: 'text' as const,
+            content: block.content,
+            config: {
+              fontSize: 'medium',
+              fontWeight: 'normal',
+              textAlign: 'left',
+            }
+          };
+
+        case 'list':
+          // Tentar dividir conteúdo em items de lista
+          const listItems = block.content
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.replace(/^[-•*]\s*/, '').trim());
+
+          return {
+            ...baseBlock,
+            type: 'list' as const,
+            content: listItems.length > 0 ? listItems : [block.content],
+            config: {
+              listStyle: 'bullets',
+              showListIcons: true,
+              listIconColor: '#ff6b35',
+              textAlign: 'left',
+            }
+          };
+
+        case 'text':
+        default:
+          // Texto padrão
+          return {
+            ...baseBlock,
+            type: 'text' as const,
+            content: block.content,
+            config: {
+              fontSize: 'medium',
+              fontWeight: 'normal',
+              textAlign: 'left',
+            }
+          };
+      }
+    })
   };
 
   return [session];

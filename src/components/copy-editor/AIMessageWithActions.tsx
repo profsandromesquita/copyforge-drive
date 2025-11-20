@@ -56,10 +56,41 @@ export function AIMessageWithActions({
     );
   }
 
-  // Gerar resumo do conteúdo gerado
-  const contentSummary = parsed.blocks.length === 1
-    ? parsed.blocks[0].title || 'Conteúdo gerado'
-    : `${parsed.blocks.length} ${parsed.blocks.length === 1 ? 'item gerado' : 'itens gerados'}`;
+  // Gerar resumo detalhado do conteúdo gerado
+  const getContentSummary = () => {
+    if (parsed.blocks.length === 1) {
+      const block = parsed.blocks[0];
+      const preview = block.content.substring(0, 60) + (block.content.length > 60 ? '...' : '');
+      return {
+        title: block.title || 'Conteúdo gerado',
+        preview,
+        count: '1 item'
+      };
+    }
+    
+    // Múltiplos blocos - mostrar tipos
+    const types = parsed.blocks.map(b => {
+      switch(b.type) {
+        case 'headline': return 'Headline';
+        case 'list': return 'Lista';
+        case 'ad': return 'Anúncio';
+        default: return 'Texto';
+      }
+    });
+    
+    const uniqueTypes = [...new Set(types)];
+    const typesSummary = uniqueTypes.length === 1 
+      ? `${parsed.blocks.length} ${uniqueTypes[0]}s`
+      : `${parsed.blocks.length} itens`;
+    
+    return {
+      title: typesSummary,
+      preview: parsed.blocks[0].content.substring(0, 60) + '...',
+      count: `${parsed.blocks.length} ${parsed.blocks.length === 1 ? 'item' : 'itens'}`
+    };
+  };
+
+  const summary = getContentSummary();
 
   const handleAdd = async () => {
     await onAddContent(generatedSessions);
@@ -85,23 +116,31 @@ export function AIMessageWithActions({
 
         {/* Card clicável com resumo do conteúdo */}
         <Card 
-          className="p-4 cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
+          className="p-5 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent group"
           onClick={() => setShowModal(true)}
         >
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Sparkles className="h-5 w-5" />
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md group-hover:scale-110 transition-transform">
+              <Sparkles className="h-6 w-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm mb-1">
-                {hasSelection ? 'Conteúdo Editado' : 'Conteúdo Gerado'}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {contentSummary}
+              <div className="flex items-center gap-2 mb-2">
+                <h4 className="font-bold text-base text-primary">
+                  {hasSelection ? '✏️ Conteúdo Editado' : '✨ Novo Conteúdo'}
+                </h4>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
+                  {summary.count}
+                </span>
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">
+                {summary.title}
               </p>
-              <div className="flex items-center gap-1 mt-2 text-xs text-primary">
-                <span>Clique para visualizar e adicionar</span>
-                <ChevronRight className="h-3 w-3" />
+              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                {summary.preview}
+              </p>
+              <div className="flex items-center gap-2 text-xs font-medium text-primary group-hover:gap-3 transition-all">
+                <span>Clique para visualizar e aplicar</span>
+                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </div>
