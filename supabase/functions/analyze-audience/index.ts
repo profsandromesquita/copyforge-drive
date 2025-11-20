@@ -36,12 +36,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
-    // Criar cliente com o token do usuário para pegar o user_id
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    // Criar cliente para autenticação do usuário
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    const token = authHeader.replace('Bearer ', '');
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
       console.error('Erro ao obter usuário:', userError);
