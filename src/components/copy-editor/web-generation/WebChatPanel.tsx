@@ -16,6 +16,8 @@ interface WebChatPanelProps {
   isGenerating: boolean;
   setIsGenerating: (value: boolean) => void;
   generatedCode: { html: string; css: string } | null;
+  workspaceId: string | null;
+  userId: string | null;
 }
 
 interface Message {
@@ -40,6 +42,8 @@ export function WebChatPanel({
   isGenerating,
   setIsGenerating,
   generatedCode,
+  workspaceId,
+  userId,
 }: WebChatPanelProps) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,6 +67,15 @@ export function WebChatPanel({
   const sendMessage = async (userMessage: string) => {
     if (!userMessage.trim() || !copyId || isGenerating) return;
 
+    if (!workspaceId || !userId) {
+      toast({
+        title: 'Erro',
+        description: 'Sua sessão expirou. Por favor, recarregue a página.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const newUserMessage: Message = { role: 'user', content: userMessage };
     setMessages((prev) => [...prev, newUserMessage]);
     setMessage('');
@@ -78,10 +91,20 @@ export function WebChatPanel({
           userInstruction: userMessage,
           previousCode: generatedCode,
           conversationHistory: messages,
+          workspaceId,
+          userId,
         },
       });
 
       if (error) throw error;
+
+      if (data?.error) {
+        let errorMessage = 'Erro ao gerar a página. Tente novamente.';
+        if (data.error === 'insufficient_credits') {
+          errorMessage = 'Créditos insuficientes. Adicione créditos para continuar.';
+        }
+        throw new Error(errorMessage);
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -96,10 +119,12 @@ export function WebChatPanel({
       console.error('Erro ao gerar página:', error);
       
       let errorMessage = 'Erro ao gerar a página. Tente novamente.';
-      if (error.message?.includes('429')) {
-        errorMessage = 'Limite de requisições atingido. Aguarde alguns instantes.';
-      } else if (error.message?.includes('402')) {
+      if (error.message?.includes('insufficient_credits') || error.message?.includes('402')) {
         errorMessage = 'Créditos insuficientes. Adicione créditos para continuar.';
+      } else if (error.message?.includes('Usuário não autenticado') || error.message?.includes('401')) {
+        errorMessage = 'Sua sessão expirou. Por favor, recarregue a página e faça login novamente.';
+      } else if (error.message?.includes('429')) {
+        errorMessage = 'Limite de requisições atingido. Aguarde alguns instantes.';
       }
       
       toast({
