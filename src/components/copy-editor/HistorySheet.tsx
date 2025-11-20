@@ -3,7 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Wand2, Eye } from 'lucide-react';
+import { Loader2, Wand2, Eye, ArrowLeft, Plus } from 'lucide-react';
 import { Copy as CopyIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,17 +40,92 @@ export function HistorySheet({
 }: HistorySheetProps) {
   const [showPromptDialog, setShowPromptDialog] = useState(false);
   const [selectedPromptItem, setSelectedPromptItem] = useState<HistoryItem | null>(null);
+  const [viewingCopy, setViewingCopy] = useState<HistoryItem | null>(null);
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Sheet open={open} onOpenChange={(isOpen) => {
+        onOpenChange(isOpen);
+        if (!isOpen) setViewingCopy(null);
+      }}>
         <SheetContent side="right" className="w-full sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>Histórico de Gerações IA</SheetTitle>
+            <div className="flex items-center gap-2">
+              {viewingCopy && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewingCopy(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              <SheetTitle>
+                {viewingCopy ? 'Visualizar Copy' : 'Histórico de Gerações IA'}
+              </SheetTitle>
+            </div>
           </SheetHeader>
           
           <ScrollArea className="h-[calc(100vh-8rem)] mt-4">
-            {loadingHistory ? (
+            {viewingCopy ? (
+              <div className="space-y-4 pr-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(viewingCopy.created_at), "PPP 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {viewingCopy.generation_type === 'optimize' ? (
+                        <Badge variant="secondary" className="text-xs">Otimização</Badge>
+                      ) : viewingCopy.generation_type === 'variation' ? (
+                        <Badge variant="secondary" className="text-xs">Variação</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">Criação</Badge>
+                      )}
+                      {viewingCopy.copy_type && (
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {viewingCopy.copy_type.replace('_', ' ')}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      onHistoryItemClick(viewingCopy);
+                      setViewingCopy(null);
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Adicionar a Copy
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Prompt:</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {viewingCopy.prompt}
+                  </p>
+                </div>
+
+                <div className="space-y-3 border-t pt-4">
+                  <h4 className="text-sm font-semibold">Conteúdo Gerado:</h4>
+                  {viewingCopy.sessions && Array.isArray(viewingCopy.sessions) && viewingCopy.sessions.map((session: any, idx: number) => (
+                    <div key={idx} className="space-y-2 p-3 rounded-lg border bg-card">
+                      <p className="text-xs font-medium text-muted-foreground">Sessão {idx + 1}</p>
+                      {session.blocks && Array.isArray(session.blocks) && session.blocks.map((block: any, blockIdx: number) => (
+                        <div key={blockIdx} className="text-sm space-y-1">
+                          {block.content && (
+                            <p className="leading-relaxed">{block.content}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : loadingHistory ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
@@ -104,7 +179,7 @@ export function HistorySheet({
 
                       {/* Prompt - clicável para visualizar */}
                       <button
-                        onClick={() => onHistoryItemClick(item)}
+                        onClick={() => setViewingCopy(item)}
                         className="w-full text-left"
                       >
                         <p className="text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">
@@ -127,7 +202,7 @@ export function HistorySheet({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onHistoryItemClick(item)}
+                          onClick={() => setViewingCopy(item)}
                           className="text-xs h-7"
                         >
                           Visualizar Copy
