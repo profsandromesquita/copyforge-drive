@@ -99,60 +99,64 @@ ${html}
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden min-h-0">
       {/* Toolbar */}
-      <div className="p-4 border-b border-border flex items-center justify-between gap-4">
+      <div className="p-2 sm:p-4 border-b border-border flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
           <Tabs value={device} onValueChange={(v) => setDevice(v as DeviceType)}>
-            <TabsList>
-              <TabsTrigger value="desktop" className="gap-2">
-                <Desktop size={16} />
-                Desktop
+            <TabsList className="h-8">
+              <TabsTrigger value="desktop" className="gap-1 h-8 text-xs px-2">
+                <Desktop size={14} />
+                <span className="hidden sm:inline">Desktop</span>
               </TabsTrigger>
-              <TabsTrigger value="tablet" className="gap-2">
-                <DeviceTablet size={16} />
-                Tablet
+              <TabsTrigger value="tablet" className="gap-1 h-8 text-xs px-2">
+                <DeviceTablet size={14} />
+                <span className="hidden sm:inline">Tablet</span>
               </TabsTrigger>
-              <TabsTrigger value="mobile" className="gap-2">
-                <DeviceMobile size={16} />
-                Mobile
+              <TabsTrigger value="mobile" className="gap-1 h-8 text-xs px-2">
+                <DeviceMobile size={14} />
+                <span className="hidden sm:inline">Mobile</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowCode(!showCode)}
             disabled={!generatedCode}
+            className="gap-1 h-8 text-xs px-2"
           >
-            <Code size={16} className="mr-2" />
-            {showCode ? 'Preview' : 'Código'}
+            <Code size={14} />
+            <span className="hidden sm:inline">{showCode ? 'Preview' : 'Código'}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleCopyCode}
             disabled={!generatedCode}
+            className="gap-1 h-8 text-xs px-2"
           >
-            <Code size={16} className="mr-2" />
-            Copiar
+            <Code size={14} />
+            <span className="hidden sm:inline">Copiar</span>
           </Button>
           <Button
+            variant="default"
             size="sm"
             onClick={handleDownload}
             disabled={!generatedCode}
+            className="gap-1 h-8 text-xs px-2"
           >
-            <Download size={16} className="mr-2" />
-            Baixar ZIP
+            <Download size={14} />
+            <span className="hidden sm:inline">Baixar</span>
           </Button>
         </div>
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 overflow-auto p-4 bg-background/50">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 bg-background/50 min-h-0">
         {isGenerating && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-4">
@@ -184,14 +188,15 @@ ${html}
         )}
 
         {!isGenerating && generatedCode && !showCode && (
-          <div className="flex justify-center">
+          <div className="flex justify-center h-full">
             <div
+              className="h-full overflow-auto"
               style={{
                 width: getDeviceWidth(),
-                minHeight: '100%',
+                maxWidth: '100%',
+                maxHeight: '100%',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
-                overflow: 'hidden',
                 backgroundColor: 'white',
               }}
             >
@@ -199,7 +204,8 @@ ${html}
                 srcDoc={createFullHTML(generatedCode.html, generatedCode.css)}
                 style={{
                   width: '100%',
-                  minHeight: '600px',
+                  height: '100%',
+                  minHeight: '400px',
                   border: 'none',
                 }}
                 title="Preview"

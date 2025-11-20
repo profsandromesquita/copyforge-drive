@@ -230,3 +230,25 @@ All colors MUST be HSL.
     @apply transition-transform duration-200 hover:scale-105;
   }
 }
+
+/* Garantir quebra de palavra em modais */
+[role="dialog"] .whitespace-pre-wrap {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+[role="dialog"] [class*="max-w"] {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.break-words {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}

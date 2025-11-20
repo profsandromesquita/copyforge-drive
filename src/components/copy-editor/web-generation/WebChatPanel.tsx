@@ -48,6 +48,7 @@ export function WebChatPanel({
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [hasScrollableContent, setHasScrollableContent] = useState(false);
   const { toast } = useToast();
 
   const scrollToBottom = () => {
@@ -62,6 +63,20 @@ export function WebChatPanel({
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    const checkScroll = () => {
+      const viewport = scrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        const hasScroll = viewport.scrollHeight > viewport.clientHeight;
+        setHasScrollableContent(hasScroll);
+      }
+    };
+    
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
   }, [messages]);
 
   const sendMessage = async (userMessage: string) => {
@@ -219,10 +234,11 @@ export function WebChatPanel({
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden min-h-0">
       {/* Histórico de mensagens */}
-      <ScrollArea className="flex-1 p-4">
-        <div ref={scrollRef} className="space-y-4">
+      <div className="relative flex-1 min-h-0">
+        <ScrollArea className="h-full p-4" ref={scrollRef as any}>
+          <div className="space-y-4">
           {messages.length === 0 && !isGenerating && (
             <div className="text-center py-8 space-y-4">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
@@ -265,20 +281,20 @@ export function WebChatPanel({
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                className={`max-w-[85%] rounded-lg px-4 py-2 break-words overflow-wrap-anywhere ${
                   msg.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</p>
               </div>
             </div>
           ))}
 
           {isGenerating && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted">
+              <div className="max-w-[85%] rounded-lg px-4 py-2 bg-muted break-words overflow-wrap-anywhere">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -290,25 +306,29 @@ export function WebChatPanel({
               </div>
             </div>
           )}
-        </div>
-      </ScrollArea>
+          </div>
+        {hasScrollableContent && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+        )}
+        </ScrollArea>
+      </div>
 
       {/* Input de mensagem */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border shrink-0">
         <div className="flex gap-2">
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Descreva como deseja a página ou peça ajustes..."
-            className="min-h-[100px] max-h-[200px] resize-none overflow-y-auto"
+            className="min-h-[60px] max-h-[120px] resize-none overflow-y-auto"
             disabled={isGenerating}
           />
           <Button
             onClick={handleSend}
             disabled={!message.trim() || isGenerating}
-            size="icon"
-            className="h-[100px] w-[100px]"
+            size="lg"
+            className="shrink-0 h-[60px] w-[60px]"
           >
             <PaperPlaneRight size={20} weight="fill" />
           </Button>
