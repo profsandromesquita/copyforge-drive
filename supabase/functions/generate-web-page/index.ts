@@ -136,11 +136,12 @@ serve(async (req) => {
     let { html, css, message } = extractCode(aiResponse);
     let retryCount = 0;
     const MAX_RETRIES = 2;
+    const isEditMode = previousCode?.html ? true : false;
 
-    // Se resposta inválida, tentar novamente com prompt corretivo
+    // CAMADA 4: Retry para HTML ausente (original)
     while ((!html || html.trim() === '') && retryCount < MAX_RETRIES) {
       retryCount++;
-      console.warn(`Resposta inválida (tentativa ${retryCount}/${MAX_RETRIES}). Tentando novamente...`);
+      console.warn(`[RETRY ${retryCount}/${MAX_RETRIES}] HTML ausente. Solicitando código novamente...`);
       
       const retryMessages = [
         ...messages,
@@ -180,14 +181,66 @@ serve(async (req) => {
       message = extracted.message;
     }
 
+    // CAMADA 4: Retry específico para CSS ausente em modo de edição
+    let cssRetryCount = 0;
+    const MAX_CSS_RETRIES = 1;
+    
+    if (isEditMode && html && (!css || css.trim() === '') && cssRetryCount < MAX_CSS_RETRIES) {
+      cssRetryCount++;
+      console.warn(`[CSS RETRY ${cssRetryCount}/${MAX_CSS_RETRIES}] CSS ausente em modo de edição. Solicitando CSS específico...`);
+      
+      const cssRetryMessages = [
+        ...messages,
+        { 
+          role: 'assistant', 
+          content: aiResponse 
+        },
+        { 
+          role: 'user', 
+          content: `ERRO: Você retornou o HTML mas NÃO retornou o bloco de CSS atualizado.
+
+INSTRUÇÃO: Gere AGORA o CSS completo para a página, refletindo as mudanças pedidas (cores, layouts, tipografia, etc.).
+
+Retorne exatamente um bloco \`\`\`css com TODO o CSS da página.
+
+NÃO retorne HTML novamente. APENAS CSS.` 
+        }
+      ];
+      
+      const cssRetryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: cssRetryMessages,
+          max_completion_tokens: 3000,
+        }),
+      });
+      
+      if (cssRetryResponse.ok) {
+        const cssRetryData = await cssRetryResponse.json();
+        const cssRetryResponse_text = cssRetryData.choices[0].message.content;
+        const cssExtracted = extractCode(cssRetryResponse_text);
+        if (cssExtracted.css && cssExtracted.css.trim()) {
+          css = cssExtracted.css;
+          console.log('CSS recuperado com sucesso no retry específico');
+        }
+      }
+    }
+
     console.log('=== EXTRAÇÃO ===');
     console.log('HTML extraído:', html ? `${html.length} chars` : 'NENHUM');
     console.log('CSS extraído:', css ? `${css.length} chars` : 'NENHUM');
-    console.log('Retry count:', retryCount);
+    console.log('HTML Retry count:', retryCount);
+    console.log('CSS Retry count:', cssRetryCount);
+    console.log('Modo:', isEditMode ? 'EDITAR' : 'CRIAR NOVO');
     
     // Validar se HTML foi extraído (após retries)
     if (!html || html.trim() === '') {
-      console.error('IA falhou mesmo após retries. Modo:', previousCode?.html ? 'EDIT' : 'CREATE');
+      console.error('IA falhou mesmo após retries. Modo:', isEditMode ? 'EDIT' : 'CREATE');
       console.error('Última resposta da IA:', aiResponse?.substring(0, 500));
       return new Response(
         JSON.stringify({ 
@@ -198,11 +251,11 @@ serve(async (req) => {
       );
     }
 
-    // CSS é opcional - aplicar fallback se ausente
+    // CAMADA 2: Estratégia de fallback de CSS diferenciada por modo
     let finalCss = css?.trim() || '';
-    if (!finalCss) {
-      console.warn('IA não retornou CSS. Aplicando CSS base padrão.');
-      finalCss = `* {
+    let cssFallbackUsed = false;
+    
+    const CSS_BASE = `* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -243,6 +296,19 @@ button, .btn {
   font-size: 1rem;
   text-decoration: none;
 }`;
+    
+    if (!finalCss) {
+      if (isEditMode && previousCode?.css) {
+        // MODO EDITAR: Reaproveitar CSS anterior
+        console.warn('⚠️ IA não retornou CSS em modo de edição. Reaproveitando CSS anterior.');
+        finalCss = previousCode.css;
+        cssFallbackUsed = true;
+      } else {
+        // MODO CRIAR: Usar CSS base padrão
+        console.warn('⚠️ IA não retornou CSS. Aplicando CSS base padrão.');
+        finalCss = CSS_BASE;
+        cssFallbackUsed = true;
+      }
     }
 
     // Debitar créditos
@@ -281,8 +347,15 @@ button, .btn {
       });
     }
 
+    // CAMADA 5: Retornar com flag de fallback para transparência no frontend
     return new Response(
-      JSON.stringify({ html, css: finalCss, message }),
+      JSON.stringify({ 
+        html, 
+        css: finalCss, 
+        message,
+        cssFallbackUsed,
+        isEditMode 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -425,9 +498,39 @@ EXEMPLOS DE INTERPRETAÇÃO:
 - "Aumente o título" → aumentar font-size do h1 principal em 20-30%
 - "Adicione sombras" → aplicar box-shadow em cards, botões e seções principais
 
+⚠️ CAMADA 3: REFORÇO PARA PEDIDOS DE ESTILO VISUAL
+
+Quando o usuário pedir mudanças VISUAIS (cores, tamanhos, sombras, bordas, tipografia), você DEVE:
+
+1. **Identificar elementos específicos no HTML**:
+   - Se pedir "mude a cor do botão pagar agora para verde":
+     → Localize <button> ou <a> com texto "pagar agora"
+     → Garanta que tenha classe única (ex: .btn-pagar-agora)
+     → No CSS, crie/atualize: .btn-pagar-agora { background-color: #22c55e; color: white; }
+
+2. **Para pedidos genéricos, aplicar amplamente**:
+   - "deixe mais moderno" → Atualizar APENAS CSS com:
+     * Gradientes: background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+     * Sombras: box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+     * Bordas: border-radius: 12px;
+     * Animações: transition: all 0.3s ease;
+   - "mude cores para azul" → Definir paleta azul como primária em todo o CSS
+
+3. **Sempre atualizar o bloco CSS**:
+   - Mesmo que o pedido seja "só mude a cor do botão", você DEVE retornar CSS completo
+   - NUNCA retorne apenas texto explicativo ou apenas HTML
+   - SEMPRE inclua o bloco \`\`\`css com TODAS as regras
+
+4. **Exemplos concretos de CSS para pedidos comuns**:
+   - Cor de botão: .btn-primary { background-color: #3b82f6; border-color: #2563eb; }
+   - Tipografia moderna: body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+   - Espaçamento: section { padding: 4rem 2rem; }
+   - Sombra suave: .card { box-shadow: 0 4px 6px rgba(0,0,0,0.07); }
+
 ATENÇÃO: Mesmo que a modificação seja pequena (mudar cor, adicionar botão, etc), 
 você DEVE retornar TODO o código HTML e TODO o código CSS.
-NUNCA retorne apenas uma explicação ou confirmação.`;
+NUNCA retorne apenas uma explicação ou confirmação.
+Se o pedido for APENAS sobre estilo visual, você pode manter o HTML idêntico, mas SEMPRE retorne o bloco CSS atualizado.`;
   }
 
   return prompt;
@@ -498,11 +601,37 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
     }
   }
 
-  // Pattern 4: Find <style> tag content (last resort)
-  if (!css) {
-    cssMatch = aiResponse.match(/<style[^>]*>([\s\S]*?)<\/style>/);
+  // Pattern 4: Find <style> tag content in HTML (extract inline CSS)
+  if (!css && html) {
+    cssMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/);
     if (cssMatch) {
+      console.log('CSS extraído de tag <style> inline no HTML');
       css = cssMatch[1].trim();
+    }
+  }
+
+  // Pattern 5: Check if CSS block is contaminated with HTML
+  if (css) {
+    const htmlTagsInCss = css.match(/<(!DOCTYPE|html|head|body|div|section)/gi);
+    if (htmlTagsInCss && htmlTagsInCss.length > 0) {
+      console.warn('CSS contaminado com HTML detectado. Tentando limpar...');
+      
+      // Remove all lines starting with HTML tags
+      const cleanedLines = css.split('\n').filter(line => {
+        const trimmed = line.trim();
+        return !trimmed.startsWith('<') && !trimmed.startsWith('<!');
+      });
+      
+      const cleanedCss = cleanedLines.join('\n').trim();
+      
+      // Check if we still have valid CSS rules (contains { and })
+      if (cleanedCss.includes('{') && cleanedCss.includes('}')) {
+        console.log('CSS limpo com sucesso após remover contaminação HTML');
+        css = cleanedCss;
+      } else {
+        console.warn('Após limpeza, CSS não contém regras válidas. Descartando.');
+        css = '';
+      }
     }
   }
 
@@ -511,7 +640,8 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
     htmlLength: html.length,
     cssLength: css.length,
     htmlPreview: html.substring(0, 100),
-    cssPreview: css.substring(0, 100)
+    cssPreview: css.substring(0, 100),
+    cssContaminated: css.includes('<html') || css.includes('<!DOCTYPE')
   });
 
   return { html, css, message };

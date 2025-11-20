@@ -139,6 +139,21 @@ export function WebChatPanel({
         return;
       }
 
+      // CAMADA 5: Transparência sobre fallback de CSS
+      if (data.cssFallbackUsed) {
+        const fallbackType = data.isEditMode ? 'anterior' : 'padrão';
+        console.warn(`⚠️ CSS fallback usado (${fallbackType})`);
+        
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `⚠️ **Atenção**: A IA não conseguiu gerar CSS novo desta vez. ${
+            data.isEditMode 
+              ? 'O HTML foi atualizado, mas mantive o CSS anterior para não perder o design existente.' 
+              : 'Apliquei um CSS básico padrão.'
+          }\n\n💡 **Dica para obter melhor CSS**: Seja mais específico sobre as mudanças visuais:\n\n**Exemplos específicos**:\n- "No CSS, defina o botão principal com fundo verde (#22c55e) e texto branco"\n- "Adicione box-shadow: 0 4px 12px rgba(0,0,0,0.1) em todos os cards"\n- "Mude a fonte do título para 48px e cor azul (#3b82f6)"\n- "Aplique border-radius: 12px em todos os botões"\n\n**Ao invés de**:\n- ❌ "Deixe mais bonito"\n- ❌ "Melhore o visual"\n- ❌ "Modernize"`
+        }]);
+      }
+
       // Validar se CSS está presente (aviso mas não bloqueia)
       if (!data?.css || data.css.trim() === '') {
         console.warn('Resposta sem CSS, usando CSS padrão');
