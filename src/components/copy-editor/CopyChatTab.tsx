@@ -25,6 +25,8 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from '@/components/ui/tooltip';
+import { Microphone, MicrophoneSlash } from 'phosphor-react';
+import { toast as sonnerToast } from 'sonner';
 
 interface ChatMessage {
   id: string;
@@ -42,6 +44,8 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { activeWorkspace } = useWorkspace();
@@ -257,6 +261,70 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
     }
   };
 
+  // Configurar reconhecimento de voz
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        return;
+      }
+
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      recognitionInstance.lang = 'pt-BR';
+
+      recognitionInstance.onresult = (event: any) => {
+        const lastResultIndex = event.results.length - 1;
+        const lastResult = event.results[lastResultIndex];
+        
+        if (lastResult.isFinal) {
+          const transcript = lastResult[0].transcript;
+          setMessage(prev => prev ? `${prev} ${transcript}` : transcript);
+        }
+      };
+
+      recognitionInstance.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          sonnerToast.error('Permissão de microfone negada');
+        } else {
+          sonnerToast.error('Erro ao reconhecer voz');
+        }
+      };
+
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+
+      setRecognition(recognitionInstance);
+    }
+
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognition) {
+      sonnerToast.error('Reconhecimento de voz não suportado neste navegador');
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+      sonnerToast.info('Fale agora...');
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyboardShortcut = (e: KeyboardEvent) => {
@@ -380,7 +448,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Digite sua mensagem..."
-                  className="min-h-[100px] resize-none pr-24 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/60"
+                  className="min-h-[100px] resize-none pr-32 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/60"
                   disabled={isLoading}
                 />
                 
@@ -416,6 +484,28 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                     <TooltipContent>
                       <p className="text-xs">
                         {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleListening}
+                        className={`h-8 w-8 transition-all ${isListening ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                      >
+                        {isListening ? (
+                          <MicrophoneSlash size={18} weight="fill" className="animate-pulse" />
+                        ) : (
+                          <Microphone size={18} weight="fill" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        {isListening ? 'Parar gravação' : 'Gravar áudio'}
                       </p>
                     </TooltipContent>
                   </Tooltip>
