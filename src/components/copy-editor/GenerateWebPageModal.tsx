@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { WebChatPanel } from './web-generation/WebChatPanel';
 import { WebPreviewPanel } from './web-generation/WebPreviewPanel';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
@@ -90,25 +90,48 @@ export function GenerateWebPageModal({ open, onOpenChange }: GenerateWebPageModa
             description: 'Você não tem créditos suficientes. Adicione créditos para continuar.',
             variant: 'destructive',
           });
+        } else if (data.error === 'AI configuration missing') {
+          toast({
+            title: 'Erro de Configuração',
+            description: 'Problema interno de configuração da IA. Contate o suporte.',
+            variant: 'destructive',
+          });
+        } else if (data.error.includes('AI API error')) {
+          toast({
+            title: 'Erro Temporário',
+            description: 'Falha temporária no modelo de IA. Tente novamente em alguns instantes.',
+            variant: 'destructive',
+          });
+        } else if (data.error.includes('AI did not return valid HTML/CSS')) {
+          toast({
+            title: 'Erro na Geração',
+            description: 'A IA não retornou um HTML/CSS válido. Tente novamente com outra instrução.',
+            variant: 'destructive',
+          });
         } else {
           toast({
             title: 'Erro',
-            description: 'Erro ao gerar página. Tente novamente.',
+            description: data.error || 'Erro ao gerar página. Tente novamente.',
             variant: 'destructive',
           });
         }
-        setIsGenerating(false);
         return;
       }
 
       if (data.html && data.css) {
         handleCodeGenerated(data.html, data.css);
+      } else {
+        toast({
+          title: 'Erro na Geração',
+          description: 'A IA não retornou um código válido. Tente novamente.',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       console.error('Erro na geração automática:', error);
       
       let errorMessage = 'Erro ao gerar a página. Tente novamente.';
-      if (error.message?.includes('insufficient_credits')) {
+      if (error.message?.includes('insufficient_credits') || error.message?.includes('402')) {
         errorMessage = 'Créditos insuficientes. Adicione créditos para continuar.';
       } else if (error.message?.includes('Usuário não autenticado') || error.message?.includes('401')) {
         errorMessage = 'Sua sessão expirou. Por favor, recarregue a página e faça login novamente.';
@@ -119,22 +142,24 @@ export function GenerateWebPageModal({ open, onOpenChange }: GenerateWebPageModa
         description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
       setIsGenerating(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[98vw] w-[98vw] h-[95vh] max-h-screen p-0 gap-0">
-        <div className="flex h-full">
-          {/* Painel Esquerdo - Chat (40%) */}
+      <DialogContent className="max-w-[95vw] h-[90vh] p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b border-border">
+          <DialogTitle>Gerar Landing Page Web</DialogTitle>
+          <DialogDescription>
+            Crie e refine sua landing page com assistência de IA. Ajuste o design, adicione seções e otimize a conversão.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="flex h-[calc(100%-80px)]">
+          {/* Painel esquerdo - Chat */}
           <div className="w-[40%] border-r border-border flex flex-col">
-            <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold">Gerar Landing Page Web</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Converse com a IA para criar e ajustar sua página
-              </p>
-            </div>
             <WebChatPanel
               copyId={copyId}
               copyTitle={copyTitle}
