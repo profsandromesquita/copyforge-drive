@@ -201,7 +201,7 @@ export function ChatGeneratedPreviewModal({
             ) : (
               <Copy className="h-4 w-4 mr-2" />
             )}
-            Adicionar à Copy
+            {hasSelection ? 'Substituir Seleção' : 'Adicionar à Copy'}
           </Button>
         </DialogFooter>
       </DialogContent>
