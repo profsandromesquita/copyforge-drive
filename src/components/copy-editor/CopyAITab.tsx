@@ -102,6 +102,47 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
 
+  // Carregar estado salvo do localStorage quando o componente montar
+  useEffect(() => {
+    if (!copyId) return;
+    
+    const savedStateKey = `copy-ia-state-${copyId}`;
+    const savedState = localStorage.getItem(savedStateKey);
+    
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setEtapa(state.etapa || 1);
+        setEstrutura(state.estrutura || '');
+        setObjetivo(state.objetivo || '');
+        setEstilos(state.estilos || []);
+        setFocoEmocional(state.focoEmocional || '');
+        setPrompt(state.prompt || '');
+        setGeneratedSystemPrompt(state.generatedSystemPrompt || null);
+      } catch (error) {
+        console.error('Erro ao carregar estado salvo:', error);
+      }
+    }
+  }, [copyId]);
+
+  // Salvar estado no localStorage sempre que mudar
+  useEffect(() => {
+    if (!copyId) return;
+    
+    const savedStateKey = `copy-ia-state-${copyId}`;
+    const state = {
+      etapa,
+      estrutura,
+      objetivo,
+      estilos,
+      focoEmocional,
+      prompt,
+      generatedSystemPrompt,
+    };
+    
+    localStorage.setItem(savedStateKey, JSON.stringify(state));
+  }, [copyId, etapa, estrutura, objetivo, estilos, focoEmocional, prompt, generatedSystemPrompt]);
+
   // Carregar contexto automaticamente do banco
   useEffect(() => {
     const loadCopyContext = async () => {
@@ -155,6 +196,13 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
     setFocoEmocional('');
     setPrompt('');
     setSelectedModel(null);
+    setGeneratedSystemPrompt(null);
+    
+    // Limpar estado salvo do localStorage
+    if (copyId) {
+      const savedStateKey = `copy-ia-state-${copyId}`;
+      localStorage.removeItem(savedStateKey);
+    }
   };
 
   const resetOptimizeForm = () => {
