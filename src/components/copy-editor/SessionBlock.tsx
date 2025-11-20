@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DotsThree, Copy as CopyIcon, Trash, PencilSimple, ChatCircle, CaretUp, CaretDown } from 'phosphor-react';
+import { Check } from 'lucide-react';
 import { Session } from '@/types/copy-editor';
 import { ContentBlock } from './ContentBlock';
 import { CommentsButton } from './CommentsButton';
@@ -47,7 +48,16 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
 };
 
 export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImageAI }: SessionBlockProps) => {
-  const { updateSession, removeSession, duplicateSession, selectBlock, reorderSessions } = useCopyEditor();
+  const { 
+    updateSession, 
+    removeSession, 
+    duplicateSession, 
+    selectBlock, 
+    reorderSessions,
+    isSelectionMode,
+    selectedItems,
+    toggleItemSelection
+  } = useCopyEditor();
   const { user } = useAuth();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
@@ -55,10 +65,21 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
     data: { session },
   });
 
+  const isSessionSelected = selectedItems.some(item => item.id === session.id && item.type === 'session');
+
   const handleSessionClick = (e: React.MouseEvent) => {
     // Only deselect if clicking directly on the session container (not on blocks)
     if (e.target === e.currentTarget) {
       selectBlock(null);
+    }
+  };
+
+  const handleSessionClickForSelection = (e: React.MouseEvent) => {
+    if (isSelectionMode && e.target === e.currentTarget) {
+      e.stopPropagation();
+      toggleItemSelection(session.id, 'session');
+    } else if (!isSelectionMode) {
+      handleSessionClick(e);
     }
   };
 
@@ -92,12 +113,21 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
   return (
     <div
       ref={setNodeRef}
-      onClick={handleSessionClick}
+      onClick={handleSessionClickForSelection}
       className={`
-        p-6 rounded-xl bg-card space-y-4 transition-all group border border-border
+        relative p-6 rounded-xl bg-card space-y-4 transition-all group border border-border
         ${isOver ? 'border-2 border-dashed border-primary bg-primary/5 scale-[1.02]' : ''}
+        ${isSelectionMode ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''}
+        ${isSessionSelected ? 'ring-2 ring-green-500 bg-green-50/50 dark:bg-green-950/20' : ''}
       `}
     >
+      {isSessionSelected && (
+        <div className="absolute -top-2 -right-2 z-10">
+          <div className="bg-green-500 text-white rounded-full p-1">
+            <Check className="h-3 w-3" />
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         {isEditingTitle ? (
           <Input

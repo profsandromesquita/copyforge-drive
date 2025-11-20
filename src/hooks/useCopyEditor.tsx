@@ -3,6 +3,12 @@ import { Session, Block, CopyType } from '@/types/copy-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface SelectedItem {
+  id: string;
+  type: 'session' | 'block';
+  sessionId?: string;
+}
+
 interface CopyEditorContextType {
   copyId: string | null;
   copyTitle: string;
@@ -12,6 +18,8 @@ interface CopyEditorContextType {
   isSaving: boolean;
   isLoading: boolean;
   status: 'draft' | 'published';
+  selectedItems: SelectedItem[];
+  isSelectionMode: boolean;
   
   setCopyId: (id: string) => void;
   setCopyTitle: (title: string) => void;
@@ -29,6 +37,10 @@ interface CopyEditorContextType {
   moveBlock: (blockId: string, toSessionId: string, toIndex: number) => void;
   selectBlock: (blockId: string | null) => void;
   
+  toggleSelectionMode: () => void;
+  toggleItemSelection: (id: string, type: 'session' | 'block', sessionId?: string) => void;
+  clearSelection: () => void;
+  
   updateStatus: (newStatus: 'draft' | 'published') => Promise<void>;
   saveCopy: () => Promise<void>;
   loadCopy: (id: string) => Promise<void>;
@@ -45,6 +57,8 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const { toast } = useToast();
 
   // Auto-save every 3 seconds
@@ -263,6 +277,27 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSelectedBlockId(blockId);
   }, []);
 
+  const toggleSelectionMode = useCallback(() => {
+    setIsSelectionMode(prev => !prev);
+    setSelectedItems([]);
+  }, []);
+
+  const toggleItemSelection = useCallback((id: string, type: 'session' | 'block', sessionId?: string) => {
+    setSelectedItems(prev => {
+      const exists = prev.some(item => item.id === id);
+      if (exists) {
+        return prev.filter(item => item.id !== id);
+      } else {
+        return [...prev, { id, type, sessionId }];
+      }
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedItems([]);
+    setIsSelectionMode(false);
+  }, []);
+
   const updateStatus = useCallback(async (newStatus: 'draft' | 'published') => {
     if (!copyId) return;
 
@@ -300,6 +335,8 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     isSaving,
     isLoading,
     status,
+    selectedItems,
+    isSelectionMode,
     setCopyId,
     setCopyTitle,
     addSession,
@@ -314,6 +351,9 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     duplicateBlock,
     moveBlock,
     selectBlock,
+    toggleSelectionMode,
+    toggleItemSelection,
+    clearSelection,
     updateStatus,
     saveCopy,
     loadCopy,
