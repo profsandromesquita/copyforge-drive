@@ -85,6 +85,21 @@ export const AudienceSegmentForm = ({
     }
   }, [segment]);
 
+  // Sincronizar formData quando allSegments mudar (ex: após regenerar análise avançada)
+  useEffect(() => {
+    if (segment && allSegments.length > 0) {
+      const updatedSegment = allSegments.find(s => s.id === segment.id);
+      if (updatedSegment && JSON.stringify(updatedSegment.advanced_analysis) !== JSON.stringify(formData.advanced_analysis)) {
+        // Atualizar apenas advanced_analysis sem sobrescrever campos editados
+        setFormData(prev => ({
+          ...prev,
+          advanced_analysis: updatedSegment.advanced_analysis,
+          analysis_generated_at: updatedSegment.analysis_generated_at
+        }));
+      }
+    }
+  }, [allSegments, segment, formData.advanced_analysis]);
+
   // Save draft to localStorage
   useEffect(() => {
     if (!segment && Object.values(formData).some(v => v)) {
