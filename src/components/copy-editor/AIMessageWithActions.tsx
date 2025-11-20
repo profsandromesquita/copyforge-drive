@@ -188,8 +188,8 @@ export function AIMessageWithActions({
         generatedSessions={generatedSessions}
         hasSelection={hasSelection}
         selectedCount={selectedItems.length}
-        onAdd={handleAdd}
-        onReplace={hasSelection ? handleReplace : undefined}
+        onAdd={hasSelection ? handleReplace : handleAdd}
+        onReplace={hasSelection && selectedItems.length > 1 ? handleReplace : undefined}
         onReplaceAll={hasSelection && selectedItems.length > 1 ? handleReplaceAll : undefined}
       />
     </>

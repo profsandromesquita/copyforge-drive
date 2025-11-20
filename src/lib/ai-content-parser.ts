@@ -420,15 +420,38 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
       (block.type === 'ad' && currentSession.blocks.length > 0); // Ad sempre é nova sessão
 
     if (isNewSession) {
-      // Criar nova sessão
-      const sessionTitle = block.title 
-        ? block.title.replace(/^\d+\.\s*/, '') 
-        : `${getBlockTypeName(block.type)}`;
+      // Se o bloco tem título mas NÃO é de alto nível, tratar o título como headline
+      const shouldTitleBeContent = block.title && !isHighLevelTitle(block.title);
+      
+      const sessionTitle = shouldTitleBeContent
+        ? `Conteúdo ${sessions.length + 1}` // Título genérico
+        : (block.title ? block.title.replace(/^\d+\.\s*/, '') : `${getBlockTypeName(block.type)}`);
+
+      const sessionBlocks = [];
+      
+      // Se o título vira conteúdo, criar um bloco headline primeiro
+      if (shouldTitleBeContent) {
+        sessionBlocks.push({
+          id: `block-${Date.now()}-${index}-title`,
+          type: 'headline' as const,
+          content: cleanContent(block.title!),
+          config: {
+            fontSize: 'large',
+            fontWeight: 'bold',
+            textAlign: 'left',
+          }
+        });
+      }
+      
+      // Adicionar o bloco principal (se tiver conteúdo além do título)
+      if (block.content && block.content.trim()) {
+        sessionBlocks.push(createBlockFromParsed(block, sessionBlocks.length));
+      }
 
       currentSession = {
         id: `session-${Date.now()}-${index}`,
         title: sessionTitle,
-        blocks: [createBlockFromParsed(block, 0)]
+        blocks: sessionBlocks.length > 0 ? sessionBlocks : [createBlockFromParsed(block, 0)]
       };
       sessions.push(currentSession);
     } else {
