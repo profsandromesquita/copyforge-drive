@@ -878,7 +878,7 @@ export const CopyAITab = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Descreva o que você precisa para sua copy..."
                 rows={14}
-                className="resize-none rounded-2xl pr-12 border border-border/40"
+                className="resize-none rounded-2xl pr-12 border-2 border-border/60"
               />
               <VoiceInput onTranscript={(text) => setPrompt(prompt ? `${prompt} ${text}` : text)} />
             </div>
