@@ -116,15 +116,17 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       });
     }
   }
-  // Detectar seções com títulos ### ou **
-  else if (markdown.match(/^#{1,3}\s+.+$/gm) || markdown.match(/^\*\*.+\*\*$/gm)) {
-    const sectionRegex = /^(#{1,3}\s+|\*\*)(.+?)(\*\*)?$/gm;
+  // Detectar seções com títulos ### (removendo ** como separador de seção)
+  else if (markdown.match(/^#{1,3}\s+.+$/gm)) {
+    const sectionRegex = /^#{1,3}\s+(.+)$/gm;
     const sectionMatches = Array.from(markdown.matchAll(sectionRegex));
 
     if (sectionMatches.length > 1) {
-      // Múltiplas seções
+      // Processar múltiplas seções com agrupamento inteligente
+      let currentBlock: ParsedContent | null = null;
+      
       sectionMatches.forEach((match, index) => {
-        const title = match[2].trim();
+        const title = match[1].trim();
         const startIndex = match.index || 0;
         
         // Encontrar conteúdo até próxima seção
@@ -136,21 +138,30 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         }
 
         const sectionContent = markdown.substring(startIndex, endIndex).trim();
-        const content = sectionContent
-          .replace(/^#{1,3}\s+/, '')
-          .replace(/^\*\*/, '')
-          .replace(/\*\*$/, '')
-          .trim();
+        const content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
 
-        blocks.push({
-          id: `block-${Date.now()}-${index}`,
-          type: inferBlockType(content, title),
-          title,
-          content,
-          rawContent: sectionContent,
-          startIndex,
-          endIndex,
-        });
+        // Check if this is a high-level heading or if we don't have a current block yet
+        if (isHighLevelTitle(title) || !currentBlock) {
+          // Create a new block for high-level headings
+          const type = inferBlockType(content, title);
+          
+          currentBlock = {
+            id: `block-${Date.now()}-${index}`,
+            type,
+            title,
+            content,
+            rawContent: sectionContent,
+            startIndex,
+            endIndex,
+          };
+          
+          blocks.push(currentBlock);
+        } else {
+          // This is a sub-heading (like internal scene/step), append to current block
+          currentBlock.content += '\n\n' + content;
+          currentBlock.rawContent += '\n\n' + sectionContent;
+          currentBlock.endIndex = endIndex;
+        }
       });
     }
   }

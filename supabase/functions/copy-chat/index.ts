@@ -678,17 +678,20 @@ Quando gerar conteúdo copiável (headlines, anúncios, textos), siga estas dire
    - Cada item numerado de nível superior se tornará UMA SESSÃO separada
    - Sub-estruturas dentro de cada item (cenas, etapas, partes) devem permanecer dentro da mesma sessão
    
-5. **REGRA CRÍTICA SOBRE NUMERAÇÃO INTERNA:**
+ 5. **REGRA CRÍTICA SOBRE NUMERAÇÃO INTERNA:**
    - A numeração "1.", "2.", "3." NO INÍCIO DA LINHA é reservada APENAS para separar itens INDEPENDENTES (ex: 2 anúncios, 3 roteiros)
-   - DENTRO de cada anúncio/roteiro você NÃO DEVE usar linhas começando com "1.", "2.", "3."
+   - Os headings "###" também servem para separar itens independentes - use "### 1.", "### 2." SOMENTE para anúncios/roteiros distintos
+   - DENTRO de cada anúncio/roteiro você NÃO DEVE usar:
+     - Linhas começando com "1.", "2.", "3."
+     - Headings "###" para sub-seções internas (cenas, etapas)
    - Para cenas internas, etapas e tempos use:
      - Marcadores simples: "- Cena 1: ...", "- Cena 2: ...", "- Etapa 1: ..."
      - Ou timestamps: "(0-5s) Cena de abertura...", "(5-10s) Close no rosto...", etc.
      - Ou títulos em negrito: "**Cena 1:** ...", "**Parte 1:** ..."
    - NUNCA escreva cenas ou etapas internas como:
-     - "1. Cena 1..."
-     - "2. Cena 2..."
-   - Isso é CRÍTICO porque o sistema usa a numeração de nível superior para separar SESSÕES
+     - "1. Cena 1..." ou "### Cena 1"
+     - "2. Cena 2..." ou "### Cena 2"
+   - Isso é CRÍTICO porque o sistema usa a numeração de nível superior e headings "###" para separar SESSÕES
    
    Exemplo CORRETO para 2 anúncios em vídeo:
    
