@@ -252,3 +252,18 @@ All colors MUST be HSL.
 .overflow-wrap-anywhere {
   overflow-wrap: anywhere;
 }
+
+/* Modal Tela Cheia - Gerar Landing Page Web */
+.web-generation-modal[data-radix-dialog-content] {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Garantir que o backdrop não interfira */
+[data-radix-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}

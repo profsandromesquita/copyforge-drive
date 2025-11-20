@@ -149,10 +149,10 @@ export function GenerateWebPageModal({ open, onOpenChange }: GenerateWebPageModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[100vw] sm:max-w-[95vw] lg:max-w-[90vw] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
-          <DialogTitle>Gerar Landing Page Web</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="web-generation-modal w-screen h-screen max-w-none max-h-none m-0 rounded-none p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-4 py-2 sm:px-6 sm:py-3 border-b border-border shrink-0 bg-background/95 backdrop-blur-sm">
+          <DialogTitle className="text-base sm:text-lg">Gerar Landing Page Web</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm hidden sm:block">
             Crie e refine sua landing page com assistência de IA. Ajuste o design, adicione seções e otimize a conversão.
           </DialogDescription>
         </DialogHeader>
