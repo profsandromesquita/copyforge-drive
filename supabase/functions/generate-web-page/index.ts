@@ -296,21 +296,13 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
   }
 
   // Extract HTML - try multiple patterns
-  // Pattern 1: ```html ... ```
-  let htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)\n```/);
+  // Pattern 1: ```html ... ``` (most common)
+  let htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)```/);
   if (htmlMatch) {
     html = htmlMatch[1].trim();
   }
   
-  // Pattern 2: ```html (without newline before closing)
-  if (!html) {
-    htmlMatch = aiResponse.match(/```html\s*\n([\s\S]*?)```/);
-    if (htmlMatch) {
-      html = htmlMatch[1].trim();
-    }
-  }
-
-  // Pattern 3: Any code block starting with <!DOCTYPE
+  // Pattern 2: Any code block starting with <!DOCTYPE
   if (!html) {
     htmlMatch = aiResponse.match(/```(?:html)?\s*\n?(<!DOCTYPE[\s\S]*?)```/);
     if (htmlMatch) {
@@ -318,7 +310,7 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
     }
   }
 
-  // Pattern 4: Find <!DOCTYPE without code block
+  // Pattern 3: Find <!DOCTYPE without code block
   if (!html) {
     htmlMatch = aiResponse.match(/(<!DOCTYPE html>[\s\S]*?<\/html>)/);
     if (htmlMatch) {
@@ -326,22 +318,25 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
     }
   }
 
-  // Extract CSS - try multiple patterns
-  // Pattern 1: ```css ... ```
-  let cssMatch = aiResponse.match(/```css\s*\n([\s\S]*?)\n```/);
+  // Extract CSS - try multiple patterns with flexible whitespace
+  // Pattern 1: ```css ... ``` (most flexible - matches any whitespace including newlines)
+  let cssMatch = aiResponse.match(/```css\s*([\s\S]*?)```/);
   if (cssMatch) {
     css = cssMatch[1].trim();
   }
 
-  // Pattern 2: ```css (without newline before closing)
+  // Pattern 2: Look for CSS after HTML block
   if (!css) {
-    cssMatch = aiResponse.match(/```css\s*\n([\s\S]*?)```/);
-    if (cssMatch) {
-      css = cssMatch[1].trim();
+    const afterHtml = aiResponse.split('```html')[1];
+    if (afterHtml) {
+      cssMatch = afterHtml.match(/```css\s*([\s\S]*?)```/);
+      if (cssMatch) {
+        css = cssMatch[1].trim();
+      }
     }
   }
 
-  // Pattern 3: Any code block with CSS selectors
+  // Pattern 3: Find any code block with CSS selectors (as fallback)
   if (!css) {
     cssMatch = aiResponse.match(/```(?:css)?\s*\n?([^`]*?{[^`]*?}[^`]*?)```/);
     if (cssMatch) {
@@ -349,7 +344,7 @@ function extractCode(aiResponse: string): { html: string; css: string; message: 
     }
   }
 
-  // Pattern 4: Find <style> tag content
+  // Pattern 4: Find <style> tag content (last resort)
   if (!css) {
     cssMatch = aiResponse.match(/<style[^>]*>([\s\S]*?)<\/style>/);
     if (cssMatch) {
