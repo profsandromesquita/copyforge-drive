@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Trash2, Loader2, Check, X, MousePointer, History } from 'lucide-react';
+import { Send, Trash2, Loader2, Check, X, MousePointer, History, Layers, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -372,8 +372,8 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                       key={item.id} 
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium border border-primary/20 hover:bg-primary/20 transition-colors"
                     >
-                      <span className="text-xs">{item.type === 'session' ? '📋' : '📝'}</span>
-                      <button 
+                      {item.type === 'session' ? <Layers className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                      <button
                         onClick={() => toggleItemSelection(item.id, item.type, item.sessionId)}
                         className="hover:opacity-70 transition-opacity"
                       >
