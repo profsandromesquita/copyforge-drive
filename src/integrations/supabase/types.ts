@@ -362,13 +362,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "copies_selected_audience_id_fkey"
-            columns: ["selected_audience_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "copies_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
