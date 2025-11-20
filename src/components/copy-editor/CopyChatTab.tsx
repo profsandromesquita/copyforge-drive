@@ -290,7 +290,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
         {/* Chat Messages */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-4 pb-48 space-y-4"
+          className="flex-1 overflow-y-auto px-2 py-4 pb-48 space-y-4"
         >
           {loadingChatHistory ? (
             <div className="flex items-center justify-center h-full">
@@ -311,7 +311,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 break-words ${
+                    className={`max-w-[90%] rounded-lg p-3 break-words ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-foreground'
