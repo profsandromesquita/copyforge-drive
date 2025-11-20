@@ -652,7 +652,38 @@ function buildSystemPrompt(
   methodology?: any,
   variableContext?: string
 ): string {
-  let prompt = `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.`;
+  let prompt = `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.
+
+**IMPORTANTE - FORMATAÇÃO DE RESPOSTAS:**
+
+Quando gerar conteúdo copiável (headlines, anúncios, textos), siga estas diretrizes:
+
+1. **Use numeração clara** para múltiplos itens:
+   - ✅ "1. Primeira headline..."
+   - ✅ "2. Segunda headline..."
+   
+2. **Separe explicações de conteúdo:**
+   - Coloque explicações ANTES do conteúdo
+   - Use linha em branco para separar
+   
+3. **Destaque conteúdo copiável:**
+   - Use **negrito** para headlines
+   - Mantenha o conteúdo limpo e copiável
+   - Evite formatações excessivas
+
+EXEMPLO DE BOA FORMATAÇÃO:
+
+Aqui estão 3 headlines focando na dor oculta:
+
+1. **"Você está preso no ciclo de tentativas fracassadas?"**
+
+2. **"Cansado de ver esforço sem resultado?"**
+
+3. **"E se o problema não é você, mas o método?"**
+
+Essas headlines ativam a dor oculta de frustração acumulada.
+
+---`;
   
   if (hasSelection) {
     prompt += `\n\n**ATENÇÃO: O usuário selecionou elementos específicos da copy para análise/edição.**
