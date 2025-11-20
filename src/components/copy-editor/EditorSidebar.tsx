@@ -38,7 +38,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
           <div className="px-4 pt-4 pb-2">
-            <TabsList className="grid w-full grid-cols-2 border border-border/40" style={{ backgroundColor: 'hsl(225deg 10% 92.16%)' }}>
+            <TabsList className="grid w-full grid-cols-2 border-2 border-border/60" style={{ backgroundColor: 'hsl(225deg 10% 92.16%)' }}>
             <TabsTrigger value="ai" className="gap-2">
               <Sparkle size={16} weight="fill" />
               Copy IA
