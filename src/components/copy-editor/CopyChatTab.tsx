@@ -453,83 +453,84 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                 />
                 
                 {/* Action Buttons Overlay */}
-                <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setShowHistory(true)}
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      >
-                        <History className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Histórico de gerações</p>
-                    </TooltipContent>
-                  </Tooltip>
+                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
+                  {/* Character Count - Left Side */}
+                  <span className="text-[10px] text-muted-foreground/60 font-mono">
+                    {message.length}/2000
+                  </span>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={toggleSelectionMode}
-                        className={`h-8 w-8 transition-all ${isSelectionMode ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        {isSelectionMode ? <Check className="h-4 w-4" /> : <MousePointer className="h-4 w-4" />}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">
-                        {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {/* Action Buttons - Right Side */}
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowHistory(true)}
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Histórico de gerações</p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={toggleListening}
-                        className={`h-8 w-8 transition-all ${isListening ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
-                      >
-                        {isListening ? (
-                          <MicrophoneSlash size={18} weight="fill" className="animate-pulse" />
-                        ) : (
-                          <Microphone size={18} weight="fill" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">
-                        {isListening ? 'Parar gravação' : 'Gravar áudio'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleSelectionMode}
+                          className={`h-8 w-8 transition-all ${isSelectionMode ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          {isSelectionMode ? <Check className="h-4 w-4" /> : <MousePointer className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          {isSelectionMode ? `${selectedItems.length} selecionados` : 'Selecionar conteúdo'}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
 
-                  <Button 
-                    onClick={handleSend} 
-                    disabled={!message.trim() || isLoading} 
-                    size="icon"
-                    className="h-8 w-8 rounded-lg shadow-sm hover:shadow-md transition-all"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleListening}
+                          className={`h-8 w-8 transition-all ${isListening ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                          {isListening ? (
+                            <MicrophoneSlash size={18} weight="fill" className="animate-pulse" />
+                          ) : (
+                            <Microphone size={18} weight="fill" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          {isListening ? 'Parar gravação' : 'Gravar áudio'}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Button 
+                      onClick={handleSend} 
+                      disabled={!message.trim() || isLoading} 
+                      size="icon"
+                      className="h-8 w-8 rounded-lg shadow-sm hover:shadow-md transition-all"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              {/* Character Count */}
-              <div className="flex justify-end mt-1">
-                <span className="text-[10px] text-muted-foreground/60 font-mono">
-                  {message.length}/2000
-                </span>
               </div>
             </div>
           </div>
