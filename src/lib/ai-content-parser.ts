@@ -228,81 +228,125 @@ export function cleanContent(rawContent: string): string {
     .trim();
 }
 
-// Função para converter blocos parseados em estrutura Session[] otimizada
+// Função para converter blocos parseados em estrutura Session[] otimizada com sessões inteligentes
 export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   if (blocks.length === 0) return [];
 
-  // Agrupar blocos em sessão única
-  const session = {
+  // Detectar se são múltiplos itens independentes (anúncios, headlines, etc)
+  const shouldCreateMultipleSessions = blocks.length > 1 && blocks.every(b => 
+    b.type === 'headline' || b.type === 'ad' || b.title
+  );
+
+  if (shouldCreateMultipleSessions) {
+    // Criar uma sessão para cada item
+    return blocks.map((block, index) => {
+      // Gerar título mais limpo
+      let sessionTitle;
+      
+      if (block.title) {
+        // Se tem título (ex: "1."), remover número e usar preview curto
+        sessionTitle = block.title.replace(/^\d+\.\s*/, '');
+        if (sessionTitle.trim() === '') {
+          // Se o título era só número, usar o conteúdo
+          const preview = block.content.substring(0, 50).trim();
+          sessionTitle = preview + (block.content.length > 50 ? '...' : '');
+        }
+      } else {
+        // Sem título, usar tipo + preview
+        const preview = block.content.substring(0, 50).trim();
+        sessionTitle = `${getBlockTypeName(block.type)} - ${preview}${block.content.length > 50 ? '...' : ''}`;
+      }
+
+      return {
+        id: `session-${Date.now()}-${index}`,
+        title: sessionTitle,
+        blocks: [createBlockFromParsed(block, 0)]
+      };
+    });
+  }
+
+  // Caso contrário, agrupar todos em uma única sessão
+  return [{
     id: `session-${Date.now()}`,
     title: 'Conteúdo Gerado pela IA',
-    blocks: blocks.map((block, index) => {
-      const baseBlock = {
-        id: `block-${Date.now()}-${index}`,
-      };
+    blocks: blocks.map((block, index) => createBlockFromParsed(block, index))
+  }];
+}
 
-      // Configurar bloco baseado no tipo inferido
-      switch (block.type) {
-        case 'headline':
-          return {
-            ...baseBlock,
-            type: 'headline' as const,
-            content: cleanContent(block.content),
-            config: {
-              fontSize: 'large',
-              fontWeight: 'bold',
-              textAlign: 'left',
-            }
-          };
+// Helper: Obter nome amigável do tipo de bloco
+function getBlockTypeName(type: ParsedContent['type']): string {
+  switch (type) {
+    case 'headline': return 'Headline';
+    case 'ad': return 'Anúncio';
+    case 'list': return 'Lista';
+    case 'text': return 'Texto';
+    default: return 'Conteúdo';
+  }
+}
 
-        case 'ad':
-          // Anúncios podem ter múltiplas linhas estruturadas
-          return {
-            ...baseBlock,
-            type: 'text' as const,
-            content: block.content,
-            config: {
-              fontSize: 'medium',
-              fontWeight: 'normal',
-              textAlign: 'left',
-            }
-          };
-
-        case 'list':
-          // Tentar dividir conteúdo em items de lista
-          const listItems = block.content
-            .split('\n')
-            .filter(line => line.trim())
-            .map(line => line.replace(/^[-•*]\s*/, '').trim());
-
-          return {
-            ...baseBlock,
-            type: 'list' as const,
-            content: listItems.length > 0 ? listItems : [block.content],
-            config: {
-              listStyle: 'bullets',
-              showListIcons: true,
-              listIconColor: '#ff6b35',
-              textAlign: 'left',
-            }
-          };
-
-        case 'text':
-        default:
-          // Texto padrão
-          return {
-            ...baseBlock,
-            type: 'text' as const,
-            content: block.content,
-            config: {
-              fontSize: 'medium',
-              fontWeight: 'normal',
-              textAlign: 'left',
-            }
-          };
-      }
-    })
+// Helper: Criar bloco a partir de conteúdo parseado
+function createBlockFromParsed(block: ParsedContent, index: number): any {
+  const baseBlock = {
+    id: `block-${Date.now()}-${index}-${Math.random()}`,
   };
 
-  return [session];
+  switch (block.type) {
+    case 'headline':
+      return {
+        ...baseBlock,
+        type: 'headline' as const,
+        content: cleanContent(block.content),
+        config: {
+          fontSize: 'large',
+          fontWeight: 'bold',
+          textAlign: 'left',
+        }
+      };
+
+    case 'ad':
+      // Anúncios estruturados
+      return {
+        ...baseBlock,
+        type: 'text' as const,
+        content: block.content,
+        config: {
+          fontSize: 'medium',
+          fontWeight: 'normal',
+          textAlign: 'left',
+        }
+      };
+
+    case 'list':
+      // Tentar dividir conteúdo em items de lista
+      const listItems = block.content
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => line.replace(/^[-•*\d+.]\s*/, '').trim())
+        .filter(item => item.length > 0);
+
+      return {
+        ...baseBlock,
+        type: 'list' as const,
+        content: listItems.length > 0 ? listItems : [block.content],
+        config: {
+          listStyle: 'bullets',
+          showListIcons: true,
+          listIconColor: '#ff6b35',
+          textAlign: 'left',
+        }
+      };
+
+    case 'text':
+    default:
+      return {
+        ...baseBlock,
+        type: 'text' as const,
+        content: block.content,
+        config: {
+          fontSize: 'medium',
+          fontWeight: 'normal',
+          textAlign: 'left',
+        }
+      };
+  }
 }
