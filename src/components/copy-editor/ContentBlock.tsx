@@ -33,7 +33,16 @@ interface ContentBlockProps {
 }
 
 export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockProps) => {
-  const { updateBlock, removeBlock, duplicateBlock, selectBlock, selectedBlockId } = useCopyEditor();
+  const { 
+    updateBlock, 
+    removeBlock, 
+    duplicateBlock, 
+    selectBlock, 
+    selectedBlockId,
+    isSelectionMode,
+    selectedItems,
+    toggleItemSelection
+  } = useCopyEditor();
   const { user } = useAuth();
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
@@ -70,6 +79,14 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   };
 
   const isSelected = selectedBlockId === block.id;
+  const isItemSelected = selectedItems.some(item => item.id === block.id);
+
+  const handleBlockClick = (e: React.MouseEvent) => {
+    if (isSelectionMode) {
+      e.stopPropagation();
+      toggleItemSelection(block.id, 'block', sessionId);
+    }
+  };
 
   // Calculate word count for text blocks
   const wordCount = useMemo(() => {
@@ -893,17 +910,25 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
       ref={setNodeRef}
       style={style}
       className={`
-        group relative p-4 rounded-lg bg-card
-        hover:border hover:border-primary transition-all
-        ${isDragging ? 'opacity-50' : ''}
-        ${isSelected ? 'border border-primary ring-2 ring-primary/20' : ''}
+        relative bg-background rounded-lg border transition-all group
+        ${isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-default'}
+        ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'border-border'}
+        ${isSelectionMode ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''}
+        ${isItemSelected ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : ''}
       `}
-      onClick={() => selectBlock(block.id)}
+      onClick={isSelectionMode ? handleBlockClick : () => selectBlock(block.id)}
     >
-      <div className="flex gap-2">
+      {isItemSelected && (
+        <div className="absolute -top-2 -right-2 z-10">
+          <div className="bg-blue-500 text-white rounded-full p-1">
+            <Check className="h-3 w-3" />
+          </div>
+        </div>
+      )}
+      <div className="flex gap-2 p-4">
         <div
-          {...attributes}
-          {...listeners}
+          {...(isSelectionMode ? {} : attributes)}
+          {...(isSelectionMode ? {} : listeners)}
           className="cursor-grab active:cursor-grabbing p-1 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           <DotsSixVertical size={20} className="text-muted-foreground" />

@@ -148,9 +148,12 @@ serve(async (req) => {
 
     // Construir contexto do histórico com compressão dinâmica
     const historyContext = buildGenerationHistoryContext(generationHistory || []);
+    
+    // Verificar se há elementos selecionados na mensagem
+    const hasSelection = message.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**');
 
     // Construir system prompt especializado COM histórico
-    const systemPrompt = buildSystemPrompt(copyContext, historyContext);
+    const systemPrompt = buildSystemPrompt(copyContext, historyContext, hasSelection);
 
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
@@ -410,8 +413,21 @@ function getAffectedSessions(newSessions: any, originalContent: any): string[] {
   return affected;
 }
 
-function buildSystemPrompt(copyContext: string, historyContext: string): string {
-  return `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.
+function buildSystemPrompt(copyContext: string, historyContext: string, hasSelection: boolean): string {
+  let prompt = `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.`;
+  
+  if (hasSelection) {
+    prompt += `\n\n**ATENÇÃO: O usuário selecionou elementos específicos da copy para análise/edição.**
+    
+Quando elementos estão selecionados:
+- Foque sua resposta APENAS nos elementos marcados como "CONTEXTO DOS ELEMENTOS SELECIONADOS"
+- Se pedirem para "otimizar", refira-se apenas aos blocos/sessões selecionados
+- Se pedirem "criar variação", gere alternativas apenas para o conteúdo selecionado
+- Seja específico e direto ao abordar os elementos selecionados
+`;
+  }
+  
+  return prompt + `
 
 CONTEXTO DA COPY ATUAL:
 ${copyContext}
