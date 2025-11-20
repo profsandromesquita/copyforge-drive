@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock, Settings } from 'lucide-react';
@@ -57,8 +57,6 @@ export const CopyAITab = () => {
 
   const isLoadingCharacteristics = loadingFrameworks || loadingObjetivos || loadingEstilos || loadingFocoEmocional;
 
-  // Controle de abas
-  const [activeTab, setActiveTab] = useState('criar');
   
   // Estado para verificação de acesso Copy IA
   const [copyAIEnabled, setCopyAIEnabled] = useState<boolean | null>(null);
@@ -945,18 +943,10 @@ export const CopyAITab = () => {
           </div>
         </div>
       ) : (
-        <>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-1">
-              <TabsTrigger value="criar" className="gap-2">
-                <Sparkles className="h-4 w-4" />
-              </TabsTrigger>
-            </TabsList>
-
-        <TabsContent value="criar" className="flex-1 mt-0">
+        <div className="h-full flex flex-col">
           {renderCriarTab()}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       <AIGeneratedPreviewModal
         open={showPreviewModal}
@@ -1017,8 +1007,6 @@ export const CopyAITab = () => {
           </div>
         </DialogContent>
       </Dialog>
-        </>
-      )}
     </>
   );
 };
