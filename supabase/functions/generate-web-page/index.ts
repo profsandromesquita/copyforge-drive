@@ -82,7 +82,12 @@ serve(async (req) => {
       { role: 'user', content: userInstruction }
     ];
 
-    // Chamar Lovable AI com GPT-5
+    console.log('=== GERAÇÃO INICIADA ===');
+    console.log('Modo:', previousCode?.html ? 'EDITAR' : 'CRIAR NOVO');
+    console.log('Instrução do usuário:', userInstruction.substring(0, 100));
+    console.log('Tem código anterior:', !!previousCode?.html);
+
+    // Chamar Lovable AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -116,22 +121,79 @@ serve(async (req) => {
     }
 
     const aiData = await response.json();
-    const aiResponse = aiData.choices[0].message.content;
+    let aiResponse = aiData.choices[0].message.content;
 
-    console.log('AI Response length:', aiResponse?.length || 0);
-    console.log('AI Response preview:', aiResponse?.substring(0, 200));
+    console.log('=== RESPOSTA DA IA ===');
+    console.log('Tamanho da resposta:', aiResponse?.length || 0);
+    console.log('Tipo de resposta:', 
+      aiResponse.includes('```html') && aiResponse.includes('```css') ? 'CÓDIGO COMPLETO' :
+      aiResponse.includes('```html') ? 'APENAS HTML' :
+      'TEXTO PURO'
+    );
+    console.log('Preview:', aiResponse?.substring(0, 200) || 'empty');
 
     // Extrair HTML e CSS da resposta
-    const { html, css, message } = extractCode(aiResponse);
+    let { html, css, message } = extractCode(aiResponse);
+    let retryCount = 0;
+    const MAX_RETRIES = 2;
+
+    // Se resposta inválida, tentar novamente com prompt corretivo
+    while ((!html || html.trim() === '') && retryCount < MAX_RETRIES) {
+      retryCount++;
+      console.warn(`Resposta inválida (tentativa ${retryCount}/${MAX_RETRIES}). Tentando novamente...`);
+      
+      const retryMessages = [
+        ...messages,
+        { 
+          role: 'assistant', 
+          content: aiResponse 
+        },
+        { 
+          role: 'user', 
+          content: `ERRO: Você não retornou os blocos de código. Retorne AGORA exatamente dois blocos: \`\`\`html e \`\`\`css. NÃO escreva explicações.` 
+        }
+      ];
+      
+      const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: retryMessages,
+          max_completion_tokens: 4000,
+        }),
+      });
+      
+      if (!retryResponse.ok) {
+        console.error('Retry failed:', retryResponse.status);
+        break;
+      }
+      
+      const retryData = await retryResponse.json();
+      aiResponse = retryData.choices[0].message.content;
+      const extracted = extractCode(aiResponse);
+      html = extracted.html;
+      css = extracted.css;
+      message = extracted.message;
+    }
+
+    console.log('=== EXTRAÇÃO ===');
+    console.log('HTML extraído:', html ? `${html.length} chars` : 'NENHUM');
+    console.log('CSS extraído:', css ? `${css.length} chars` : 'NENHUM');
+    console.log('Retry count:', retryCount);
     
-    console.log('Extracted HTML length:', html?.length || 0);
-    console.log('Extracted CSS length:', css?.length || 0);
-    
-    // Validar se HTML foi extraído (obrigatório)
+    // Validar se HTML foi extraído (após retries)
     if (!html || html.trim() === '') {
-      console.error('IA não retornou HTML válido. Full response:', aiResponse);
+      console.error('IA falhou mesmo após retries. Modo:', previousCode?.html ? 'EDIT' : 'CREATE');
+      console.error('Última resposta da IA:', aiResponse?.substring(0, 500));
       return new Response(
-        JSON.stringify({ error: 'AI did not return valid HTML/CSS. Please try again.' }),
+        JSON.stringify({ 
+          error: 'AI_GENERATION_FAILED', 
+          details: 'Modelo não retornou código válido após múltiplas tentativas'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -255,6 +317,32 @@ function buildSystemPrompt(copyContext: string, previousCode: any): string {
 - NUNCA responda com frases como "preciso de mais informações" ou "por favor especifique"
 - PROIBIDO adicionar qualquer texto fora dos dois blocos de código
 
+⚠️ EXEMPLO DE RESPOSTA VÁLIDA:
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Exemplo</title>
+</head>
+<body>
+    <h1>Título</h1>
+</body>
+</html>
+\`\`\`
+
+\`\`\`css
+* { margin: 0; padding: 0; }
+body { font-family: Arial; }
+h1 { color: blue; }
+\`\`\`
+
+⚠️ PROIBIDO:
+❌ "Página gerada com sucesso!" (NÃO retornar apenas texto)
+❌ Retornar apenas HTML sem CSS
+❌ Fazer perguntas
+
 Você é um especialista em desenvolvimento web. Crie landing pages modernas, responsivas e otimizadas para conversão.
 
 CONTEXTO DA COPY:
@@ -307,7 +395,9 @@ REGRAS:
 - Apenas HTML5 e CSS3 puro (sem frameworks como Bootstrap ou Tailwind)
 - CSS em arquivo separado, sem inline styles
 - Código limpo, organizado e bem comentado
-- Totalmente funcional e pronto para uso`;
+- Totalmente funcional e pronto para uso
+
+LEMBRE-SE: Sua resposta DEVE começar com \`\`\`html e depois \`\`\`css. Nada mais.`;
 
   if (previousCode?.html) {
     prompt += `\n\n📝 MODO DE EDIÇÃO:
@@ -333,7 +423,11 @@ EXEMPLOS DE INTERPRETAÇÃO:
 - "Adicione um botão" → adicionar onde fizer mais sentido contextualmente (ex: após CTA)
 - "Mude cores para azul" → aplicar tons de azul como cor primária em toda a paleta
 - "Aumente o título" → aumentar font-size do h1 principal em 20-30%
-- "Adicione sombras" → aplicar box-shadow em cards, botões e seções principais`;
+- "Adicione sombras" → aplicar box-shadow em cards, botões e seções principais
+
+ATENÇÃO: Mesmo que a modificação seja pequena (mudar cor, adicionar botão, etc), 
+você DEVE retornar TODO o código HTML e TODO o código CSS.
+NUNCA retorne apenas uma explicação ou confirmação.`;
   }
 
   return prompt;
