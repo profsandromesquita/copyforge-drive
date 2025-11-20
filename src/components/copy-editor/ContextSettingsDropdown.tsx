@@ -152,33 +152,33 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm">Contexto de Criação</h4>
-            <p className="text-xs text-muted-foreground">
+          <div className="space-y-1.5">
+            <h4 className="font-semibold text-sm">Contexto de Criação</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Selecione o contexto que será usado para gerar suas copies
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Público-alvo */}
-            <div className="space-y-1.5">
-              <Label htmlFor="audience" className="text-xs">Público-alvo</Label>
+            <div className="space-y-2">
+              <Label htmlFor="audience" className="text-sm font-medium">Público-alvo</Label>
               <Select 
                 value={audienceSegmentId || undefined} 
                 onValueChange={(value) => handleContextChange('audience', value)}
                 disabled={isSaving}
               >
-                <SelectTrigger id="audience" className="h-9">
+                <SelectTrigger id="audience" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhum selecionado" />
                 </SelectTrigger>
                 <SelectContent>
                   {audienceSegments.length === 0 ? (
-                    <div className="p-2 text-xs text-muted-foreground">
+                    <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhum público configurado
                     </div>
                   ) : (
                     audienceSegments.map((segment) => (
-                      <SelectItem key={segment.id} value={segment.id}>
+                      <SelectItem key={segment.id} value={segment.id} className="text-sm">
                         {segment.who_is ? `${segment.who_is.substring(0, 50)}...` : segment.id}
                       </SelectItem>
                     ))
@@ -188,24 +188,24 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
             </div>
 
             {/* Oferta */}
-            <div className="space-y-1.5">
-              <Label htmlFor="offer" className="text-xs">Oferta</Label>
+            <div className="space-y-2">
+              <Label htmlFor="offer" className="text-sm font-medium">Oferta</Label>
               <Select 
                 value={offerId || undefined} 
                 onValueChange={(value) => handleContextChange('offer', value)}
                 disabled={isSaving}
               >
-                <SelectTrigger id="offer" className="h-9">
+                <SelectTrigger id="offer" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
                   {offers.length === 0 ? (
-                    <div className="p-2 text-xs text-muted-foreground">
+                    <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhuma oferta configurada
                     </div>
                   ) : (
                     offers.map((offer) => (
-                      <SelectItem key={offer.id} value={offer.id}>
+                      <SelectItem key={offer.id} value={offer.id} className="text-sm">
                         {offer.name}
                       </SelectItem>
                     ))
@@ -215,24 +215,24 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
             </div>
 
             {/* Metodologia */}
-            <div className="space-y-1.5">
-              <Label htmlFor="methodology" className="text-xs">Metodologia</Label>
+            <div className="space-y-2">
+              <Label htmlFor="methodology" className="text-sm font-medium">Metodologia</Label>
               <Select 
                 value={methodologyId || undefined} 
                 onValueChange={(value) => handleContextChange('methodology', value)}
                 disabled={isSaving}
               >
-                <SelectTrigger id="methodology" className="h-9">
+                <SelectTrigger id="methodology" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
                   {methodologies.length === 0 ? (
-                    <div className="p-2 text-xs text-muted-foreground">
+                    <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhuma metodologia configurada
                     </div>
                   ) : (
                     methodologies.map((methodology: any) => (
-                      <SelectItem key={methodology.id} value={methodology.id}>
+                      <SelectItem key={methodology.id} value={methodology.id} className="text-sm">
                         {methodology.name}
                       </SelectItem>
                     ))
