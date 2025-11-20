@@ -192,7 +192,7 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
             'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
             'disabled:cursor-not-allowed disabled:opacity-50',
             'overflow-y-auto resize-none',
-            'flex flex-wrap items-center gap-1',
+            'whitespace-pre-wrap',
             isFocused && 'ring-1 ring-ring',
             className
           )}
@@ -209,19 +209,20 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
             part.type === 'variable' ? (
               <span
                 key={`${part.content}-${index}`}
-                className="variable-chip inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors select-none"
+                className="variable-chip inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors select-none align-middle"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   removeVariable(part);
                 }}
                 contentEditable={false}
+                style={{ display: 'inline-flex', verticalAlign: 'middle' }}
               >
-                <code className="text-xs font-medium">{part.content}</code>
+                <code className="text-xs font-medium leading-none">{part.content}</code>
                 <X className="h-3 w-3" />
               </span>
             ) : (
-              <span key={`text-${index}`} className="whitespace-pre-wrap">
+              <span key={`text-${index}`} className="inline whitespace-pre-wrap">
                 {part.content}
               </span>
             )
