@@ -1,4 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Send, Trash2, Loader2, Check, X, MousePointer, History, Layers, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,6 +41,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { activeWorkspace } = useWorkspace();
@@ -167,10 +178,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
-      toast({
-        title: 'Histórico limpo',
-        description: 'O histórico do chat foi removido com sucesso.',
-      });
+      setShowClearConfirm(false);
     },
     onError: () => {
       toast({
@@ -293,7 +301,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => clearHistoryMutation.mutate()}
+              onClick={() => setShowClearConfirm(true)}
               disabled={clearHistoryMutation.isPending}
               className="h-8 w-8"
             >
@@ -449,6 +457,26 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
           loadingHistory={loadingHistory}
           onHistoryItemClick={handleHistoryItemClick}
         />
+
+        <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Limpar histórico do chat?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. Todas as mensagens do chat serão permanentemente removidas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => clearHistoryMutation.mutate()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Limpar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );
