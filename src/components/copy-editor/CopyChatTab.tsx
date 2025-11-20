@@ -396,19 +396,19 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
             )}
 
             {/* Input Container */}
-            <div className="px-4 py-3">
+            <div className="p-4">
               <div className="relative">
                 <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Digite sua mensagem..."
-                  className="min-h-[100px] resize-none pr-24 border-border/50 focus:border-primary/50 bg-background/50"
+                  className="min-h-[100px] resize-none pr-24 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/60"
                   disabled={isLoading}
                 />
                 
                 {/* Action Buttons Overlay */}
-                <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                <div className="absolute bottom-2 right-2 flex items-center gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -443,8 +443,8 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
               </div>
 
               {/* Character Count */}
-              <div className="flex justify-end mt-1.5">
-                <span className="text-[10px] text-muted-foreground/70 font-mono">
+              <div className="flex justify-end mt-1">
+                <span className="text-[10px] text-muted-foreground/60 font-mono">
                   {message.length}/2000
                 </span>
               </div>
