@@ -83,10 +83,10 @@ serve(async (req) => {
       selectionContext = selectionMarker + parts[1]; // Contexto completo
     }
 
-    // Buscar dados da copy
+    // Buscar dados da copy incluindo selected_audience_id e selected_offer_id
     const { data: copy, error: copyError } = await supabase
       .from('copies')
-      .select('id, workspace_id, title, copy_type, sessions')
+      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, project_id')
       .eq('id', copyId)
       .single();
 
@@ -99,6 +99,40 @@ serve(async (req) => {
     }
 
     const workspaceId = copy.workspace_id;
+
+    // Buscar dados completos do projeto se houver audience ou offer selecionados
+    let audienceSegment = null;
+    let offer = null;
+    let projectIdentity = null;
+
+    if (copy.project_id) {
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', copy.project_id)
+        .single();
+
+      if (projectData) {
+        projectIdentity = {
+          brand_name: projectData.brand_name,
+          sector: projectData.sector,
+          central_purpose: projectData.central_purpose,
+          brand_personality: projectData.brand_personality,
+          voice_tones: projectData.voice_tones,
+          keywords: projectData.keywords,
+        };
+
+        // Buscar audience segment se selecionado
+        if (copy.selected_audience_id && Array.isArray(projectData.audience_segments)) {
+          audienceSegment = projectData.audience_segments.find((seg: any) => seg.id === copy.selected_audience_id);
+        }
+
+        // Buscar offer se selecionado
+        if (copy.selected_offer_id && Array.isArray(projectData.offers)) {
+          offer = projectData.offers.find((off: any) => off.id === copy.selected_offer_id);
+        }
+      }
+    }
 
     // Buscar histórico de gerações (últimas 15 para balancear contexto vs tokens)
     const { data: generationHistory, error: genHistoryError } = await supabase
@@ -163,8 +197,8 @@ serve(async (req) => {
     // Verificar se há elementos selecionados na mensagem
     const hasSelection = message.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**');
 
-    // Construir system prompt especializado COM histórico
-    const systemPrompt = buildSystemPrompt(copyContext, historyContext, hasSelection);
+    // Construir system prompt especializado COM histórico e contexto de projeto/audience/offer
+    const systemPrompt = buildSystemPrompt(copyContext, historyContext, hasSelection, projectIdentity, audienceSegment, offer);
 
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
@@ -424,7 +458,14 @@ function getAffectedSessions(newSessions: any, originalContent: any): string[] {
   return affected;
 }
 
-function buildSystemPrompt(copyContext: string, historyContext: string, hasSelection: boolean): string {
+function buildSystemPrompt(
+  copyContext: string, 
+  historyContext: string, 
+  hasSelection: boolean,
+  projectIdentity?: any,
+  audienceSegment?: any,
+  offer?: any
+): string {
   let prompt = `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.`;
   
   if (hasSelection) {
@@ -437,8 +478,46 @@ Quando elementos estão selecionados:
 - Seja específico e direto ao abordar os elementos selecionados
 `;
   }
+
+  // Adicionar contexto de projeto, audience e offer se disponíveis
+  let contextualInfo = '';
   
-  return prompt + `
+  if (projectIdentity) {
+    contextualInfo += '\n\nCONTEXTO DO PROJETO:\n';
+    if (projectIdentity.brand_name) contextualInfo += `Marca: ${projectIdentity.brand_name}\n`;
+    if (projectIdentity.sector) contextualInfo += `Setor: ${projectIdentity.sector}\n`;
+    if (projectIdentity.central_purpose) contextualInfo += `Propósito: ${projectIdentity.central_purpose}\n`;
+    if (projectIdentity.brand_personality && Array.isArray(projectIdentity.brand_personality)) {
+      contextualInfo += `Personalidade: ${projectIdentity.brand_personality.join(', ')}\n`;
+    }
+    if (projectIdentity.voice_tones && Array.isArray(projectIdentity.voice_tones)) {
+      contextualInfo += `Tom de voz: ${projectIdentity.voice_tones.join(', ')}\n`;
+    }
+    if (projectIdentity.keywords && Array.isArray(projectIdentity.keywords)) {
+      contextualInfo += `Palavras-chave: ${projectIdentity.keywords.join(', ')}\n`;
+    }
+  }
+
+  if (audienceSegment) {
+    contextualInfo += '\n\nPÚBLICO-ALVO SELECIONADO:\n';
+    if (audienceSegment.who_is) contextualInfo += `Quem é: ${audienceSegment.who_is}\n`;
+    if (audienceSegment.biggest_desire) contextualInfo += `Maior desejo: ${audienceSegment.biggest_desire}\n`;
+    if (audienceSegment.biggest_pain) contextualInfo += `Maior dor: ${audienceSegment.biggest_pain}\n`;
+    if (audienceSegment.beliefs) contextualInfo += `Crenças: ${audienceSegment.beliefs}\n`;
+    if (audienceSegment.behavior) contextualInfo += `Comportamento: ${audienceSegment.behavior}\n`;
+  }
+
+  if (offer) {
+    contextualInfo += '\n\nOFERTA SELECIONADA:\n';
+    if (offer.name) contextualInfo += `Nome: ${offer.name}\n`;
+    if (offer.type) contextualInfo += `Tipo: ${offer.type}\n`;
+    if (offer.what_is) contextualInfo += `O que é: ${offer.what_is}\n`;
+    if (offer.main_benefit) contextualInfo += `Benefício principal: ${offer.main_benefit}\n`;
+    if (offer.unique_mechanism) contextualInfo += `Mecanismo único: ${offer.unique_mechanism}\n`;
+    if (offer.differential) contextualInfo += `Diferencial: ${offer.differential}\n`;
+  }
+  
+  return prompt + contextualInfo + `
 
 CONTEXTO DA COPY ATUAL:
 ${copyContext}
@@ -448,9 +527,10 @@ ${historyContext}
 SEU PAPEL:
 - Você é um assistente especializado focado EXCLUSIVAMENTE nesta copy
 - Você TEM ACESSO ao histórico completo de gerações e modificações desta copy
+- Você TEM ACESSO ao contexto do projeto, público-alvo e oferta quando selecionados
 - Analise a estrutura e conteúdo atual para dar sugestões contextualizadas
 - Use o histórico para entender a evolução e dar feedback mais preciso
-- Sugira melhorias de copywriting, estrutura, persuasão e conversão
+- Sugira melhorias de copywriting, estrutura, persuasão e conversão alinhadas ao contexto
 - Identifique pontos fracos e oportunidades de otimização
 - Seja direto, prático e orientado a resultados
 
@@ -475,6 +555,7 @@ DIRETRIZES GERAIS:
 4. Seja específico - cite seções e blocos exatos ao dar feedback
 5. Priorize conversão e clareza na comunicação
 6. Considere o tipo de copy ao dar sugestões
+7. Quando contexto de público-alvo/oferta estiver disponível, use-o para personalizar sugestões
 
 IMPORTANTE:
 - Você tem memória das conversas anteriores sobre esta copy
@@ -483,6 +564,7 @@ IMPORTANTE:
 - Se o usuário pedir para implementar mudanças, explique que ele pode usar os botões de IA do editor
 - Quando sugerir mudanças, seja específico sobre onde e por quê
 - Se precisar de mais detalhes sobre uma geração específica, pergunte
+
 
 Agora responda à pergunta do usuário sobre esta copy:`;
 }
