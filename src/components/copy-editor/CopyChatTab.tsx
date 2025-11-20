@@ -55,6 +55,7 @@ import {
   extractVariables, 
   validateVariables, 
   getAllVariables, 
+  isValidVariable,
   CONTEXT_VARIABLES,
   VARIABLE_EXAMPLES 
 } from '@/lib/context-variables';
@@ -662,15 +663,19 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                 />
 
                 {/* Badge de variáveis detectadas */}
-                {extractVariables(message).length > 0 && (
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute top-2 right-2 text-xs"
-                  >
-                    <Hash className="h-3 w-3 mr-1" />
-                    {extractVariables(message).length}
-                  </Badge>
-                )}
+                {(() => {
+                  const vars = extractVariables(message);
+                  const validVars = vars.filter(v => isValidVariable(v));
+                  return validVars.length > 0 && (
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute top-2 right-2 text-xs"
+                    >
+                      <Hash className="h-3 w-3 mr-1" />
+                      {validVars.length}
+                    </Badge>
+                  );
+                })()}
 
                 {/* Autocomplete de variáveis */}
                 {showVariableSuggestions && filteredVariables.length > 0 && (
