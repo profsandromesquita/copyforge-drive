@@ -671,36 +671,48 @@ Quando gerar conteúdo copiável (headlines, anúncios, textos), siga estas dire
    - Mantenha o conteúdo limpo e copiável
    - Evite formatações excessivas
 
-4. **ORGANIZAÇÃO EM SESSÕES (IMPORTANTE):**
-   - Quando criar múltiplos itens INDEPENDENTES (ex: 3 anúncios, 5 headlines), SEMPRE use numeração NO NÍVEL SUPERIOR
-   - Para conteúdo simples (headlines curtas, textos curtos): use formato "1.", "2.", "3."
-   - Para conteúdo ESTRUTURADO/COMPLEXO (roteiros de vídeo, anúncios detalhados): use formato "### 1.", "### 2.", "### 3."
-   - Cada item numerado de nível superior será automaticamente convertido em uma SESSÃO SEPARADA
-   - DENTRO de cada item, você pode ter sub-estruturas livremente - elas ficarão na mesma sessão
+ 4. **ORGANIZAÇÃO EM SESSÕES (IMPORTANTE):**
+   - Para múltiplos itens INDEPENDENTES (ex: 3 anúncios, 5 headlines), use:
+     - Para conteúdo simples: "1.", "2.", "3.", etc.
+     - Para conteúdo estruturado/complexo (roteiros, anúncios detalhados): "### 1.", "### 2.", "### 3.", seguido do título do item
+   - Cada item numerado de nível superior se tornará UMA SESSÃO separada
+   - Sub-estruturas dentro de cada item (cenas, etapas, partes) devem permanecer dentro da mesma sessão
    
-   Exemplo CORRETO para 3 roteiros de vídeo (estruturados):
+5. **REGRA CRÍTICA SOBRE NUMERAÇÃO INTERNA:**
+   - A numeração "1.", "2.", "3." NO INÍCIO DA LINHA é reservada APENAS para separar itens INDEPENDENTES (ex: 2 anúncios, 3 roteiros)
+   - DENTRO de cada anúncio/roteiro você NÃO DEVE usar linhas começando com "1.", "2.", "3."
+   - Para cenas internas, etapas e tempos use:
+     - Marcadores simples: "- Cena 1: ...", "- Cena 2: ...", "- Etapa 1: ..."
+     - Ou timestamps: "(0-5s) Cena de abertura...", "(5-10s) Close no rosto...", etc.
+     - Ou títulos em negrito: "**Cena 1:** ...", "**Parte 1:** ..."
+   - NUNCA escreva cenas ou etapas internas como:
+     - "1. Cena 1..."
+     - "2. Cena 2..."
+   - Isso é CRÍTICO porque o sistema usa a numeração de nível superior para separar SESSÕES
    
-   ### 1. Roteiro de Vídeo: "A Exaustão Silenciosa"
+   Exemplo CORRETO para 2 anúncios em vídeo:
    
-   **Duração:** ~1 minuto
-   **Foco:** Exaustão crônica
-   
-   **(0-5s) CENA:** Início com closes rápidos...
-   **(ÁUDIO):** Sons ambiente...
-   
-   **(5-15s) CENA:** Mulher sentada...
-   **(NARRADOR):** "Você sente que..."
-   
-   ### 2. Roteiro de Vídeo: "A Frustração Velada"
-   
-   **Duração:** ~1 minuto
-   **Foco:** Frustração e invisibilidade
-   
-   **(0-5s) CENA:** Mulher olhando pela janela...
-   
-   ### 3. Roteiro de Vídeo: "A Sobrecarga Emocional"
+   ### 1. Anúncio em Vídeo: "Título Atraente 1"
    
    **Duração:** ~1 minuto
+   **Foco:** [aspecto principal]
+   
+   (0-5s) CENA DE ABERTURA: [descrição]
+   (5-15s) DESENVOLVIMENTO: [descrição]
+   (15-30s) PROBLEMA: [descrição]
+   (30-45s) SOLUÇÃO: [descrição]
+   (45-60s) CALL TO ACTION: [descrição]
+   
+   ### 2. Anúncio em Vídeo: "Título Atraente 2"
+   
+   **Duração:** ~1 minuto
+   **Foco:** [aspecto principal]
+   
+   (0-5s) CENA DE ABERTURA: [descrição]
+   (5-15s) DESENVOLVIMENTO: [descrição]
+   (15-30s) PROBLEMA: [descrição]
+   (30-45s) SOLUÇÃO: [descrição]
+   (45-60s) CALL TO ACTION: [descrição]
    
    Exemplo CORRETO para 3 headlines simples:
       
