@@ -1,13 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sparkles, ChevronRight } from 'lucide-react';
-import { parseAIResponse, parseAIResponseWithStructure, convertParsedBlocksToSessions, type ExpectedStructure } from '@/lib/ai-content-parser';
+import { parseAIResponse, convertParsedBlocksToSessions } from '@/lib/ai-content-parser';
 import { ChatGeneratedPreviewModal } from './ChatGeneratedPreviewModal';
-import { useCopyEditor } from '@/hooks/useCopyEditor';
 import type { SelectedItem } from '@/hooks/useCopyEditor';
-import type { Session, Block } from '@/types/copy-editor';
+import type { Session } from '@/types/copy-editor';
 
 interface ChatMessage {
   id: string;
@@ -34,55 +33,9 @@ export function AIMessageWithActions({
   onReplaceAll,
 }: AIMessageWithActionsProps) {
   const [showModal, setShowModal] = useState(false);
-  const { sessions } = useCopyEditor();
 
-  // Calculate expected structure from selection
-  const expectedStructure: ExpectedStructure | undefined = useMemo(() => {
-    if (!hasSelection || selectedItems.length === 0) return undefined;
-
-    const sessionMap = new Map<string, { title: string; blockCount: number; blockTypes: Block['type'][] }>();
-
-    selectedItems.forEach(item => {
-      if (item.type === 'session') {
-        const session = sessions.find(s => s.id === item.id);
-        if (session) {
-          sessionMap.set(item.id, {
-            title: session.title,
-            blockCount: session.blocks.length,
-            blockTypes: session.blocks.map(b => b.type),
-          });
-        }
-      } else if (item.type === 'block') {
-        const blockId = `block-${item.id}`;
-        if (!sessionMap.has(blockId)) {
-          const session = sessions.find(s => s.id === item.sessionId);
-          const block = session?.blocks.find(b => b.id === item.id);
-          if (block) {
-            sessionMap.set(blockId, {
-              title: `Bloco de ${session?.title || 'sessão'}`,
-              blockCount: 1,
-              blockTypes: [block.type],
-            });
-          }
-        }
-      }
-    });
-
-    if (sessionMap.size === 0) return undefined;
-
-    return {
-      sessions: Array.from(sessionMap.values()),
-    };
-  }, [hasSelection, selectedItems, sessions]);
-
-  // Use structure-aware parsing when we have expected structure
-  const parsed = useMemo(() => {
-    if (expectedStructure) {
-      return parseAIResponseWithStructure(message.content, expectedStructure);
-    }
-    return parseAIResponse(message.content);
-  }, [message.content, expectedStructure]);
-
+  // Always use normal parsing - don't force structure
+  const parsed = parseAIResponse(message.content);
   const generatedSessions = parsed.hasActionableContent 
     ? convertParsedBlocksToSessions(parsed.blocks)
     : [];
