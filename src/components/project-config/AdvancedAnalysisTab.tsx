@@ -40,14 +40,18 @@ export function AdvancedAnalysisTab({
         s.id === segment.id ? { ...s, advanced_analysis: editedAnalysis } : s
       );
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      if (updateError) throw updateError;
+
+      // Atualizar primeiro o estado local
       onUpdate(updatedSegments);
       setIsEditing(false);
+      // Depois recarregar do banco para sincronizar
+      await refreshProjects();
       toast.success('Análise atualizada com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar análise:', error);
@@ -96,13 +100,17 @@ export function AdvancedAnalysisTab({
         s.id === segment.id ? updatedSegment : s
       );
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      if (updateError) throw updateError;
+
+      // Atualizar primeiro o estado local
       onUpdate(updatedSegments);
+      // Depois recarregar do banco para sincronizar
+      await refreshProjects();
       toast.success('Análise gerada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao gerar análise:', error);
@@ -148,13 +156,17 @@ export function AdvancedAnalysisTab({
         s.id === segment.id ? updatedSegment : s
       );
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      if (updateError) throw updateError;
+
+      // Atualizar primeiro o estado local
       onUpdate(updatedSegments);
+      // Depois recarregar do banco para sincronizar
+      await refreshProjects();
       toast.success('Análise regenerada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao regenerar análise:', error);
