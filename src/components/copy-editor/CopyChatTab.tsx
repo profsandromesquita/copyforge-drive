@@ -286,7 +286,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full relative bg-muted/90">
+      <div className="flex flex-col h-full relative bg-background">
         {/* Header */}
         <div className="flex items-center justify-end gap-1 p-3 border-b bg-transparent">
           <Button
@@ -369,7 +369,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
 
         {/* Input Area - Floating */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
-          <div className="bg-background border border-border rounded-xl shadow-lg backdrop-blur-xl supports-[backdrop-filter]:bg-background/95">
+          <div className="bg-chat-input border border-border rounded-xl shadow-lg">
             {/* Selected Items Display */}
             {selectedItems.length > 0 && (
               <div className="px-4 pt-3 pb-2 border-b border-border/40 animate-fade-in">
