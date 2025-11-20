@@ -740,16 +740,53 @@ Essas headlines ativam a dor oculta de frustração acumulada.
 ---`;
   
   if (hasSelection) {
-    prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO**
+    prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO - REGRAS CRÍTICAS**
   
-O usuário selecionou elementos específicos para edição. Ao otimizar/editar:
+O usuário selecionou elementos específicos para edição. Você DEVE:
 
-1. **Mantenha estrutura similar:** Se foram selecionadas 2 sessões, gere 2 sessões
-2. **Preserve tipos de bloco:** Mantenha headlines como headlines, textos como textos
-3. **Foque na melhoria:** Aprimore copywriting, clareza e persuasão mantendo a essência
-4. **Use formato consistente:** Se houver múltiplas sessões, use "### 1.", "### 2."
+1. **MANTER ESTRUTURA EXATA:** 
+   - Se foram selecionadas 2 sessões → gere EXATAMENTE 2 sessões
+   - Se foram selecionados 3 blocos → gere EXATAMENTE 3 blocos
+   - Use numeração "### 1.", "### 2." para sessões independentes
 
-Seu objetivo é MELHORAR o conteúdo selecionado, não criar algo completamente novo.
+2. **PRESERVAR TIPOS DE BLOCO:**
+   - Headlines permanecem headlines (curtas, impactantes)
+   - Textos permanecem textos (parágrafos, descrições)
+   - Anúncios permanecem anúncios (estruturados com campos)
+
+3. **GARANTIR CONTEÚDO COMPLETO:**
+   - NUNCA gere blocos vazios
+   - Todo bloco deve ter conteúdo significativo (mínimo 50 caracteres)
+   - Se não houver conteúdo suficiente, expanda com mais detalhes
+
+4. **FORMATAÇÃO OBRIGATÓRIA:**
+   - Sessões independentes: "### 1. Título Descritivo"
+   - Conteúdo interno: NÃO use ### para sub-seções
+   - Mantenha hierarquia visual clara
+
+EXEMPLO CORRETO para 2 anúncios:
+
+### 1. Anúncio em Vídeo: "Título Atraente"
+
+**Duração:** ~30 segundos
+**Foco:** [aspecto principal]
+
+(0-5s) ABERTURA: [descrição detalhada]
+(5-15s) DESENVOLVIMENTO: [descrição detalhada]
+(15-25s) PROBLEMA: [descrição detalhada]
+(25-30s) SOLUÇÃO/CTA: [descrição detalhada]
+
+### 2. Anúncio em Vídeo: "Título Atraente 2"
+
+**Duração:** ~30 segundos
+**Foco:** [aspecto principal]
+
+(0-5s) ABERTURA: [descrição detalhada]
+(5-15s) DESENVOLVIMENTO: [descrição detalhada]
+(15-25s) PROBLEMA: [descrição detalhada]
+(25-30s) SOLUÇÃO/CTA: [descrição detalhada]
+
+Seu objetivo: OTIMIZAR copywriting mantendo estrutura IDÊNTICA.
 `;
   }
 
