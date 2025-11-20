@@ -18,11 +18,12 @@ export function parseAIResponse(markdown: string): ParsedMessage {
   const blocks: ParsedContent[] = [];
   let explanation = '';
 
-  // Detectar blocos numerados (1., 2., 3., etc.)
-  const numberedBlockRegex = /^\s*(\d+)\.\s*(\*\*)?(.+?)(?:\*\*)?$/gm;
-  const matches = Array.from(markdown.matchAll(numberedBlockRegex));
+  // Detectar blocos numerados de nível superior (### 1. ou ### **1. ou simplesmente 1.)
+  // Este regex procura por linhas que começam com número seguido de ponto
+  const topLevelRegex = /^(?:#{1,3}\s+)?(?:\*\*)?\s*(\d+)\.\s*(?:\*\*)?(.+?)(?:\*\*)?$/gm;
+  const matches = Array.from(markdown.matchAll(topLevelRegex));
 
-  if (matches.length > 0) {
+  if (matches.length > 1) { // Só usar este método se houver múltiplos itens numerados
     // Extrair explicação antes do primeiro bloco numerado
     const firstMatch = matches[0];
     if (firstMatch.index && firstMatch.index > 0) {
@@ -32,10 +33,10 @@ export function parseAIResponse(markdown: string): ParsedMessage {
     // Processar cada bloco numerado
     matches.forEach((match, index) => {
       const number = match[1];
-      const content = match[3].trim();
+      const title = match[2].trim();
       const startIndex = match.index || 0;
       
-      // Determinar fim do bloco (início do próximo ou fim do texto)
+      // Determinar fim do bloco (início do próximo número de nível superior ou fim do texto)
       let endIndex: number;
       if (index < matches.length - 1) {
         endIndex = matches[index + 1].index || markdown.length;
@@ -43,30 +44,28 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         endIndex = markdown.length;
       }
 
-      // Extrair conteúdo completo do bloco (pode ter múltiplas linhas)
+      // Extrair conteúdo completo do bloco (inclui tudo até o próximo item numerado)
       const fullBlockContent = markdown.substring(startIndex, endIndex).trim();
       
-      // Remover o número e limpar
-      const cleanedContent = fullBlockContent
-        .replace(/^\s*\d+\.\s*/, '')
-        .replace(/^\*\*/, '')
-        .replace(/\*\*$/, '')
-        .trim();
+      // Remover apenas a primeira linha de numeração, mantendo o restante da estrutura
+      const contentLines = fullBlockContent.split('\n');
+      contentLines.shift(); // Remove primeira linha (o título numerado)
+      const cleanedContent = contentLines.join('\n').trim();
 
       // Inferir tipo baseado no conteúdo
-      const type = inferBlockType(cleanedContent, explanation);
+      const type = inferBlockType(cleanedContent, title);
 
       blocks.push({
         id: `block-${Date.now()}-${index}`,
         type,
-        title: `${number}.`,
+        title: `${number}. ${title}`,
         content: cleanedContent,
         rawContent: fullBlockContent,
         startIndex,
         endIndex,
       });
     });
-  } 
+  }
   // Detectar blocos de código
   else if (markdown.includes('```')) {
     const codeBlockRegex = /```[\s\S]*?```/g;

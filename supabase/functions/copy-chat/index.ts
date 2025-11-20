@@ -672,21 +672,43 @@ Quando gerar conteúdo copiável (headlines, anúncios, textos), siga estas dire
    - Evite formatações excessivas
 
 4. **ORGANIZAÇÃO EM SESSÕES (IMPORTANTE):**
-   - Quando criar múltiplos itens INDEPENDENTES (ex: 3 anúncios, 5 headlines), SEMPRE use numeração
-   - Cada item numerado será automaticamente convertido em uma SESSÃO SEPARADA
-   - Exemplo CORRETO para 3 anúncios:
-     
-     1. **Anúncio focado em dor**
-     Título: "Cansado de tentar e não conseguir?"
-     Corpo: Descubra o método que...
-     
-     2. **Anúncio focado em desejo**
-     Título: "Imagine alcançar seus objetivos em 30 dias"
-     Corpo: Com nosso sistema...
-     
-     3. **Anúncio focado em prova social**
-     Título: "Mais de 10 mil pessoas já conseguiram"
-     Corpo: Junte-se a elas...
+   - Quando criar múltiplos itens INDEPENDENTES (ex: 3 anúncios, 5 headlines), SEMPRE use numeração NO NÍVEL SUPERIOR
+   - Para conteúdo simples (headlines curtas, textos curtos): use formato "1.", "2.", "3."
+   - Para conteúdo ESTRUTURADO/COMPLEXO (roteiros de vídeo, anúncios detalhados): use formato "### 1.", "### 2.", "### 3."
+   - Cada item numerado de nível superior será automaticamente convertido em uma SESSÃO SEPARADA
+   - DENTRO de cada item, você pode ter sub-estruturas livremente - elas ficarão na mesma sessão
+   
+   Exemplo CORRETO para 3 roteiros de vídeo (estruturados):
+   
+   ### 1. Roteiro de Vídeo: "A Exaustão Silenciosa"
+   
+   **Duração:** ~1 minuto
+   **Foco:** Exaustão crônica
+   
+   **(0-5s) CENA:** Início com closes rápidos...
+   **(ÁUDIO):** Sons ambiente...
+   
+   **(5-15s) CENA:** Mulher sentada...
+   **(NARRADOR):** "Você sente que..."
+   
+   ### 2. Roteiro de Vídeo: "A Frustração Velada"
+   
+   **Duração:** ~1 minuto
+   **Foco:** Frustração e invisibilidade
+   
+   **(0-5s) CENA:** Mulher olhando pela janela...
+   
+   ### 3. Roteiro de Vídeo: "A Sobrecarga Emocional"
+   
+   **Duração:** ~1 minuto
+   
+   Exemplo CORRETO para 3 headlines simples:
+      
+   1. **"Você está preso no ciclo de tentativas fracassadas?"**
+   
+   2. **"Cansado de ver esforço sem resultado?"**
+   
+   3. **"E se o problema não é você, mas o método?"**
 
 EXEMPLO DE BOA FORMATAÇÃO:
 
