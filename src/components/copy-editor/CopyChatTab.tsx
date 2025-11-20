@@ -238,57 +238,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     },
   });
 
-  // Helper para construir metadados estruturais da seleção
-  const buildStructureMetadata = (): string => {
-    if (selectedItems.length === 0) return '';
-
-    let metadata = '\n\n**ESTRUTURA ESPERADA NO RESULTADO:**\n';
-    
-    // Contar sessões únicas selecionadas
-    const selectedSessionIds = new Set<string>();
-    const sessionBlockCounts: Map<string, { title: string; blockCount: number; blockTypes: string[] }> = new Map();
-    
-    selectedItems.forEach(item => {
-      if (item.type === 'session') {
-        selectedSessionIds.add(item.id);
-        const session = sessions.find(s => s.id === item.id);
-        if (session) {
-          sessionBlockCounts.set(item.id, {
-            title: session.title,
-            blockCount: session.blocks.length,
-            blockTypes: session.blocks.map(b => b.type)
-          });
-        }
-      } else if (item.type === 'block') {
-        // Contar como bloco individual
-        selectedSessionIds.add(`block-${item.id}`);
-        const session = sessions.find(s => s.id === item.sessionId);
-        const block = session?.blocks.find(b => b.id === item.id);
-        if (block) {
-          sessionBlockCounts.set(`block-${item.id}`, {
-            title: `Bloco de ${session?.title || 'sessão'}`,
-            blockCount: 1,
-            blockTypes: [block.type]
-          });
-        }
-      }
-    });
-
-    const totalSessions = sessionBlockCounts.size;
-    metadata += `- Total de sessões/itens: ${totalSessions}\n`;
-    
-    let index = 1;
-    sessionBlockCounts.forEach((info) => {
-      const typesStr = info.blockTypes.join(', ');
-      metadata += `- Sessão ${index}: ${info.blockCount} ${info.blockCount === 1 ? 'bloco' : 'blocos'} (${typesStr})\n`;
-      index++;
-    });
-
-    metadata += '\n**IMPORTANTE:** Mantenha EXATAMENTE esta estrutura na sua resposta.\n';
-    
-    return metadata;
-  };
-
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || !copyId) return;
@@ -337,9 +286,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
           }
         }
       });
-
-      // Adicionar metadados estruturais
-      selectionContext += buildStructureMetadata();
     }
 
     const fullMessage = trimmedMessage + selectionContext;

@@ -740,47 +740,16 @@ Essas headlines ativam a dor oculta de frustração acumulada.
 ---`;
   
   if (hasSelection) {
-    prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO - REGRAS DE ESTRUTURA**
+    prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO**
   
-Quando elementos estão selecionados para edição:
+O usuário selecionou elementos específicos para edição. Ao otimizar/editar:
 
-1. **PRESERVE A ESTRUTURA EXATA:**
-   - Se o contexto indica "2 sessões", você DEVE gerar EXATAMENTE 2 sessões
-   - Se uma sessão tem "3 blocos", você DEVE gerar EXATAMENTE 3 blocos para aquela sessão
-   - Use a mesma numeração e organização (### 1., ### 2., etc.)
+1. **Mantenha estrutura similar:** Se foram selecionadas 2 sessões, gere 2 sessões
+2. **Preserve tipos de bloco:** Mantenha headlines como headlines, textos como textos
+3. **Foque na melhoria:** Aprimore copywriting, clareza e persuasão mantendo a essência
+4. **Use formato consistente:** Se houver múltiplas sessões, use "### 1.", "### 2."
 
-2. **MANTENHA OS TIPOS DE BLOCO:**
-   - Se o bloco original é "text", mantenha como texto
-   - Se é "headline", mantenha como headline
-   - Não mude os tipos a menos que explicitamente solicitado
-
-3. **FORMATO OBRIGATÓRIO:**
-   - Para múltiplas sessões: use "### 1. Título", "### 2. Título"
-   - Dentro de cada sessão: mantenha o conteúdo contínuo sem numeração interna
-   - Não adicione nem remova sessões/blocos além do solicitado
-
-4. **FOCO NA OTIMIZAÇÃO:**
-   - Melhore o CONTEÚDO (copywriting, persuasão, clareza)
-   - Mantenha a ESTRUTURA (número de sessões e blocos)
-   
-EXEMPLO:
-Se o contexto indica "2 sessões com 3 blocos cada", sua resposta DEVE ter:
-
-### 1. [Título da Sessão 1]
-
-[Conteúdo otimizado do bloco 1]
-
-[Conteúdo otimizado do bloco 2]
-
-[Conteúdo otimizado do bloco 3]
-
-### 2. [Título da Sessão 2]
-
-[Conteúdo otimizado do bloco 1]
-
-[Conteúdo otimizado do bloco 2]
-
-[Conteúdo otimizado do bloco 3]
+Seu objetivo é MELHORAR o conteúdo selecionado, não criar algo completamente novo.
 `;
   }
 
