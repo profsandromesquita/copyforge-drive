@@ -34,15 +34,15 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     .find(b => b.id === selectedBlockId);
 
   const sidebarContent = (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col relative bg-slate-950 text-slate-100">
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4">
-            <TabsTrigger value="ai" className="gap-2">
+          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 bg-slate-900 border-slate-800">
+            <TabsTrigger value="ai" className="gap-2 data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100">
               <Sparkle size={16} weight="fill" />
               Copy IA
             </TabsTrigger>
-            <TabsTrigger value="chat" className="gap-2">
+            <TabsTrigger value="chat" className="gap-2 data-[state=active]:bg-slate-800 data-[state=active]:text-slate-100">
               <ChatCircle size={16} weight="fill" />
               Chat
             </TabsTrigger>
@@ -61,7 +61,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       </div>
 
       {showImageAI && imageBlockId && (
-        <div className="absolute inset-0 bg-background z-20">
+        <div className="absolute inset-0 bg-slate-950 z-20">
           <div className="h-full p-4 overflow-y-auto">
             <ImageAITab 
               block={sessions.flatMap(s => s.blocks).find(b => b.id === imageBlockId)!} 
@@ -72,7 +72,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
       )}
 
       {selectedBlock && !showImageAI && (
-        <div className="absolute inset-0 bg-background z-10">
+        <div className="absolute inset-0 bg-slate-950 z-10">
           <div className="h-full p-4 overflow-y-auto">
             <BlockSettings
               block={selectedBlock}
@@ -107,7 +107,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     <>
       {/* Sidebar with slide animation */}
       {isOpen && (
-        <aside className="w-[416px] border-l bg-background flex-shrink-0">
+        <aside className="w-[416px] border-l border-slate-800 bg-slate-950 flex-shrink-0 shadow-xl">
           {sidebarContent}
         </aside>
       )}
