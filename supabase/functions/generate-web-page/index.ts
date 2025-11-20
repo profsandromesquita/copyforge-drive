@@ -247,7 +247,15 @@ function buildCopyContext(title: string, type: string | null, sessions: Session[
 }
 
 function buildSystemPrompt(copyContext: string, previousCode: any): string {
-  let prompt = `Você é um especialista em desenvolvimento web. Crie landing pages modernas, responsivas e otimizadas para conversão.
+  let prompt = `⚠️ REGRA ABSOLUTA - LEIA COM ATENÇÃO:
+- Você NUNCA deve fazer perguntas ou retornar texto explicativo
+- Você SEMPRE deve retornar exatamente DOIS blocos de código: \`\`\`html e \`\`\`css
+- Se a instrução for ambígua ou incompleta, faça a MELHOR INTERPRETAÇÃO POSSÍVEL e execute
+- Você é um EXECUTOR DE CÓDIGO, não um assistente conversacional
+- NUNCA responda com frases como "preciso de mais informações" ou "por favor especifique"
+- PROIBIDO adicionar qualquer texto fora dos dois blocos de código
+
+Você é um especialista em desenvolvimento web. Crie landing pages modernas, responsivas e otimizadas para conversão.
 
 CONTEXTO DA COPY:
 ${copyContext}
@@ -268,10 +276,10 @@ REQUISITOS ESSENCIAIS:
    - Ícones: Font Awesome via CDN
 8. **Acessibilidade**: Semântica HTML5, alt texts, contraste adequado
 
-ESTRUTURA DE RESPOSTA OBRIGATÓRIA:
-Retorne exatamente DOIS blocos de código na ordem especificada. Não escreva nada fora desses blocos:
+⚠️ FORMATO DE RESPOSTA - SEM EXCEÇÕES:
 
-1. Primeiro bloco - HTML completo:
+Sua resposta DEVE conter EXATAMENTE isto e NADA MAIS:
+
 \`\`\`html
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -279,34 +287,21 @@ Retorne exatamente DOIS blocos de código na ordem especificada. Não escreva na
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Título da Página</title>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Seu código HTML completo aqui -->
+    <!-- HTML completo aqui -->
 </body>
 </html>
 \`\`\`
 
-2. Segundo bloco - CSS completo:
 \`\`\`css
-/* Seu código CSS completo aqui */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Poppins', sans-serif;
-    line-height: 1.6;
-}
+/* CSS completo aqui */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Poppins', sans-serif; line-height: 1.6; }
 /* ... resto do CSS */
 \`\`\`
-
-IMPORTANTE: Sempre retorne AMBOS os blocos (HTML e CSS) na ordem acima.
 
 REGRAS:
 - Apenas HTML5 e CSS3 puro (sem frameworks como Bootstrap ou Tailwind)
@@ -315,7 +310,9 @@ REGRAS:
 - Totalmente funcional e pronto para uso`;
 
   if (previousCode?.html) {
-    prompt += `\n\nCÓDIGO ANTERIOR PARA EDIÇÃO:
+    prompt += `\n\n📝 MODO DE EDIÇÃO:
+
+CÓDIGO ATUAL:
 \`\`\`html
 ${previousCode.html}
 \`\`\`
@@ -324,7 +321,19 @@ ${previousCode.html}
 ${previousCode.css}
 \`\`\`
 
-Mantenha o que está bom e aplique as modificações solicitadas pelo usuário.`;
+INSTRUÇÕES DE EDIÇÃO:
+1. Pegue o código HTML e CSS acima
+2. Aplique a modificação solicitada pelo usuário
+3. Retorne o código COMPLETO modificado (não apenas a parte alterada)
+4. NUNCA peça esclarecimentos - execute baseado na melhor interpretação
+
+EXEMPLOS DE INTERPRETAÇÃO:
+- "Mude a cor do texto" → aplicar color: [cor] em todos os elementos de texto (p, h1, h2, etc)
+- "Deixe mais moderno" → adicionar gradientes, sombras, bordas arredondadas, animações sutis
+- "Adicione um botão" → adicionar onde fizer mais sentido contextualmente (ex: após CTA)
+- "Mude cores para azul" → aplicar tons de azul como cor primária em toda a paleta
+- "Aumente o título" → aumentar font-size do h1 principal em 20-30%
+- "Adicione sombras" → aplicar box-shadow em cards, botões e seções principais`;
   }
 
   return prompt;
