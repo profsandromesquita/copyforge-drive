@@ -127,13 +127,60 @@ serve(async (req) => {
     console.log('Extracted HTML length:', html?.length || 0);
     console.log('Extracted CSS length:', css?.length || 0);
     
-    // Validar se HTML e CSS foram extraídos
-    if (!html || !css || html.trim() === '' || css.trim() === '') {
-      console.error('IA não retornou HTML/CSS válido. Full response:', aiResponse);
+    // Validar se HTML foi extraído (obrigatório)
+    if (!html || html.trim() === '') {
+      console.error('IA não retornou HTML válido. Full response:', aiResponse);
       return new Response(
         JSON.stringify({ error: 'AI did not return valid HTML/CSS. Please try again.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // CSS é opcional - aplicar fallback se ausente
+    let finalCss = css?.trim() || '';
+    if (!finalCss) {
+      console.warn('IA não retornou CSS. Aplicando CSS base padrão.');
+      finalCss = `* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #fff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+section {
+  padding: 3rem 1.5rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+button, .btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-decoration: none;
+}`;
     }
 
     // Debitar créditos
@@ -150,7 +197,7 @@ serve(async (req) => {
         model_used: 'google/gemini-2.5-flash',
         generation_category: 'web_page',
         prompt: userInstruction,
-        sessions: { html, css },
+        sessions: { html, css: finalCss },
         input_tokens: usage.prompt_tokens,
         output_tokens: usage.completion_tokens,
         total_tokens: usage.total_tokens,
@@ -173,7 +220,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ html, css, message }),
+      JSON.stringify({ html, css: finalCss, message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -222,8 +269,9 @@ REQUISITOS ESSENCIAIS:
 8. **Acessibilidade**: Semântica HTML5, alt texts, contraste adequado
 
 ESTRUTURA DE RESPOSTA OBRIGATÓRIA:
-Retorne APENAS os blocos de código, sem explicações adicionais fora dos blocos:
+Retorne exatamente DOIS blocos de código na ordem especificada. Não escreva nada fora desses blocos:
 
+1. Primeiro bloco - HTML completo:
 \`\`\`html
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -242,6 +290,7 @@ Retorne APENAS os blocos de código, sem explicações adicionais fora dos bloco
 </html>
 \`\`\`
 
+2. Segundo bloco - CSS completo:
 \`\`\`css
 /* Seu código CSS completo aqui */
 * {
@@ -256,6 +305,8 @@ body {
 }
 /* ... resto do CSS */
 \`\`\`
+
+IMPORTANTE: Sempre retorne AMBOS os blocos (HTML e CSS) na ordem acima.
 
 REGRAS:
 - Apenas HTML5 e CSS3 puro (sem frameworks como Bootstrap ou Tailwind)
