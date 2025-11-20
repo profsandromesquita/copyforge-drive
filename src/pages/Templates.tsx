@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Sparkle, MagnifyingGlass } from 'phosphor-react';
+import { SquaresFour, MagnifyingGlass } from 'phosphor-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -231,7 +231,7 @@ const Templates = () => {
             ) : filteredTemplates.length === 0 ? (
               <div className="text-center py-20">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <Sparkle size={32} className="text-primary" weight="duotone" />
+                  <SquaresFour size={32} className="text-primary" weight="duotone" />
                 </div>
                 <h2 className="text-xl font-semibold text-foreground mb-2">
                   {searchQuery ? 'Nenhum modelo encontrado' : 'Nenhum modelo ainda'}
