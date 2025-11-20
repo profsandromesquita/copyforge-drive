@@ -280,34 +280,26 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
     <TooltipProvider>
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h3 className="font-semibold text-foreground">Chat IA Especialista</h3>
-            <p className="text-sm text-muted-foreground">
-              Converse sobre esta copy com a IA
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-1 p-3 border-b">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowHistory(true)}
+            className="h-8 w-8"
+          >
+            <History className="h-4 w-4" />
+          </Button>
+          {chatHistory.length > 0 && (
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => setShowHistory(true)}
+              size="icon"
+              onClick={() => clearHistoryMutation.mutate()}
+              disabled={clearHistoryMutation.isPending}
+              className="h-8 w-8"
             >
-              <History className="h-4 w-4 mr-2" />
-              Histórico
+              <Trash2 className="h-4 w-4" />
             </Button>
-            {chatHistory.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => clearHistoryMutation.mutate()}
-                disabled={clearHistoryMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Limpar
-              </Button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Chat Messages */}
