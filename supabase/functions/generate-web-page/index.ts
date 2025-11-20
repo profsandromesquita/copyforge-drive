@@ -84,6 +84,15 @@ serve(async (req) => {
 
     // Chamar Lovable AI com GPT-5
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY não configurada');
+      return new Response(
+        JSON.stringify({ error: 'AI configuration missing' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -100,7 +109,10 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      return new Response(
+        JSON.stringify({ error: `AI API error: ${response.status}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await response.json();
@@ -108,6 +120,15 @@ serve(async (req) => {
 
     // Extrair HTML e CSS da resposta
     const { html, css, message } = extractCode(aiResponse);
+    
+    // Validar se HTML e CSS foram extraídos
+    if (!html || !css || html.trim() === '' || css.trim() === '') {
+      console.error('IA não retornou HTML/CSS válido:', aiResponse.substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: 'AI did not return valid HTML/CSS. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Debitar créditos
     const usage = aiData.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };

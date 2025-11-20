@@ -100,9 +100,17 @@ export function WebChatPanel({
 
       if (data?.error) {
         let errorMessage = 'Erro ao gerar a página. Tente novamente.';
+        
         if (data.error === 'insufficient_credits') {
           errorMessage = 'Créditos insuficientes. Adicione créditos para continuar.';
+        } else if (data.error === 'AI configuration missing') {
+          errorMessage = 'Problema interno de configuração da IA. Contate o suporte.';
+        } else if (data.error.includes('AI API error')) {
+          errorMessage = 'Falha temporária no modelo de IA. Tente novamente em alguns instantes.';
+        } else if (data.error.includes('AI did not return valid HTML/CSS')) {
+          errorMessage = 'A IA não retornou um código válido. Tente reformular sua solicitação.';
         }
+        
         throw new Error(errorMessage);
       }
 
@@ -114,6 +122,8 @@ export function WebChatPanel({
       
       if (data.html && data.css) {
         onCodeGenerated(data.html, data.css);
+      } else {
+        throw new Error('A IA não retornou um código válido. Tente novamente.');
       }
     } catch (error: any) {
       console.error('Erro ao gerar página:', error);
@@ -124,7 +134,13 @@ export function WebChatPanel({
       } else if (error.message?.includes('Usuário não autenticado') || error.message?.includes('401')) {
         errorMessage = 'Sua sessão expirou. Por favor, recarregue a página e faça login novamente.';
       } else if (error.message?.includes('429')) {
-        errorMessage = 'Limite de requisições atingido. Aguarde alguns instantes.';
+        errorMessage = 'Muitas requisições. Aguarde alguns segundos e tente novamente.';
+      } else if (error.message?.includes('AI configuration missing')) {
+        errorMessage = 'Problema interno de configuração da IA. Contate o suporte.';
+      } else if (error.message?.includes('AI API error')) {
+        errorMessage = 'Falha temporária no modelo de IA. Tente novamente em alguns instantes.';
+      } else if (error.message?.includes('AI did not return valid')) {
+        errorMessage = error.message;
       }
       
       toast({
@@ -132,10 +148,10 @@ export function WebChatPanel({
         description: errorMessage,
         variant: 'destructive',
       });
-      
+
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: errorMessage },
+        { role: 'assistant', content: `Erro: ${errorMessage}` },
       ]);
     } finally {
       setIsGenerating(false);
