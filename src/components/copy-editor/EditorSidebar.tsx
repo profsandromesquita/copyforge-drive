@@ -37,7 +37,8 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     <div className="h-full flex flex-col relative bg-background">
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 bg-background">
+          <div className="px-4 pt-4 pb-2">
+            <TabsList className="grid w-full grid-cols-2 bg-background">
             <TabsTrigger value="ai" className="gap-2">
               <Sparkle size={16} weight="fill" />
               Copy IA
@@ -47,6 +48,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
               Chat
             </TabsTrigger>
           </TabsList>
+          </div>
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
             <div className="h-full p-4 overflow-y-auto">
               <CopyAITab />
