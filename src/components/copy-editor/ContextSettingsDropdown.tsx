@@ -81,32 +81,12 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
       let newMethodologyId = methodologyId;
       
       if (field === 'audience') {
-        // Validar se é um UUID válido antes de salvar
-        if (value && !isValidUUID(value)) {
-          console.error('ID de audience segment inválido:', value);
-          toast({
-            title: 'Erro ao salvar',
-            description: 'ID do público-alvo inválido. Por favor, reconfigure seu projeto.',
-            variant: 'destructive',
-          });
-          setIsSaving(false);
-          return;
-        }
+        // Agora aceitamos qualquer identificador de público vindo do projeto
         newAudienceId = value;
         setAudienceSegmentId(value);
         updateData.selected_audience_id = value || null;
       } else if (field === 'offer') {
-        // Validar se é um UUID válido antes de salvar
-        if (value && !isValidUUID(value)) {
-          console.error('ID de oferta inválido:', value);
-          toast({
-            title: 'Erro ao salvar',
-            description: 'ID da oferta inválido. Por favor, reconfigure seu projeto.',
-            variant: 'destructive',
-          });
-          setIsSaving(false);
-          return;
-        }
+        // Agora aceitamos qualquer identificador de oferta vindo do projeto
         newOfferId = value;
         setOfferId(value);
         updateData.selected_offer_id = value || null;
