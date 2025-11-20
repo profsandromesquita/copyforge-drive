@@ -104,6 +104,7 @@ serve(async (req) => {
     let audienceSegment = null;
     let offer = null;
     let projectIdentity = null;
+    let methodology = null;
 
     if (copy.project_id) {
       const { data: projectData } = await supabase
@@ -130,6 +131,11 @@ serve(async (req) => {
         // Buscar offer se selecionado
         if (copy.selected_offer_id && Array.isArray(projectData.offers)) {
           offer = projectData.offers.find((off: any) => off.id === copy.selected_offer_id);
+        }
+
+        // Buscar metodologia se disponível
+        if (projectData.methodology) {
+          methodology = projectData.methodology;
         }
       }
     }
@@ -197,8 +203,28 @@ serve(async (req) => {
     // Verificar se há elementos selecionados na mensagem
     const hasSelection = message.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**');
 
-    // Construir system prompt especializado COM histórico e contexto de projeto/audience/offer
-    const systemPrompt = buildSystemPrompt(copyContext, historyContext, hasSelection, projectIdentity, audienceSegment, offer);
+    // ==================== SISTEMA DE VARIÁVEIS ====================
+    // Processar variáveis na mensagem
+    const variableContext = {
+      projectIdentity,
+      audienceSegment,
+      offer,
+      methodology
+    };
+
+    const { enhancedMessage, variableContextText } = parseVariablesInMessage(message, variableContext);
+
+    // Construir system prompt especializado COM histórico, contexto e variáveis
+    const systemPrompt = buildSystemPrompt(
+      copyContext, 
+      historyContext, 
+      hasSelection, 
+      projectIdentity, 
+      audienceSegment, 
+      offer,
+      methodology,
+      variableContextText // NOVO: contexto de variáveis
+    );
 
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
@@ -207,7 +233,7 @@ serve(async (req) => {
         role: msg.role as 'user' | 'assistant',
         content: msg.content
       })),
-      { role: 'user' as const, content: message }
+      { role: 'user' as const, content: enhancedMessage } // Usar mensagem original (variáveis são processadas no system prompt)
     ];
 
     console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens (com histórico de ${generationHistory?.length || 0} gerações)`);
@@ -458,13 +484,173 @@ function getAffectedSessions(newSessions: any, originalContent: any): string[] {
   return affected;
 }
 
+// ==================== SISTEMA DE VARIÁVEIS CONTEXTUAIS ====================
+
+interface VariableContext {
+  projectIdentity: any;
+  audienceSegment: any;
+  offer: any;
+  methodology: any;
+}
+
+function parseVariablesInMessage(
+  message: string, 
+  context: VariableContext
+): { enhancedMessage: string; variableContextText: string } {
+  
+  const variableRegex = /#([a-zA-Z_]+)/g;
+  const matches = Array.from(message.matchAll(variableRegex));
+  
+  if (matches.length === 0) {
+    return { enhancedMessage: message, variableContextText: '' };
+  }
+  
+  // Mapeamento completo de variáveis
+  const variableDefinitions: Record<string, { path: string; label: string }> = {
+    // PROJETO
+    nome_marca: { path: 'projectIdentity.brand_name', label: 'Nome da Marca' },
+    setor: { path: 'projectIdentity.sector', label: 'Setor' },
+    proposito: { path: 'projectIdentity.central_purpose', label: 'Propósito' },
+    personalidade: { path: 'projectIdentity.brand_personality', label: 'Personalidade' },
+    tom_voz: { path: 'projectIdentity.voice_tones', label: 'Tom de Voz' },
+    palavras_chave: { path: 'projectIdentity.keywords', label: 'Palavras-chave' },
+    
+    // PÚBLICO-ALVO (Manual)
+    quem_e: { path: 'audienceSegment.who_is', label: 'Quem É' },
+    maior_desejo: { path: 'audienceSegment.biggest_desire', label: 'Maior Desejo' },
+    maior_dor: { path: 'audienceSegment.biggest_pain', label: 'Maior Dor' },
+    tentativas_falhadas: { path: 'audienceSegment.failed_attempts', label: 'Tentativas Falhadas' },
+    crencas: { path: 'audienceSegment.beliefs', label: 'Crenças' },
+    comportamento: { path: 'audienceSegment.behavior', label: 'Comportamento' },
+    jornada: { path: 'audienceSegment.journey', label: 'Jornada' },
+    
+    // PÚBLICO-ALVO (Análise Avançada)
+    perfil_psicografico: { path: 'audienceSegment.advanced_analysis.psychographic_profile', label: 'Perfil Psicográfico' },
+    nivel_consciencia: { path: 'audienceSegment.advanced_analysis.consciousness_level', label: 'Nível de Consciência' },
+    estado_emocional: { path: 'audienceSegment.advanced_analysis.emotional_state', label: 'Estado Emocional' },
+    dor_oculta: { path: 'audienceSegment.advanced_analysis.hidden_pain', label: 'Dor Oculta' },
+    medo_primario: { path: 'audienceSegment.advanced_analysis.primary_fear', label: 'Medo Primário' },
+    desejo_emocional: { path: 'audienceSegment.advanced_analysis.emotional_desire', label: 'Desejo Emocional' },
+    percepcao_problema: { path: 'audienceSegment.advanced_analysis.problem_misperception', label: 'Percepção Errônea' },
+    mecanismo_interno: { path: 'audienceSegment.advanced_analysis.internal_mechanism', label: 'Mecanismo Interno' },
+    crenca_limitante: { path: 'audienceSegment.advanced_analysis.limiting_belief', label: 'Crença Limitante' },
+    narrativa_interna: { path: 'audienceSegment.advanced_analysis.internal_narrative', label: 'Narrativa Interna' },
+    contradicao_interna: { path: 'audienceSegment.advanced_analysis.internal_contradiction', label: 'Contradição Interna' },
+    comportamento_dominante: { path: 'audienceSegment.advanced_analysis.dominant_behavior', label: 'Comportamento Dominante' },
+    gatilho_decisao: { path: 'audienceSegment.advanced_analysis.decision_trigger', label: 'Gatilho de Decisão' },
+    estilo_comunicacao: { path: 'audienceSegment.advanced_analysis.communication_style', label: 'Estilo de Comunicação' },
+    resistencias_psicologicas: { path: 'audienceSegment.advanced_analysis.psychological_resistances', label: 'Resistências Psicológicas' },
+    
+    // GATILHOS MENTAIS
+    escassez: { path: 'audienceSegment.advanced_analysis.mental_triggers.escassez', label: 'Gatilho: Escassez' },
+    autoridade: { path: 'audienceSegment.advanced_analysis.mental_triggers.autoridade', label: 'Gatilho: Autoridade' },
+    prova_social: { path: 'audienceSegment.advanced_analysis.mental_triggers.prova_social', label: 'Gatilho: Prova Social' },
+    reciprocidade: { path: 'audienceSegment.advanced_analysis.mental_triggers.reciprocidade', label: 'Gatilho: Reciprocidade' },
+    consistencia: { path: 'audienceSegment.advanced_analysis.mental_triggers.consistencia', label: 'Gatilho: Consistência' },
+    afinidade: { path: 'audienceSegment.advanced_analysis.mental_triggers.afinidade', label: 'Gatilho: Afinidade' },
+    antecipacao: { path: 'audienceSegment.advanced_analysis.mental_triggers.antecipacao', label: 'Gatilho: Antecipação' },
+    exclusividade: { path: 'audienceSegment.advanced_analysis.mental_triggers.exclusividade', label: 'Gatilho: Exclusividade' },
+    
+    // OFERTA
+    nome: { path: 'offer.name', label: 'Nome da Oferta' },
+    tipo: { path: 'offer.type', label: 'Tipo da Oferta' },
+    descricao: { path: 'offer.short_description', label: 'Descrição' },
+    beneficio_principal: { path: 'offer.main_benefit', label: 'Benefício Principal' },
+    mecanismo_unico: { path: 'offer.unique_mechanism', label: 'Mecanismo Único' },
+    diferenciais: { path: 'offer.differentials', label: 'Diferenciais' },
+    prova_autoridade: { path: 'offer.proof', label: 'Prova/Autoridade' },
+    garantia: { path: 'offer.guarantee', label: 'Garantia' },
+    cta: { path: 'offer.cta', label: 'Call to Action' },
+    
+    // METODOLOGIA
+    nome_metodologia: { path: 'methodology.name', label: 'Nome da Metodologia' },
+    tese_central: { path: 'methodology.tese_central', label: 'Tese Central' },
+    mecanismo_primario: { path: 'methodology.mecanismo_primario', label: 'Mecanismo Primário' },
+    por_que_funciona: { path: 'methodology.por_que_funciona', label: 'Por Que Funciona' },
+    erro_invisivel: { path: 'methodology.erro_invisivel', label: 'Erro Invisível' },
+    diferenciacao: { path: 'methodology.diferenciacao', label: 'Diferenciação' },
+    principios: { path: 'methodology.principios_fundamentos', label: 'Princípios' },
+    etapas: { path: 'methodology.etapas_metodo', label: 'Etapas do Método' },
+    transformacao: { path: 'methodology.transformacao_real', label: 'Transformação Real' },
+    prova: { path: 'methodology.prova_funcionamento', label: 'Prova de Funcionamento' },
+  };
+  
+  // Função auxiliar para buscar valor aninhado
+  const getNestedValue = (obj: any, path: string) => {
+    const parts = path.split('.');
+    let current = obj;
+    for (const part of parts) {
+      if (current && typeof current === 'object' && part in current) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
+  };
+  
+  // Extrair valores das variáveis encontradas
+  const extractedVariables: Array<{ variable: string; label: string; value: any }> = [];
+  const uniqueVars = new Set<string>();
+  
+  for (const match of matches) {
+    const varName = match[1];
+    if (uniqueVars.has(varName)) continue;
+    uniqueVars.add(varName);
+    
+    const varDef = variableDefinitions[varName];
+    
+    if (varDef) {
+      const value = getNestedValue(context, varDef.path);
+      
+      if (value !== null && value !== undefined) {
+        extractedVariables.push({
+          variable: `#${varName}`,
+          label: varDef.label,
+          value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+        });
+      }
+    }
+  }
+  
+  // Construir contexto adicional
+  let variableContextText = '';
+  
+  if (extractedVariables.length > 0) {
+    variableContextText = '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    variableContextText += '🎯 ATENÇÃO: O usuário referenciou campos específicos do contexto\n';
+    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    variableContextText += '⚡ ESTES CAMPOS DEVEM RECEBER FOCO ESPECIAL NA SUA RESPOSTA:\n\n';
+    
+    for (const { variable, label, value } of extractedVariables) {
+      variableContextText += `📌 ${variable} (${label}):\n`;
+      variableContextText += `${value}\n\n`;
+    }
+    
+    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    variableContextText += '⚠️  IMPORTANTE: Foque sua resposta estrategicamente nos campos referenciados acima.\n';
+    variableContextText += '    Use essas informações específicas de forma destacada na copy que você criar.\n';
+    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+  }
+  
+  return {
+    enhancedMessage: message,
+    variableContextText
+  };
+}
+
+// ==================== FIM DO SISTEMA DE VARIÁVEIS ====================
+
+
 function buildSystemPrompt(
   copyContext: string, 
   historyContext: string, 
   hasSelection: boolean,
   projectIdentity?: any,
   audienceSegment?: any,
-  offer?: any
+  offer?: any,
+  methodology?: any,
+  variableContext?: string
 ): string {
   let prompt = `Você é um especialista em copywriting e marketing digital que está ajudando a aprimorar uma copy específica.`;
   
@@ -516,8 +702,16 @@ Quando elementos estão selecionados:
     if (offer.unique_mechanism) contextualInfo += `Mecanismo único: ${offer.unique_mechanism}\n`;
     if (offer.differential) contextualInfo += `Diferencial: ${offer.differential}\n`;
   }
+
+  if (methodology) {
+    contextualInfo += '\n\nMETODOLOGIA SELECIONADA:\n';
+    if (methodology.name) contextualInfo += `Nome: ${methodology.name}\n`;
+    if (methodology.tese_central) contextualInfo += `Tese Central: ${methodology.tese_central}\n`;
+    if (methodology.mecanismo_primario) contextualInfo += `Mecanismo Primário: ${methodology.mecanismo_primario}\n`;
+    if (methodology.por_que_funciona) contextualInfo += `Por que funciona: ${methodology.por_que_funciona}\n`;
+  }
   
-  return prompt + contextualInfo + `
+  return prompt + contextualInfo + (variableContext || '') + `
 
 CONTEXTO DA COPY ATUAL:
 ${copyContext}

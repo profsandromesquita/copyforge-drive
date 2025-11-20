@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Send, Trash2, Loader2, Check, X, MousePointer, History, Layers, Square } from 'lucide-react';
+import { Send, Trash2, Loader2, Check, X, MousePointer, History, Layers, Square, Hash, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -25,8 +25,38 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Microphone, MicrophoneSlash } from 'phosphor-react';
 import { toast as sonnerToast } from 'sonner';
+import { 
+  extractVariables, 
+  validateVariables, 
+  getAllVariables, 
+  CONTEXT_VARIABLES,
+  VARIABLE_EXAMPLES 
+} from '@/lib/context-variables';
 
 interface ChatMessage {
   id: string;
@@ -51,6 +81,10 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
+  const [showVariablesHelp, setShowVariablesHelp] = useState(false);
+  const [showVariableSuggestions, setShowVariableSuggestions] = useState(false);
+  const [variableSearch, setVariableSearch] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { activeWorkspace } = useWorkspace();
@@ -202,6 +236,17 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     const trimmedMessage = message.trim();
     if (!trimmedMessage || !copyId) return;
 
+    // Validar variáveis antes de enviar
+    const { valid, invalid } = validateVariables(trimmedMessage);
+    if (!valid) {
+      toast({
+        title: 'Variáveis inválidas detectadas',
+        description: `As seguintes variáveis não existem: ${invalid.map(v => '#' + v).join(', ')}`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Construir contexto dos items selecionados
     let selectionContext = '';
     if (selectedItems.length > 0) {
@@ -259,12 +304,66 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     });
   };
 
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    
+    setMessage(value);
+    
+    // Detectar se está digitando após #
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
+    
+    if (lastHashIndex !== -1) {
+      const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
+      // Se não há espaço após #, mostrar sugestões
+      if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
+        setVariableSearch(textAfterHash);
+        setShowVariableSuggestions(true);
+        return;
+      }
+    }
+    
+    setShowVariableSuggestions(false);
+  };
+
+  const insertVariable = (variable: string) => {
+    if (!textareaRef.current) return;
+    
+    const cursorPos = textareaRef.current.selectionStart;
+    const textBeforeCursor = message.substring(0, cursorPos);
+    const textAfterCursor = message.substring(cursorPos);
+    
+    // Encontrar onde começa o #
+    const lastHashIndex = textBeforeCursor.lastIndexOf('#');
+    const newText = 
+      textBeforeCursor.substring(0, lastHashIndex) + 
+      variable + ' ' + 
+      textAfterCursor;
+    
+    setMessage(newText);
+    setShowVariableSuggestions(false);
+    
+    // Refocar no textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !showVariableSuggestions) {
       e.preventDefault();
       handleSend();
+    } else if (e.key === 'Escape' && showVariableSuggestions) {
+      setShowVariableSuggestions(false);
     }
   };
+
+  // Filtrar variáveis disponíveis baseado na busca
+  const filteredVariables = getAllVariables().filter(v => 
+    v.value.toLowerCase().includes('#' + variableSearch.toLowerCase()) ||
+    v.label.toLowerCase().includes(variableSearch.toLowerCase())
+  );
 
   // Configurar reconhecimento de voz
   useEffect(() => {
@@ -449,13 +548,64 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
             <div className="p-4">
               <div className="relative">
                 <Textarea
+                  ref={textareaRef}
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={handleMessageChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Digite sua mensagem..."
+                  placeholder="Digite sua mensagem... (Use # para variáveis contextuais)"
                   className="min-h-[100px] resize-none pr-32 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent placeholder:text-muted-foreground/60"
                   disabled={isLoading}
                 />
+
+                {/* Badge de variáveis detectadas */}
+                {extractVariables(message).length > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute top-2 right-2 text-xs"
+                  >
+                    <Hash className="h-3 w-3 mr-1" />
+                    {extractVariables(message).length}
+                  </Badge>
+                )}
+
+                {/* Autocomplete de variáveis */}
+                {showVariableSuggestions && filteredVariables.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-2 w-full max-w-md z-50">
+                    <Command className="rounded-lg border shadow-md bg-background">
+                      <CommandInput 
+                        placeholder="Buscar variável..." 
+                        value={variableSearch}
+                        onValueChange={setVariableSearch}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma variável encontrada.</CommandEmpty>
+                        <ScrollArea className="h-[200px]">
+                          {Object.entries(
+                            filteredVariables.reduce((acc, v) => {
+                              if (!acc[v.groupKey]) acc[v.groupKey] = [];
+                              acc[v.groupKey].push(v);
+                              return acc;
+                            }, {} as Record<string, typeof filteredVariables>)
+                          ).map(([groupKey, vars]) => (
+                            <CommandGroup key={groupKey} heading={groupKey.toUpperCase()}>
+                              {vars.map((variable) => (
+                                <CommandItem
+                                  key={variable.value}
+                                  value={variable.value}
+                                  onSelect={() => insertVariable(variable.value)}
+                                  className="cursor-pointer"
+                                >
+                                  <code className="text-primary mr-2">{variable.value}</code>
+                                  <span className="text-xs text-muted-foreground">{variable.label}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </ScrollArea>
+                      </CommandList>
+                    </Command>
+                  </div>
+                )}
                 
                 {/* Action Buttons Overlay */}
                 <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
@@ -466,6 +616,76 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
 
                   {/* Action Buttons - Right Side */}
                   <div className="flex items-center gap-2">
+                    <Dialog open={showVariablesHelp} onOpenChange={setShowVariablesHelp}>
+                      <DialogTrigger asChild>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            >
+                              <HelpCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Variáveis disponíveis</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh]">
+                        <DialogHeader>
+                          <DialogTitle>Variáveis Contextuais Disponíveis</DialogTitle>
+                          <DialogDescription>
+                            Use #NomeDoCampo para referenciar informações específicas do seu projeto
+                          </DialogDescription>
+                        </DialogHeader>
+                        <ScrollArea className="h-[60vh] pr-4">
+                          <div className="space-y-6">
+                            {/* Exemplos de uso */}
+                            <div>
+                              <h3 className="text-sm font-semibold mb-3">📝 Exemplos de Uso</h3>
+                              <div className="space-y-4">
+                                {VARIABLE_EXAMPLES.map((example, idx) => (
+                                  <div key={idx} className="space-y-2">
+                                    <p className="text-xs font-medium text-muted-foreground">{example.category}</p>
+                                    {example.examples.map((ex, exIdx) => (
+                                      <div key={exIdx} className="bg-muted p-3 rounded-md">
+                                        <code className="text-xs">{ex}</code>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Lista de variáveis por grupo */}
+                            <div>
+                              <h3 className="text-sm font-semibold mb-3">🔖 Variáveis por Grupo</h3>
+                              <div className="space-y-4">
+                                {Object.entries(CONTEXT_VARIABLES).map(([groupKey, variables]) => (
+                                  <div key={groupKey} className="space-y-2">
+                                    <h4 className="text-sm font-medium capitalize">{groupKey}</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {Object.entries(variables).map(([varName, config]) => (
+                                        <div 
+                                          key={varName}
+                                          className="flex items-start gap-2 p-2 bg-muted/50 rounded hover:bg-muted transition-colors"
+                                        >
+                                          <code className="text-xs text-primary">#{varName}</code>
+                                          <span className="text-xs text-muted-foreground">{config.label}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </ScrollArea>
+                      </DialogContent>
+                    </Dialog>
+
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
