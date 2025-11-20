@@ -287,29 +287,6 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full relative bg-background">
-        {/* Header */}
-        <div className="flex items-center justify-end gap-1 p-3 border-b bg-transparent">
-          {chatHistory.length > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowClearConfirm(true)}
-              disabled={clearHistoryMutation.isPending}
-              className="h-8 w-8"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowHistory(true)}
-            className="h-8 w-8"
-          >
-            <History className="h-4 w-4" />
-          </Button>
-        </div>
-
         {/* Chat Messages */}
         <div
           ref={scrollRef}
