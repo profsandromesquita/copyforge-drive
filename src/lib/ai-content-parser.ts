@@ -36,6 +36,8 @@ function isHighLevelTitle(title: string): boolean {
 }
 
 export function parseAIResponse(markdown: string): ParsedMessage {
+  console.log('🔍 [Parser] Iniciando parse de:', markdown.substring(0, 100) + '...');
+  
   const blocks: ParsedContent[] = [];
   let explanation = '';
 
@@ -73,24 +75,32 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       // Remover apenas a primeira linha de numeração, mantendo o restante da estrutura
       const contentLines = fullBlockContent.split('\n');
       contentLines.shift(); // Remove primeira linha (o título numerado)
-      const cleanedContent = contentLines.join('\n').trim();
+      let cleanedContent = contentLines.join('\n').trim();
+
+      // Se ficou vazio, pode ser porque o conteúdo está na próxima linha
+      if (!cleanedContent && contentLines.length > 0) {
+        cleanedContent = fullBlockContent.replace(/^(?:#{1,3}\s+)?(?:\*\*)?\s*\d+\.\s*(?:\*\*)?(.+?)(?:\*\*)?$/m, '').trim();
+      }
 
       // Check if this is a high-level item or if we don't have a current block yet
       if (isHighLevelTitle(title) || !currentBlock) {
         // Create a new block for high-level items
         const type = inferBlockType(cleanedContent, title);
         
-        currentBlock = {
-          id: `block-${Date.now()}-${index}`,
-          type,
-          title: `${number}. ${title}`,
-          content: cleanedContent,
-          rawContent: fullBlockContent,
-          startIndex,
-          endIndex,
-        };
-        
-        blocks.push(currentBlock);
+        // Só adicionar bloco se tiver conteúdo
+        if (cleanedContent) {
+          currentBlock = {
+            id: `block-${Date.now()}-${index}`,
+            type,
+            title: `${number}. ${title}`,
+            content: cleanedContent,
+            rawContent: fullBlockContent,
+            startIndex,
+            endIndex,
+          };
+          
+          blocks.push(currentBlock);
+        }
       } else {
         // This is a sub-item (like a scene), append to current block
         currentBlock.content += '\n\n' + cleanedContent;
@@ -199,6 +209,11 @@ export function parseAIResponse(markdown: string): ParsedMessage {
     }
   }
 
+  console.log('✅ [Parser] Blocos detectados:', blocks.length);
+  blocks.forEach((b, i) => {
+    console.log(`  Block ${i}: type="${b.type}", title="${b.title}", content length=${b.content.length}`);
+  });
+
   return {
     hasActionableContent: blocks.length > 0,
     blocks,
@@ -210,56 +225,53 @@ function inferBlockType(content: string, context: string): ParsedContent['type']
   const lowerContent = content.toLowerCase();
   const lowerContext = context.toLowerCase();
 
-  // Verificar palavras-chave no contexto
+  // 1. PRIORIDADE: Verificar palavras-chave no CONTEXTO PRIMEIRO
   if (lowerContext.includes('headline') || lowerContext.includes('título')) {
     return 'headline';
   }
-  if (lowerContext.includes('anúncio') || lowerContext.includes('ad')) {
+  if (lowerContext.includes('anúncio') || lowerContext.includes('ad') || 
+      lowerContext.includes('roteiro') || lowerContext.includes('vídeo') || 
+      lowerContext.includes('script')) {
     return 'ad';
   }
-  if (lowerContext.includes('lista')) {
-    return 'list';
-  }
 
-  // Verificar características do conteúdo
+  // 2. Verificar estrutura do CONTEÚDO
   const lines = content.split('\n').filter(l => l.trim());
   
-  // Headlines são geralmente curtas (< 150 chars), uma linha, e podem ter aspas
+  // Headlines: curtas, uma linha, com aspas ou pontuação enfática
   if (lines.length === 1 && content.length < 150) {
-    // Se tem aspas, é definitivamente headline
-    if (content.includes('"') || content.includes('"') || content.includes('"')) {
-      return 'headline';
-    }
-    // Se é curto e enfático, também é headline
-    if (content.includes('?') || content.includes('!')) {
+    if (content.includes('"') || content.includes('"') || content.includes('"') ||
+        content.includes('?') || content.includes('!')) {
       return 'headline';
     }
     return 'headline';
   }
 
-  // Detectar listas: items começando com -, •, *, ou números
-  const listPatterns = /^[\s]*[-•*\d+.]/;
-  const hasListMarkers = lines.some(line => listPatterns.test(line));
-  if (hasListMarkers && lines.length > 1) {
-    return 'list';
-  }
-
-  // Anúncios geralmente têm múltiplas linhas e campos estruturados
-  if (
-    lowerContent.includes('título:') || 
-    lowerContent.includes('descrição:') ||
-    lowerContent.includes('cta:') ||
-    lowerContent.includes('chamada:')
-  ) {
+  // Anúncios: conteúdo estruturado com campos
+  if (lowerContent.includes('título:') || 
+      lowerContent.includes('descrição:') ||
+      lowerContent.includes('cta:') ||
+      lowerContent.includes('chamada:') ||
+      lowerContent.includes('duração:') ||
+      lowerContent.includes('cena')) {
     return 'ad';
   }
 
+  // Listas: SOMENTE se houver MÚLTIPLAS linhas COM marcadores CONSISTENTES
+  const listPatterns = /^[\s]*[-•*]\s+/; // Removido \d+. para evitar falsos positivos
+  const linesWithMarkers = lines.filter(line => listPatterns.test(line));
+  
+  // Só é lista se tiver pelo menos 2 linhas com marcadores
+  if (linesWithMarkers.length >= 2 && linesWithMarkers.length >= lines.length * 0.5) {
+    return 'list';
+  }
+
   // Texto longo (múltiplos parágrafos)
-  if (lines.length > 3 || content.length > 200) {
+  if (lines.length > 2 || content.length > 150) {
     return 'text';
   }
 
-  // Fallback para texto padrão
+  // Fallback: texto padrão
   return 'text';
 }
 
@@ -396,51 +408,52 @@ export function parseAIResponseWithStructure(
 export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   if (blocks.length === 0) return [];
 
-  // Check if we should create multiple sessions (one per block)
-  // Only do this for a reasonable number of blocks to avoid explosion
-  const shouldCreateMultipleSessions = 
-    blocks.length > 1 && 
-    blocks.length <= 10 && 
-    blocks.every(b => 
-      b.type === 'headline' || 
-      b.type === 'ad' || 
-      (b.title && isHighLevelTitle(b.title) && b.content.length > 150)
-    );
+  // Nova lógica: Agrupar blocos que pertencem à mesma sessão conceitual
+  const sessions: any[] = [];
+  let currentSession: any = null;
 
-  if (shouldCreateMultipleSessions) {
-    // Criar uma sessão para cada item
-    return blocks.map((block, index) => {
-      // Gerar título mais limpo
-      let sessionTitle;
-      
-      if (block.title) {
-        // Se tem título (ex: "1."), remover número e usar preview curto
-        sessionTitle = block.title.replace(/^\d+\.\s*/, '');
-        if (sessionTitle.trim() === '') {
-          // Se o título era só número, usar o conteúdo
-          const preview = block.content.substring(0, 50).trim();
-          sessionTitle = preview + (block.content.length > 50 ? '...' : '');
-        }
-      } else {
-        // Sem título, usar tipo + preview
-        const preview = block.content.substring(0, 50).trim();
-        sessionTitle = `${getBlockTypeName(block.type)} - ${preview}${block.content.length > 50 ? '...' : ''}`;
-      }
+  blocks.forEach((block, index) => {
+    // Decidir se este bloco inicia uma nova sessão
+    const isNewSession = 
+      !currentSession || // Primeira sessão
+      (block.title && isHighLevelTitle(block.title)) || // Título de alto nível
+      (block.type === 'ad' && currentSession.blocks.length > 0); // Ad sempre é nova sessão
 
-      return {
+    if (isNewSession) {
+      // Criar nova sessão
+      const sessionTitle = block.title 
+        ? block.title.replace(/^\d+\.\s*/, '') 
+        : `${getBlockTypeName(block.type)}`;
+
+      currentSession = {
         id: `session-${Date.now()}-${index}`,
         title: sessionTitle,
         blocks: [createBlockFromParsed(block, 0)]
       };
-    });
+      sessions.push(currentSession);
+    } else {
+      // Adicionar à sessão atual
+      currentSession.blocks.push(
+        createBlockFromParsed(block, currentSession.blocks.length)
+      );
+    }
+  });
+
+  // Se não criou nenhuma sessão (edge case), criar uma padrão
+  if (sessions.length === 0) {
+    return [{
+      id: `session-${Date.now()}`,
+      title: 'Conteúdo Gerado pela IA',
+      blocks: blocks.map((block, index) => createBlockFromParsed(block, index))
+    }];
   }
 
-  // Caso contrário, agrupar todos em uma única sessão
-  return [{
-    id: `session-${Date.now()}`,
-    title: 'Conteúdo Gerado pela IA',
-    blocks: blocks.map((block, index) => createBlockFromParsed(block, index))
-  }];
+  console.log('🎯 [Parser] Sessões criadas:', sessions.length);
+  sessions.forEach((s, i) => {
+    console.log(`  Session ${i}: title="${s.title}", blocks=${s.blocks.length}`);
+  });
+
+  return sessions;
 }
 
 // Helper: Obter nome amigável do tipo de bloco
