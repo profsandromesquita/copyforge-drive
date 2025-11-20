@@ -286,9 +286,9 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full relative">
+      <div className="flex flex-col h-full relative bg-muted/30">
         {/* Header */}
-        <div className="flex items-center justify-end gap-1 p-3 border-b bg-background">
+        <div className="flex items-center justify-end gap-1 p-3 border-b bg-transparent">
           <Button
             variant="ghost"
             size="icon"
