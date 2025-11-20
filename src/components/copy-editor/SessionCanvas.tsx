@@ -138,9 +138,10 @@ export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
 
   return (
     <div 
-      className={`flex-1 p-6 space-y-6 overflow-y-auto bg-[hsl(var(--canvas-background))] custom-scrollbar relative ${
+      className={`flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar relative ${
         isDragging ? 'ring-2 ring-primary ring-offset-2' : ''
       }`}
+      style={{ backgroundColor: 'rgb(245, 245, 245)' }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
