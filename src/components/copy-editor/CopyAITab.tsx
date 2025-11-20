@@ -990,12 +990,9 @@ export const CopyAITab = () => {
       ) : (
         <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="criar" className="gap-2">
                 <Sparkles className="h-4 w-4" />
-              </TabsTrigger>
-              <TabsTrigger value="otimizar" className="gap-2">
-                <Wand2 className="h-4 w-4" />
               </TabsTrigger>
               <TabsTrigger value="historico" className="gap-2">
                 <History className="h-4 w-4" />
@@ -1006,152 +1003,6 @@ export const CopyAITab = () => {
           {renderCriarTab()}
         </TabsContent>
 
-        <TabsContent value="otimizar" className="flex-1 mt-0">
-          {!selectedContent ? (
-            <div className="flex items-center justify-center h-full">
-              <Button 
-                size="lg"
-                onClick={() => {
-                  if (copySessions.length === 0) {
-                    toast({
-                      title: 'Nenhum conteúdo disponível',
-                      description: 'Adicione conteúdo à copy antes de otimizar',
-                      variant: 'destructive',
-                    });
-                    return;
-                  }
-                  setShowSelectModal(true);
-                }}
-              >
-                <Wand2 className="h-5 w-5 mr-2" />
-                Selecionar Conteúdo
-              </Button>
-            </div>
-          ) : !optimizeAction ? (
-            <ScrollArea className="h-[calc(100vh-12rem)]">
-              <div className="space-y-6 p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="font-semibold text-base">Conteúdo Selecionado</h3>
-                  <Button variant="outline" size="sm" onClick={() => setShowSelectModal(true)}>
-                    Alterar
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  {selectedContent.sessions.map(session => (
-                    <Card key={session.id} className="border-muted/60 hover:border-muted transition-colors">
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-medium text-sm truncate">{session.title}</span>
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {session.blocks.length}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <h3 className="font-semibold text-sm">Escolha uma ação:</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Card 
-                      className="cursor-pointer hover:border-primary/60 hover:shadow-sm transition-all duration-200 border-muted/60"
-                      onClick={() => handleActionSelect('otimizar')}
-                    >
-                      <CardContent className="p-4 text-center space-y-2">
-                        <Wand2 className="h-7 w-7 mx-auto text-primary" />
-                        <div className="space-y-1">
-                          <h4 className="font-semibold text-sm">Otimizar</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Melhore mantendo a estrutura
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card 
-                      className="cursor-pointer hover:border-primary/60 hover:shadow-sm transition-all duration-200 border-muted/60"
-                      onClick={() => handleActionSelect('variacao')}
-                    >
-                      <CardContent className="p-4 text-center space-y-2">
-                        <CopyIcon className="h-7 w-7 mx-auto text-primary" />
-                        <div className="space-y-1">
-                          <h4 className="font-semibold text-sm">Criar Variação</h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Versão alternativa completa
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-12rem)]">
-              <div className="space-y-6 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {optimizeAction === 'otimizar' ? (
-                      <>
-                        <Wand2 className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Otimizar Conteúdo</h3>
-                      </>
-                    ) : (
-                      <>
-                        <CopyIcon className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Criar Variação</h3>
-                      </>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setOptimizeAction(null)}>
-                    Voltar
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="font-medium">
-                    Instruções para o Agente
-                  </Label>
-                  <div className="relative">
-                    <Textarea
-                      value={optimizeInstructions}
-                      onChange={(e) => setOptimizeInstructions(e.target.value)}
-                      placeholder={
-                        optimizeAction === 'otimizar'
-                          ? "Ex: Torne mais persuasivo, adicione senso de urgência, melhore a clareza..."
-                          : "Ex: Crie uma versão mais formal, adapte para LinkedIn, use abordagem emocional..."
-                      }
-                      rows={6}
-                      className="resize-none pr-12"
-                    />
-                    <VoiceInput onTranscript={(text) => setOptimizeInstructions(optimizeInstructions ? `${optimizeInstructions} ${text}` : text)} />
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleOptimizeGenerate} 
-                  disabled={isOptimizing || !optimizeInstructions.trim()}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isOptimizing ? (
-                    <>
-                      <Sparkles className="h-5 w-5 mr-2 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5 mr-2" />
-                      Gerar
-                    </>
-                  )}
-                </Button>
-              </div>
-            </ScrollArea>
-          )}
-        </TabsContent>
 
         <TabsContent value="historico" className="flex-1 mt-0">
           <ScrollArea className="h-[calc(100vh-12rem)]">
