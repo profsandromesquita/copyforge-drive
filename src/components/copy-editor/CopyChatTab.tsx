@@ -289,14 +289,6 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
       <div className="flex flex-col h-full relative bg-background">
         {/* Header */}
         <div className="flex items-center justify-end gap-1 p-3 border-b bg-transparent">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowHistory(true)}
-            className="h-8 w-8"
-          >
-            <History className="h-4 w-4" />
-          </Button>
           {chatHistory.length > 0 && (
             <Button
               variant="ghost"
@@ -308,6 +300,14 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowHistory(true)}
+            className="h-8 w-8"
+          >
+            <History className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Chat Messages */}
@@ -409,6 +409,22 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
                 
                 {/* Action Buttons Overlay */}
                 <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowHistory(true)}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      >
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Histórico de gerações</p>
+                    </TooltipContent>
+                  </Tooltip>
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
