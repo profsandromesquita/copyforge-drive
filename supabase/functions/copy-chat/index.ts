@@ -740,13 +740,47 @@ Essas headlines ativam a dor oculta de frustração acumulada.
 ---`;
   
   if (hasSelection) {
-    prompt += `\n\n**ATENÇÃO: O usuário selecionou elementos específicos da copy para análise/edição.**
-    
-Quando elementos estão selecionados:
-- Foque sua resposta APENAS nos elementos marcados como "CONTEXTO DOS ELEMENTOS SELECIONADOS"
-- Se pedirem para "otimizar", refira-se apenas aos blocos/sessões selecionados
-- Se pedirem "criar variação", gere alternativas apenas para o conteúdo selecionado
-- Seja específico e direto ao abordar os elementos selecionados
+    prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO - REGRAS DE ESTRUTURA**
+  
+Quando elementos estão selecionados para edição:
+
+1. **PRESERVE A ESTRUTURA EXATA:**
+   - Se o contexto indica "2 sessões", você DEVE gerar EXATAMENTE 2 sessões
+   - Se uma sessão tem "3 blocos", você DEVE gerar EXATAMENTE 3 blocos para aquela sessão
+   - Use a mesma numeração e organização (### 1., ### 2., etc.)
+
+2. **MANTENHA OS TIPOS DE BLOCO:**
+   - Se o bloco original é "text", mantenha como texto
+   - Se é "headline", mantenha como headline
+   - Não mude os tipos a menos que explicitamente solicitado
+
+3. **FORMATO OBRIGATÓRIO:**
+   - Para múltiplas sessões: use "### 1. Título", "### 2. Título"
+   - Dentro de cada sessão: mantenha o conteúdo contínuo sem numeração interna
+   - Não adicione nem remova sessões/blocos além do solicitado
+
+4. **FOCO NA OTIMIZAÇÃO:**
+   - Melhore o CONTEÚDO (copywriting, persuasão, clareza)
+   - Mantenha a ESTRUTURA (número de sessões e blocos)
+   
+EXEMPLO:
+Se o contexto indica "2 sessões com 3 blocos cada", sua resposta DEVE ter:
+
+### 1. [Título da Sessão 1]
+
+[Conteúdo otimizado do bloco 1]
+
+[Conteúdo otimizado do bloco 2]
+
+[Conteúdo otimizado do bloco 3]
+
+### 2. [Título da Sessão 2]
+
+[Conteúdo otimizado do bloco 1]
+
+[Conteúdo otimizado do bloco 2]
+
+[Conteúdo otimizado do bloco 3]
 `;
   }
 
