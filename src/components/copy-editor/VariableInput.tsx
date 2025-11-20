@@ -1,7 +1,6 @@
-import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
 
 interface VariableInputProps {
   value: string;
@@ -13,142 +12,185 @@ interface VariableInputProps {
   onVariableSearch?: (search: string, show: boolean) => void;
 }
 
-interface VariablePosition {
-  variable: string;
-  start: number;
-  end: number;
-  top: number;
-  left: number;
-  width: number;
-}
-
 export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>(
   ({ value, onChange, onKeyDown, placeholder, disabled, className, onVariableSearch }, ref) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const overlayRef = useRef<HTMLDivElement>(null);
-    const [variablePositions, setVariablePositions] = useState<VariablePosition[]>([]);
+    const divRef = useRef<HTMLDivElement>(null);
+    const isUpdatingRef = useRef(false);
 
-    // Expor ref do textarea
-    useImperativeHandle(ref, () => textareaRef.current as HTMLTextAreaElement);
+    // Expor métodos compatíveis com textarea
+    useImperativeHandle(ref, () => ({
+      focus: () => {
+        divRef.current?.focus();
+      },
+      selectionStart: 0,
+      selectionEnd: 0,
+    } as any));
 
-    // Detectar variáveis no texto
-    const detectVariables = () => {
-      const variableRegex = /#[a-zA-Z_áéíóúàèìòùâêîôûãõç]+/g;
-      const matches: VariablePosition[] = [];
-      let match;
-
-      while ((match = variableRegex.exec(value)) !== null) {
-        matches.push({
-          variable: match[0],
-          start: match.index,
-          end: match.index + match[0].length,
-          top: 0,
-          left: 0,
-          width: 0,
-        });
-      }
-
-      return matches;
-    };
-
-    // Calcular posições das variáveis
-    const calculatePositions = () => {
-      if (!textareaRef.current) return;
-
-      const variables = detectVariables();
-      const textarea = textareaRef.current;
+    // Converter texto em HTML com chips de variáveis
+    const textToHTML = (text: string): string => {
+      if (!text) return '';
       
-      // Criar range helper para calcular posições
-      const positions = variables.map((variable) => {
-        // Criar um span temporário para medir a posição
-        const beforeText = value.substring(0, variable.start);
-        const lines = beforeText.split('\n');
-        const lineNumber = lines.length - 1;
-        const charInLine = lines[lines.length - 1].length;
-
-        // Estimar posição (simplificado)
-        const lineHeight = 20; // aproximado
-        const charWidth = 8; // aproximado
-        
-        return {
-          ...variable,
-          top: lineNumber * lineHeight + 8,
-          left: charInLine * charWidth + 12,
-          width: variable.variable.length * charWidth,
-        };
+      const variableRegex = /#[a-zA-Z_áéíóúàèìòùâêîôûãõç]+/g;
+      let html = text;
+      
+      // Substituir variáveis por spans com data-variable
+      html = html.replace(variableRegex, (match) => {
+        return `<span class="variable-chip" contenteditable="false" data-variable="${match}">${match}<span class="remove-btn">×</span></span>`;
       });
-
-      setVariablePositions(positions);
+      
+      // Preservar quebras de linha
+      html = html.replace(/\n/g, '<br>');
+      
+      return html;
     };
 
-    // Atualizar posições quando o valor mudar
+    // Converter HTML de volta para texto
+    const htmlToText = (element: HTMLDivElement): string => {
+      let text = '';
+      
+      element.childNodes.forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          text += node.textContent || '';
+        } else if (node.nodeName === 'BR') {
+          text += '\n';
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as HTMLElement;
+          if (el.classList.contains('variable-chip')) {
+            text += el.dataset.variable || '';
+          } else {
+            text += htmlToText(el as HTMLDivElement);
+          }
+        }
+      });
+      
+      return text;
+    };
+
+    // Atualizar conteúdo quando value mudar externamente
     useEffect(() => {
-      calculatePositions();
+      if (!divRef.current || isUpdatingRef.current) return;
+      
+      const currentText = htmlToText(divRef.current);
+      if (currentText !== value) {
+        const selection = window.getSelection();
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        const startOffset = range?.startOffset || 0;
+        
+        divRef.current.innerHTML = textToHTML(value);
+        
+        // Tentar restaurar cursor
+        try {
+          if (range && divRef.current.firstChild) {
+            const newRange = document.createRange();
+            const textNode = divRef.current.firstChild;
+            newRange.setStart(textNode, Math.min(startOffset, textNode.textContent?.length || 0));
+            newRange.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(newRange);
+          }
+        } catch (e) {
+          // Ignorar erros de restauração de cursor
+        }
+      }
     }, [value]);
 
-    // Remover variável
-    const removeVariable = (variable: VariablePosition) => {
-      const newValue = value.substring(0, variable.start) + value.substring(variable.end);
-      onChange(newValue);
+    // Handler de input
+    const handleInput = () => {
+      if (!divRef.current || disabled) return;
       
-      // Focar no textarea
+      isUpdatingRef.current = true;
+      const newText = htmlToText(divRef.current);
+      onChange(newText);
+      
+      // Detectar se está digitando após #
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textBeforeCursor = newText.substring(0, range.startOffset);
+        const lastHashIndex = textBeforeCursor.lastIndexOf('#');
+        
+        if (lastHashIndex !== -1) {
+          const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
+          if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
+            onVariableSearch?.(textAfterHash, true);
+          } else {
+            onVariableSearch?.('', false);
+          }
+        } else {
+          onVariableSearch?.('', false);
+        }
+      }
+      
       setTimeout(() => {
-        textareaRef.current?.focus();
-        textareaRef.current?.setSelectionRange(variable.start, variable.start);
+        isUpdatingRef.current = false;
       }, 0);
     };
 
-    // Handle change
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      onChange(newValue);
-
-      // Detectar se está digitando após #
-      const cursorPos = e.target.selectionStart;
-      const textBeforeCursor = newValue.substring(0, cursorPos);
-      const lastHashIndex = textBeforeCursor.lastIndexOf('#');
+    // Handler de clique (para remover variáveis)
+    const handleClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
       
-      if (lastHashIndex !== -1) {
-        const textAfterHash = textBeforeCursor.substring(lastHashIndex + 1);
-        if (!textAfterHash.includes(' ') && !textAfterHash.includes('\n')) {
-          onVariableSearch?.(textAfterHash, true);
-          return;
+      // Se clicou no botão de remover
+      if (target.classList.contains('remove-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const chip = target.closest('.variable-chip') as HTMLElement;
+        if (chip && divRef.current) {
+          const variable = chip.dataset.variable || '';
+          const currentText = htmlToText(divRef.current);
+          const newText = currentText.replace(variable, '');
+          onChange(newText);
+          
+          // Focar novamente
+          setTimeout(() => {
+            divRef.current?.focus();
+          }, 0);
         }
       }
-      
-      onVariableSearch?.('', false);
     };
 
-    // Prevenir edição dentro de variáveis
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handler de teclas
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (disabled) return;
 
-      const textarea = e.currentTarget;
-      const cursorPos = textarea.selectionStart;
-
-      // Verificar se cursor está dentro de uma variável
-      const variableAtCursor = variablePositions.find(
-        (v) => cursorPos > v.start && cursorPos <= v.end
-      );
-
-      if (variableAtCursor) {
-        // Se tentar editar dentro da variável, mover cursor ou remover
-        if (e.key === 'Backspace' || e.key === 'Delete') {
-          e.preventDefault();
-          removeVariable(variableAtCursor);
-          return;
-        }
+      // Prevenir edição dentro de chips de variável
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        let node = range.startContainer;
         
-        // Mover cursor para fora da variável
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          textarea.setSelectionRange(variableAtCursor.start, variableAtCursor.start);
-          return;
-        }
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          textarea.setSelectionRange(variableAtCursor.end, variableAtCursor.end);
-          return;
+        // Verificar se está dentro de um chip
+        while (node && node !== divRef.current) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            if (el.classList?.contains('variable-chip')) {
+              // Se tentar deletar, remover toda a variável
+              if (e.key === 'Backspace' || e.key === 'Delete') {
+                e.preventDefault();
+                const variable = el.dataset.variable || '';
+                const currentText = htmlToText(divRef.current!);
+                const newText = currentText.replace(variable, '');
+                onChange(newText);
+                return;
+              }
+              // Mover cursor para fora do chip
+              if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                const newRange = document.createRange();
+                if (e.key === 'ArrowLeft' && el.previousSibling) {
+                  newRange.setStartAfter(el.previousSibling);
+                } else if (e.key === 'ArrowRight' && el.nextSibling) {
+                  newRange.setStartBefore(el.nextSibling);
+                }
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+                return;
+              }
+            }
+          }
+          node = node.parentNode!;
         }
       }
 
@@ -156,56 +198,26 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
     };
 
     return (
-      <div className="relative">
-        {/* Textarea principal */}
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={cn(
-            'min-h-[100px] resize-none',
-            'relative z-10',
-            className
-          )}
-          style={{
-            backgroundColor: 'transparent',
-          }}
-        />
-
-        {/* Overlay com variáveis destacadas */}
-        <div
-          ref={overlayRef}
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{ zIndex: 5 }}
-        >
-          <div className="relative w-full h-full px-3 py-2">
-            {variablePositions.map((variable, index) => (
-              <div
-                key={`${variable.variable}-${index}`}
-                className="absolute pointer-events-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors select-none"
-                style={{
-                  top: variable.top,
-                  left: variable.left,
-                  minWidth: variable.width,
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  removeVariable(variable);
-                }}
-              >
-                <code className="text-xs font-medium leading-none whitespace-nowrap">
-                  {variable.variable}
-                </code>
-                <X className="h-3 w-3 flex-shrink-0" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div
+        ref={divRef}
+        contentEditable={!disabled}
+        onInput={handleInput}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        data-placeholder={placeholder}
+        className={cn(
+          'min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm',
+          'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          'overflow-y-auto resize-none',
+          'whitespace-pre-wrap break-words',
+          '[&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-muted-foreground/60',
+          className
+        )}
+        style={{
+          minHeight: '100px',
+        }}
+      />
     );
   }
 );
