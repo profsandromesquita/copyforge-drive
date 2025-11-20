@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw, Loader2 } from 'lucide-react';
-import { parseAIResponse, ParsedContent } from '@/lib/ai-content-parser';
+import { Card } from '@/components/ui/card';
+import { Sparkles, ChevronRight } from 'lucide-react';
+import { parseAIResponse, convertParsedBlocksToSessions } from '@/lib/ai-content-parser';
+import { ChatGeneratedPreviewModal } from './ChatGeneratedPreviewModal';
 import type { SelectedItem } from '@/hooks/useCopyEditor';
+import type { Session } from '@/types/copy-editor';
 
 interface ChatMessage {
   id: string;
@@ -16,21 +19,25 @@ interface AIMessageWithActionsProps {
   message: ChatMessage;
   hasSelection: boolean;
   selectedItems: SelectedItem[];
-  onAddContent: (content: string, type: ParsedContent['type']) => Promise<void>;
-  onReplaceContent: (content: string, type: ParsedContent['type']) => Promise<void>;
+  onAddContent: (sessions: Session[]) => Promise<void>;
+  onReplaceContent: (sessions: Session[]) => Promise<void>;
+  onReplaceAll: (sessions: Session[]) => Promise<void>;
 }
 
 export function AIMessageWithActions({ 
   message, 
   hasSelection, 
   selectedItems,
-  onAddContent, 
-  onReplaceContent 
+  onAddContent,
+  onReplaceContent,
+  onReplaceAll,
 }: AIMessageWithActionsProps) {
-  const [addingBlockId, setAddingBlockId] = useState<string | null>(null);
-  const [replacingBlockId, setReplacingBlockId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   const parsed = parseAIResponse(message.content);
+  const generatedSessions = parsed.hasActionableContent 
+    ? convertParsedBlocksToSessions(parsed.blocks)
+    : [];
 
   if (!parsed.hasActionableContent) {
     // Renderizar normalmente sem botões
@@ -49,93 +56,76 @@ export function AIMessageWithActions({
     );
   }
 
-  const handleAdd = async (block: ParsedContent) => {
-    setAddingBlockId(block.id);
-    try {
-      await onAddContent(block.content, block.type);
-    } finally {
-      setAddingBlockId(null);
-    }
+  // Gerar resumo do conteúdo gerado
+  const contentSummary = parsed.blocks.length === 1
+    ? parsed.blocks[0].title || 'Conteúdo gerado'
+    : `${parsed.blocks.length} ${parsed.blocks.length === 1 ? 'item gerado' : 'itens gerados'}`;
+
+  const handleAdd = async () => {
+    await onAddContent(generatedSessions);
   };
 
-  const handleReplace = async (block: ParsedContent) => {
-    setReplacingBlockId(block.id);
-    try {
-      await onReplaceContent(block.content, block.type);
-    } finally {
-      setReplacingBlockId(null);
-    }
+  const handleReplace = async () => {
+    await onReplaceContent(generatedSessions);
+  };
+
+  const handleReplaceAll = async () => {
+    await onReplaceAll(generatedSessions);
   };
 
   return (
-    <div className="bg-muted text-foreground rounded-lg p-3 space-y-3">
-      {/* Explicação inicial se houver */}
-      {parsed.explanation && (
-        <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-          <ReactMarkdown>{parsed.explanation}</ReactMarkdown>
-        </div>
-      )}
+    <>
+      <div className="bg-muted text-foreground rounded-lg p-3 space-y-3">
+        {/* Explicação inicial se houver */}
+        {parsed.explanation && (
+          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3">
+            <ReactMarkdown>{parsed.explanation}</ReactMarkdown>
+          </div>
+        )}
 
-      {/* Renderizar cada bloco com seus botões */}
-      {parsed.blocks.map((block) => (
-        <div key={block.id} className="space-y-2">
-          {/* Título do bloco se houver */}
-          {block.title && (
-            <p className="text-xs font-medium text-muted-foreground">
-              {block.title}
-            </p>
-          )}
-
-          {/* Conteúdo do bloco */}
-          <div className="bg-background border border-border rounded-md p-3">
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{block.rawContent}</ReactMarkdown>
+        {/* Card clicável com resumo do conteúdo */}
+        <Card 
+          className="p-4 cursor-pointer hover:bg-primary/5 hover:border-primary/30 transition-colors border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
+          onClick={() => setShowModal(true)}
+        >
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-sm mb-1">
+                {hasSelection ? 'Conteúdo Editado' : 'Conteúdo Gerado'}
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {contentSummary}
+              </p>
+              <div className="flex items-center gap-1 mt-2 text-xs text-primary">
+                <span>Clique para visualizar e adicionar</span>
+                <ChevronRight className="h-3 w-3" />
+              </div>
             </div>
           </div>
+        </Card>
 
-          {/* Botões de ação */}
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => handleAdd(block)}
-              disabled={addingBlockId === block.id}
-              className="text-xs h-7"
-            >
-              {addingBlockId === block.id ? (
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3 mr-1" />
-              )}
-              Adicionar
-            </Button>
+        <p className="text-xs opacity-70 mt-2">
+          {new Date(message.created_at).toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </p>
+      </div>
 
-            {hasSelection && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => handleReplace(block)}
-                disabled={replacingBlockId === block.id}
-                className="text-xs h-7"
-              >
-                {replacingBlockId === block.id ? (
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                )}
-                Substituir {selectedItems.length > 1 ? `(${selectedItems.length})` : ''}
-              </Button>
-            )}
-          </div>
-        </div>
-      ))}
-
-      <p className="text-xs opacity-70 mt-2">
-        {new Date(message.created_at).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </p>
-    </div>
+      {/* Modal de pré-visualização */}
+      <ChatGeneratedPreviewModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        generatedSessions={generatedSessions}
+        hasSelection={hasSelection}
+        selectedCount={selectedItems.length}
+        onAdd={handleAdd}
+        onReplace={hasSelection ? handleReplace : undefined}
+        onReplaceAll={hasSelection && selectedItems.length > 1 ? handleReplaceAll : undefined}
+      />
+    </>
   );
 }

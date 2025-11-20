@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -333,63 +333,84 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     return {};
   };
 
-  // Adicionar conteúdo como novo bloco
-  const handleAddContent = async (content: string, type: ParsedContent['type']) => {
-    // Criar bloco baseado no tipo inferido
-    const blockType = mapParsedTypeToBlockType(type);
-    
-    // Se não há sessões, criar uma nova
-    if (sessions.length === 0) {
-      addSession();
-      // Aguardar um pequeno delay para que o estado seja atualizado
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    // Garantir que temos pelo menos uma sessão (fallback)
-    const targetSession = sessions.length > 0 
-      ? sessions[sessions.length - 1] 
-      : { id: `session-${Date.now()}`, title: 'Nova Sessão', blocks: [] };
-    
-    addBlock(targetSession.id, {
-      type: blockType,
-      content: content,
-      config: getDefaultConfigForType(blockType),
-    });
+  // Adicionar conteúdo (sessões completas)
+  const handleAddContent = useCallback(async (generatedSessions: Session[]) => {
+    if (generatedSessions.length === 0) return;
+
+    // Usar importSessions para adicionar as sessões geradas
+    importSessions(generatedSessions);
 
     toast({
       title: 'Conteúdo adicionado!',
-      description: 'O bloco foi inserido na sua copy.',
+      description: `${generatedSessions.length} sessão(ões) adicionada(s) à sua copy.`,
     });
-  };
+  }, [importSessions, toast]);
 
-  // Substituir conteúdo dos blocos selecionados
-  const handleReplaceContent = async (content: string, type: ParsedContent['type']) => {
-    if (selectedItems.length === 0) return;
+  // Substituir conteúdo dos blocos/sessões selecionados
+  const handleReplaceContent = useCallback(async (generatedSessions: Session[]) => {
+    if (selectedItems.length === 0 || generatedSessions.length === 0) return;
+
+    // Pegar o primeiro bloco da primeira sessão gerada como conteúdo de substituição
+    const firstBlock = generatedSessions[0]?.blocks[0];
+    if (!firstBlock) return;
 
     let replacedCount = 0;
 
-    for (const item of selectedItems) {
+    selectedItems.forEach((item) => {
       if (item.type === 'block') {
-        // Substituir conteúdo do bloco
-        updateBlock(item.id, { content });
+        updateBlock(item.id, { content: firstBlock.content });
         replacedCount++;
       } else if (item.type === 'session') {
-        // Substituir primeiro bloco da sessão
         const session = sessions.find(s => s.id === item.id);
         if (session && session.blocks.length > 0) {
-          updateBlock(session.blocks[0].id, { content });
+          updateBlock(session.blocks[0].id, { content: firstBlock.content });
           replacedCount++;
         }
       }
-    }
+    });
 
     clearSelection();
 
     toast({
-      title: `${replacedCount} ${replacedCount === 1 ? 'bloco substituído' : 'blocos substituídos'}!`,
+      title: `${replacedCount} ${replacedCount === 1 ? 'item substituído' : 'itens substituídos'}!`,
       description: 'O conteúdo foi atualizado.',
     });
-  };
+  }, [selectedItems, updateBlock, sessions, clearSelection, toast]);
+
+  // Substituir todo o conteúdo de todos os selecionados
+  const handleReplaceAll = useCallback(async (generatedSessions: Session[]) => {
+    if (selectedItems.length === 0 || generatedSessions.length === 0) return;
+
+    const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
+    let replacedCount = 0;
+    let blockIndex = 0;
+
+    selectedItems.forEach((item) => {
+      if (item.type === 'block' && blockIndex < allGeneratedBlocks.length) {
+        updateBlock(item.id, { content: allGeneratedBlocks[blockIndex].content });
+        blockIndex++;
+        replacedCount++;
+      } else if (item.type === 'session') {
+        const session = sessions.find(s => s.id === item.id);
+        if (session) {
+          session.blocks.forEach((block) => {
+            if (blockIndex < allGeneratedBlocks.length) {
+              updateBlock(block.id, { content: allGeneratedBlocks[blockIndex].content });
+              blockIndex++;
+              replacedCount++;
+            }
+          });
+        }
+      }
+    });
+
+    clearSelection();
+
+    toast({
+      title: `${replacedCount} ${replacedCount === 1 ? 'item substituído' : 'itens substituídos'}!`,
+      description: 'Todo o conteúdo foi atualizado.',
+    });
+  }, [selectedItems, updateBlock, sessions, clearSelection, toast]);
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -577,13 +598,14 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                     }`}
                   >
                 {msg.role === 'assistant' ? (
-                      <AIMessageWithActions
-                        message={msg}
-                        hasSelection={selectedItems.length > 0}
-                        selectedItems={selectedItems}
-                        onAddContent={handleAddContent}
-                        onReplaceContent={handleReplaceContent}
-                      />
+                  <AIMessageWithActions
+                    message={msg}
+                    hasSelection={selectedItems.length > 0}
+                    selectedItems={selectedItems}
+                    onAddContent={handleAddContent}
+                    onReplaceContent={handleReplaceContent}
+                    onReplaceAll={handleReplaceAll}
+                  />
                     ) : (
                       <>
                         <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>

@@ -215,3 +215,25 @@ export function cleanContent(rawContent: string): string {
     .replace(/^["']|["']$/g, '')
     .trim();
 }
+
+// Função para converter blocos parseados em estrutura Session[]
+export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
+  if (blocks.length === 0) return [];
+
+  // Agrupar blocos em sessão única
+  const session = {
+    id: `session-${Date.now()}`,
+    title: 'Conteúdo Gerado pela IA',
+    blocks: blocks.map((block, index) => ({
+      id: `block-${Date.now()}-${index}`,
+      type: block.type === 'headline' ? 'text' as const : 
+            block.type === 'list' ? 'list' as const : 'text' as const,
+      content: block.content,
+      config: block.type === 'list' 
+        ? { listStyle: 'bullet' }
+        : { fontSize: 16, fontWeight: block.type === 'headline' ? 'bold' : 'normal' }
+    }))
+  };
+
+  return [session];
+}
