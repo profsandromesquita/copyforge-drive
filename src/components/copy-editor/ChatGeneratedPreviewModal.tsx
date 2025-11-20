@@ -97,30 +97,37 @@ export function ChatGeneratedPreviewModal({
             <div className="p-2 rounded-lg bg-primary/10">
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
-            <div>
+            <div className="flex-1">
               <DialogTitle className="text-xl">
                 {hasSelection ? 'Editar Conteúdo' : 'Pré-visualização da Copy'}
               </DialogTitle>
               <DialogDescription className="mt-1">
                 {hasSelection 
-                  ? 'Visualize o conteúdo gerado e escolha como aplicar às suas seleções'
-                  : 'Visualize o conteúdo gerado pela IA e adicione à sua copy'}
+                  ? `Visualize o conteúdo gerado e escolha como aplicar às suas ${selectedCount} ${selectedCount === 1 ? 'seleção' : 'seleções'}`
+                  : `${generatedSessions.length} ${generatedSessions.length === 1 ? 'sessão gerada' : 'sessões geradas'} pela IA`}
               </DialogDescription>
             </div>
+            {generatedSessions.length > 1 && (
+              <Badge variant="secondary" className="text-sm">
+                {generatedSessions.length} Sessões
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full pr-4">
             <div className="space-y-6 py-2">
-              {generatedSessions.map((session) => (
+              {generatedSessions.map((session, sessionIndex) => (
                 <div key={session.id} className="border-2 rounded-xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-primary/20">
                     <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
-                    <h3 className="font-bold text-lg text-primary">
-                      {session.title}
+                    <h3 className="font-bold text-lg text-primary flex-1">
+                      {generatedSessions.length > 1 
+                        ? `${sessionIndex + 1}. ${session.title}`
+                        : session.title}
                     </h3>
-                    <Badge variant="outline" className="ml-auto text-xs">
+                    <Badge variant="outline" className="text-xs">
                       {session.blocks.length} {session.blocks.length === 1 ? 'bloco' : 'blocos'}
                     </Badge>
                   </div>

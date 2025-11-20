@@ -671,6 +671,23 @@ Quando gerar conteúdo copiável (headlines, anúncios, textos), siga estas dire
    - Mantenha o conteúdo limpo e copiável
    - Evite formatações excessivas
 
+4. **ORGANIZAÇÃO EM SESSÕES (IMPORTANTE):**
+   - Quando criar múltiplos itens INDEPENDENTES (ex: 3 anúncios, 5 headlines), SEMPRE use numeração
+   - Cada item numerado será automaticamente convertido em uma SESSÃO SEPARADA
+   - Exemplo CORRETO para 3 anúncios:
+     
+     1. **Anúncio focado em dor**
+     Título: "Cansado de tentar e não conseguir?"
+     Corpo: Descubra o método que...
+     
+     2. **Anúncio focado em desejo**
+     Título: "Imagine alcançar seus objetivos em 30 dias"
+     Corpo: Com nosso sistema...
+     
+     3. **Anúncio focado em prova social**
+     Título: "Mais de 10 mil pessoas já conseguiram"
+     Corpo: Junte-se a elas...
+
 EXEMPLO DE BOA FORMATAÇÃO:
 
 Aqui estão 3 headlines focando na dor oculta:

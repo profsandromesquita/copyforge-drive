@@ -58,36 +58,62 @@ export function AIMessageWithActions({
 
   // Gerar resumo detalhado do conteúdo gerado
   const getContentSummary = () => {
-    if (parsed.blocks.length === 1) {
-      const block = parsed.blocks[0];
-      const preview = block.content.substring(0, 60) + (block.content.length > 60 ? '...' : '');
+    const sessionsCount = generatedSessions.length;
+    const totalBlocks = generatedSessions.reduce((sum, s) => sum + s.blocks.length, 0);
+    
+    if (sessionsCount === 1) {
+      // Uma sessão - mostrar info dos blocos
+      const session = generatedSessions[0];
+      
+      if (session.blocks.length === 1) {
+        const block = session.blocks[0];
+        const preview = typeof block.content === 'string' 
+          ? block.content.substring(0, 60) + (block.content.length > 60 ? '...' : '')
+          : 'Conteúdo gerado';
+        
+        return {
+          title: getBlockTypeName(block.type),
+          preview,
+          count: '1 item'
+        };
+      }
+      
+      // Múltiplos blocos em uma sessão
+      const types = session.blocks.map(b => getBlockTypeName(b.type));
+      const uniqueTypes = [...new Set(types)];
+      const typesSummary = uniqueTypes.length === 1 
+        ? `${session.blocks.length} ${uniqueTypes[0]}s`
+        : `${session.blocks.length} itens`;
+      
       return {
-        title: block.title || 'Conteúdo gerado',
-        preview,
-        count: '1 item'
+        title: typesSummary,
+        preview: session.title,
+        count: `${session.blocks.length} ${session.blocks.length === 1 ? 'item' : 'itens'}`
       };
     }
     
-    // Múltiplos blocos - mostrar tipos
-    const types = parsed.blocks.map(b => {
-      switch(b.type) {
-        case 'headline': return 'Headline';
-        case 'list': return 'Lista';
-        case 'ad': return 'Anúncio';
-        default: return 'Texto';
-      }
-    });
-    
-    const uniqueTypes = [...new Set(types)];
-    const typesSummary = uniqueTypes.length === 1 
-      ? `${parsed.blocks.length} ${uniqueTypes[0]}s`
-      : `${parsed.blocks.length} itens`;
+    // Múltiplas sessões
+    const firstSession = generatedSessions[0];
+    const firstBlock = firstSession.blocks[0];
+    const preview = typeof firstBlock.content === 'string'
+      ? firstBlock.content.substring(0, 50) + '...'
+      : firstSession.title;
     
     return {
-      title: typesSummary,
-      preview: parsed.blocks[0].content.substring(0, 60) + '...',
-      count: `${parsed.blocks.length} ${parsed.blocks.length === 1 ? 'item' : 'itens'}`
+      title: `${sessionsCount} ${getBlockTypeName(firstBlock.type)}s`,
+      preview,
+      count: `${sessionsCount} ${sessionsCount === 1 ? 'sessão' : 'sessões'}`
     };
+  };
+
+  const getBlockTypeName = (type: string): string => {
+    switch (type) {
+      case 'headline': return 'Headline';
+      case 'list': return 'Lista';
+      case 'text': return 'Texto';
+      case 'button': return 'Botão';
+      default: return 'Item';
+    }
   };
 
   const summary = getContentSummary();
