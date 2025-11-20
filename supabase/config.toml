@@ -13,7 +13,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.analyze-audience]
-verify_jwt = false
+verify_jwt = true
 
 [functions.setup-new-user]
 verify_jwt = false

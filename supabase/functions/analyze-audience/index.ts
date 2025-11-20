@@ -21,7 +21,8 @@ serve(async (req) => {
       );
     }
 
-    // Extrair user_id do JWT token
+    // Autenticação automática via verify_jwt = true
+    // Obter user_id do JWT token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -30,13 +31,13 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
     // Criar cliente com o token do usuário para pegar o user_id
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
