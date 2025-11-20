@@ -103,7 +103,8 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     importSessions,
     addSession,
     addBlock,
-    updateBlock
+    updateBlock,
+    updateSession
   } = useCopyEditor();
   const queryClient = useQueryClient();
 
@@ -351,59 +352,81 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const handleReplaceContent = useCallback(async (generatedSessions: Session[]) => {
     if (selectedItems.length === 0 || generatedSessions.length === 0) return;
 
-    // Pegar o primeiro bloco da primeira sessão gerada como conteúdo de substituição
-    const firstBlock = generatedSessions[0]?.blocks[0];
-    if (!firstBlock) return;
-
     let replacedCount = 0;
 
-    selectedItems.forEach((item) => {
-      if (item.type === 'block') {
-        updateBlock(item.id, { content: firstBlock.content });
+    // Agrupar items selecionados por tipo
+    const selectedSessions = selectedItems.filter(item => item.type === 'session');
+    const selectedBlocks = selectedItems.filter(item => item.type === 'block');
+
+    // Substituir sessões completas (mapear 1:1 com sessões geradas)
+    selectedSessions.forEach((item, idx) => {
+      if (generatedSessions[idx]) {
+        updateSession(item.id, {
+          title: generatedSessions[idx].title,
+          blocks: generatedSessions[idx].blocks
+        });
         replacedCount++;
-      } else if (item.type === 'session') {
-        const session = sessions.find(s => s.id === item.id);
-        if (session && session.blocks.length > 0) {
-          updateBlock(session.blocks[0].id, { content: firstBlock.content });
-          replacedCount++;
-        }
       }
     });
+
+    // Substituir blocos individuais (se não há sessões selecionadas)
+    if (selectedBlocks.length > 0 && selectedSessions.length === 0) {
+      const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
+      selectedBlocks.forEach((item, idx) => {
+        if (allGeneratedBlocks[idx]) {
+          updateBlock(item.id, { 
+            content: allGeneratedBlocks[idx].content,
+            type: allGeneratedBlocks[idx].type,
+            config: allGeneratedBlocks[idx].config
+          });
+          replacedCount++;
+        }
+      });
+    }
 
     clearSelection();
 
     toast({
       title: `${replacedCount} ${replacedCount === 1 ? 'item substituído' : 'itens substituídos'}!`,
-      description: 'O conteúdo foi atualizado.',
+      description: 'O conteúdo foi atualizado com sucesso.',
     });
-  }, [selectedItems, updateBlock, sessions, clearSelection, toast]);
+  }, [selectedItems, updateBlock, updateSession, clearSelection, toast]);
 
   // Substituir todo o conteúdo de todos os selecionados
   const handleReplaceAll = useCallback(async (generatedSessions: Session[]) => {
     if (selectedItems.length === 0 || generatedSessions.length === 0) return;
 
-    const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
     let replacedCount = 0;
-    let blockIndex = 0;
+    const selectedSessions = selectedItems.filter(item => item.type === 'session');
+    const selectedBlocks = selectedItems.filter(item => item.type === 'block');
 
-    selectedItems.forEach((item) => {
-      if (item.type === 'block' && blockIndex < allGeneratedBlocks.length) {
-        updateBlock(item.id, { content: allGeneratedBlocks[blockIndex].content });
-        blockIndex++;
-        replacedCount++;
-      } else if (item.type === 'session') {
-        const session = sessions.find(s => s.id === item.id);
-        if (session) {
-          session.blocks.forEach((block) => {
-            if (blockIndex < allGeneratedBlocks.length) {
-              updateBlock(block.id, { content: allGeneratedBlocks[blockIndex].content });
-              blockIndex++;
-              replacedCount++;
-            }
+    // Se há sessões selecionadas, substituir com sessões geradas
+    if (selectedSessions.length > 0) {
+      selectedSessions.forEach((item, idx) => {
+        if (generatedSessions[idx]) {
+          updateSession(item.id, {
+            title: generatedSessions[idx].title,
+            blocks: generatedSessions[idx].blocks
           });
+          replacedCount += generatedSessions[idx].blocks.length;
         }
-      }
-    });
+      });
+    }
+
+    // Se apenas blocos estão selecionados, distribuir blocos gerados
+    if (selectedBlocks.length > 0 && selectedSessions.length === 0) {
+      const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
+      selectedBlocks.forEach((item, idx) => {
+        if (allGeneratedBlocks[idx]) {
+          updateBlock(item.id, { 
+            content: allGeneratedBlocks[idx].content,
+            type: allGeneratedBlocks[idx].type,
+            config: allGeneratedBlocks[idx].config
+          });
+          replacedCount++;
+        }
+      });
+    }
 
     clearSelection();
 
@@ -411,7 +434,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       title: `${replacedCount} ${replacedCount === 1 ? 'item substituído' : 'itens substituídos'}!`,
       description: 'Todo o conteúdo foi atualizado.',
     });
-  }, [selectedItems, updateBlock, sessions, clearSelection, toast]);
+  }, [selectedItems, updateBlock, updateSession, clearSelection, toast]);
 
   const handleMessageChange = (value: string) => {
     setMessage(value);
