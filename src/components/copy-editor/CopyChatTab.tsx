@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { HistorySheet } from './HistorySheet';
+import { AIMessageWithActions } from './AIMessageWithActions';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -57,6 +58,8 @@ import {
   CONTEXT_VARIABLES,
   VARIABLE_EXAMPLES 
 } from '@/lib/context-variables';
+import type { Session, Block } from '@/types/copy-editor';
+import type { ParsedContent } from '@/lib/ai-content-parser';
 
 interface ChatMessage {
   id: string;
@@ -96,7 +99,10 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     toggleSelectionMode, 
     toggleItemSelection, 
     clearSelection,
-    importSessions
+    importSessions,
+    addSession,
+    addBlock,
+    updateBlock
   } = useCopyEditor();
   const queryClient = useQueryClient();
 
@@ -304,6 +310,87 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     });
   };
 
+  // Mapear tipo parseado para tipo de bloco
+  const mapParsedTypeToBlockType = (parsedType: ParsedContent['type']): Block['type'] => {
+    const mapping: Record<ParsedContent['type'], Block['type']> = {
+      'headline': 'text',
+      'text': 'text',
+      'ad': 'text',
+      'list': 'list',
+      'unknown': 'text',
+    };
+    return mapping[parsedType] || 'text';
+  };
+
+  // Obter configuração padrão por tipo
+  const getDefaultConfigForType = (blockType: Block['type']) => {
+    if (blockType === 'text') {
+      return { fontSize: '16px', fontWeight: 'normal' };
+    }
+    if (blockType === 'list') {
+      return { listStyle: 'bullets' as const };
+    }
+    return {};
+  };
+
+  // Adicionar conteúdo como novo bloco
+  const handleAddContent = async (content: string, type: ParsedContent['type']) => {
+    // Criar bloco baseado no tipo inferido
+    const blockType = mapParsedTypeToBlockType(type);
+    
+    // Se não há sessões, criar uma nova
+    if (sessions.length === 0) {
+      addSession();
+      // Aguardar um pequeno delay para que o estado seja atualizado
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    // Garantir que temos pelo menos uma sessão (fallback)
+    const targetSession = sessions.length > 0 
+      ? sessions[sessions.length - 1] 
+      : { id: `session-${Date.now()}`, title: 'Nova Sessão', blocks: [] };
+    
+    addBlock(targetSession.id, {
+      type: blockType,
+      content: content,
+      config: getDefaultConfigForType(blockType),
+    });
+
+    toast({
+      title: 'Conteúdo adicionado!',
+      description: 'O bloco foi inserido na sua copy.',
+    });
+  };
+
+  // Substituir conteúdo dos blocos selecionados
+  const handleReplaceContent = async (content: string, type: ParsedContent['type']) => {
+    if (selectedItems.length === 0) return;
+
+    let replacedCount = 0;
+
+    for (const item of selectedItems) {
+      if (item.type === 'block') {
+        // Substituir conteúdo do bloco
+        updateBlock(item.id, { content });
+        replacedCount++;
+      } else if (item.type === 'session') {
+        // Substituir primeiro bloco da sessão
+        const session = sessions.find(s => s.id === item.id);
+        if (session && session.blocks.length > 0) {
+          updateBlock(session.blocks[0].id, { content });
+          replacedCount++;
+        }
+      }
+    }
+
+    clearSelection();
+
+    toast({
+      title: `${replacedCount} ${replacedCount === 1 ? 'bloco substituído' : 'blocos substituídos'}!`,
+      description: 'O conteúdo foi atualizado.',
+    });
+  };
+
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
@@ -489,19 +576,25 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                         : 'bg-muted text-foreground'
                     }`}
                   >
-                    {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none break-words overflow-hidden">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </div>
+                {msg.role === 'assistant' ? (
+                      <AIMessageWithActions
+                        message={msg}
+                        hasSelection={selectedItems.length > 0}
+                        selectedItems={selectedItems}
+                        onAddContent={handleAddContent}
+                        onReplaceContent={handleReplaceContent}
+                      />
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                      <>
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {new Date(msg.created_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </>
                     )}
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString('pt-BR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
                   </div>
                 </div>
               ))}

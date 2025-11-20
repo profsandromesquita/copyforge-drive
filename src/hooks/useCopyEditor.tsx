@@ -3,7 +3,7 @@ import { Session, Block, CopyType } from '@/types/copy-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface SelectedItem {
+export interface SelectedItem {
   id: string;
   type: 'session' | 'block';
   sessionId?: string;
