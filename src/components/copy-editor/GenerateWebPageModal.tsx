@@ -149,17 +149,17 @@ export function GenerateWebPageModal({ open, onOpenChange }: GenerateWebPageModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] h-[90vh] p-0 gap-0">
-        <DialogHeader className="px-6 py-4 border-b border-border">
+      <DialogContent className="w-[95vw] max-w-[100vw] sm:max-w-[95vw] lg:max-w-[90vw] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
           <DialogTitle>Gerar Landing Page Web</DialogTitle>
           <DialogDescription>
             Crie e refine sua landing page com assistência de IA. Ajuste o design, adicione seções e otimize a conversão.
           </DialogDescription>
         </DialogHeader>
         
-        <div className="flex h-[calc(100%-80px)]">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
           {/* Painel esquerdo - Chat */}
-          <div className="w-[40%] border-r border-border flex flex-col">
+          <div className="w-full lg:w-[40%] h-[50%] lg:h-auto overflow-hidden min-h-0 border-b lg:border-b-0 lg:border-r border-border flex flex-col">
             <WebChatPanel
               copyId={copyId}
               copyTitle={copyTitle}
@@ -175,7 +175,7 @@ export function GenerateWebPageModal({ open, onOpenChange }: GenerateWebPageModa
           </div>
 
           {/* Painel Direito - Preview (60%) */}
-          <div className="w-[60%] flex flex-col bg-muted/30">
+          <div className="w-full lg:w-[60%] h-[50%] lg:h-auto overflow-hidden min-h-0 flex flex-col bg-muted/30">
             <WebPreviewPanel
               generatedCode={generatedCode}
               isGenerating={isGenerating}
