@@ -93,12 +93,6 @@ export const CopyAITab = () => {
   const [isGeneratingSystemPrompt, setIsGeneratingSystemPrompt] = useState(false);
   const [showGeneratedPromptEditor, setShowGeneratedPromptEditor] = useState(false);
 
-  // Histórico
-  const [history, setHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [showPromptDialog, setShowPromptDialog] = useState(false);
-  const [selectedPromptItem, setSelectedPromptItem] = useState<any>(null);
-
   const audienceSegments = activeProject?.audience_segments || [];
   const offers = activeProject?.offers || [];
 
@@ -113,38 +107,6 @@ export const CopyAITab = () => {
     
     checkAccess();
   }, [checkCopyAI]);
-
-  useEffect(() => {
-    if (activeTab === 'historico' && copyId) {
-      loadHistory();
-    }
-  }, [activeTab, copyId]);
-
-
-  const loadHistory = async () => {
-    if (!copyId) return;
-    
-    setLoadingHistory(true);
-    try {
-      const { data, error } = await supabase
-        .from('ai_generation_history')
-        .select('*')
-        .eq('copy_id', copyId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setHistory(data || []);
-    } catch (error: any) {
-      console.error('Error loading history:', error);
-      toast({
-        title: 'Erro ao carregar histórico',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
 
   const resetForm = () => {
     setEtapa(1);
@@ -458,11 +420,6 @@ export const CopyAITab = () => {
     toast({
       title: 'Copy importada com sucesso!',
     });
-  };
-
-  const handleHistoryItemClick = (item: any) => {
-    setGeneratedSessions(item.sessions);
-    setShowPreviewModal(true);
   };
 
   const handleContentSelect = (sessions: Session[], blocks: Block[]) => {
@@ -990,217 +947,16 @@ export const CopyAITab = () => {
       ) : (
         <>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="criar" className="gap-2">
                 <Sparkles className="h-4 w-4" />
-              </TabsTrigger>
-              <TabsTrigger value="historico" className="gap-2">
-                <History className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
 
         <TabsContent value="criar" className="flex-1 mt-0">
           {renderCriarTab()}
         </TabsContent>
-
-
-        <TabsContent value="historico" className="flex-1 mt-0">
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            {loadingHistory ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : history.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <p>Nenhuma geração anterior</p>
-              </div>
-            ) : (
-              <div className="grid gap-3 p-4">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className="group w-full text-left p-4 rounded-lg border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:border-primary/30"
-                  >
-                    <div className="space-y-3">
-                      {/* Header com tipo e data */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          {item.generation_type === 'optimize' ? (
-                            <>
-                              <Wand2 className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Otimização</Badge>
-                            </>
-                          ) : item.generation_type === 'variation' ? (
-                            <>
-                              <CopyIcon className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Variação</Badge>
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 text-primary" />
-                              <Badge variant="secondary" className="text-xs">Criação</Badge>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedPromptItem(item);
-                              setShowPromptDialog(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDistanceToNow(new Date(item.created_at), { 
-                              addSuffix: true,
-                              locale: ptBR 
-                            })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Prompt - clicável para visualizar */}
-                      <button
-                        onClick={() => handleHistoryItemClick(item)}
-                        className="w-full text-left"
-                      >
-                        <p className="text-sm font-medium line-clamp-2 leading-relaxed group-hover:text-primary transition-colors">
-                          {item.prompt}
-                        </p>
-                      </button>
-
-                      {/* Footer com informações adicionais */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-                          <span className="px-2 py-1 bg-muted rounded">
-                            {item.sessions?.length || 0} sessão(ões)
-                          </span>
-                          {item.copy_type && (
-                            <span className="px-2 py-1 bg-muted rounded capitalize">
-                              {item.copy_type.replace('_', ' ')}
-                            </span>
-                          )}
-                          {item.was_auto_routed && (
-                            <Badge variant="outline" className="text-xs">
-                              Auto
-                            </Badge>
-                          )}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleHistoryItemClick(item)}
-                          className="text-xs"
-                        >
-                          Visualizar Copy
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </TabsContent>
       </Tabs>
-
-      {/* Dialog para visualizar prompt completo */}
-      <Dialog open={showPromptDialog} onOpenChange={setShowPromptDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Prompt</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
-            {selectedPromptItem && (
-              <div className="space-y-4">
-                {/* Tipo e Data */}
-                <div className="flex items-center gap-3 pb-3 border-b">
-                  {selectedPromptItem.generation_type === 'optimize' ? (
-                    <>
-                      <Wand2 className="h-5 w-5 text-primary" />
-                      <Badge variant="secondary">Otimização</Badge>
-                    </>
-                  ) : selectedPromptItem.generation_type === 'variation' ? (
-                    <>
-                      <CopyIcon className="h-5 w-5 text-primary" />
-                      <Badge variant="secondary">Variação</Badge>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <Badge variant="secondary">Criação</Badge>
-                    </>
-                  )}
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {formatDistanceToNow(new Date(selectedPromptItem.created_at), { 
-                      addSuffix: true,
-                      locale: ptBR 
-                    })}
-                  </span>
-                </div>
-
-                {/* Prompt */}
-                <div>
-                  <Label className="text-sm font-semibold mb-2 block">Prompt Completo:</Label>
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {selectedPromptItem.prompt}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Parâmetros */}
-                {selectedPromptItem.parameters && (
-                  <div>
-                    <Label className="text-sm font-semibold mb-2 block">Parâmetros:</Label>
-                    <div className="space-y-2">
-                      {selectedPromptItem.parameters.objectives && selectedPromptItem.parameters.objectives.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground">Objetivos:</span>
-                          {selectedPromptItem.parameters.objectives.map((obj: string, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{obj}</Badge>
-                          ))}
-                        </div>
-                      )}
-                      {selectedPromptItem.parameters.styles && selectedPromptItem.parameters.styles.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground">Estilos:</span>
-                          {selectedPromptItem.parameters.styles.map((style: string, idx: number) => (
-                            <Badge key={idx} variant="outline" className="text-xs">{style}</Badge>
-                          ))}
-                        </div>
-                      )}
-                      {selectedPromptItem.parameters.size && (
-                        <div className="flex gap-2">
-                          <span className="text-xs text-muted-foreground">Tamanho:</span>
-                          <Badge variant="outline" className="text-xs">{selectedPromptItem.parameters.size}</Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Informações adicionais */}
-                <div className="flex items-center gap-3 pt-3 border-t">
-                  <span className="text-xs px-2 py-1 bg-muted rounded">
-                    {selectedPromptItem.sessions?.length || 0} sessão(ões) geradas
-                  </span>
-                  {selectedPromptItem.copy_type && (
-                    <span className="text-xs px-2 py-1 bg-muted rounded capitalize">
-                      {selectedPromptItem.copy_type.replace('_', ' ')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
 
       <AIGeneratedPreviewModal
         open={showPreviewModal}

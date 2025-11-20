@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
+import { HistorySheet } from './HistorySheet';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -29,6 +30,7 @@ interface CopyChatTabProps {
 export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { activeWorkspace } = useWorkspace();
@@ -39,12 +41,13 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
     selectedItems, 
     toggleSelectionMode, 
     toggleItemSelection, 
-    clearSelection 
+    clearSelection,
+    importSessions
   } = useCopyEditor();
   const queryClient = useQueryClient();
 
   // Buscar histórico de mensagens
-  const { data: chatHistory = [], isLoading: loadingHistory } = useQuery({
+  const { data: chatHistory = [], isLoading: loadingChatHistory } = useQuery({
     queryKey: ['copy-chat-history', copyId],
     queryFn: async () => {
       if (!copyId) return [];
@@ -57,6 +60,25 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
 
       if (error) throw error;
       return data as ChatMessage[];
+    },
+    enabled: !!copyId,
+  });
+
+  // Buscar histórico de gerações de IA
+  const { data: history = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ['ai-generation-history', copyId],
+    queryFn: async () => {
+      if (!copyId) return [];
+
+      const { data, error } = await supabase
+        .from('ai_generation_history')
+        .select('*')
+        .eq('copy_id', copyId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data;
     },
     enabled: !!copyId,
   });
@@ -210,6 +232,16 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
     }
   };
 
+  const handleHistoryItemClick = (item: any) => {
+    // Importar sessões geradas
+    importSessions(item.sessions);
+    setShowHistory(false);
+    toast({
+      title: 'Copy importada',
+      description: 'As sessões foram importadas com sucesso.',
+    });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -259,13 +291,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                // TODO: Abrir modal de histórico
-                toast({
-                  title: 'Em breve',
-                  description: 'Funcionalidade de histórico será implementada em breve.',
-                });
-              }}
+              onClick={() => setShowHistory(true)}
             >
               <History className="h-4 w-4 mr-2" />
               Histórico
@@ -289,7 +315,7 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-4 space-y-4"
         >
-          {loadingHistory ? (
+          {loadingChatHistory ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
@@ -406,6 +432,14 @@ export function CopyChatTab({ isActive = true }: CopyChatTabProps) {
             </Button>
           </div>
         </div>
+
+        <HistorySheet 
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          history={history}
+          loadingHistory={loadingHistory}
+          onHistoryItemClick={handleHistoryItemClick}
+        />
       </div>
     </TooltipProvider>
   );
