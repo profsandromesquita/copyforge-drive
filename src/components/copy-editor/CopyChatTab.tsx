@@ -296,7 +296,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     try {
       await sendMessageMutation.mutateAsync(fullMessage);
       setMessage('');
-      clearSelection();
+      // Não limpar a seleção aqui - ela será limpa após aplicar a ação (substituir/adicionar)
     } finally {
       setIsLoading(false);
     }
