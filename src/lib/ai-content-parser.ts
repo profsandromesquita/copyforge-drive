@@ -40,18 +40,30 @@ export function parseAIResponse(markdown: string): ParsedMessage {
   
   const blocks: ParsedContent[] = [];
   let explanation = '';
+  let contentForParsing = markdown;
+
+  // PRÉ-PROCESSAMENTO: Separar explicação conversacional do conteúdo estruturado
+  // Heurística 1: Encontrar "###" no meio do texto
+  const headingIndex = markdown.indexOf('### ');
+  if (headingIndex > 0) {
+    explanation = markdown.substring(0, headingIndex).trim();
+    contentForParsing = markdown.substring(headingIndex).trim();
+  } else {
+    // Heurística 2: Procurar padrão "1. " como início de conteúdo
+    const numberedMatch = markdown.match(/(\n|^)\s*1\.\s+/);
+    if (numberedMatch && numberedMatch.index !== undefined && numberedMatch.index > 0) {
+      explanation = markdown.substring(0, numberedMatch.index).trim();
+      contentForParsing = markdown.substring(numberedMatch.index).trim();
+    }
+  }
 
   // Detectar blocos numerados de nível superior (### 1. ou ### **1. ou simplesmente 1.)
   // Este regex procura por linhas que começam com número seguido de ponto
   const topLevelRegex = /^(?:#{1,3}\s+)?(?:\*\*)?\s*(\d+)\.\s*(?:\*\*)?(.+?)(?:\*\*)?$/gm;
-  const matches = Array.from(markdown.matchAll(topLevelRegex));
+  const matches = Array.from(contentForParsing.matchAll(topLevelRegex));
 
   if (matches.length > 1) { // Só usar este método se houver múltiplos itens numerados
-    // Extrair explicação antes do primeiro bloco numerado
-    const firstMatch = matches[0];
-    if (firstMatch.index && firstMatch.index > 0) {
-      explanation = markdown.substring(0, firstMatch.index).trim();
-    }
+    // Explicação já foi extraída no pré-processamento, não precisa fazer novamente aqui
 
     // Processar cada bloco numerado com agrupamento inteligente
     let currentBlock: ParsedContent | null = null;
@@ -64,13 +76,13 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       // Determinar fim do bloco (início do próximo número de nível superior ou fim do texto)
       let endIndex: number;
       if (index < matches.length - 1) {
-        endIndex = matches[index + 1].index || markdown.length;
+        endIndex = matches[index + 1].index || contentForParsing.length;
       } else {
-        endIndex = markdown.length;
+        endIndex = contentForParsing.length;
       }
 
       // Extrair conteúdo completo do bloco (inclui tudo até o próximo item numerado)
-      const fullBlockContent = markdown.substring(startIndex, endIndex).trim();
+      const fullBlockContent = contentForParsing.substring(startIndex, endIndex).trim();
       
       // Remover apenas a primeira linha de numeração, mantendo o restante da estrutura
       const contentLines = fullBlockContent.split('\n');
@@ -110,16 +122,12 @@ export function parseAIResponse(markdown: string): ParsedMessage {
     });
   }
   // Detectar blocos de código
-  else if (markdown.includes('```')) {
+  else if (contentForParsing.includes('```')) {
     const codeBlockRegex = /```[\s\S]*?```/g;
-    const codeMatches = Array.from(markdown.matchAll(codeBlockRegex));
+    const codeMatches = Array.from(contentForParsing.matchAll(codeBlockRegex));
 
     if (codeMatches.length > 0) {
-      // Extrair explicação antes do primeiro bloco de código
-      const firstMatch = codeMatches[0];
-      if (firstMatch.index && firstMatch.index > 0) {
-        explanation = markdown.substring(0, firstMatch.index).trim();
-      }
+      // Explicação já foi extraída no pré-processamento
 
       codeMatches.forEach((match, index) => {
         const fullContent = match[0];
@@ -137,9 +145,9 @@ export function parseAIResponse(markdown: string): ParsedMessage {
     }
   }
   // Detectar seções com títulos ### (removendo ** como separador de seção)
-  else if (markdown.match(/^#{1,3}\s+.+$/gm)) {
+  else if (contentForParsing.match(/^#{1,3}\s+.+$/gm)) {
     const sectionRegex = /^#{1,3}\s+(.+)$/gm;
-    const sectionMatches = Array.from(markdown.matchAll(sectionRegex));
+    const sectionMatches = Array.from(contentForParsing.matchAll(sectionRegex));
 
     if (sectionMatches.length > 1) {
       // Processar múltiplas seções com agrupamento inteligente
@@ -152,12 +160,12 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         // Encontrar conteúdo até próxima seção
         let endIndex: number;
         if (index < sectionMatches.length - 1) {
-          endIndex = sectionMatches[index + 1].index || markdown.length;
+          endIndex = sectionMatches[index + 1].index || contentForParsing.length;
         } else {
-          endIndex = markdown.length;
+          endIndex = contentForParsing.length;
         }
 
-        const sectionContent = markdown.substring(startIndex, endIndex).trim();
+        const sectionContent = contentForParsing.substring(startIndex, endIndex).trim();
         const content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
 
         // Check if this is a high-level heading or if we don't have a current block yet
@@ -190,21 +198,21 @@ export function parseAIResponse(markdown: string): ParsedMessage {
   const hasActionableContent = blocks.length > 0;
 
   // Se não detectou nenhum padrão mas o texto parece ser conteúdo (não apenas explicação)
-  if (!hasActionableContent && markdown.length > 50 && !markdown.toLowerCase().includes('aqui está')) {
+  if (!hasActionableContent && contentForParsing.length > 50 && !contentForParsing.toLowerCase().includes('aqui está')) {
     // Considerar todo o conteúdo como um único bloco
     const seemsLikeContent = 
-      markdown.includes('"') || 
-      markdown.includes('**') ||
-      markdown.split('\n').length < 10;
+      contentForParsing.includes('"') || 
+      contentForParsing.includes('**') ||
+      contentForParsing.split('\n').length < 10;
 
     if (seemsLikeContent) {
       blocks.push({
         id: `block-${Date.now()}-0`,
-        type: inferBlockType(markdown, ''),
-        content: markdown.trim(),
-        rawContent: markdown,
+        type: inferBlockType(contentForParsing, ''),
+        content: contentForParsing.trim(),
+        rawContent: contentForParsing,
         startIndex: 0,
-        endIndex: markdown.length,
+        endIndex: contentForParsing.length,
       });
     }
   }
