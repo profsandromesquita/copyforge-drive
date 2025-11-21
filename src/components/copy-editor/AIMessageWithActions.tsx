@@ -36,8 +36,24 @@ export function AIMessageWithActions({
 
   // Always use normal parsing - don't force structure
   const parsed = parseAIResponse(message.content);
+  
+  // Filter and sanitize blocks based on selection
+  let actionableBlocks = parsed.blocks;
+  const selectedBlocksCount = selectedItems.filter(i => i.type === 'block').length;
+
+  if (hasSelection && selectedBlocksCount > 0) {
+    // 1) Limit generated blocks to match selected blocks count
+    actionableBlocks = actionableBlocks.slice(0, selectedBlocksCount);
+
+    // 2) Remove title to prevent extra headline creation
+    actionableBlocks = actionableBlocks.map(b => ({
+      ...b,
+      title: undefined,
+    }));
+  }
+
   const generatedSessions = parsed.hasActionableContent 
-    ? convertParsedBlocksToSessions(parsed.blocks)
+    ? convertParsedBlocksToSessions(actionableBlocks)
     : [];
 
   if (!parsed.hasActionableContent) {

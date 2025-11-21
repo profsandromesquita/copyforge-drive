@@ -372,35 +372,18 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     // Substituir blocos individuais (se não há sessões selecionadas)
     if (selectedBlocks.length > 0 && selectedSessions.length === 0) {
       const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
-      
-      // Para cada bloco selecionado
-      selectedBlocks.forEach((item) => {
-        const sessionId = item.sessionId;
-        if (!sessionId) return;
-        
-        // Encontrar o índice do bloco dentro da sessão
-        const session = sessions.find(s => s.id === sessionId);
-        if (!session) return;
-        
-        const blockIndex = session.blocks.findIndex(b => b.id === item.id);
-        if (blockIndex === -1) return;
-        
-        // ESTRATÉGIA: substituir o primeiro bloco gerado, inserir os demais logo após
-        if (allGeneratedBlocks.length > 0) {
-          // 1. Substituir o bloco selecionado com o primeiro bloco gerado
-          updateBlock(item.id, {
-            content: allGeneratedBlocks[0].content,
-            type: allGeneratedBlocks[0].type,
-            config: allGeneratedBlocks[0].config
-          });
-          replacedCount++;
-          
-          // 2. Inserir os blocos gerados restantes logo após o bloco substituído
-          for (let i = 1; i < allGeneratedBlocks.length; i++) {
-            addBlock(sessionId, allGeneratedBlocks[i], blockIndex + i);
-            replacedCount++;
-          }
-        }
+
+      // Substituição 1:1 - apenas o conteúdo, mantendo tipo e config
+      selectedBlocks.forEach((item, idx) => {
+        const generatedBlock = allGeneratedBlocks[idx];
+        if (!generatedBlock) return;
+
+        // Atualizar APENAS o conteúdo, preservando tipo e formatação original
+        updateBlock(item.id, {
+          content: generatedBlock.content,
+        });
+
+        replacedCount++;
       });
     }
 
