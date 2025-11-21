@@ -18,6 +18,8 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { HistorySheet } from './HistorySheet';
 import { AIMessageWithActions } from './AIMessageWithActions';
+import { ChatGeneratedPreviewModal } from './ChatGeneratedPreviewModal';
+import { markdownToHtml } from '@/lib/markdown-utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -378,9 +380,14 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         const generatedBlock = allGeneratedBlocks[idx];
         if (!generatedBlock) return;
 
+        // Converter markdown para HTML antes de atualizar
+        const content = typeof generatedBlock.content === 'string' 
+          ? markdownToHtml(generatedBlock.content)
+          : generatedBlock.content;
+
         // Atualizar APENAS o conteúdo, preservando tipo e formatação original
         updateBlock(item.id, {
-          content: generatedBlock.content,
+          content,
         });
 
         replacedCount++;
