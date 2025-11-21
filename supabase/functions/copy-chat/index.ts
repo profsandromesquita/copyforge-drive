@@ -739,6 +739,69 @@ Essas headlines ativam a dor oculta de frustração acumulada.
 
 ---`;
   
+  // Adicionar instruções sobre variações e opções
+  prompt += `
+      - Mantenha as formatações (negrito, itálico, listas) consistentes com o estilo original quando apropriado
+      - Use linguagem clara e persuasiva
+      
+  **REGRAS CRÍTICAS SOBRE VARIAÇÕES E OPÇÕES:**
+  
+  1. **QUANTIDADE PADRÃO - UMA OPÇÃO:**
+     - Por padrão, gere SEMPRE apenas UMA opção/variação do conteúdo solicitado
+     - Exemplo: "Otimize esse texto" → gere APENAS 1 versão otimizada
+     - Exemplo: "Melhore essa headline" → gere APENAS 1 headline melhorada
+     - NÃO seja criativo adicionando "aqui estão 3 opções" sem que seja solicitado
+  
+  2. **MÚLTIPLAS VARIAÇÕES - APENAS SE SOLICITADO:**
+     - Gere múltiplas opções SOMENTE quando o usuário solicitar explicitamente:
+       ✅ "Me dê 3 opções de headline"
+       ✅ "Crie 5 variações desse texto"
+       ✅ "Quero ver diferentes abordagens"
+       ✅ "Sugira algumas alternativas"
+     
+  3. **FORMATO PARA MÚLTIPLAS VARIAÇÕES EM EDIÇÃO:**
+     - Quando gerar múltiplas opções para EDIÇÃO de conteúdo selecionado:
+       - Use "### Opção 1: [Descrição breve]"
+       - Use "### Opção 2: [Descrição breve]"
+       - Use "### Opção 3: [Descrição breve]"
+     - Cada "### Opção N:" criará uma sessão separada no preview
+     - O usuário poderá escolher qual variação aplicar
+     
+  4. **EXEMPLOS CORRETOS:**
+  
+     ❌ ERRADO (usuário não pediu múltiplas opções):
+     Usuário: "Otimize esse texto"
+     IA: "Aqui estão 3 opções otimizadas:
+     ### Opção 1: Versão concisa
+     [texto]
+     ### Opção 2: Versão persuasiva
+     [texto]
+     ### Opção 3: Versão emotiva
+     [texto]"
+     
+     ✅ CORRETO (gerar apenas 1):
+     Usuário: "Otimize esse texto"
+     IA: "[texto otimizado único]"
+     
+     ✅ CORRETO (usuário solicitou múltiplas):
+     Usuário: "Me dê 3 variações desse texto"
+     IA: "Aqui estão 3 variações solicitadas:
+     
+     ### Opção 1: Abordagem Direta
+     [texto 1]
+     
+     ### Opção 2: Abordagem Emotiva
+     [texto 2]
+     
+     ### Opção 3: Abordagem Técnica
+     [texto 3]"
+  
+  5. **IMPORTANTE:**
+     - Respeite estritamente a quantidade solicitada pelo usuário
+     - Se não houver quantidade especificada, gere APENAS 1 opção
+     - Variações múltiplas são para o usuário ESCOLHER, não para enviar todas de uma vez
+  `;
+  
   if (hasSelection) {
     prompt += `\n\n**ATENÇÃO: EDIÇÃO DE CONTEÚDO SELECIONADO - REGRAS CRÍTICAS**
   

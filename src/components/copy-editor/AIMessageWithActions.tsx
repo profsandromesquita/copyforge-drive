@@ -135,16 +135,16 @@ export function AIMessageWithActions({
 
   const summary = getContentSummary();
 
-  const handleAdd = async () => {
-    await onAddContent(generatedSessions);
+  const handleAdd = async (sessions: Session[]) => {
+    await onAddContent(sessions);
   };
 
-  const handleReplace = async () => {
-    await onReplaceContent(generatedSessions);
+  const handleReplace = async (sessions: Session[]) => {
+    await onReplaceContent(sessions);
   };
 
-  const handleReplaceAll = async () => {
-    await onReplaceAll(generatedSessions);
+  const handleReplaceAll = async (sessions: Session[]) => {
+    await onReplaceAll(sessions);
   };
 
   return (
