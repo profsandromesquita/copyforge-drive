@@ -31,7 +31,8 @@ function isHighLevelTitle(title: string): boolean {
   const highLevelKeywords = [
     'anúncio', 'anuncio', 'roteiro', 'vídeo', 'video',
     'script', 'variação', 'variacao', 'copy', 'versão', 'versao',
-    'headline', 'título', 'titulo', 'email', 'post'
+    'headline', 'título', 'titulo', 'email', 'post',
+    'opção', 'opcao' // ✅ FORÇAR separação de opções
   ];
   return highLevelKeywords.some(k => lower.includes(k));
 }
@@ -151,7 +152,7 @@ export function parseAIResponse(markdown: string): ParsedMessage {
     const sectionMatches = Array.from(contentForParsing.matchAll(sectionRegex));
 
     if (sectionMatches.length > 1) {
-      // Processar múltiplas seções com agrupamento inteligente
+      // Processar múltiplas seções com SEPARAÇÃO FORÇADA para "Opção N:" e numerados
       let currentBlock: ParsedContent | null = null;
       
       sectionMatches.forEach((match, index) => {
@@ -169,9 +170,13 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         const sectionContent = contentForParsing.substring(startIndex, endIndex).trim();
         const content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
 
+        // ✅ FORÇAR separação de blocos "Opção N:" e numerados "1.", "2."
+        const isOptionBlock = /^Opção\s+\d+:/i.test(title);
+        const isNumberedBlock = /^\d+\.\s+/.test(title);
+        
         // Check if this is a high-level heading or if we don't have a current block yet
-        if (isHighLevelTitle(title) || !currentBlock) {
-          // Create a new block for high-level headings
+        if (isHighLevelTitle(title) || isOptionBlock || isNumberedBlock || !currentBlock) {
+          // Create a new block for high-level headings, options, and numbered blocks
           const type = inferBlockType(content, title);
           
           currentBlock = {
@@ -421,10 +426,16 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   let currentSession: any = null;
 
   blocks.forEach((block, index) => {
+    // ✅ FORÇAR separação para opções e numerados
+    const isOptionBlock = block.title && /^Opção\s+\d+:/i.test(block.title);
+    const isNumberedBlock = block.title && /^\d+\.\s+/.test(block.title);
+    
     // Decidir se este bloco inicia uma nova sessão
     const isNewSession = 
       !currentSession || // Primeira sessão
       (block.title && isHighLevelTitle(block.title)) || // Título de alto nível
+      isOptionBlock || // ✅ SEMPRE separar opções
+      isNumberedBlock || // ✅ SEMPRE separar numerados
       (block.type === 'ad' && currentSession.blocks.length > 0); // Ad sempre é nova sessão
 
     if (isNewSession) {
