@@ -1,4 +1,5 @@
 import type { BlockType } from '@/types/copy-editor';
+import { markdownToHtml } from './markdown-utils';
 
 export interface ParsedContent {
   id: string;
@@ -285,7 +286,6 @@ function inferBlockType(content: string, context: string): ParsedContent['type']
 
 export function cleanContent(rawContent: string): string {
   return rawContent
-    .replace(/^\*\*(.+?)\*\*$/g, '$1') // Remove ** de títulos
     .replace(/^["'"'](.+?)["'"']$/g, '$1') // Remove aspas externas (todos os tipos)
     .replace(/^\s+|\s+$/g, '') // Trim espaços
     .trim();
@@ -442,7 +442,7 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
         sessionBlocks.push({
           id: `block-${Date.now()}-${index}-title`,
           type: 'headline' as const,
-          content: cleanContent(block.title!),
+          content: markdownToHtml(cleanContent(block.title!)),
           config: {
             fontSize: 'large',
             fontWeight: 'bold',
@@ -509,7 +509,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'headline' as const,
-        content: cleanContent(block.content),
+        content: markdownToHtml(cleanContent(block.content)),
         config: {
           fontSize: 'large',
           fontWeight: 'bold',
@@ -522,7 +522,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'text' as const,
-        content: block.content,
+        content: markdownToHtml(block.content),
         config: {
           fontSize: 'medium',
           fontWeight: 'normal',
@@ -555,7 +555,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'text' as const,
-        content: block.content,
+        content: markdownToHtml(block.content),
         config: {
           fontSize: 'medium',
           fontWeight: 'normal',
