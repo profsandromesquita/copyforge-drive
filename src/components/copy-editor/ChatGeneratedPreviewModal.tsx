@@ -20,9 +20,9 @@ interface ChatGeneratedPreviewModalProps {
   generatedSessions: Session[];
   hasSelection: boolean;
   selectedCount: number;
-  onAdd: () => Promise<void>;
-  onReplace?: () => Promise<void>;
-  onReplaceAll?: () => Promise<void>;
+  onAdd: (sessions: Session[]) => Promise<void>;
+  onReplace?: (sessions: Session[]) => Promise<void>;
+  onReplaceAll?: (sessions: Session[]) => Promise<void>;
 }
 
 export function ChatGeneratedPreviewModal({
@@ -38,11 +38,19 @@ export function ChatGeneratedPreviewModal({
   const [isAdding, setIsAdding] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
   const [isReplacingAll, setIsReplacingAll] = useState(false);
+  const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
+
+  // Detectar se são múltiplas variações para edição (sessões com "Opção" no título)
+  const isVariationSelection = hasSelection && generatedSessions.length > 1 && 
+    generatedSessions.some(s => s.title.toLowerCase().includes('opção'));
 
   const handleAdd = async () => {
     setIsAdding(true);
     try {
-      await onAdd();
+      const sessionsToAdd = isVariationSelection 
+        ? [generatedSessions[selectedVariationIndex]]
+        : generatedSessions;
+      await onAdd(sessionsToAdd);
       onOpenChange(false);
     } finally {
       setIsAdding(false);
@@ -53,7 +61,10 @@ export function ChatGeneratedPreviewModal({
     if (!onReplace) return;
     setIsReplacing(true);
     try {
-      await onReplace();
+      const sessionsToReplace = isVariationSelection 
+        ? [generatedSessions[selectedVariationIndex]]
+        : generatedSessions;
+      await onReplace(sessionsToReplace);
       onOpenChange(false);
     } finally {
       setIsReplacing(false);
@@ -64,7 +75,10 @@ export function ChatGeneratedPreviewModal({
     if (!onReplaceAll) return;
     setIsReplacingAll(true);
     try {
-      await onReplaceAll();
+      const sessionsToReplace = isVariationSelection 
+        ? [generatedSessions[selectedVariationIndex]]
+        : generatedSessions;
+      await onReplaceAll(sessionsToReplace);
       onOpenChange(false);
     } finally {
       setIsReplacingAll(false);
@@ -115,10 +129,78 @@ export function ChatGeneratedPreviewModal({
           </div>
         </DialogHeader>
 
+        {isVariationSelection && (
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+            <h4 className="text-sm font-semibold mb-3 text-primary">
+              Escolha a variação que deseja aplicar:
+            </h4>
+            <div className="grid grid-cols-1 gap-2">
+              {generatedSessions.map((session, idx) => (
+                <button
+                  key={session.id}
+                  onClick={() => setSelectedVariationIndex(idx)}
+                  className={`
+                    p-3 text-left rounded-lg border-2 transition-all
+                    ${selectedVariationIndex === idx 
+                      ? 'border-primary bg-primary/20 shadow-md' 
+                      : 'border-border/50 bg-background hover:border-primary/50'
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`
+                      h-4 w-4 rounded-full border-2 flex items-center justify-center
+                      ${selectedVariationIndex === idx ? 'border-primary bg-primary' : 'border-border'}
+                    `}>
+                      {selectedVariationIndex === idx && (
+                        <div className="h-2 w-2 rounded-full bg-white" />
+                      )}
+                    </div>
+                    <span className="font-medium text-sm">{session.title}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full pr-4">
             <div className="space-y-6 py-2">
-              {generatedSessions.map((session, sessionIndex) => (
+              {isVariationSelection ? (
+                <div key={generatedSessions[selectedVariationIndex].id} className="border-2 rounded-xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-primary/20">
+                    <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+                    <h3 className="font-bold text-lg text-primary flex-1">
+                      {generatedSessions[selectedVariationIndex].title}
+                    </h3>
+                    <Badge variant="outline" className="text-xs">
+                      {generatedSessions[selectedVariationIndex].blocks.length} {generatedSessions[selectedVariationIndex].blocks.length === 1 ? 'bloco' : 'blocos'}
+                    </Badge>
+                  </div>
+                  <div className="space-y-4">
+                    {generatedSessions[selectedVariationIndex].blocks.map((block) => {
+                      const typeInfo = getBlockTypeInfo(block.type);
+                      return (
+                        <div 
+                          key={block.id} 
+                          className="bg-background/80 backdrop-blur-sm border border-border/50 rounded-lg overflow-hidden hover:shadow-md transition-all group"
+                        >
+                          <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-b border-border/50">
+                            <span className={`text-xs font-semibold ${typeInfo.color}`}>
+                              {typeInfo.label}
+                            </span>
+                          </div>
+                          <div className="p-4">
+                            <BlockPreview block={block} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                generatedSessions.map((session, sessionIndex) => (
                 <div key={session.id} className="border-2 rounded-xl p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-4 pb-3 border-b border-primary/20">
                     <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
@@ -152,7 +234,8 @@ export function ChatGeneratedPreviewModal({
                     })}
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </ScrollArea>
         </div>
