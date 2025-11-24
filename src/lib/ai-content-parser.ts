@@ -25,6 +25,15 @@ export interface ExpectedStructure {
   }>;
 }
 
+// Remover prefixos de identificação do conteúdo
+function stripMetaPrefixes(text: string): string {
+  return text
+    .replace(/^(BLOCO|OPÇÃO|OPÇÃO|VERSÃO|VERSAO)\s+\d+:\s*/i, '')
+    .replace(/^(Opção|Opcao)\s+\d+:\s*/i, '')
+    .replace(/^\d+\.\s+/, '') // Remove "1. ", "2. "
+    .trim();
+}
+
 // Helper to detect if a title indicates a high-level independent item
 function isHighLevelTitle(title: string): boolean {
   const lower = title.toLowerCase();
@@ -93,6 +102,7 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       
       // 🛡️ FALLBACK: Processar Markdown para HTML
       cleanedContent = markdownToHtml(cleanedContent);
+      cleanedContent = stripMetaPrefixes(cleanedContent); // ✅ Limpar prefixos
 
       // Se ficou vazio, pode ser porque o conteúdo está na próxima linha
       if (!cleanedContent && contentLines.length > 0) {
@@ -108,11 +118,12 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         if (cleanedContent) {
           // Processar título para remover Markdown (se houver)
           const processedTitle = title.replace(/^###\s+/, '').replace(/\*\*/g, '').trim();
+          const cleanTitle = stripMetaPrefixes(processedTitle); // ✅ Limpar prefixos
           
           currentBlock = {
             id: `block-${Date.now()}-${index}`,
             type,
-            title: `${number}. ${processedTitle}`,
+            title: `${number}. ${cleanTitle}`,
             content: cleanedContent,
             rawContent: fullBlockContent,
             startIndex,
@@ -181,6 +192,7 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         // 🛡️ FALLBACK: Processar Markdown para HTML antes de armazenar
         let content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
         content = markdownToHtml(content);
+        content = stripMetaPrefixes(content); // ✅ Limpar prefixos
 
         // ✅ FORÇAR separação de blocos "Opção N:" e numerados "1.", "2."
         const isOptionBlock = /^Opção\s+\d+:/i.test(title);

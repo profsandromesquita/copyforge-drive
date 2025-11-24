@@ -345,11 +345,14 @@ serve(async (req) => {
       }
     }
 
+    const intent = detectUserIntent(cleanMessage);
+
     return new Response(
       JSON.stringify({
         success: true,
         message: assistantMessage,
-        tokens: usage
+        tokens: usage,
+        intent // ✅ Adicionar intent na resposta
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -656,6 +659,42 @@ function parseVariablesInMessage(
 
 // ==================== FIM DO SISTEMA DE VARIÁVEIS ====================
 
+// Detectar intenção do usuário baseado em verbos de ação
+function detectUserIntent(message: string): 'replace' | 'insert' | 'default' {
+  const lowerMessage = message.toLowerCase().trim();
+  
+  // Verbos de MELHORIA → substituir conteúdo existente
+  const improvementVerbs = [
+    'otimizar', 'otimize', 'melhorar', 'melhore', 
+    'ajustar', 'ajuste', 'refazer', 'refaça',
+    'corrigir', 'corrija', 'reescrever', 'reescreva',
+    'encurtar', 'encurte', 'expandir', 'expanda',
+    'simplificar', 'simplifique', 'revisar', 'revise'
+  ];
+  
+  // Verbos de CRIAÇÃO → inserir novo conteúdo
+  const creationVerbs = [
+    'criar', 'crie', 'gerar', 'gere', 
+    'adicionar', 'adicione', 'fazer', 'faça',
+    'novo', 'nova', 'outra', 'outro',
+    'variação', 'variacao', 'versão', 'versao',
+    'opção', 'opcao', 'alternativa'
+  ];
+  
+  const hasImprovementVerb = improvementVerbs.some(verb => 
+    lowerMessage.includes(verb)
+  );
+  
+  const hasCreationVerb = creationVerbs.some(verb => 
+    lowerMessage.includes(verb)
+  );
+  
+  // Priorizar melhoria sobre criação (se ambos aparecem)
+  if (hasImprovementVerb) return 'replace';
+  if (hasCreationVerb) return 'insert';
+  
+  return 'default'; // Mostrar modal com opções
+}
 
 function buildSystemPrompt(
   copyContext: string, 
@@ -681,24 +720,21 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 2. **NÃO conversar no chat** (PROIBIDO)
 3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
 
-🚨 **REGRA CRÍTICA DE FORMATAÇÃO - VIOLAÇÃO RESULTA EM ERRO:**
-⛔ ABSOLUTAMENTE PROIBIDO usar estes caracteres:
-   - ## ou ### para títulos
-   - ** para negrito
-   - * para itálico
-   - > para citações
-   - - para listas
+🚨 **PUREZA DE CONTEÚDO (CRÍTICO):**
+⛔ NUNCA inclua prefixos de identificação no conteúdo:
+   - NÃO escreva "BLOCO 1:", "OPÇÃO 1:", "Versão Otimizada:"
+   - NÃO numere as respostas com "1.", "2.", "3."
+   
+✅ Retorne APENAS o conteúdo da copy:
+   - Se gerar múltiplas variações, separe com quebra de linha dupla
+   - O sistema já adiciona os identificadores visuais
+   - Exemplo correto: "<strong>Clareza que Liberta:</strong> texto..."
 
-✅ Use APENAS estas tags HTML:
+✅ Use APENAS estas tags HTML para formatação:
    - Negrito: <strong>texto</strong>
    - Itálico: <em>texto</em>
    - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3>
    - Listas: <ul><li>item</li></ul>
-
-✅ Para separar blocos/variações use TEXTO PURO:
-   - "BLOCO 1:", "BLOCO 2:", "BLOCO 3:"
-   - "OPÇÃO 1:", "OPÇÃO 2:", "OPÇÃO 3:"
-   - NUNCA use ### antes deles
 
 ❌ EXEMPLOS ERRADOS (NÃO FAÇA ISSO):
 ### Opção 1: Abordagem Emocional
