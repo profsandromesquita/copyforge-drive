@@ -674,54 +674,71 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 1. **GERAR conteúdo acionável** (OBRIGATÓRIO)
 2. **NÃO conversar no chat** (PROIBIDO)
 3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
-4. **FORMATAÇÃO OBRIGATÓRIA:** Use HTML básico, NUNCA use caracteres Markdown:
-   - Negrito: <strong>texto</strong> (PROIBIDO: **texto**)
-   - Itálico: <em>texto</em> (PROIBIDO: *texto*)
-   - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3> (PROIBIDO: ##, ###)
-   - Listas: <ul><li>item</li></ul> (PROIBIDO: - item)
-   - EXCEÇÃO: Apenas "### 1.", "### Opção 1:" são permitidos para separar blocos/variações
-   - NÃO use >, **, *, ## dentro do conteúdo gerado
+
+🚨 **REGRA CRÍTICA DE FORMATAÇÃO:**
+- PROIBIDO usar ##, ###, **, *, >, - para formatação
+- Use APENAS HTML básico:
+  * Negrito: <strong>texto</strong>
+  * Itálico: <em>texto</em>
+  * Títulos: <h2>título</h2>, <h3>subtítulo</h3>
+  * Listas: <ul><li>item</li></ul>
+- Para separar blocos/variações: use "BLOCO 1:", "OPÇÃO 1:" (sem ###)
 
 ### 📊 QUANTIDADE EXATA:
 - Blocos selecionados: ${selectedBlockCount}
 - Blocos a gerar: ${selectedBlockCount}
-- Use "### 1.", "### 2.", "### 3." para separar cada bloco
+- Use "BLOCO 1:", "BLOCO 2:", "BLOCO 3:" para separar cada bloco
 
 ### 🎭 VARIAÇÕES MÚLTIPLAS:
 - Por padrão: gere APENAS 1 versão otimizada
-- Use "### Opção 1:", "### Opção 2:" SOMENTE se usuário pedir múltiplas variações:
-  - "Me dê 3 variações" → gere 3 com "### Opção 1:", "### Opção 2:", "### Opção 3:"
-  - "Otimize" → gere APENAS 1 bloco direto (sem "### Opção")
+- Use "OPÇÃO 1:", "OPÇÃO 2:" SOMENTE se usuário pedir múltiplas variações:
+  - "Me dê 3 variações" → gere 3 com "OPÇÃO 1:", "OPÇÃO 2:", "OPÇÃO 3:"
+  - "Otimize" → gere APENAS 1 bloco direto (sem "OPÇÃO")
 
 ### ✅ EXEMPLOS CORRETOS:
 
 **1 bloco selecionado + "Otimize":**
 \`\`\`
-[texto otimizado]
+<strong>Clareza que Liberta:</strong> Encontre o método simples que acalma a mente...
 \`\`\`
-(SEM "### Opção", direto)
+(SEM "OPÇÃO", direto, com HTML)
 
 **1 bloco selecionado + "Me dê 3 variações":**
 \`\`\`
-### Opção 1: Abordagem Direta
-[texto 1]
+OPÇÃO 1: Abordagem Direta
 
-### Opção 2: Abordagem Emotiva
-[texto 2]
+<strong>Clareza que Liberta:</strong> Encontre o método simples...
 
-### Opção 3: Abordagem Técnica
-[texto 3]
+OPÇÃO 2: Abordagem Emotiva
+
+<strong>Liberdade Mental:</strong> Descubra como acalmar...
+
+OPÇÃO 3: Abordagem Técnica
+
+<strong>Método Estruturado:</strong> Aplique o framework...
 \`\`\`
 
 **4 blocos selecionados + "Otimize":**
 \`\`\`
-### 1. Headline Otimizada
-[headline]
+BLOCO 1: Headline Otimizada
 
-### 2. Texto 1 Otimizado
-[texto 1]
+<h2>Clareza Mental com IA</h2>
 
-### 3. Texto 2 Otimizado
+BLOCO 2: Texto 1 Otimizado
+
+<strong>Clareza que Liberta:</strong> Encontre o método simples...
+
+BLOCO 3: Texto 2 Otimizado
+
+<strong>Decisões com Convicção:</strong> Tenha critérios objetivos...
+
+BLOCO 4: CTA Otimizado
+
+<strong>Comece Agora</strong> e transforme sua forma de trabalhar
+\`\`\`
+(4 blocos separados, SEM caracteres Markdown)
+
+
 [texto 2]
 
 ### 4. CTA Otimizado
