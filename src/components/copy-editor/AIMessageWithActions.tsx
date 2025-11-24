@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Sparkles, ChevronRight } from 'lucide-react';
+import { Sparkles, ChevronRight, Copy, Check } from 'lucide-react';
 import { parseAIResponse, convertParsedBlocksToSessions } from '@/lib/ai-content-parser';
 import { ChatGeneratedPreviewModal } from './ChatGeneratedPreviewModal';
+import { useToast } from '@/hooks/use-toast';
 import type { SelectedItem } from '@/hooks/useCopyEditor';
 import type { Session } from '@/types/copy-editor';
 
@@ -32,6 +33,32 @@ export function AIMessageWithActions({
   onReplaceAll,
 }: AIMessageWithActionsProps) {
   const [showModal, setShowModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  const handleCopyToClipboard = async () => {
+    try {
+      // Criar elemento temporário para extrair texto sem HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = message.content;
+      const textContent = tempDiv.textContent || tempDiv.innerText || '';
+      
+      await navigator.clipboard.writeText(textContent);
+      setCopied(true);
+      toast({
+        description: "Copiado para área de transferência!",
+        duration: 2000,
+      });
+      
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Erro ao copiar:', error);
+      toast({
+        variant: "destructive",
+        description: "Erro ao copiar texto",
+      });
+    }
+  };
 
   // Always use normal parsing - don't force structure
   const parsed = parseAIResponse(message.content);
@@ -58,9 +85,21 @@ export function AIMessageWithActions({
   if (!parsed.hasActionableContent) {
     // Renderizar normalmente sem botões
     return (
-      <div className="bg-muted text-foreground rounded-lg p-3">
+      <div className="bg-muted text-foreground rounded-lg p-3 relative group">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleCopyToClipboard}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
         <div 
-          className="prose prose-sm dark:prose-invert max-w-none"
+          className="prose prose-sm dark:prose-invert max-w-none pr-8"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
         <p className="text-xs opacity-70 mt-2">
@@ -149,11 +188,23 @@ export function AIMessageWithActions({
 
   return (
     <>
-      <div className="bg-muted text-foreground rounded-lg p-3 space-y-3">
+      <div className="bg-muted text-foreground rounded-lg p-3 space-y-3 relative group">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          onClick={handleCopyToClipboard}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
         {/* Explicação inicial se houver */}
         {parsed.explanation && (
           <div 
-            className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3"
+            className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3 pr-8"
             dangerouslySetInnerHTML={{ __html: parsed.explanation }}
           />
         )}
