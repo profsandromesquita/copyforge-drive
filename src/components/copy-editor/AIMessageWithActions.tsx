@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sparkles, ChevronRight } from 'lucide-react';
@@ -60,9 +59,10 @@ export function AIMessageWithActions({
     // Renderizar normalmente sem botões
     return (
       <div className="bg-muted text-foreground rounded-lg p-3">
-        <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown>{message.content}</ReactMarkdown>
-        </div>
+        <div 
+          className="prose prose-sm dark:prose-invert max-w-none"
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
         <p className="text-xs opacity-70 mt-2">
           {new Date(message.created_at).toLocaleTimeString('pt-BR', {
             hour: '2-digit',
@@ -152,9 +152,10 @@ export function AIMessageWithActions({
       <div className="bg-muted text-foreground rounded-lg p-3 space-y-3">
         {/* Explicação inicial se houver */}
         {parsed.explanation && (
-          <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3">
-            <ReactMarkdown>{parsed.explanation}</ReactMarkdown>
-          </div>
+          <div 
+            className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3"
+            dangerouslySetInnerHTML={{ __html: parsed.explanation }}
+          />
         )}
 
         {/* Card clicável com resumo do conteúdo */}
