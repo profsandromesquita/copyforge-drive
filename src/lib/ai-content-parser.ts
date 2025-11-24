@@ -90,6 +90,9 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       const contentLines = fullBlockContent.split('\n');
       contentLines.shift(); // Remove primeira linha (o título numerado)
       let cleanedContent = contentLines.join('\n').trim();
+      
+      // 🛡️ FALLBACK: Processar Markdown para HTML
+      cleanedContent = markdownToHtml(cleanedContent);
 
       // Se ficou vazio, pode ser porque o conteúdo está na próxima linha
       if (!cleanedContent && contentLines.length > 0) {
@@ -103,10 +106,13 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         
         // Só adicionar bloco se tiver conteúdo
         if (cleanedContent) {
+          // Processar título para remover Markdown (se houver)
+          const processedTitle = title.replace(/^###\s+/, '').replace(/\*\*/g, '').trim();
+          
           currentBlock = {
             id: `block-${Date.now()}-${index}`,
             type,
-            title: `${number}. ${title}`,
+            title: `${number}. ${processedTitle}`,
             content: cleanedContent,
             rawContent: fullBlockContent,
             startIndex,
@@ -135,10 +141,13 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         const fullContent = match[0];
         const content = fullContent.replace(/```\w*\n?/g, '').trim();
         
+        // 🛡️ FALLBACK: Processar Markdown para HTML
+        const processedContent = markdownToHtml(content);
+        
         blocks.push({
           id: `block-${Date.now()}-${index}`,
-          type: inferBlockType(content, explanation),
-          content,
+          type: inferBlockType(processedContent, explanation),
+          content: processedContent,
           rawContent: fullContent,
           startIndex: match.index || 0,
           endIndex: (match.index || 0) + fullContent.length,
@@ -168,7 +177,10 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         }
 
         const sectionContent = contentForParsing.substring(startIndex, endIndex).trim();
-        const content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
+        
+        // 🛡️ FALLBACK: Processar Markdown para HTML antes de armazenar
+        let content = sectionContent.replace(/^#{1,3}\s+/, '').trim();
+        content = markdownToHtml(content);
 
         // ✅ FORÇAR separação de blocos "Opção N:" e numerados "1.", "2."
         const isOptionBlock = /^Opção\s+\d+:/i.test(title);
@@ -179,10 +191,13 @@ export function parseAIResponse(markdown: string): ParsedMessage {
           // Create a new block for high-level headings, options, and numbered blocks
           const type = inferBlockType(content, title);
           
+          // Processar título para remover Markdown
+          const processedTitle = title.replace(/^###\s+/, '').replace(/\*\*/g, '').trim();
+          
           currentBlock = {
             id: `block-${Date.now()}-${index}`,
             type,
-            title,
+            title: processedTitle,
             content,
             rawContent: sectionContent,
             startIndex,
