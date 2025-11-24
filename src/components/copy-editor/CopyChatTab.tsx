@@ -53,6 +53,14 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Microphone, MicrophoneSlash } from 'phosphor-react';
 import { toast as sonnerToast } from 'sonner';
+
+interface ChatResponse {
+  success: boolean;
+  message: string;
+  tokens?: any;
+  intent?: 'replace' | 'insert' | 'conversational' | 'default';
+  actionable?: boolean;
+}
 import { 
   extractVariables, 
   validateVariables, 
@@ -172,7 +180,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   }, [isActive, chatHistory.length]);
 
   // Enviar mensagem
-  const sendMessageMutation = useMutation({
+  const sendMessageMutation = useMutation<ChatResponse, Error, string>({
     mutationFn: async (userMessage: string) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Sessão não encontrada');
@@ -190,7 +198,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: ChatResponse) => {
       queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
       
       // ✅ CAMADA 1: Null Check - Bloquear se não há seleção
@@ -199,8 +207,8 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         return; // Pure Chat Mode
       }
       
-      // ✅ CAMADA 2: Conversational Bypass - Bloquear se intent é conversacional
-      if (data?.intent === 'conversational') {
+      // ✅ CAMADA 2: Conversational Bypass + Actionable Check
+      if (data?.intent === 'conversational' || data?.actionable === false) {
         setMessage('');
         return; // Manter resposta apenas no chat
       }
