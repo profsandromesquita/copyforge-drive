@@ -237,7 +237,8 @@ serve(async (req) => {
       audienceSegment, 
       offer,
       methodology,
-      variableContextText
+      variableContextText,
+      selectionContext
     );
 
     // Construir mensagens para a IA
@@ -350,12 +351,16 @@ serve(async (req) => {
       }
     }
 
+    // Determinar se a resposta é acionável
+    const isActionable = intent !== 'conversational';
+
     return new Response(
       JSON.stringify({
         success: true,
         message: assistantMessage,
         tokens: usage,
-        intent // ✅ Adicionar intent na resposta
+        intent, // ✅ Adicionar intent na resposta
+        actionable: isActionable
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -745,28 +750,60 @@ function buildSystemPrompt(
   audienceSegment?: any,
   offer?: any,
   methodology?: any,
-  variableContext?: string
+  variableContext?: string,
+  selectionContext?: string
 ): string {
   
-  // Se intent é conversacional, usar prompt completamente diferente
+  // Se intent é conversacional, usar prompt com CONTEXTO ESPECÍFICO DO BLOCO
   if (intent === 'conversational') {
+    let contextSection = '';
+    
+    // Se há blocos selecionados, extrair o conteúdo real
+    if (selectionContext && selectionContext.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**')) {
+      // Extrair apenas o conteúdo dos blocos (remover marcadores de estrutura)
+      const cleanedContext = selectionContext
+        .replace(/\*\*CONTEXTO DOS ELEMENTOS SELECIONADOS:\*\*/g, '')
+        .replace(/\d+\.\s+\*\*Bloco\s+\(\w+\):\*\*/g, '📝 BLOCO:')
+        .replace(/\d+\.\s+\*\*Sessão:\*\*/g, '📂 SESSÃO:')
+        .trim();
+      
+      contextSection = `
+## 📋 CONTEXTO ESPECÍFICO DA SELEÇÃO:
+
+O usuário está perguntando SOBRE o seguinte conteúdo:
+
+${cleanedContext}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+    }
+    
     return `Você é um consultor de copywriting experiente.
 
-# MODO: Análise e Feedback
+# MODO: Análise e Feedback (Conversacional)
 
 O usuário fez uma pergunta ou pediu análise. VOCÊ DEVE:
 
 1. **Responder diretamente no chat** (modo conversacional)
-2. **NÃO gerar conteúdo estruturado** (sem blocos, listas, headlines)
-3. **Dar feedback, análise ou opinião** conforme solicitado
-4. **Ser conciso mas completo** (2-4 parágrafos no máximo)
-5. **FORMATAÇÃO:** Use HTML básico:
+2. **NÃO gerar conteúdo estruturado** (sem blocos, listas de opções, headlines novas)
+3. **NÃO usar tags XML** (sem <block>, sem JSON, sem estruturas de edição)
+4. **Dar feedback, análise ou opinião** conforme solicitado
+5. **Ser conciso mas completo** (2-4 parágrafos no máximo)
+6. **FORMATAÇÃO:** Use HTML básico:
    - Negrito: <strong>texto</strong>
    - Itálico: <em>texto</em>
    - Listas: <ul><li>item</li></ul>
    - NÃO use Markdown (##, **, -, etc)
 
-${copyContext ? `\n## Contexto da Copy:\n${copyContext}\n` : ''}
+${contextSection}
+
+${copyContext ? `## 📄 Contexto Geral da Copy:\n${copyContext}\n` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  IMPORTANTE: Você está em modo ANÁLISE. 
+    O usuário quer sua OPINIÃO/EXPLICAÇÃO, NÃO quer que você gere novo conteúdo.
+    Responda naturalmente, como um consultor conversando.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Responda de forma natural e útil.`;
   }
