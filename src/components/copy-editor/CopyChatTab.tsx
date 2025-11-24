@@ -588,11 +588,11 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-full relative bg-background">
+      <div className="flex flex-col h-screen bg-background">
         {/* Chat Messages */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-2 py-4 pb-48 space-y-4"
+          className="flex-1 overflow-y-auto px-2 py-4 space-y-4"
         >
           {loadingChatHistory ? (
             <div className="flex items-center justify-center h-full">
@@ -653,8 +653,8 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
           )}
         </div>
 
-        {/* Input Area - Floating */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background">
+        {/* Input Area */}
+        <div className="shrink-0 p-4 bg-background border-t border-border">
           <div className="border-2 border-border/60 rounded-xl" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
             {/* Selected Items Display */}
             {selectedItems.length > 0 && (
