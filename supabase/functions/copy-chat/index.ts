@@ -674,6 +674,13 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 1. **GERAR conteúdo acionável** (OBRIGATÓRIO)
 2. **NÃO conversar no chat** (PROIBIDO)
 3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
+4. **FORMATAÇÃO OBRIGATÓRIA:** Use HTML básico, NUNCA use caracteres Markdown:
+   - Negrito: <strong>texto</strong> (PROIBIDO: **texto**)
+   - Itálico: <em>texto</em> (PROIBIDO: *texto*)
+   - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3> (PROIBIDO: ##, ###)
+   - Listas: <ul><li>item</li></ul> (PROIBIDO: - item)
+   - EXCEÇÃO: Apenas "### 1.", "### Opção 1:" são permitidos para separar blocos/variações
+   - NÃO use >, **, *, ## dentro do conteúdo gerado
 
 ### 📊 QUANTIDADE EXATA:
 - Blocos selecionados: ${selectedBlockCount}
