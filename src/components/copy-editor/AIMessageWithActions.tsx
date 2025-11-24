@@ -19,6 +19,7 @@ interface AIMessageWithActionsProps {
   message: ChatMessage;
   hasSelection: boolean;
   selectedItems: SelectedItem[];
+  intent?: 'replace' | 'insert' | 'conversational' | 'default';
   onAddContent: (sessions: Session[]) => Promise<void>;
   onReplaceContent: (sessions: Session[]) => Promise<void>;
   onReplaceAll: (sessions: Session[]) => Promise<void>;
@@ -28,6 +29,7 @@ export function AIMessageWithActions({
   message, 
   hasSelection, 
   selectedItems,
+  intent,
   onAddContent,
   onReplaceContent,
   onReplaceAll,
@@ -59,6 +61,36 @@ export function AIMessageWithActions({
       });
     }
   };
+
+  // 🚫 BLOQUEAR: Não mostrar ações se for conversacional
+  if (intent === 'conversational') {
+    return (
+      <div className="bg-muted text-foreground rounded-lg p-3 relative group">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={handleCopyToClipboard}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
+        </Button>
+        <div 
+          className="prose prose-sm dark:prose-invert max-w-none pr-8"
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
+        <p className="text-xs opacity-70 mt-2">
+          {new Date(message.created_at).toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </p>
+      </div>
+    );
+  }
 
   // Always use normal parsing - don't force structure
   const parsed = parseAIResponse(message.content);
