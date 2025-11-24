@@ -167,7 +167,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: modelToUse,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: finalSystemPrompt },
           { role: "user", content: userPrompt },
         ],
         tools: [
