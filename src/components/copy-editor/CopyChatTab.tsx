@@ -190,8 +190,48 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
+      
+      // ✅ NOVA LÓGICA: Aplicar intenção automaticamente
+      if (data?.intent && selectedItems.length > 0) {
+        // Buscar última mensagem da IA com um pequeno delay para garantir que foi salva
+        setTimeout(async () => {
+          const { data: chatHistory } = await supabase
+            .from('copy_chat_messages')
+            .select('*')
+            .eq('copy_id', copyId)
+            .eq('role', 'assistant')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          if (chatHistory && chatHistory.length > 0) {
+            const lastAIMessage = chatHistory[0];
+            const { parseAIResponse, convertParsedBlocksToSessions } = await import('@/lib/ai-content-parser');
+            const parsed = parseAIResponse(lastAIMessage.content);
+            
+            if (parsed.hasActionableContent) {
+              const generatedSessions = convertParsedBlocksToSessions(parsed.blocks);
+              
+              // Aplicar ação baseado na intenção detectada
+              if (data.intent === 'replace') {
+                // MODO SUBSTITUIÇÃO
+                handleReplaceContent(generatedSessions);
+                
+                toast({
+                  title: 'Conteúdo otimizado!',
+                  description: 'Seleção substituída automaticamente.',
+                });
+              } else if (data.intent === 'insert') {
+                // MODO INSERÇÃO
+                handleInsertAfterSelection(generatedSessions);
+              }
+              // Se 'default', não fazer nada (modal será mostrado)
+            }
+          }
+        }, 500);
+      }
+      
       setMessage('');
     },
     onError: (error: any) => {
@@ -349,6 +389,53 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       description: `${generatedSessions.length} sessão(ões) adicionada(s) à sua copy.`,
     });
   }, [importSessions, toast]);
+
+  // Inserir conteúdo após o item selecionado (não no final)
+  const handleInsertAfterSelection = useCallback(async (generatedSessions: Session[]) => {
+    if (generatedSessions.length === 0) return;
+    
+    // Se há seleção, inserir após o último bloco selecionado
+    if (selectedItems.length > 0) {
+      const lastSelectedBlock = selectedItems[selectedItems.length - 1];
+      
+      if (lastSelectedBlock.type === 'block') {
+        // Encontrar a sessão do bloco
+        const sessionIndex = sessions.findIndex(s => s.id === lastSelectedBlock.sessionId);
+        const session = sessions[sessionIndex];
+        
+        if (session) {
+          const blockIndex = session.blocks.findIndex(b => b.id === lastSelectedBlock.id);
+          
+          // Inserir novos blocos APÓS o bloco selecionado
+          const newBlocks = generatedSessions.flatMap(s => s.blocks);
+          const updatedBlocks = [
+            ...session.blocks.slice(0, blockIndex + 1),
+            ...newBlocks,
+            ...session.blocks.slice(blockIndex + 1)
+          ];
+          
+          updateSession(session.id, { blocks: updatedBlocks });
+          
+          clearSelection();
+          
+          toast({
+            title: `${newBlocks.length} ${newBlocks.length === 1 ? 'bloco inserido' : 'blocos inseridos'}!`,
+            description: 'Novo conteúdo adicionado após a seleção.',
+          });
+          
+          return;
+        }
+      }
+    }
+    
+    // Fallback: adicionar no final (comportamento padrão)
+    importSessions(generatedSessions);
+    
+    toast({
+      title: 'Conteúdo adicionado!',
+      description: `${generatedSessions.length} sessão(ões) adicionada(s) ao final.`,
+    });
+  }, [selectedItems, sessions, updateSession, clearSelection, importSessions, toast]);
 
   // Substituir conteúdo dos blocos/sessões selecionados
   const handleReplaceContent = useCallback(async (generatedSessions: Session[]) => {
