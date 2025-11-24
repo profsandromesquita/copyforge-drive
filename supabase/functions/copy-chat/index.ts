@@ -289,6 +289,12 @@ serve(async (req) => {
 
     console.log('✓ Resposta recebida da IA');
     console.log('📊 Uso de tokens:', usage);
+    
+    // 🔍 DEBUG: Verificar se a IA retornou Markdown indevido
+    const hasMarkdown = assistantMessage.includes('##') || assistantMessage.includes('**') || assistantMessage.includes('> ');
+    if (hasMarkdown) {
+      console.warn('⚠️ AI retornou Markdown indevido:', assistantMessage.substring(0, 200));
+    }
 
     // Salvar mensagem do usuário
     const { error: userMsgError } = await supabase
@@ -675,14 +681,33 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 2. **NÃO conversar no chat** (PROIBIDO)
 3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
 
-🚨 **REGRA CRÍTICA DE FORMATAÇÃO:**
-- PROIBIDO usar ##, ###, **, *, >, - para formatação
-- Use APENAS HTML básico:
-  * Negrito: <strong>texto</strong>
-  * Itálico: <em>texto</em>
-  * Títulos: <h2>título</h2>, <h3>subtítulo</h3>
-  * Listas: <ul><li>item</li></ul>
-- Para separar blocos/variações: use "BLOCO 1:", "OPÇÃO 1:" (sem ###)
+🚨 **REGRA CRÍTICA DE FORMATAÇÃO - VIOLAÇÃO RESULTA EM ERRO:**
+⛔ ABSOLUTAMENTE PROIBIDO usar estes caracteres:
+   - ## ou ### para títulos
+   - ** para negrito
+   - * para itálico
+   - > para citações
+   - - para listas
+
+✅ Use APENAS estas tags HTML:
+   - Negrito: <strong>texto</strong>
+   - Itálico: <em>texto</em>
+   - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3>
+   - Listas: <ul><li>item</li></ul>
+
+✅ Para separar blocos/variações use TEXTO PURO:
+   - "BLOCO 1:", "BLOCO 2:", "BLOCO 3:"
+   - "OPÇÃO 1:", "OPÇÃO 2:", "OPÇÃO 3:"
+   - NUNCA use ### antes deles
+
+❌ EXEMPLOS ERRADOS (NÃO FAÇA ISSO):
+### Opção 1: Abordagem Emocional
+**Clareza que Liberta:** texto...
+
+✅ EXEMPLOS CORRETOS (FAÇA ISSO):
+OPÇÃO 1: Abordagem Emocional
+
+<strong>Clareza que Liberta:</strong> texto...
 
 ### 📊 QUANTIDADE EXATA:
 - Blocos selecionados: ${selectedBlockCount}
