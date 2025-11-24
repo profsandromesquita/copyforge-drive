@@ -222,17 +222,22 @@ serve(async (req) => {
 
     const { enhancedMessage, variableContextText } = parseVariablesInMessage(message, variableContext);
 
-    // Construir system prompt especializado COM histórico, contexto e variáveis
+    // Detectar intent ANTES de construir o prompt
+    const messageWithoutSelection = cleanMessage;
+    const intent = detectUserIntent(messageWithoutSelection);
+    
+    // Construir system prompt especializado COM histórico, contexto, intent e variáveis
     const systemPrompt = buildSystemPrompt(
       copyContext, 
       historyContext, 
       hasSelection,
-      selectedBlockCount, // ✅ NOVO: quantidade de blocos selecionados
+      selectedBlockCount,
+      intent, // ✅ NOVO: passar intent para o prompt
       projectIdentity, 
       audienceSegment, 
       offer,
       methodology,
-      variableContextText // NOVO: contexto de variáveis
+      variableContextText
     );
 
     // Construir mensagens para a IA
@@ -344,8 +349,6 @@ serve(async (req) => {
         console.log('✓ Créditos debitados com sucesso');
       }
     }
-
-    const intent = detectUserIntent(cleanMessage);
 
     return new Response(
       JSON.stringify({
@@ -665,12 +668,29 @@ function detectUserIntent(message: string): 'replace' | 'insert' | 'conversation
   
   // 🚫 LISTA DE BLOQUEIO: Padrões conversacionais (prioridade máxima)
   const conversationalPatterns = [
-    /^(o que|como|por que|por quê|quando|onde|quem)/i,
+    // Perguntas diretas
+    /^(o que|como|por que|por quê|quando|onde|quem|qual|quais)/i,
+    
+    // Opiniões e análises
     /\b(acha|acho|acredita|pensa|opina|opinião|opiniao)\b/i,
     /\b(analise|analisa|avalie|avalia|revise|revisa|verifique|verifica)\b/i,
     /\b(explique|explica|descreva|descreve|conte|conta)\b/i,
-    /\b(está bom|tá bom|ficou bom|parece bom|está ok|tá ok)\b/i,
-    /\?$/i // Termina com '?'
+    
+    // Validação e feedback
+    /\b(está bom|tá bom|ficou bom|parece bom|está ok|tá ok|está legal|tá legal)\b/i,
+    /\b(pode ser|funciona|vai funcionar|dá certo|vai dar certo)\b/i,
+    
+    // Pedidos de ajuda (conversacionais)
+    /\b(me ajude|ajuda|me explique|me fale|me diga|me conte)\b/i,
+    /\b(qual a melhor|qual o melhor|o que é melhor|qual seria)\b/i,
+    /\b(você sugere|você recomenda|você acha que)\b/i,
+    
+    // Comparações e dúvidas
+    /\b(comparar|compare|diferença|qual.*melhor)\b/i,
+    /\b(dúvida|duvida|questão|questao|pergunta)\b/i,
+    
+    // Termina com '?'
+    /\?$/i
   ];
   
   // ✅ Se bater em algum padrão conversacional, retorna imediatamente
@@ -720,12 +740,36 @@ function buildSystemPrompt(
   historyContext: string, 
   hasSelection: boolean,
   selectedBlockCount: number,
+  intent: string,
   projectIdentity?: any,
   audienceSegment?: any,
   offer?: any,
   methodology?: any,
   variableContext?: string
 ): string {
+  
+  // Se intent é conversacional, usar prompt completamente diferente
+  if (intent === 'conversational') {
+    return `Você é um consultor de copywriting experiente.
+
+# MODO: Análise e Feedback
+
+O usuário fez uma pergunta ou pediu análise. VOCÊ DEVE:
+
+1. **Responder diretamente no chat** (modo conversacional)
+2. **NÃO gerar conteúdo estruturado** (sem blocos, listas, headlines)
+3. **Dar feedback, análise ou opinião** conforme solicitado
+4. **Ser conciso mas completo** (2-4 parágrafos no máximo)
+5. **FORMATAÇÃO:** Use HTML básico:
+   - Negrito: <strong>texto</strong>
+   - Itálico: <em>texto</em>
+   - Listas: <ul><li>item</li></ul>
+   - NÃO use Markdown (##, **, -, etc)
+
+${copyContext ? `\n## Contexto da Copy:\n${copyContext}\n` : ''}
+
+Responda de forma natural e útil.`;
+  }
   
   let prompt = `Você é um especialista em copywriting e marketing digital.
 
@@ -745,7 +789,7 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
    - NÃO numere as respostas com "1.", "2.", "3."
    
 ✅ Retorne APENAS o conteúdo da copy:
-   - Se gerar múltiplas variações, separe com quebra de linha dupla
+   - Separe múltiplos blocos com quebra de linha dupla (\n\n)
    - O sistema já adiciona os identificadores visuais
    - Exemplo correto: "<strong>Clareza que Liberta:</strong> texto..."
 
@@ -755,25 +799,17 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
    - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3>
    - Listas: <ul><li>item</li></ul>
 
-❌ EXEMPLOS ERRADOS (NÃO FAÇA ISSO):
-### Opção 1: Abordagem Emocional
-**Clareza que Liberta:** texto...
-
-✅ EXEMPLOS CORRETOS (FAÇA ISSO):
-OPÇÃO 1: Abordagem Emocional
-
-<strong>Clareza que Liberta:</strong> texto...
-
 ### 📊 QUANTIDADE EXATA:
 - Blocos selecionados: ${selectedBlockCount}
 - Blocos a gerar: ${selectedBlockCount}
-- Use "BLOCO 1:", "BLOCO 2:", "BLOCO 3:" para separar cada bloco
+- Separe múltiplos blocos com quebra de linha dupla (\n\n)
+- NÃO use numeração ou prefixos (BLOCO, OPÇÃO, etc)
 
 ### 🎭 VARIAÇÕES MÚLTIPLAS:
 - Por padrão: gere APENAS 1 versão otimizada
-- Use "OPÇÃO 1:", "OPÇÃO 2:" SOMENTE se usuário pedir múltiplas variações:
-  - "Me dê 3 variações" → gere 3 com "OPÇÃO 1:", "OPÇÃO 2:", "OPÇÃO 3:"
-  - "Otimize" → gere APENAS 1 bloco direto (sem "OPÇÃO")
+- Se usuário pedir múltiplas variações ("Me dê 3 opções"):
+  - Gere 3 blocos separados por linha dupla
+  - NÃO use "OPÇÃO 1:", apenas separe com \n\n
 
 ### ✅ EXEMPLOS CORRETOS:
 
