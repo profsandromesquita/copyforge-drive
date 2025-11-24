@@ -193,8 +193,20 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
       
-      // ✅ NOVA LÓGICA: Aplicar intenção automaticamente
-      if (data?.intent && selectedItems.length > 0) {
+      // ✅ CAMADA 1: Null Check - Bloquear se não há seleção
+      if (selectedItems.length === 0) {
+        setMessage('');
+        return; // Pure Chat Mode
+      }
+      
+      // ✅ CAMADA 2: Conversational Bypass - Bloquear se intent é conversacional
+      if (data?.intent === 'conversational') {
+        setMessage('');
+        return; // Manter resposta apenas no chat
+      }
+      
+      // ✅ CAMADA 3: Aplicar intenção automaticamente apenas para replace/insert
+      if (data?.intent && ['replace', 'insert'].includes(data.intent)) {
         // Buscar última mensagem da IA com um pequeno delay para garantir que foi salva
         setTimeout(async () => {
           const { data: chatHistory } = await supabase
@@ -226,11 +238,11 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                 // MODO INSERÇÃO
                 handleInsertAfterSelection(generatedSessions);
               }
-              // Se 'default', não fazer nada (modal será mostrado)
             }
           }
         }, 500);
       }
+      // Se 'default', não fazer nada (modal será mostrado)
       
       setMessage('');
     },
@@ -707,14 +719,15 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                     }`}
                   >
                 {msg.role === 'assistant' ? (
-                  <AIMessageWithActions
-                    message={msg}
-                    hasSelection={selectedItems.length > 0}
-                    selectedItems={selectedItems}
-                    onAddContent={handleAddContent}
-                    onReplaceContent={handleReplaceContent}
-                    onReplaceAll={handleReplaceAll}
-                  />
+            <AIMessageWithActions
+              message={msg}
+              hasSelection={selectedItems.length > 0}
+              selectedItems={selectedItems}
+              intent={undefined} // Intent será passado apenas no contexto de nova geração
+              onAddContent={handleAddContent}
+              onReplaceContent={handleReplaceContent}
+              onReplaceAll={handleReplaceAll}
+            />
                     ) : (
                       <>
                         <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>

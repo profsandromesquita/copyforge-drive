@@ -660,19 +660,38 @@ function parseVariablesInMessage(
 // ==================== FIM DO SISTEMA DE VARIÁVEIS ====================
 
 // Detectar intenção do usuário baseado em verbos de ação
-function detectUserIntent(message: string): 'replace' | 'insert' | 'default' {
+function detectUserIntent(message: string): 'replace' | 'insert' | 'conversational' | 'default' {
   const lowerMessage = message.toLowerCase().trim();
   
-  // Verbos de MELHORIA → substituir conteúdo existente
+  // 🚫 LISTA DE BLOQUEIO: Padrões conversacionais (prioridade máxima)
+  const conversationalPatterns = [
+    /^(o que|como|por que|por quê|quando|onde|quem)/i,
+    /\b(acha|acho|acredita|pensa|opina|opinião|opiniao)\b/i,
+    /\b(analise|analisa|avalie|avalia|revise|revisa|verifique|verifica)\b/i,
+    /\b(explique|explica|descreva|descreve|conte|conta)\b/i,
+    /\b(está bom|tá bom|ficou bom|parece bom|está ok|tá ok)\b/i,
+    /\?$/i // Termina com '?'
+  ];
+  
+  // ✅ Se bater em algum padrão conversacional, retorna imediatamente
+  const isConversational = conversationalPatterns.some(pattern => 
+    pattern.test(lowerMessage)
+  );
+  
+  if (isConversational) return 'conversational';
+  
+  // 🔧 Verbos de MELHORIA → substituir conteúdo existente
   const improvementVerbs = [
     'otimizar', 'otimize', 'melhorar', 'melhore', 
     'ajustar', 'ajuste', 'refazer', 'refaça',
     'corrigir', 'corrija', 'reescrever', 'reescreva',
     'encurtar', 'encurte', 'expandir', 'expanda',
-    'simplificar', 'simplifique', 'revisar', 'revise'
+    'simplificar', 'simplifique', 'revisar', 'revise',
+    'mude', 'mudar', 'alterar', 'altere',
+    'troque', 'trocar', 'substitua', 'substituir'
   ];
   
-  // Verbos de CRIAÇÃO → inserir novo conteúdo
+  // 🆕 Verbos de CRIAÇÃO → inserir novo conteúdo
   const creationVerbs = [
     'criar', 'crie', 'gerar', 'gere', 
     'adicionar', 'adicione', 'fazer', 'faça',
