@@ -588,7 +588,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col h-screen bg-background">
+      <div className="flex flex-col h-full bg-background">
         {/* Chat Messages */}
         <div
           ref={scrollRef}
