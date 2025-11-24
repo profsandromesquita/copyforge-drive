@@ -417,9 +417,18 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         
         if (session) {
           const blockIndex = session.blocks.findIndex(b => b.id === lastSelectedBlock.id);
+          const selectedBlock = session.blocks[blockIndex]; // 🆕 Pegar bloco pai
           
-          // Inserir novos blocos APÓS o bloco selecionado
-          const newBlocks = generatedSessions.flatMap(s => s.blocks);
+          // 🆕 HERDAR tipo e formatação do bloco pai
+          const newBlocks = generatedSessions.flatMap(s => s.blocks).map(generatedBlock => ({
+            ...generatedBlock,
+            type: selectedBlock.type, // ✅ COPIAR tipo (headline, text, list)
+            config: {
+              ...generatedBlock.config,
+              ...selectedBlock.config, // ✅ COPIAR formatação (fontSize, fontWeight, color, etc)
+            }
+          }));
+          
           const updatedBlocks = [
             ...session.blocks.slice(0, blockIndex + 1),
             ...newBlocks,
@@ -432,7 +441,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
           
           toast({
             title: `${newBlocks.length} ${newBlocks.length === 1 ? 'bloco inserido' : 'blocos inseridos'}!`,
-            description: 'Novo conteúdo adicionado após a seleção.',
+            description: `Formatação herdada: ${selectedBlock.type}`,
           });
           
           return;

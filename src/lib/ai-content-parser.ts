@@ -28,9 +28,16 @@ export interface ExpectedStructure {
 // Remover prefixos de identificação do conteúdo
 function stripMetaPrefixes(text: string): string {
   return text
-    .replace(/^(BLOCO|OPÇÃO|OPÇÃO|VERSÃO|VERSAO)\s+\d+:\s*/i, '')
-    .replace(/^(Opção|Opcao)\s+\d+:\s*/i, '')
-    .replace(/^\d+\.\s+/, '') // Remove "1. ", "2. "
+    // Remover padrões com números (case insensitive)
+    .replace(/^(BLOCO|OPÇÃO|OPCAO|VERSÃO|VERSAO|VARIAÇÃO|VARIACAO|CENÁRIO|CENARIO)\s*\d+:\s*/gi, '')
+    // Remover padrões genéricos
+    .replace(/^(Opção|Opcao|Versão|Versao|Variação|Variacao)\s*\d+:\s*/gi, '')
+    // Remover numeração simples
+    .replace(/^\d+\.\s+/, '')
+    // Remover prefixos dentro de tags HTML
+    .replace(/<(strong|b|em)>(BLOCO|OPÇÃO|OPCAO|VERSÃO|VERSAO|VARIAÇÃO|VARIACAO)\s*\d+:\s*<\/(strong|b|em)>/gi, '')
+    // Remover "Versão Otimizada:", "Abordagem X:"
+    .replace(/^(Versão|Abordagem|Alternativa)\s*\w*:\s*/gi, '')
     .trim();
 }
 
