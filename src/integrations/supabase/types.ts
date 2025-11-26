@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       ai_characteristics: {
         Row: {
+          ai_instruction: string | null
           category: string
           created_at: string | null
           description: string | null
@@ -27,6 +28,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          ai_instruction?: string | null
           category: string
           created_at?: string | null
           description?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           value: string
         }
         Update: {
+          ai_instruction?: string | null
           category?: string
           created_at?: string | null
           description?: string | null

@@ -26,6 +26,7 @@ import { AICharacteristic } from "@/hooks/useAICharacteristics";
 const formSchema = z.object({
   label: z.string().min(1, "Label é obrigatório"),
   description: z.string().optional(),
+  ai_instruction: z.string().optional(),
   is_active: z.boolean().default(true),
 });
 
@@ -50,11 +51,13 @@ export const CharacteristicForm = ({
       ? {
           label: characteristic.label,
           description: characteristic.description || "",
+          ai_instruction: characteristic.ai_instruction || "",
           is_active: characteristic.is_active,
         }
       : {
           label: "",
           description: "",
+          ai_instruction: "",
           is_active: true,
         },
   });
@@ -122,13 +125,38 @@ export const CharacteristicForm = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição (opcional)</FormLabel>
+                  <FormLabel>Descrição (UI)</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Breve descrição desta característica"
+                      placeholder="Breve descrição para exibir na interface"
+                      rows={2}
                       {...field}
                     />
                   </FormControl>
+                  <FormDescription>
+                    Texto curto exibido no painel (max. 1-2 linhas)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="ai_instruction"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Instruções para IA (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Instruções detalhadas sobre como a IA deve usar esta característica no prompt"
+                      rows={6}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Texto detalhado usado internamente pela IA para gerar copies. Deixe vazio para usar descrição padrão.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

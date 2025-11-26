@@ -57,11 +57,11 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   const { characteristics: estilosData, isLoading: loadingEstilos } = useAICharacteristics('estilos');
   const { characteristics: focoEmocionalData, isLoading: loadingFocoEmocional } = useAICharacteristics('foco_emocional');
 
-  // Mapear características para formato esperado pelos selects
-  const FRAMEWORKS = frameworksData.map(c => ({ value: c.value, label: c.label, description: c.description }));
-  const OBJETIVOS = objetivosData.map(c => ({ value: c.value, label: c.label }));
-  const ESTILOS = estilosData.map(c => ({ value: c.value, label: c.label }));
-  const FOCO_EMOCIONAL = focoEmocionalData.map(c => ({ value: c.value, label: c.label, description: c.description }));
+  // Mapear características para formato esperado pelos selects (incluindo ai_instruction)
+  const FRAMEWORKS = frameworksData.map(c => ({ value: c.value, label: c.label, description: c.description, ai_instruction: c.ai_instruction }));
+  const OBJETIVOS = objetivosData.map(c => ({ value: c.value, label: c.label, description: c.description, ai_instruction: c.ai_instruction }));
+  const ESTILOS = estilosData.map(c => ({ value: c.value, label: c.label, description: c.description, ai_instruction: c.ai_instruction }));
+  const FOCO_EMOCIONAL = focoEmocionalData.map(c => ({ value: c.value, label: c.label, description: c.description, ai_instruction: c.ai_instruction }));
 
   const isLoadingCharacteristics = loadingFrameworks || loadingObjetivos || loadingEstilos || loadingFocoEmocional;
 
@@ -265,13 +265,19 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
         return;
       }
 
+      // Transformar seleções em objetos completos com ai_instruction
+      const frameworkObj = estrutura ? FRAMEWORKS.find(f => f.value === estrutura) : undefined;
+      const objetivoObj = objetivo ? OBJETIVOS.find(o => o.value === objetivo) : undefined;
+      const estilosObjs = estilos.map(style => ESTILOS.find(e => e.value === style)).filter(Boolean);
+      const focoEmocionalObj = focoEmocional ? FOCO_EMOCIONAL.find(f => f.value === focoEmocional) : undefined;
+
       const { data: systemPromptData, error: systemPromptError } = await supabase.functions.invoke('generate-system-prompt', {
         body: {
           copyType: copyType || 'outro',
-          framework: estrutura,
-          objective: objetivo,
-          styles: estilos,
-          emotionalFocus: focoEmocional,
+          framework: frameworkObj || estrutura,
+          objective: objetivoObj || objetivo,
+          styles: estilosObjs.length > 0 ? estilosObjs : estilos,
+          emotionalFocus: focoEmocionalObj || focoEmocional,
           projectIdentity,
           projectMethodology,
           audienceSegment,
@@ -380,13 +386,19 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
 
       console.log('🔑 Token JWT obtido, comprimento:', accessToken.length);
 
+      // Transformar seleções em objetos completos com ai_instruction
+      const frameworkObj = estrutura ? FRAMEWORKS.find(f => f.value === estrutura) : undefined;
+      const objetivoObj = objetivo ? OBJETIVOS.find(o => o.value === objetivo) : undefined;
+      const estilosObjs = estilos.map(style => ESTILOS.find(e => e.value === style)).filter(Boolean);
+      const focoEmocionalObj = focoEmocional ? FOCO_EMOCIONAL.find(f => f.value === focoEmocional) : undefined;
+
       const { data: systemPromptData, error: systemPromptError } = await supabase.functions.invoke('generate-system-prompt', {
         body: {
           copyType: copyType || 'outro',
-          framework: estrutura,
-          objective: objetivo,
-          styles: estilos,
-          emotionalFocus: focoEmocional,
+          framework: frameworkObj || estrutura,
+          objective: objetivoObj || objetivo,
+          styles: estilosObjs.length > 0 ? estilosObjs : estilos,
+          emotionalFocus: focoEmocionalObj || focoEmocional,
           projectIdentity,
           projectMethodology,
           audienceSegment,
@@ -425,10 +437,10 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
         body: {
           copyType: copyType || 'outro',
           prompt,
-          framework: estrutura,
-          objective: objetivo,
-          styles: estilos,
-          emotionalFocus: focoEmocional,
+          framework: frameworkObj || estrutura,
+          objective: objetivoObj || objetivo,
+          styles: estilosObjs.length > 0 ? estilosObjs : estilos,
+          emotionalFocus: focoEmocionalObj || focoEmocional,
           projectIdentity,
           audienceSegment,
           offer,
