@@ -21,8 +21,8 @@ interface ChatGeneratedPreviewModalProps {
   hasSelection: boolean;
   selectedCount: number;
   onAdd: (sessions: Session[]) => Promise<void>;
+  onInsertAfter?: (sessions: Session[]) => Promise<void>;
   onReplace?: (sessions: Session[]) => Promise<void>;
-  onReplaceAll?: (sessions: Session[]) => Promise<void>;
 }
 
 export function ChatGeneratedPreviewModal({
@@ -32,12 +32,12 @@ export function ChatGeneratedPreviewModal({
   hasSelection,
   selectedCount,
   onAdd,
+  onInsertAfter,
   onReplace,
-  onReplaceAll,
 }: ChatGeneratedPreviewModalProps) {
   const [isAdding, setIsAdding] = useState(false);
+  const [isInserting, setIsInserting] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
-  const [isReplacingAll, setIsReplacingAll] = useState(false);
   const [selectedVariationIndex, setSelectedVariationIndex] = useState(0);
 
   // Detectar se são múltiplas variações para edição (sessões com "Opção" no título)
@@ -57,6 +57,20 @@ export function ChatGeneratedPreviewModal({
     }
   };
 
+  const handleInsertAfter = async () => {
+    if (!onInsertAfter) return;
+    setIsInserting(true);
+    try {
+      const sessionsToInsert = isVariationSelection 
+        ? [generatedSessions[selectedVariationIndex]]
+        : generatedSessions;
+      await onInsertAfter(sessionsToInsert);
+      onOpenChange(false);
+    } finally {
+      setIsInserting(false);
+    }
+  };
+
   const handleReplace = async () => {
     if (!onReplace) return;
     setIsReplacing(true);
@@ -68,20 +82,6 @@ export function ChatGeneratedPreviewModal({
       onOpenChange(false);
     } finally {
       setIsReplacing(false);
-    }
-  };
-
-  const handleReplaceAll = async () => {
-    if (!onReplaceAll) return;
-    setIsReplacingAll(true);
-    try {
-      const sessionsToReplace = isVariationSelection 
-        ? [generatedSessions[selectedVariationIndex]]
-        : generatedSessions;
-      await onReplaceAll(sessionsToReplace);
-      onOpenChange(false);
-    } finally {
-      setIsReplacingAll(false);
     }
   };
 
@@ -245,47 +245,46 @@ export function ChatGeneratedPreviewModal({
             Cancelar
           </Button>
 
-          {hasSelection && onReplaceAll && (
+          {hasSelection ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleInsertAfter}
+                disabled={isInserting || isReplacing || isAdding}
+              >
+                {isInserting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-2" />
+                )}
+                Criar Novo Bloco
+              </Button>
+
+              <Button
+                onClick={handleReplace}
+                disabled={isReplacing || isInserting || isAdding}
+              >
+                {isReplacing ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Replace className="h-4 w-4 mr-2" />
+                )}
+                Substituir Seleção
+              </Button>
+            </>
+          ) : (
             <Button
-              variant="outline"
-              onClick={handleReplaceAll}
-              disabled={isReplacingAll || isReplacing || isAdding}
+              onClick={handleAdd}
+              disabled={isAdding || isReplacing || isInserting}
             >
-              {isReplacingAll ? (
+              {isAdding ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <Replace className="h-4 w-4 mr-2" />
+                <Copy className="h-4 w-4 mr-2" />
               )}
-              Substituir Tudo
+              Adicionar à Copy
             </Button>
           )}
-
-          {hasSelection && onReplace && (
-            <Button
-              variant="outline"
-              onClick={handleReplace}
-              disabled={isReplacing || isReplacingAll || isAdding}
-            >
-              {isReplacing ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Replace className="h-4 w-4 mr-2" />
-              )}
-              Substituir {selectedCount > 1 ? `(${selectedCount})` : ''}
-            </Button>
-          )}
-
-          <Button
-            onClick={handleAdd}
-            disabled={isAdding || isReplacing || isReplacingAll}
-          >
-            {isAdding ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Copy className="h-4 w-4 mr-2" />
-            )}
-            {hasSelection ? 'Substituir Seleção' : 'Adicionar à Copy'}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -114,6 +114,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     toggleItemSelection, 
     clearSelection,
     importSessions,
+    insertSessionsAfterSelection,
     addSession,
     addBlock,
     updateBlock,
@@ -355,14 +356,26 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const handleAddContent = useCallback(async (generatedSessions: Session[]) => {
     if (generatedSessions.length === 0) return;
 
-    // Usar importSessions para adicionar as sessões geradas
-    importSessions(generatedSessions);
+    // Se há seleção, inserir após a seleção usando insertSessionsAfterSelection
+    if (selectedItems.length > 0) {
+      insertSessionsAfterSelection(generatedSessions, selectedItems);
+      
+      toast({
+        title: 'Conteúdo adicionado!',
+        description: `${generatedSessions.length} sessão(ões) inserida(s) após a seleção.`,
+      });
+      
+      clearSelection();
+    } else {
+      // Sem seleção: adicionar no final usando importSessions
+      importSessions(generatedSessions);
 
-    toast({
-      title: 'Conteúdo adicionado!',
-      description: `${generatedSessions.length} sessão(ões) adicionada(s) à sua copy.`,
-    });
-  }, [importSessions, toast]);
+      toast({
+        title: 'Conteúdo adicionado!',
+        description: `${generatedSessions.length} sessão(ões) adicionada(s) à sua copy.`,
+      });
+    }
+  }, [importSessions, insertSessionsAfterSelection, selectedItems, toast, clearSelection]);
 
   // Inserir conteúdo após o item selecionado (não no final)
   const handleInsertAfterSelection = useCallback(async (generatedSessions: Session[]) => {
