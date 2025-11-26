@@ -31,28 +31,83 @@ export function buildCopyPrompt(context: CopyContext): string {
   if (context.audience) {
     const audienceParts: string[] = [];
     
-    if (context.audience.segment_name) {
-      audienceParts.push(`Segmento: ${context.audience.segment_name}`);
+    // Campos básicos (Fase 1)
+    if (context.audience.who_is) {
+      audienceParts.push(`**Quem é essa pessoa:** ${context.audience.who_is}`);
     }
     
-    if (context.audience.description) {
-      audienceParts.push(`Descrição: ${context.audience.description}`);
+    if (context.audience.biggest_desire) {
+      audienceParts.push(`**Maior Desejo:** ${context.audience.biggest_desire}`);
     }
     
-    if (context.audience.demographics) {
-      audienceParts.push(`Demografia: ${formatDemographics(context.audience.demographics)}`);
+    if (context.audience.biggest_pain) {
+      audienceParts.push(`**Maior Dor:** ${context.audience.biggest_pain}`);
     }
     
-    if (context.audience.pain_points && context.audience.pain_points.length > 0) {
-      audienceParts.push(`Dores:\n${context.audience.pain_points.map((p: string) => `- ${p}`).join('\n')}`);
+    if (context.audience.failed_attempts) {
+      audienceParts.push(`**O que já tentou:** ${context.audience.failed_attempts}`);
     }
     
-    if (context.audience.desires && context.audience.desires.length > 0) {
-      audienceParts.push(`Desejos:\n${context.audience.desires.map((d: string) => `- ${d}`).join('\n')}`);
+    if (context.audience.beliefs) {
+      audienceParts.push(`**Crenças:** ${context.audience.beliefs}`);
+    }
+    
+    if (context.audience.behavior) {
+      audienceParts.push(`**Comportamento/Linguagem:** ${context.audience.behavior}`);
+    }
+    
+    if (context.audience.journey) {
+      audienceParts.push(`**Jornada (Onde está → Onde quer chegar):** ${context.audience.journey}`);
+    }
+    
+    // Análise Psicográfica Avançada (Fase 2)
+    if (context.audience.advanced_analysis) {
+      const analysis = context.audience.advanced_analysis;
+      
+      audienceParts.push('\n### ANÁLISE PSICOGRÁFICA AVANÇADA');
+      
+      // Dimensão Emocional
+      if (analysis.emotional_state || analysis.hidden_pain || analysis.primary_fear || analysis.emotional_desire) {
+        audienceParts.push('\n**Dimensão Emocional:**');
+        if (analysis.emotional_state) audienceParts.push(`- Estado Emocional: ${analysis.emotional_state}`);
+        if (analysis.hidden_pain) audienceParts.push(`- Dor Oculta (não verbalizada): ${analysis.hidden_pain}`);
+        if (analysis.primary_fear) audienceParts.push(`- Medo Primário: ${analysis.primary_fear}`);
+        if (analysis.emotional_desire) audienceParts.push(`- Desejo Emocional: ${analysis.emotional_desire}`);
+      }
+      
+      // Dimensão Cognitiva
+      if (analysis.problem_misperception || analysis.limiting_belief || analysis.internal_narrative) {
+        audienceParts.push('\n**Dimensão Cognitiva:**');
+        if (analysis.problem_misperception) audienceParts.push(`- Percepção Errada do Problema: ${analysis.problem_misperception}`);
+        if (analysis.limiting_belief) audienceParts.push(`- Crença Limitante: ${analysis.limiting_belief}`);
+        if (analysis.internal_narrative) audienceParts.push(`- Narrativa Interna: ${analysis.internal_narrative}`);
+        if (analysis.internal_contradiction) audienceParts.push(`- Contradição Interna: ${analysis.internal_contradiction}`);
+      }
+      
+      // Dimensão Comportamental
+      if (analysis.decision_trigger || analysis.communication_style) {
+        audienceParts.push('\n**Dimensão Comportamental:**');
+        if (analysis.decision_trigger) audienceParts.push(`- Gatilho de Decisão: ${analysis.decision_trigger}`);
+        if (analysis.communication_style) audienceParts.push(`- Estilo de Comunicação/Vocabulário: ${analysis.communication_style}`);
+        if (analysis.psychological_resistances) audienceParts.push(`- Resistências Psicológicas: ${analysis.psychological_resistances}`);
+      }
+      
+      // Gatilhos Mentais Ranqueados
+      if (analysis.mental_triggers) {
+        const triggers = analysis.mental_triggers;
+        const sortedTriggers = Object.entries(triggers)
+          .sort(([,a], [,b]) => (a as any).rank - (b as any).rank)
+          .slice(0, 4); // Top 4
+        
+        audienceParts.push('\n**Gatilhos Mentais Mais Efetivos:**');
+        sortedTriggers.forEach(([name, data]: [string, any]) => {
+          audienceParts.push(`${data.rank}. ${name.toUpperCase()}: ${data.justificativa}`);
+        });
+      }
     }
     
     if (audienceParts.length > 0) {
-      parts.push(`## Público-Alvo\n${audienceParts.join('\n')}`);
+      parts.push(`## PÚBLICO-ALVO E PERSONA\n${audienceParts.join('\n')}`);
     }
   }
 
@@ -60,32 +115,44 @@ export function buildCopyPrompt(context: CopyContext): string {
   if (context.offer) {
     const offerParts: string[] = [];
     
-    if (context.offer.offer_name) {
-      offerParts.push(`Nome: ${context.offer.offer_name}`);
+    if (context.offer.name) {
+      offerParts.push(`**Nome da Oferta:** ${context.offer.name}`);
     }
     
-    if (context.offer.description) {
-      offerParts.push(`Descrição: ${context.offer.description}`);
+    if (context.offer.type) {
+      offerParts.push(`**Tipo:** ${context.offer.type}`);
     }
     
-    if (context.offer.value_proposition) {
-      offerParts.push(`Proposta de Valor: ${context.offer.value_proposition}`);
+    if (context.offer.short_description) {
+      offerParts.push(`**Descrição:** ${context.offer.short_description}`);
     }
     
     if (context.offer.main_benefit) {
-      offerParts.push(`Benefício Principal: ${context.offer.main_benefit}`);
+      offerParts.push(`**Promessa Central:** ${context.offer.main_benefit}`);
     }
     
-    if (context.offer.secondary_benefits && context.offer.secondary_benefits.length > 0) {
-      offerParts.push(`Benefícios Secundários:\n${context.offer.secondary_benefits.map((b: string) => `- ${b}`).join('\n')}`);
+    if (context.offer.unique_mechanism) {
+      offerParts.push(`**Mecanismo Único (Por que funciona):** ${context.offer.unique_mechanism}`);
     }
     
     if (context.offer.differentials && context.offer.differentials.length > 0) {
-      offerParts.push(`Diferenciais:\n${context.offer.differentials.map((d: string) => `- ${d}`).join('\n')}`);
+      offerParts.push(`**Diferenciais:**\n${context.offer.differentials.map((d: string) => `- ${d}`).join('\n')}`);
+    }
+    
+    if (context.offer.proof) {
+      offerParts.push(`**Prova/Autoridade:** ${context.offer.proof}`);
+    }
+    
+    if (context.offer.guarantee) {
+      offerParts.push(`**Garantia:** ${context.offer.guarantee}`);
+    }
+    
+    if (context.offer.cta) {
+      offerParts.push(`**CTA/Objetivo:** ${context.offer.cta}`);
     }
     
     if (offerParts.length > 0) {
-      parts.push(`## Oferta\n${offerParts.join('\n')}`);
+      parts.push(`## OFERTA\n${offerParts.join('\n')}`);
     }
   }
 

@@ -226,6 +226,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
     setIsGeneratingSystemPrompt(true);
     try {
       let projectIdentity = null;
+      let projectMethodology = null;
       let audienceSegment = null;
       let offer = null;
 
@@ -237,6 +238,8 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
           brand_personality: activeProject.brand_personality,
           keywords: activeProject.keywords,
         };
+        
+        projectMethodology = activeProject.methodology || null;
 
         if (audienceSegmentId) {
           audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
@@ -270,6 +273,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
           styles: estilos,
           emotionalFocus: focoEmocional,
           projectIdentity,
+          projectMethodology,
           audienceSegment,
           offer,
           copyId,
@@ -331,6 +335,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
     setIsGenerating(true);
     try {
       let projectIdentity = null;
+      let projectMethodology = null;
       let audienceSegment = null;
       let offer = null;
 
@@ -342,6 +347,8 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
           brand_personality: activeProject.brand_personality,
           keywords: activeProject.keywords,
         };
+        
+        projectMethodology = activeProject.methodology || null;
 
         if (audienceSegmentId) {
           audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
@@ -381,6 +388,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
           styles: estilos,
           emotionalFocus: focoEmocional,
           projectIdentity,
+          projectMethodology,
           audienceSegment,
           offer,
           copyId,
