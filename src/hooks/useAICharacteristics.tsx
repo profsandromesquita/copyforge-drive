@@ -8,6 +8,7 @@ export interface AICharacteristic {
   value: string;
   label: string;
   description?: string;
+  ai_instruction?: string;
   display_order: number;
   is_active: boolean;
   created_at: string;

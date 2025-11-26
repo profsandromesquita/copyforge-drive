@@ -40,8 +40,13 @@ export const CharacteristicCard = ({ characteristic, onEdit, onDelete, dragHandl
           )}
         </div>
         {characteristic.description && (
-          <p className="text-sm text-muted-foreground truncate">
+          <p className="text-sm text-muted-foreground mb-1">
             {characteristic.description}
+          </p>
+        )}
+        {characteristic.ai_instruction && (
+          <p className="text-xs text-muted-foreground/70 italic truncate">
+            IA: {characteristic.ai_instruction}
           </p>
         )}
       </div>

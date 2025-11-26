@@ -294,8 +294,14 @@ Quando necessário, solicite informações complementares ou utilize padrões de
   return descriptions[normalizedType] || copyType;
 }
 
-function getFrameworkDescription(framework: string): string {
-  const normalizedFramework = framework.toUpperCase().trim();
+function getFrameworkDescription(framework: string | { value: string; ai_instruction?: string; description?: string }): string {
+  // Se for objeto, priorizar ai_instruction
+  if (typeof framework === 'object' && framework.ai_instruction) {
+    return framework.ai_instruction;
+  }
+  
+  // Se for objeto mas sem ai_instruction, usar value para buscar hardcoded
+  const normalizedFramework = (typeof framework === 'string' ? framework : framework.value).toUpperCase().trim();
   
   const descriptions: Record<string, string> = {
     'AIDA': `Organize toda a copy seguindo a sequência:
@@ -369,11 +375,17 @@ Problema → Amplificar → História → Transformação → Oferta → Respost
 É uma estrutura longa e muito persuasiva, ideal para VSLs, LPs e anúncios detalhados.`
   };
 
-  return descriptions[normalizedFramework] || framework;
+  return descriptions[normalizedFramework] || (typeof framework === 'string' ? framework : framework.value);
 }
 
-function getObjectiveDescription(objective: string): string {
-  const normalizedObjective = objective.toUpperCase().trim();
+function getObjectiveDescription(objective: string | { value: string; ai_instruction?: string; description?: string }): string {
+  // Se for objeto, priorizar ai_instruction
+  if (typeof objective === 'object' && objective.ai_instruction) {
+    return objective.ai_instruction;
+  }
+  
+  // Se for objeto mas sem ai_instruction, usar value para buscar hardcoded
+  const normalizedObjective = (typeof objective === 'string' ? objective : objective.value).toUpperCase().trim();
   
   const descriptions: Record<string, string> = {
     'VENDA DIRETA': `Estruture a copy com foco total na conversão imediata.
@@ -406,10 +418,10 @@ Relembre o valor, desperte interesse novamente e minimize barreiras para retorno
 Mostre o que mudou, o que melhorou e por que agora é o melhor momento para voltar.`
   };
 
-  return descriptions[normalizedObjective] || objective;
+  return descriptions[normalizedObjective] || (typeof objective === 'string' ? objective : objective.value);
 }
 
-function getStylesDescription(styles: string[]): string {
+function getStylesDescription(styles: Array<string | { value: string; ai_instruction?: string; description?: string }>): string {
   if (!styles || styles.length === 0) {
     return '';
   }
@@ -440,16 +452,28 @@ Conduza o leitor a uma sensação de propósito, conexão ou transcendência.`
 
   const matchedDescriptions = styles
     .map(style => {
-      const normalizedStyle = style.toUpperCase().trim();
-      return styleDescriptions[normalizedStyle] || style;
+      // Se for objeto e tiver ai_instruction, usar ai_instruction
+      if (typeof style === 'object' && style.ai_instruction) {
+        return style.ai_instruction;
+      }
+      
+      // Se for objeto sem ai_instruction ou string, buscar hardcoded
+      const normalizedStyle = (typeof style === 'string' ? style : style.value).toUpperCase().trim();
+      return styleDescriptions[normalizedStyle] || (typeof style === 'string' ? style : style.value);
     })
     .filter(desc => desc);
 
   return matchedDescriptions.join('\n\n---\n\n');
 }
 
-function getEmotionalFocusDescription(focus: string): string {
-  const normalizedFocus = focus.toUpperCase().trim();
+function getEmotionalFocusDescription(focus: string | { value: string; ai_instruction?: string; description?: string }): string {
+  // Se for objeto, priorizar ai_instruction
+  if (typeof focus === 'object' && focus.ai_instruction) {
+    return focus.ai_instruction;
+  }
+  
+  // Se for objeto mas sem ai_instruction, usar value para buscar hardcoded
+  const normalizedFocus = (typeof focus === 'string' ? focus : focus.value).toUpperCase().trim();
   
   const descriptions: Record<string, string> = {
     'DOR': `Amplifique o problema, frustração ou sofrimento atual do público.
@@ -468,7 +492,7 @@ Ideal para histórias e provas.`,
 A copy deve mostrar que agir agora é a melhor forma de evitar prejuízos, dores ou retrocessos.`
   };
 
-  return descriptions[normalizedFocus] || focus;
+  return descriptions[normalizedFocus] || (typeof focus === 'string' ? focus : focus.value);
 }
 
 function formatDemographics(demographics: any): string {
