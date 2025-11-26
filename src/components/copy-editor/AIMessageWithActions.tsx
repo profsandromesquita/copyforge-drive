@@ -210,12 +210,12 @@ export function AIMessageWithActions({
     await onAddContent(sessions);
   };
 
-  const handleReplace = async (sessions: Session[]) => {
-    await onReplaceContent(sessions);
+  const handleInsertAfter = async (sessions: Session[]) => {
+    await onAddContent(sessions);
   };
 
-  const handleReplaceAll = async (sessions: Session[]) => {
-    await onReplaceAll(sessions);
+  const handleReplace = async (sessions: Session[]) => {
+    await onReplaceContent(sessions);
   };
 
   return (
@@ -288,9 +288,9 @@ export function AIMessageWithActions({
         generatedSessions={generatedSessions}
         hasSelection={hasSelection}
         selectedCount={selectedItems.length}
-        onAdd={hasSelection ? handleReplace : handleAdd}
-        onReplace={hasSelection && selectedItems.length > 1 ? handleReplace : undefined}
-        onReplaceAll={hasSelection && selectedItems.length > 1 ? handleReplaceAll : undefined}
+        onAdd={handleAdd}
+        onInsertAfter={hasSelection ? handleInsertAfter : undefined}
+        onReplace={hasSelection ? handleReplace : undefined}
       />
     </>
   );
