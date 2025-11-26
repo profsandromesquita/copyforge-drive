@@ -44,11 +44,6 @@ export const CharacteristicCard = ({ characteristic, onEdit, onDelete, dragHandl
             {characteristic.description}
           </p>
         )}
-        {characteristic.ai_instruction && (
-          <p className="text-xs text-muted-foreground/70 italic truncate">
-            IA: {characteristic.ai_instruction}
-          </p>
-        )}
       </div>
 
       <div className="flex gap-2">
