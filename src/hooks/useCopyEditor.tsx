@@ -76,11 +76,22 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const loadCopy = useCallback(async (id: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Criar uma promise de timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout ao carregar copy')), 10000);
+      });
+
+      // Query com timeout de 10 segundos
+      const queryPromise = supabase
         .from('copies')
         .select('*')
         .eq('id', id)
         .single();
+
+      const { data, error } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
 
       if (error) throw error;
 
@@ -92,11 +103,14 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       
       // Pequeno delay para garantir renderização suave
       await new Promise(resolve => setTimeout(resolve, 300));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading copy:', error);
+      const isTimeout = error?.message?.includes('Timeout');
       toast({
-        title: 'Erro ao carregar',
-        description: 'Não foi possível carregar a copy.',
+        title: isTimeout ? 'Tempo esgotado' : 'Erro ao carregar',
+        description: isTimeout 
+          ? 'O servidor demorou muito para responder. Tente novamente em alguns instantes.' 
+          : 'Não foi possível carregar a copy.',
         variant: 'destructive',
       });
     } finally {

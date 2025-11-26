@@ -92,7 +92,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
       }, 10000);
       return () => clearTimeout(timer);
     }
-  }, [block.id, isNewFromChat, block.config, updateBlock]);
+  }, [block.id, isNewFromChat]);
 
   const handleBlockClick = (e: React.MouseEvent) => {
     if (isSelectionMode) {
