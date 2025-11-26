@@ -6,6 +6,7 @@ import { IdentityTab } from '@/components/project-config/IdentityTab';
 import { AudienceTab } from '@/components/project-config/AudienceTab';
 import { OffersTab } from '@/components/project-config/OffersTab';
 import { MethodologyTab } from '@/components/project-config/MethodologyTab';
+import { VisualIdentityTab } from '@/components/project-config/VisualIdentityTab';
 import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Lock, ArrowLeft } from 'phosphor-react';
@@ -31,6 +32,7 @@ const ProjectConfig = () => {
   const isAudienceUnlocked = isIdentityComplete;
   const isOffersUnlocked = isIdentityComplete && hasAudienceSegments;
   const isMethodologyUnlocked = isOffersUnlocked && hasOffers;
+  const isVisualIdentityUnlocked = isIdentityComplete; // Disponível após identidade básica
 
   // Força modo claro no ProjectConfig
   useEffect(() => {
@@ -40,7 +42,7 @@ const ProjectConfig = () => {
   // Sincronizar aba da URL com estado local
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['identity', 'audience', 'offers', 'methodology'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['identity', 'visual-identity', 'audience', 'offers', 'methodology'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [searchParams]);
@@ -88,6 +90,10 @@ const ProjectConfig = () => {
   }, [activeProject, activeTab, isAudienceUnlocked, isOffersUnlocked, isMethodologyUnlocked]);
 
   const handleTabChange = (value: string) => {
+    if (value === 'visual-identity' && !isVisualIdentityUnlocked) {
+      toast.error('Complete a Identidade do Projeto primeiro');
+      return;
+    }
     if (value === 'audience' && !isAudienceUnlocked) {
       toast.error('Complete a Identidade do Projeto primeiro');
       return;
@@ -141,14 +147,26 @@ const ProjectConfig = () => {
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6 pb-24 md:pb-6">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full h-auto p-1 bg-muted/50">
+          <TabsList className="grid grid-cols-5 w-full h-auto p-1 bg-muted/50">
             <TabsTrigger 
               value="identity"
               className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
             >
               <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
                 <span className="hidden md:inline">Identidade</span>
-                <span className="md:hidden">Identidade</span>
+                <span className="md:hidden">ID</span>
+              </span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="visual-identity"
+              disabled={!isVisualIdentityUnlocked}
+              className="disabled:opacity-40 disabled:cursor-not-allowed data-[state=active]:bg-background data-[state=active]:shadow-sm py-3 md:py-2"
+            >
+              <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
+                {!isVisualIdentityUnlocked && <Lock size={14} className="md:hidden" />}
+                {!isVisualIdentityUnlocked && <Lock size={16} className="hidden md:block" />}
+                <span className="hidden md:inline">Visual</span>
+                <span className="md:hidden">Visual</span>
               </span>
             </TabsTrigger>
             <TabsTrigger 
@@ -159,7 +177,7 @@ const ProjectConfig = () => {
               <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
                 {!isAudienceUnlocked && <Lock size={14} className="md:hidden" />}
                 {!isAudienceUnlocked && <Lock size={16} className="hidden md:block" />}
-                <span className="hidden md:inline">Público-alvo</span>
+                <span className="hidden md:inline">Público</span>
                 <span className="md:hidden">Público</span>
               </span>
             </TabsTrigger>
@@ -182,7 +200,8 @@ const ProjectConfig = () => {
               <span className="flex flex-col md:flex-row items-center gap-1 md:gap-2 text-xs md:text-sm">
                 {!isMethodologyUnlocked && <Lock size={14} className="md:hidden" />}
                 {!isMethodologyUnlocked && <Lock size={16} className="hidden md:block" />}
-                <span>Metodologia</span>
+                <span className="hidden md:inline">Método</span>
+                <span className="md:hidden">Método</span>
               </span>
             </TabsTrigger>
           </TabsList>
@@ -191,8 +210,20 @@ const ProjectConfig = () => {
             <IdentityTab 
               isNew={isNew} 
               onSaveSuccess={() => {
-                // Avança para próxima aba sempre que salvar identidade
-                if (isNew || (isAudienceUnlocked && activeTab === 'identity')) {
+                // Avança para aba visual após salvar identidade
+                if (isNew || (isVisualIdentityUnlocked && activeTab === 'identity')) {
+                  setSearchParams({ tab: 'visual-identity' });
+                  setActiveTab('visual-identity');
+                }
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="visual-identity" className="space-y-6">
+            <VisualIdentityTab 
+              onSaveSuccess={() => {
+                // Avança para público após configurar visual
+                if (isAudienceUnlocked && activeTab === 'visual-identity') {
                   setSearchParams({ tab: 'audience' });
                   setActiveTab('audience');
                 }
