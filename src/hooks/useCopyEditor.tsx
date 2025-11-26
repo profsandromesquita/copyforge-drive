@@ -191,48 +191,72 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [sessions]);
 
   const insertSessionsAfterSelection = useCallback((importedSessions: Session[], selectedItems: SelectedItem[]) => {
-    // Encontrar o índice do último item selecionado
-    let lastSelectedIndex = -1;
+    const lastSelected = selectedItems[selectedItems.length - 1];
     
-    for (const item of selectedItems) {
-      if (item.type === 'session') {
-        const sessionIndex = sessions.findIndex(s => s.id === item.id);
-        if (sessionIndex > lastSelectedIndex) {
-          lastSelectedIndex = sessionIndex;
-        }
-      } else if (item.type === 'block' && item.sessionId) {
-        const sessionIndex = sessions.findIndex(s => s.id === item.sessionId);
-        if (sessionIndex > lastSelectedIndex) {
-          lastSelectedIndex = sessionIndex;
-        }
-      }
-    }
-    
-    // Se nenhum item selecionado encontrado, adicionar ao final
-    if (lastSelectedIndex === -1) {
+    if (!lastSelected) {
       importSessions(importedSessions);
       return;
     }
-    
-    // Regenerar IDs únicos para sessões e blocos importados
-    let blockCounter = 0;
-    const sessionsWithNewIds = importedSessions.map((session, sessionIndex) => ({
-      ...session,
-      id: `session-${Date.now()}-${sessionIndex}-${Math.random()}`,
-      blocks: session.blocks.map((block) => {
-        blockCounter++;
-        return {
+
+    // CASO 1: Bloco selecionado → inserir blocos DENTRO da mesma sessão
+    if (lastSelected.type === 'block' && lastSelected.sessionId) {
+      const sessionIndex = sessions.findIndex(s => s.id === lastSelected.sessionId);
+      if (sessionIndex === -1) {
+        importSessions(importedSessions);
+        return;
+      }
+      
+      const session = sessions[sessionIndex];
+      const blockIndex = session.blocks.findIndex(b => b.id === lastSelected.id);
+      
+      // Extrair todos os blocos das sessões importadas e marcar como novos
+      const allNewBlocks = importedSessions.flatMap(s => 
+        s.blocks.map(block => ({
           ...block,
-          id: `block-${Date.now()}-${blockCounter}-${Math.random()}`,
-          config: block.config || {} // Garantir que config sempre existe
-        };
-      })
-    }));
-    
-    // Inserir as sessões após o último item selecionado
-    const newSessions = [...sessions];
-    newSessions.splice(lastSelectedIndex + 1, 0, ...sessionsWithNewIds);
-    setSessions(newSessions);
+          id: `block-${Date.now()}-${Math.random()}`,
+          config: { ...block.config, isNewFromChat: true }
+        }))
+      );
+      
+      const updatedBlocks = [...session.blocks];
+      updatedBlocks.splice(blockIndex + 1, 0, ...allNewBlocks);
+      
+      const newSessions = [...sessions];
+      newSessions[sessionIndex] = { ...session, blocks: updatedBlocks };
+      setSessions(newSessions);
+      return;
+    }
+
+    // CASO 2: Sessão selecionada → inserir sessões após (comportamento existente)
+    if (lastSelected.type === 'session') {
+      const sessionIndex = sessions.findIndex(s => s.id === lastSelected.id);
+      
+      if (sessionIndex === -1) {
+        importSessions(importedSessions);
+        return;
+      }
+
+      // Regenerar IDs únicos para sessões e blocos importados
+      let blockCounter = 0;
+      const sessionsWithNewIds = importedSessions.map((session, idx) => ({
+        ...session,
+        id: `session-${Date.now()}-${idx}-${Math.random()}`,
+        blocks: session.blocks.map((block) => {
+          blockCounter++;
+          return {
+            ...block,
+            id: `block-${Date.now()}-${blockCounter}-${Math.random()}`,
+            config: block.config || {}
+          };
+        })
+      }));
+
+      const newSessions = [...sessions];
+      newSessions.splice(sessionIndex + 1, 0, ...sessionsWithNewIds);
+      setSessions(newSessions);
+    } else {
+      importSessions(importedSessions);
+    }
   }, [sessions, importSessions]);
 
   const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>, index?: number) => {
