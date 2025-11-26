@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { segment, workspace_id } = await req.json();
+    const { segment, workspace_id, project_context } = await req.json();
 
     if (!segment || !workspace_id) {
       return new Response(
@@ -73,8 +73,24 @@ serve(async (req) => {
       console.error('Erro ao buscar prompt do banco, usando fallback:', error);
     }
 
-    // Construir prompt otimizado para análise profunda de PÚBLICO (sem foco em vendas)
+    // Construir prompt contextualizado com Identidade + Metodologia do projeto
     const prompt = `
+**CONTEXTO DO PROJETO:**
+${project_context?.brand_name ? `- **Marca:** ${project_context.brand_name}` : ''}
+${project_context?.sector ? `- **Setor:** ${project_context.sector}` : ''}
+${project_context?.central_purpose ? `- **Propósito Central:** ${project_context.central_purpose}` : ''}
+
+${project_context?.methodology ? `
+**METODOLOGIA/MÉTODO DO PROJETO:**
+- **Nome do Método:** ${project_context.methodology.name || 'Não informado'}
+- **Tese Central:** ${project_context.methodology.tese_central || 'Não informada'}
+- **Etapas do Método:** ${project_context.methodology.etapas_metodo || 'Não informadas'}
+- **Mecanismo Único:** ${project_context.methodology.mecanismo_unico || 'Não informado'}
+- **Diferencial da Abordagem:** ${project_context.methodology.diferencial_abordagem || 'Não informado'}
+` : ''}
+
+---
+
 **DADOS DO PÚBLICO:**
 
 1. **Quem é:** ${segment.who_is}
@@ -87,8 +103,15 @@ serve(async (req) => {
 
 ---
 
-Analise profundamente esse público do ponto de vista antropológico e psicológico.
-Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pessoa.
+**INSTRUÇÃO CRÍTICA:**
+Ao analisar profundamente esse público do ponto de vista antropológico e psicológico, considere:
+
+1. **Dores específicas que a METODOLOGIA acima resolve** - Identifique como cada dor do público se conecta às etapas e à tese central do método apresentado.
+2. **Mecanismo Único como solução** - Analise como o mecanismo único se relaciona com as tentativas falhas e crenças limitantes do público.
+3. **Mapeamento por Etapa** - Se possível, indique em qual etapa do método cada dor seria trabalhada/resolvida.
+4. **Linguagem e narrativa** - Use vocabulário que ressoe com o setor, propósito central e a abordagem metodológica apresentada.
+
+Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pessoa **no contexto dessa marca, setor e metodologia**.
 `;
 
     // Chamar Lovable AI com estrutura de campos
