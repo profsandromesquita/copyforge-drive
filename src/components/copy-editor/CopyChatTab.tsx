@@ -77,6 +77,9 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  metadata?: {
+    intent?: 'replace' | 'insert' | 'conversational' | 'default';
+  };
 }
 
 interface CopyChatTabProps {
@@ -189,6 +192,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         body: {
           copyId,
           message: userMessage,
+          hasSelection: selectedItems.length > 0, // 🆕 NOVO: enviar hasSelection
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -199,59 +203,9 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       return data;
     },
     onSuccess: (data: ChatResponse) => {
+      // 🆕 NOVO COMPORTAMENTO: Apenas invalidar query para atualizar o chat
+      // A aplicação da mudança acontece EXCLUSIVAMENTE via modal/card
       queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
-      
-      // ✅ CAMADA 1: Null Check - Bloquear se não há seleção
-      if (selectedItems.length === 0) {
-        setMessage('');
-        return; // Pure Chat Mode
-      }
-      
-      // ✅ CAMADA 2: Conversational Bypass + Actionable Check
-      if (data?.intent === 'conversational' || data?.actionable === false) {
-        setMessage('');
-        return; // Manter resposta apenas no chat
-      }
-      
-      // ✅ CAMADA 3: Aplicar intenção automaticamente apenas para replace/insert
-      if (data?.intent && ['replace', 'insert'].includes(data.intent)) {
-        // Buscar última mensagem da IA com um pequeno delay para garantir que foi salva
-        setTimeout(async () => {
-          const { data: chatHistory } = await supabase
-            .from('copy_chat_messages')
-            .select('*')
-            .eq('copy_id', copyId)
-            .eq('role', 'assistant')
-            .order('created_at', { ascending: false })
-            .limit(1);
-          
-          if (chatHistory && chatHistory.length > 0) {
-            const lastAIMessage = chatHistory[0];
-            const { parseAIResponse, convertParsedBlocksToSessions } = await import('@/lib/ai-content-parser');
-            const parsed = parseAIResponse(lastAIMessage.content);
-            
-            if (parsed.hasActionableContent) {
-              const generatedSessions = convertParsedBlocksToSessions(parsed.blocks);
-              
-              // Aplicar ação baseado na intenção detectada
-              if (data.intent === 'replace') {
-                // MODO SUBSTITUIÇÃO
-                handleReplaceContent(generatedSessions);
-                
-                toast({
-                  title: 'Conteúdo otimizado!',
-                  description: 'Seleção substituída automaticamente.',
-                });
-              } else if (data.intent === 'insert') {
-                // MODO INSERÇÃO
-                handleInsertAfterSelection(generatedSessions);
-              }
-            }
-          }
-        }, 500);
-      }
-      // Se 'default', não fazer nada (modal será mostrado)
-      
       setMessage('');
     },
     onError: (error: any) => {
@@ -740,7 +694,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
               message={msg}
               hasSelection={selectedItems.length > 0}
               selectedItems={selectedItems}
-              intent={undefined} // Intent será passado apenas no contexto de nova geração
+              intent={msg.metadata?.intent} // 🆕 CORRIGIDO: passar intent do metadata
               onAddContent={handleAddContent}
               onReplaceContent={handleReplaceContent}
               onReplaceAll={handleReplaceAll}
