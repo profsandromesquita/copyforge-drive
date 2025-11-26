@@ -74,7 +74,14 @@ export function AdvancedAnalysisTab({
       const { data, error } = await supabase.functions.invoke('analyze-audience', {
         body: { 
           segment,
-          workspace_id: activeWorkspace.id 
+          workspace_id: activeWorkspace.id,
+          project_context: {
+            brand_name: activeProject.brand_name,
+            sector: activeProject.sector,
+            central_purpose: activeProject.central_purpose,
+            methodology: activeProject.methodology,
+            offers: activeProject.offers
+          }
         }
       });
 
@@ -130,7 +137,14 @@ export function AdvancedAnalysisTab({
       const { data, error } = await supabase.functions.invoke('analyze-audience', {
         body: { 
           segment,
-          workspace_id: activeWorkspace.id 
+          workspace_id: activeWorkspace.id,
+          project_context: {
+            brand_name: activeProject.brand_name,
+            sector: activeProject.sector,
+            central_purpose: activeProject.central_purpose,
+            methodology: activeProject.methodology,
+            offers: activeProject.offers
+          }
         }
       });
 
