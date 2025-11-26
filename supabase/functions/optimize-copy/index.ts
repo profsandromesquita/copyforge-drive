@@ -319,8 +319,56 @@ Com base no contexto original acima, crie uma abordagem ALTERNATIVA:
             const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
             const dynamicPrompt = await getPromptFromDatabase(supabaseAdmin, action);
             if (dynamicPrompt) {
-              systemPrompt = dynamicPrompt;
+              // CORREÇÃO: Injetar contexto rico mesmo no fallback
+              let contextPrefix = '';
+              
+              if (projectIdentity) {
+                contextPrefix += `\n=== IDENTIDADE DO PROJETO ===\n`;
+                if (projectIdentity.brand_name) contextPrefix += `Nome da Marca: ${projectIdentity.brand_name}\n`;
+                if (projectIdentity.sector) contextPrefix += `Setor: ${projectIdentity.sector}\n`;
+                if (projectIdentity.central_purpose) contextPrefix += `Propósito Central: ${projectIdentity.central_purpose}\n`;
+                if (projectIdentity.brand_personality?.length) contextPrefix += `Personalidade da Marca: ${projectIdentity.brand_personality.join(', ')}\n`;
+                if (projectIdentity.voice_tones?.length) contextPrefix += `Tons de Voz: ${projectIdentity.voice_tones.join(', ')}\n`;
+                if (projectIdentity.keywords?.length) contextPrefix += `Palavras-chave: ${projectIdentity.keywords.join(', ')}\n`;
+              }
+              
+              if (audienceSegment) {
+                contextPrefix += `\n=== PERSONA (PÚBLICO-ALVO) ===\n`;
+                if (audienceSegment.who_is) contextPrefix += `Quem é: ${audienceSegment.who_is}\n`;
+                if (audienceSegment.biggest_desire) contextPrefix += `Maior Desejo: ${audienceSegment.biggest_desire}\n`;
+                if (audienceSegment.biggest_pain) contextPrefix += `Maior Dor: ${audienceSegment.biggest_pain}\n`;
+                if (audienceSegment.failed_attempts) contextPrefix += `Tentativas Falhadas: ${audienceSegment.failed_attempts}\n`;
+                
+                // Se tiver análise avançada (vocabulário, gatilhos mentais, etc)
+                if (audienceSegment.advanced_analysis) {
+                  const aa = audienceSegment.advanced_analysis;
+                  if (aa.language_communication) {
+                    contextPrefix += `\n**Vocabulário/Gírias da Persona:**\n${aa.language_communication}\n`;
+                  }
+                  if (aa.psychographic_profile) {
+                    contextPrefix += `\n**Perfil Psicográfico (Gatilhos Mentais):**\n${aa.psychographic_profile}\n`;
+                  }
+                }
+              }
+              
+              if (offer) {
+                contextPrefix += `\n=== OFERTA ===\n`;
+                if (offer.name) contextPrefix += `Nome: ${offer.name}\n`;
+                if (offer.description) contextPrefix += `Descrição: ${offer.description}\n`;
+                if (offer.unique_mechanism) contextPrefix += `Mecanismo Único: ${offer.unique_mechanism}\n`;
+                if (offer.key_benefits?.length) contextPrefix += `Benefícios-chave: ${offer.key_benefits.join(', ')}\n`;
+              }
+              
+              // Combinar contexto + template do banco
+              systemPrompt = contextPrefix ? contextPrefix + '\n\n' + dynamicPrompt : dynamicPrompt;
+              
               console.log(`✓ Usando prompt dinâmico do banco para ação: ${action}`);
+              console.log(`📊 Contexto injetado no fallback:`, {
+                has_identity: !!projectIdentity,
+                has_audience: !!audienceSegment,
+                has_offer: !!offer,
+                context_length: contextPrefix.length
+              });
             }
           } catch (error) {
             console.error('Erro ao buscar prompt do banco, usando fallback:', error);
