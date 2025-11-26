@@ -89,6 +89,9 @@ export interface BlockConfig {
   showPhotos?: boolean;
   showRatings?: boolean;
   testimonialItems?: TestimonialItem[];
+  
+  // Chat generated block indicator
+  isNewFromChat?: boolean;
 }
 
 export interface Block {

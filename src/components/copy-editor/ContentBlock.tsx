@@ -80,6 +80,19 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
   const isSelected = selectedBlockId === block.id;
   const isItemSelected = selectedItems.some(item => item.id === block.id);
+  const isNewFromChat = block.config?.isNewFromChat === true;
+
+  // Auto-remover destaque após 10 segundos
+  useEffect(() => {
+    if (isNewFromChat) {
+      const timer = setTimeout(() => {
+        updateBlock(block.id, { 
+          config: { ...block.config, isNewFromChat: false } 
+        });
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [block.id, isNewFromChat, block.config, updateBlock]);
 
   const handleBlockClick = (e: React.MouseEvent) => {
     if (isSelectionMode) {
@@ -105,7 +118,16 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const handleEditableChange = () => {
     if (editableRef.current) {
       const content = editableRef.current.innerHTML;
-      updateBlock(block.id, { content });
+      
+      // Se o bloco foi criado pelo chat, remover o destaque ao editar
+      if (block.config?.isNewFromChat) {
+        updateBlock(block.id, { 
+          content, 
+          config: { ...block.config, isNewFromChat: false } 
+        });
+      } else {
+        updateBlock(block.id, { content });
+      }
     }
   };
 
@@ -204,7 +226,16 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     const newItems = [...listItems];
     newItems[index] = value;
     setListItems(newItems);
-    handleContentChange(newItems);
+    
+    // Se o bloco foi criado pelo chat, remover o destaque ao editar
+    if (block.config?.isNewFromChat) {
+      updateBlock(block.id, { 
+        content: newItems,
+        config: { ...block.config, isNewFromChat: false }
+      });
+    } else {
+      handleContentChange(newItems);
+    }
   };
 
   const addListItem = () => {
@@ -915,9 +946,16 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
         ${isSelected ? 'ring-2 ring-primary ring-offset-2' : 'border-border'}
         ${isSelectionMode ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''}
         ${isItemSelected ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : ''}
+        ${isNewFromChat ? 'border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20' : ''}
       `}
       onClick={isSelectionMode ? handleBlockClick : () => selectBlock(block.id)}
     >
+      {isNewFromChat && (
+        <div className="absolute -top-2 -left-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full shadow-sm animate-in fade-in slide-in-from-top-1">
+          <Sparkles className="h-3 w-3" />
+          <span className="font-medium">Novo</span>
+        </div>
+      )}
       {isItemSelected && (
         <div className="absolute -top-2 -right-2 z-10">
           <div className="bg-blue-500 text-white rounded-full p-1">
