@@ -376,6 +376,7 @@ export type Database = {
           copy_id: string
           created_at: string
           id: string
+          metadata: Json | null
           role: string
           user_id: string
           workspace_id: string
@@ -385,6 +386,7 @@ export type Database = {
           copy_id: string
           created_at?: string
           id?: string
+          metadata?: Json | null
           role: string
           user_id: string
           workspace_id: string
@@ -394,6 +396,7 @@ export type Database = {
           copy_id?: string
           created_at?: string
           id?: string
+          metadata?: Json | null
           role?: string
           user_id?: string
           workspace_id?: string

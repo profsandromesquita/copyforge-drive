@@ -15,6 +15,7 @@ interface ChatMessage {
 interface ChatRequest {
   copyId: string;
   message: string;
+  hasSelection?: boolean; // 🆕 NOVO
 }
 
 serve(async (req) => {
@@ -63,7 +64,7 @@ serve(async (req) => {
     console.log('✓ User autenticado em copy-chat:', userId);
 
     const body: ChatRequest = await req.json();
-    const { copyId, message } = body;
+    const { copyId, message, hasSelection = false } = body; // 🆕 Default false
 
     if (!copyId || !message?.trim()) {
       return new Response(
@@ -200,9 +201,6 @@ serve(async (req) => {
     // Construir contexto do histórico com compressão dinâmica
     const historyContext = buildGenerationHistoryContext(generationHistory || []);
     
-    // Verificar se há elementos selecionados na mensagem
-    const hasSelection = message.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**');
-
     // ✅ CONTAR blocos selecionados para system prompt
     let selectedBlockCount = 0;
     if (hasSelection && selectionContext) {
@@ -222,9 +220,9 @@ serve(async (req) => {
 
     const { enhancedMessage, variableContextText } = parseVariablesInMessage(message, variableContext);
 
-    // Detectar intent ANTES de construir o prompt
+    // Detectar intent ANTES de construir o prompt (passando hasSelection)
     const messageWithoutSelection = cleanMessage;
-    const intent = detectUserIntent(messageWithoutSelection);
+    const intent = detectUserIntent(messageWithoutSelection, hasSelection);
     
     // Construir system prompt especializado COM histórico, contexto, intent e variáveis
     const systemPrompt = buildSystemPrompt(
@@ -317,7 +315,7 @@ serve(async (req) => {
       console.error('⚠️ Erro ao salvar mensagem do usuário:', userMsgError);
     }
 
-    // Salvar resposta da IA
+    // Salvar resposta da IA COM METADATA
     const { error: assistantMsgError } = await supabase
       .from('copy_chat_messages')
       .insert({
@@ -326,6 +324,7 @@ serve(async (req) => {
         user_id: userId,
         role: 'assistant',
         content: assistantMessage,
+        metadata: { intent } // 🆕 NOVO: salvar intent no metadata
       });
 
     if (assistantMsgError) {
@@ -667,8 +666,8 @@ function parseVariablesInMessage(
 
 // ==================== FIM DO SISTEMA DE VARIÁVEIS ====================
 
-// Detectar intenção do usuário baseado em verbos de ação
-function detectUserIntent(message: string): 'replace' | 'insert' | 'conversational' | 'default' {
+// Detectar intenção do usuário baseado em verbos de ação E estado da seleção
+function detectUserIntent(message: string, hasSelection: boolean): 'replace' | 'insert' | 'conversational' | 'default' {
   const lowerMessage = message.toLowerCase().trim();
   
   // 🚫 LISTA DE BLOQUEIO: Padrões conversacionais (prioridade máxima)
@@ -705,6 +704,27 @@ function detectUserIntent(message: string): 'replace' | 'insert' | 'conversation
   
   if (isConversational) return 'conversational';
   
+  // 🆕 REGRA SOBERANA DA SELEÇÃO
+  if (!hasSelection) {
+    // Sem seleção: NUNCA pode ser 'replace' (não há o que substituir)
+    const creationVerbs = [
+      'criar', 'crie', 'gerar', 'gere', 
+      'adicionar', 'adicione', 'fazer', 'faça',
+      'novo', 'nova', 'outra', 'outro',
+      'variação', 'variacao', 'versão', 'versao',
+      'opção', 'opcao', 'alternativa'
+    ];
+    const hasCreationVerb = creationVerbs.some(verb => lowerMessage.includes(verb));
+    
+    if (hasCreationVerb) {
+      return 'insert'; // Adicionar ao final da copy
+    }
+    
+    // Sem seleção e sem verbo de criação = conversa
+    return 'conversational';
+  }
+  
+  // COM seleção: manter lógica existente
   // 🔧 Verbos de MELHORIA → substituir conteúdo existente
   const improvementVerbs = [
     'otimizar', 'otimize', 'melhorar', 'melhore', 
