@@ -1011,15 +1011,18 @@ export type Database = {
           brand_name: string | null
           brand_personality: string[] | null
           central_purpose: string | null
+          color_palette: Json | null
           created_at: string | null
           created_by: string
           id: string
+          imagery_style: string | null
           keywords: string[] | null
           methodology: Json | null
           name: string
           offers: Json | null
           sector: string | null
           updated_at: string | null
+          visual_style: string[] | null
           voice_tones: string[] | null
           workspace_id: string
         }
@@ -1028,15 +1031,18 @@ export type Database = {
           brand_name?: string | null
           brand_personality?: string[] | null
           central_purpose?: string | null
+          color_palette?: Json | null
           created_at?: string | null
           created_by: string
           id?: string
+          imagery_style?: string | null
           keywords?: string[] | null
           methodology?: Json | null
           name: string
           offers?: Json | null
           sector?: string | null
           updated_at?: string | null
+          visual_style?: string[] | null
           voice_tones?: string[] | null
           workspace_id: string
         }
@@ -1045,15 +1051,18 @@ export type Database = {
           brand_name?: string | null
           brand_personality?: string[] | null
           central_purpose?: string | null
+          color_palette?: Json | null
           created_at?: string | null
           created_by?: string
           id?: string
+          imagery_style?: string | null
           keywords?: string[] | null
           methodology?: Json | null
           name?: string
           offers?: Json | null
           sector?: string | null
           updated_at?: string | null
+          visual_style?: string[] | null
           voice_tones?: string[] | null
           workspace_id?: string
         }

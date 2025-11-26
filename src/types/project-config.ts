@@ -77,6 +77,13 @@ export interface Offer {
   cta: string; // objetivo
 }
 
+export interface ColorPalette {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+}
+
 export interface Project {
   id: string;
   workspace_id: string;
@@ -91,6 +98,11 @@ export interface Project {
   central_purpose?: string;
   brand_personality?: string[];
   keywords?: string[];
+  
+  // IDENTIDADE VISUAL (novo)
+  visual_style?: string[];
+  color_palette?: ColorPalette;
+  imagery_style?: string;
   
   // ABA 4: METODOLOGIA
   methodology?: Methodology;
@@ -183,4 +195,29 @@ export const OFFER_TYPES = [
   { value: 'consulting', label: 'Consultoria' },
   { value: 'mentoring', label: 'Mentoria' },
   { value: 'ai', label: 'Inteligência Artificial' }
+];
+
+export const VISUAL_STYLES = [
+  'Minimalista',
+  'Moderno',
+  'Luxo/Premium',
+  'Vintage/Retrô',
+  'Orgânico/Natural',
+  'Tecnológico/Futurista',
+  'Corporativo/Profissional',
+  'Criativo/Artístico',
+  'Tradicional/Clássico',
+  'Jovem/Despojado'
+];
+
+export const IMAGERY_STYLES = [
+  'Fotografia Real',
+  'Ilustração Digital',
+  '3D/Render',
+  'Desenho Manual',
+  'Arte Conceitual',
+  'Minimalista/Flat',
+  'Realismo Fotográfico',
+  'Cartoon/Animado',
+  'Abstrato/Artístico'
 ];
