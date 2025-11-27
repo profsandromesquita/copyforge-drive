@@ -6,10 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function buildImageSystemPrompt(projectIdentity?: any): string {
-  let systemPrompt = `You are a professional image generation AI specialized in creating high-quality, impactful images for marketing and copywriting.
+// ============= FALLBACKS ============= 
+const FALLBACK_SYSTEM_PROMPT = `You are a professional Visual Design Strategist specialized in translating brand concepts into impactful images.
 
-=== IMAGE QUALITY STANDARDS ===
+=== VISUAL QUALITY STANDARDS ===
 - Generate photorealistic, high-resolution images (1024x1024 minimum)
 - Ensure proper lighting, composition, and color balance
 - Avoid text, watermarks, or low-quality artifacts
@@ -27,31 +27,162 @@ function buildImageSystemPrompt(projectIdentity?: any): string {
 - Natural lighting when appropriate
 - Consistent style within a project`;
 
-  if (projectIdentity) {
-    systemPrompt += `\n\n=== PROJECT CONTEXT ===`;
-    
-    if (projectIdentity.brand_name) {
-      systemPrompt += `\nBrand: ${projectIdentity.brand_name}`;
-    }
-    
-    if (projectIdentity.sector) {
-      systemPrompt += `\nSector: ${projectIdentity.sector}`;
-    }
-    
-    if (projectIdentity.brand_personality && projectIdentity.brand_personality.length > 0) {
-      systemPrompt += `\nBrand Personality: ${projectIdentity.brand_personality.join(', ')}`;
-    }
-    
-    if (projectIdentity.central_purpose) {
-      systemPrompt += `\nPurpose: ${projectIdentity.central_purpose}`;
-    }
-    
-    systemPrompt += `\n\nGenerate images that align with this brand identity and visual style.`;
-  }
+const FALLBACK_PROMPTS = {
+  generate: '{{user_prompt}}',
+  optimize: 'Optimize this image maintaining its core concept: {{user_prompt}}',
+  variation: 'Create a creative variation of this image: {{user_prompt}}',
+};
+
+// ============= TEMPLATE FETCHING ============= 
+async function fetchImageTemplates(
+  supabaseClient: any,
+  type: 'generate' | 'optimize' | 'variation'
+): Promise<any[]> {
+  const templateKeys = {
+    'generate': ['image_generation_base', 'image_generation_prompt'],
+    'optimize': ['image_generation_base', 'image_optimization'],
+    'variation': ['image_generation_base', 'image_variation'],
+  };
   
-  return systemPrompt;
+  const keys = templateKeys[type];
+  
+  try {
+    const { data: templates, error } = await supabaseClient
+      .from('ai_prompt_templates')
+      .select('prompt_key, current_prompt')
+      .in('prompt_key', keys)
+      .eq('is_active', true);
+      
+    if (error) {
+      console.error('⚠️ Erro ao buscar templates:', error);
+      return [];
+    }
+    
+    console.log(`✅ Templates carregados: ${templates?.map((t: any) => t.prompt_key).join(', ')}`);
+    return templates || [];
+  } catch (error) {
+    console.error('⚠️ Exceção ao buscar templates:', error);
+    return [];
+  }
 }
 
+// ============= VARIABLE INTERPOLATION ============= 
+function interpolateTemplate(template: string, context: {
+  project_identity?: any;
+  visual_identity?: any;
+  methodology?: any;
+  user_prompt: string;
+}): string {
+  if (!template) return '';
+  
+  let result = template;
+  
+  // Substituir variáveis simples: {{user_prompt}}
+  result = result.replace(/\{\{user_prompt\}\}/g, context.user_prompt);
+  
+  // Substituir variáveis de project_identity
+  if (context.project_identity) {
+    result = result.replace(/\{\{project_identity\.brand_name\}\}/g, context.project_identity.brand_name || '');
+    result = result.replace(/\{\{project_identity\.sector\}\}/g, context.project_identity.sector || '');
+    result = result.replace(/\{\{project_identity\.central_purpose\}\}/g, context.project_identity.central_purpose || '');
+    result = result.replace(/\{\{project_identity\.brand_personality\}\}/g, context.project_identity.brand_personality || '');
+    result = result.replace(/\{\{project_identity\.voice_tones\}\}/g, context.project_identity.voice_tones || '');
+  }
+  
+  // Substituir variáveis de visual_identity
+  if (context.visual_identity) {
+    result = result.replace(/\{\{visual_identity\.visual_style\}\}/g, context.visual_identity.visual_style || '');
+    result = result.replace(/\{\{visual_identity\.imagery_style\}\}/g, context.visual_identity.imagery_style || '');
+    result = result.replace(/\{\{visual_identity\.color_palette\.primary\}\}/g, context.visual_identity.color_palette?.primary || '');
+    result = result.replace(/\{\{visual_identity\.color_palette\.secondary\}\}/g, context.visual_identity.color_palette?.secondary || '');
+    result = result.replace(/\{\{visual_identity\.color_palette\.accent\}\}/g, context.visual_identity.color_palette?.accent || '');
+    result = result.replace(/\{\{visual_identity\.color_palette\.background\}\}/g, context.visual_identity.color_palette?.background || '');
+  }
+  
+  // Substituir variáveis de methodology
+  if (context.methodology) {
+    result = result.replace(/\{\{methodology\.name\}\}/g, context.methodology.name || '');
+    result = result.replace(/\{\{methodology\.tese_central\}\}/g, context.methodology.tese_central || '');
+  }
+  
+  // Processar condicionais simples: {{#if visual_identity}}...{{/if}}
+  result = result.replace(/\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g, (match, condition, content) => {
+    const contextValue = condition === 'visual_identity' ? context.visual_identity :
+                        condition === 'project_identity' ? context.project_identity :
+                        condition === 'methodology' ? context.methodology : null;
+    
+    return contextValue ? content : '';
+  });
+  
+  return result;
+}
+
+// ============= DYNAMIC PROMPT BUILDING ============= 
+async function buildDynamicImagePrompt(
+  supabaseClient: any,
+  type: 'generate' | 'optimize' | 'variation',
+  projectData: any,
+  userPrompt: string
+): Promise<{ systemPrompt: string; userMessage: string }> {
+  
+  console.log('🔧 Construindo prompts dinâmicos...');
+  
+  // 1. Buscar templates do banco
+  const templates = await fetchImageTemplates(supabaseClient, type);
+  
+  // 2. Preparar contexto completo
+  const context = {
+    project_identity: projectData ? {
+      brand_name: projectData.brand_name,
+      sector: projectData.sector,
+      central_purpose: projectData.central_purpose,
+      brand_personality: projectData.brand_personality?.join(', '),
+      voice_tones: projectData.voice_tones?.join(', '),
+    } : undefined,
+    visual_identity: projectData ? {
+      visual_style: projectData.visual_style?.join(', '),
+      color_palette: projectData.color_palette,
+      imagery_style: projectData.imagery_style,
+    } : undefined,
+    methodology: projectData?.methodology,
+    user_prompt: userPrompt,
+  };
+  
+  console.log('📊 Contexto Completo:');
+  console.log('  - Brand:', context.project_identity?.brand_name || 'N/A');
+  console.log('  - Visual Styles:', context.visual_identity?.visual_style || 'N/A');
+  console.log('  - Color Palette:', context.visual_identity?.color_palette ? 'Sim' : 'Não');
+  console.log('  - Imagery Style:', context.visual_identity?.imagery_style || 'N/A');
+  console.log('  - Has Methodology:', !!context.methodology);
+  
+  // 3. Interpolar templates
+  const baseTemplate = templates.find((t: any) => t.prompt_key === 'image_generation_base');
+  const mainTemplate = templates.find((t: any) => 
+    t.prompt_key === (type === 'generate' ? 'image_generation_prompt' : 
+                      type === 'optimize' ? 'image_optimization' : 'image_variation')
+  );
+  
+  let systemPrompt = FALLBACK_SYSTEM_PROMPT;
+  let userMessage = FALLBACK_PROMPTS[type].replace('{{user_prompt}}', userPrompt);
+  
+  if (baseTemplate?.current_prompt) {
+    systemPrompt = interpolateTemplate(baseTemplate.current_prompt, context);
+    console.log('✅ System prompt interpolado do banco');
+  } else {
+    console.log('⚠️ Usando fallback system prompt');
+  }
+  
+  if (mainTemplate?.current_prompt) {
+    userMessage = interpolateTemplate(mainTemplate.current_prompt, context);
+    console.log('✅ User prompt interpolado do banco');
+  } else {
+    console.log('⚠️ Usando fallback user prompt');
+  }
+  
+  return { systemPrompt, userMessage };
+}
+
+// ============= MAIN HANDLER ============= 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -69,19 +200,20 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    // Buscar contexto da copy se copyId foi fornecido
-    let projectIdentity = null;
+    // ===== FASE 3.1: BUSCAR CONTEXTO COMPLETO =====
+    let projectData = null;
     let copyContext = null;
+    let supabaseClient = null;
     
     if (copyId) {
-      console.log('🔍 Buscando contexto da copy:', copyId);
+      console.log('🔍 Buscando contexto COMPLETO da copy:', copyId);
       
       const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
       const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         
         const { data: copyData, error: copyError } = await supabaseClient
           .from('copies')
@@ -96,7 +228,13 @@ serve(async (req) => {
               central_purpose,
               brand_personality,
               voice_tones,
-              keywords
+              keywords,
+              visual_style,
+              color_palette,
+              imagery_style,
+              methodology,
+              audience_segments,
+              offers
             )
           `)
           .eq('id', copyId)
@@ -105,41 +243,52 @@ serve(async (req) => {
         if (copyError) {
           console.error('⚠️ Erro ao buscar contexto da copy:', copyError);
         } else if (copyData) {
-          console.log('✅ Contexto da copy recuperado');
+          console.log('✅ Contexto COMPLETO da copy recuperado');
           copyContext = {
             title: copyData.title,
             copy_type: copyData.copy_type
           };
           
           if (copyData.projects) {
-            projectIdentity = {
-              brand_name: copyData.projects.brand_name,
-              sector: copyData.projects.sector,
-              central_purpose: copyData.projects.central_purpose,
-              brand_personality: copyData.projects.brand_personality,
-              voice_tones: copyData.projects.voice_tones,
-              keywords: copyData.projects.keywords
-            };
-            console.log('📊 Project identity:', projectIdentity);
+            projectData = copyData.projects;
+            console.log('📊 Project data completo carregado');
           }
         }
       }
     }
 
-    // Construir enhanced prompt com contexto
-    let enhancedPrompt = prompt;
+    // ===== FASE 3.4: CONSTRUIR PROMPTS DINÂMICOS =====
+    let systemPrompt: string;
+    let enhancedPrompt: string;
     
-    if (copyContext) {
-      enhancedPrompt = `Context: Creating image for "${copyContext.title}" (${copyContext.copy_type})\n\n${prompt}`;
+    if (supabaseClient && projectData) {
+      const { systemPrompt: dynSystem, userMessage: dynUser } = await buildDynamicImagePrompt(
+        supabaseClient,
+        type as 'generate' | 'optimize' | 'variation',
+        projectData,
+        prompt
+      );
+      
+      systemPrompt = dynSystem;
+      enhancedPrompt = dynUser;
+      
+      // Adicionar contexto da copy se disponível
+      if (copyContext) {
+        enhancedPrompt = `Context: Creating image for "${copyContext.title}" (${copyContext.copy_type})\n\n${enhancedPrompt}`;
+      }
+    } else {
+      // Fallback sem banco
+      console.log('⚠️ Usando modo fallback (sem contexto de projeto)');
+      systemPrompt = FALLBACK_SYSTEM_PROMPT;
+      const typeKey = type as keyof typeof FALLBACK_PROMPTS;
+      enhancedPrompt = FALLBACK_PROMPTS[typeKey].replace('{{user_prompt}}', prompt);
     }
     
-    // Adicionar system prompt
-    const systemPrompt = buildImageSystemPrompt(projectIdentity);
-    
     console.log('📝 System prompt length:', systemPrompt.length);
-    console.log('📝 User prompt:', enhancedPrompt.substring(0, 100) + '...');
-    console.log(`${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem`);
+    console.log('📝 Enhanced prompt preview:', enhancedPrompt.substring(0, 150) + '...');
+    console.log(`🎨 ${type === 'generate' ? 'Gerando' : type === 'optimize' ? 'Otimizando' : 'Criando variação de'} imagem`);
 
+    // Preparar conteúdo da mensagem
     const messageContent: any = type === 'generate' 
       ? enhancedPrompt 
       : [
@@ -155,7 +304,7 @@ serve(async (req) => {
           }
         ];
 
-    // Preparar mensagens com system prompt
+    // Preparar mensagens
     const messages = [
       {
         role: 'system',
@@ -167,6 +316,7 @@ serve(async (req) => {
       }
     ];
 
+    // Chamar API de geração de imagem
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -182,7 +332,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Erro na API:', response.status, errorText);
+      console.error('❌ Erro na API:', response.status, errorText);
       
       if (response.status === 429) {
         return new Response(
@@ -202,76 +352,53 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Resposta da API recebida:', JSON.stringify(data, null, 2));
 
-    // Extrair informações de uso (tokens)
+    // Extrair informações de uso
     const usage = data.usage || {};
     const inputTokens = usage.prompt_tokens || 0;
     const outputTokens = usage.completion_tokens || 0;
     const totalTokens = usage.total_tokens || 0;
 
-    // Extrair a imagem base64 da resposta - tentar diferentes estruturas
+    // Extrair a imagem gerada
     let generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     
-    // Tentar estrutura alternativa para imagens geradas/editadas
     if (!generatedImageUrl && data.choices?.[0]?.message?.content) {
-      // Às vezes a imagem vem no content
       const content = data.choices[0].message.content;
       if (Array.isArray(content)) {
-        const imageContent = content.find(c => c.type === 'image_url');
+        const imageContent = content.find((c: any) => c.type === 'image_url');
         if (imageContent) {
           generatedImageUrl = imageContent.image_url?.url;
         }
       }
     }
     
-    // Tentar outra estrutura alternativa
     if (!generatedImageUrl && data.data?.[0]?.url) {
       generatedImageUrl = data.data[0].url;
     }
     
     if (!generatedImageUrl) {
-      console.error('Estrutura de resposta inesperada:', data);
+      console.error('❌ Estrutura de resposta inesperada:', data);
       throw new Error('Nenhuma imagem foi gerada - estrutura de resposta inesperada');
     }
     
-    console.log('Imagem extraída com sucesso');
+    console.log('✅ Imagem extraída com sucesso');
 
-    // Salvar no histórico se copyId e workspaceId forem fornecidos
-    try {
-      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
-      console.log("=== DEBUG HISTÓRICO IMAGEM ===");
-      console.log("SUPABASE_URL:", !!SUPABASE_URL);
-      console.log("SUPABASE_SERVICE_ROLE_KEY:", !!SUPABASE_SERVICE_ROLE_KEY);
-      console.log("copyId:", copyId);
-      console.log("workspaceId:", workspaceId);
-      
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && copyId && workspaceId) {
-        console.log("Iniciando salvamento do histórico de imagem...");
-        // Obter o auth header do request para pegar o usuário autenticado
+    // Salvar no histórico
+    if (supabaseClient && copyId && workspaceId) {
+      try {
         const authHeader = req.headers.get('Authorization');
         let userId = null;
         
         if (authHeader) {
           try {
-            // Criar cliente Supabase com service role para verificar o token
-            const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
-            const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-            
-            // Obter usuário do token
             const token = authHeader.replace('Bearer ', '');
-            const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+            const { data: { user }, error } = await supabaseClient.auth.getUser(token);
             
-            if (error) {
-              console.error('Error getting user:', error);
-            } else {
-              userId = user?.id;
-              console.log('User ID obtido:', userId);
+            if (!error && user) {
+              userId = user.id;
             }
           } catch (e) {
-            console.error('Error getting user from token:', e);
+            console.error('⚠️ Erro ao obter usuário do token:', e);
           }
         }
         
@@ -285,6 +412,7 @@ serve(async (req) => {
           parameters: {
             type,
             hasImageUrl: !!imageUrl,
+            usedTemplates: supabaseClient ? 'database' : 'fallback'
           },
           sessions: [{ title: 'Imagem Gerada', blocks: [{ type: 'image', content: generatedImageUrl }] }],
           model_used: 'google/gemini-2.5-flash-image-preview',
@@ -292,31 +420,24 @@ serve(async (req) => {
           input_tokens: inputTokens,
           output_tokens: outputTokens,
           total_tokens: totalTokens,
+          project_identity: projectData ? {
+            brand_name: projectData.brand_name,
+            sector: projectData.sector,
+          } : null,
         };
 
-        const historyResponse = await fetch(`${SUPABASE_URL}/rest/v1/ai_generation_history`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify(historyData),
-        });
+        const { error: historyError } = await supabaseClient
+          .from('ai_generation_history')
+          .insert(historyData);
 
-        if (!historyResponse.ok) {
-          const errorText = await historyResponse.text();
-          console.error('Erro ao salvar histórico:', errorText);
+        if (historyError) {
+          console.error('⚠️ Erro ao salvar histórico:', historyError);
         } else {
-          console.log('✓ Histórico de imagem salvo com sucesso!');
+          console.log('✅ Histórico de imagem salvo com sucesso');
         }
-      } else {
-        console.log("⚠️ Não foi possível salvar histórico de imagem - parâmetros faltando");
+      } catch (historyError) {
+        console.error('⚠️ Exceção ao salvar histórico:', historyError);
       }
-    } catch (historyError) {
-      console.error('Erro ao salvar histórico de imagem:', historyError);
-      // Não falhar a requisição se o histórico falhar
     }
 
     return new Response(
@@ -325,7 +446,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Erro ao gerar imagem:', error);
+    console.error('❌ Erro ao gerar imagem:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Erro ao gerar imagem' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
