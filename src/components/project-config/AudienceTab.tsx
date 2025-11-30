@@ -47,17 +47,32 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
     }
   }, [segments, editingSegment]);
 
-  // Recarregar dados quando a aba ganha foco
+  // Persistir estado do formulário em sessionStorage
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isFormOpen) {
-        refreshProjects();
+    const savedState = sessionStorage.getItem('audienceFormState');
+    if (savedState && !isFormOpen) {
+      try {
+        const { isFormOpen: savedOpen, editingSegmentId } = JSON.parse(savedState);
+        if (savedOpen && activeProject?.audience_segments) {
+          const segment = activeProject.audience_segments.find(s => s.id === editingSegmentId);
+          if (segment) {
+            setEditingSegment(segment);
+            setIsFormOpen(true);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading form state:', e);
       }
-    };
+    }
+  }, [activeProject]);
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isFormOpen, refreshProjects]);
+  // Salvar estado quando mudar
+  useEffect(() => {
+    sessionStorage.setItem('audienceFormState', JSON.stringify({
+      isFormOpen,
+      editingSegmentId: editingSegment?.id || null
+    }));
+  }, [isFormOpen, editingSegment]);
 
   const handleAddSegment = () => {
     setEditingSegment(null);
@@ -100,6 +115,8 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
   const handleCancelForm = () => {
     setIsFormOpen(false);
     setEditingSegment(null);
+    // Limpar estado persistido
+    sessionStorage.removeItem('audienceFormState');
   };
 
   return (
