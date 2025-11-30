@@ -775,7 +775,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                   onKeyDown={handleKeyDown}
                   onVariableSearch={handleVariableSearch}
                   placeholder="Digite sua mensagem... (Use # para variáveis contextuais)"
-                  className="pr-32 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                  className="pr-4 pb-12 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                   disabled={isLoading}
                 />
 
