@@ -34,8 +34,13 @@ const MyProject = () => {
     }
   }, [activeProject, loading, navigate]);
 
-  // Mostrar loading enquanto carrega
-  if (loading) {
+  // Se não há projeto após carregar, retorna null (o useEffect já redirecionou)
+  if (!loading && !activeProject) {
+    return null;
+  }
+
+  // Mostrar loading inicial apenas na primeira carga
+  if (loading && !activeProject) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-4">
@@ -48,11 +53,6 @@ const MyProject = () => {
         </div>
       </div>
     );
-  }
-
-  // Se não há projeto, retorna null (mas o useEffect acima já redirecionou)
-  if (!activeProject) {
-    return null;
   }
 
   const sections = [

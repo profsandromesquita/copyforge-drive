@@ -110,6 +110,16 @@ export const AudienceSegmentForm = ({
     }
   }, [formData, segment]);
 
+  // Salvar draft por segmento imediatamente quando campos mudam (Fase 4)
+  useEffect(() => {
+    if (segment && segmentCreated && Object.values(formData).some(v => v)) {
+      localStorage.setItem(`audience-segment-draft-${segment.id}`, JSON.stringify({
+        formData,
+        identification
+      }));
+    }
+  }, [formData, identification, segment, segmentCreated]);
+
   // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
     if (!identification || !activeProject || !segmentCreated || !segment) return;
