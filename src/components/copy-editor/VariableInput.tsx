@@ -298,7 +298,7 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
         onKeyDown={handleKeyDown}
         data-placeholder={placeholder}
         className={cn(
-          'min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm',
+          'min-h-[100px] max-h-[7.5rem] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm',
           'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           'overflow-y-auto resize-none',
@@ -308,6 +308,7 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
         )}
         style={{
           minHeight: '100px',
+          lineHeight: '1.5rem',
         }}
       />
     );
