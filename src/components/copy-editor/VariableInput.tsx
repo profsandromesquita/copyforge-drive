@@ -237,29 +237,13 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       if (disabled) return;
 
-      // Ao digitar espaço, vírgula ou ponto (mas não Enter), converter variáveis válidas em chips
-      // Evitar conversão imediata ao digitar espaço após quebra de linha
-      if (e.key === ' ' || e.key === ',' || e.key === '.') {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && divRef.current) {
-          const currentText = htmlToText(divRef.current);
-          const caretPos = getCaretPosition();
-          const charBeforeCursor = currentText.charAt(caretPos - 1);
-          
-          // Só converter se não houver quebra de linha imediatamente antes
-          if (charBeforeCursor !== '\n') {
-            setTimeout(() => {
-              convertValidVariablesToChips();
-            }, 0);
-          }
-        }
-      }
-      
-      // Para Enter, converter após um delay maior para evitar conflito
-      if (e.key === 'Enter') {
+      // Importante para UX: NÃO mexer na árvore DOM a cada espaço/Enter,
+      // pois isso reposiciona o cursor. Só convertemos variáveis em chips
+      // quando o usuário coloca sinais de pontuação que indicam "término".
+      if (e.key === ',' || e.key === '.') {
         setTimeout(() => {
           convertValidVariablesToChips();
-        }, 100);
+        }, 0);
       }
 
       // Prevenir edição dentro de chips de variável
