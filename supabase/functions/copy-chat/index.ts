@@ -218,7 +218,8 @@ serve(async (req) => {
       methodology
     };
 
-    const { enhancedMessage, variableContextText } = parseVariablesInMessage(message, variableContext);
+    // 🆕 FASE 2: Capturar missingVariables do retorno
+    const { enhancedMessage, variableContextText, missingVariables } = parseVariablesInMessage(message, variableContext);
 
     // Detectar intent ANTES de construir o prompt (passando hasSelection)
     const messageWithoutSelection = cleanMessage;
@@ -353,13 +354,15 @@ serve(async (req) => {
     // Determinar se a resposta é acionável
     const isActionable = intent !== 'conversational';
 
+    // 🆕 FASE 2: Incluir missingVariables na resposta da API
     return new Response(
       JSON.stringify({
         success: true,
         message: assistantMessage,
         tokens: usage,
-        intent, // ✅ Adicionar intent na resposta
-        actionable: isActionable
+        intent,
+        actionable: isActionable,
+        missingVariables // 🆕 NOVO: Array de variáveis não encontradas
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -511,6 +514,9 @@ function getAffectedSessions(newSessions: any, originalContent: any): string[] {
 
 // ==================== SISTEMA DE VARIÁVEIS CONTEXTUAIS ====================
 
+// 🆕 FASE 1: Importar definições do arquivo compartilhado (fonte única de verdade)
+import { getVariableMap, getNestedValue } from '../_shared/variableDefinitions.ts';
+
 interface VariableContext {
   projectIdentity: any;
   audienceSegment: any;
@@ -518,104 +524,29 @@ interface VariableContext {
   methodology: any;
 }
 
+// 🆕 FASE 2: Modificar função para rastrear variáveis ausentes
 function parseVariablesInMessage(
   message: string, 
   context: VariableContext
-): { enhancedMessage: string; variableContextText: string } {
+): { 
+  enhancedMessage: string; 
+  variableContextText: string;
+  missingVariables: Array<{ variable: string; label: string }>; // 🆕 NOVO
+} {
   
   const variableRegex = /#([a-zA-Z_]+)/g;
   const matches = Array.from(message.matchAll(variableRegex));
   
   if (matches.length === 0) {
-    return { enhancedMessage: message, variableContextText: '' };
+    return { enhancedMessage: message, variableContextText: '', missingVariables: [] };
   }
   
-  // Mapeamento completo de variáveis
-  const variableDefinitions: Record<string, { path: string; label: string }> = {
-    // PROJETO
-    nome_marca: { path: 'projectIdentity.brand_name', label: 'Nome da Marca' },
-    setor: { path: 'projectIdentity.sector', label: 'Setor' },
-    proposito: { path: 'projectIdentity.central_purpose', label: 'Propósito' },
-    personalidade: { path: 'projectIdentity.brand_personality', label: 'Personalidade' },
-    tom_voz: { path: 'projectIdentity.voice_tones', label: 'Tom de Voz' },
-    palavras_chave: { path: 'projectIdentity.keywords', label: 'Palavras-chave' },
-    
-    // PÚBLICO-ALVO (Manual)
-    quem_e: { path: 'audienceSegment.who_is', label: 'Quem É' },
-    maior_desejo: { path: 'audienceSegment.biggest_desire', label: 'Maior Desejo' },
-    maior_dor: { path: 'audienceSegment.biggest_pain', label: 'Maior Dor' },
-    tentativas_falhadas: { path: 'audienceSegment.failed_attempts', label: 'Tentativas Falhadas' },
-    crencas: { path: 'audienceSegment.beliefs', label: 'Crenças' },
-    comportamento: { path: 'audienceSegment.behavior', label: 'Comportamento' },
-    jornada: { path: 'audienceSegment.journey', label: 'Jornada' },
-    
-    // PÚBLICO-ALVO (Análise Avançada)
-    perfil_psicografico: { path: 'audienceSegment.advanced_analysis.psychographic_profile', label: 'Perfil Psicográfico' },
-    nivel_consciencia: { path: 'audienceSegment.advanced_analysis.consciousness_level', label: 'Nível de Consciência' },
-    estado_emocional: { path: 'audienceSegment.advanced_analysis.emotional_state', label: 'Estado Emocional' },
-    dor_oculta: { path: 'audienceSegment.advanced_analysis.hidden_pain', label: 'Dor Oculta' },
-    medo_primario: { path: 'audienceSegment.advanced_analysis.primary_fear', label: 'Medo Primário' },
-    desejo_emocional: { path: 'audienceSegment.advanced_analysis.emotional_desire', label: 'Desejo Emocional' },
-    percepcao_problema: { path: 'audienceSegment.advanced_analysis.problem_misperception', label: 'Percepção Errônea' },
-    mecanismo_interno: { path: 'audienceSegment.advanced_analysis.internal_mechanism', label: 'Mecanismo Interno' },
-    crenca_limitante: { path: 'audienceSegment.advanced_analysis.limiting_belief', label: 'Crença Limitante' },
-    narrativa_interna: { path: 'audienceSegment.advanced_analysis.internal_narrative', label: 'Narrativa Interna' },
-    contradicao_interna: { path: 'audienceSegment.advanced_analysis.internal_contradiction', label: 'Contradição Interna' },
-    comportamento_dominante: { path: 'audienceSegment.advanced_analysis.dominant_behavior', label: 'Comportamento Dominante' },
-    gatilho_decisao: { path: 'audienceSegment.advanced_analysis.decision_trigger', label: 'Gatilho de Decisão' },
-    estilo_comunicacao: { path: 'audienceSegment.advanced_analysis.communication_style', label: 'Estilo de Comunicação' },
-    resistencias_psicologicas: { path: 'audienceSegment.advanced_analysis.psychological_resistances', label: 'Resistências Psicológicas' },
-    
-    // GATILHOS MENTAIS
-    escassez: { path: 'audienceSegment.advanced_analysis.mental_triggers.escassez', label: 'Gatilho: Escassez' },
-    autoridade: { path: 'audienceSegment.advanced_analysis.mental_triggers.autoridade', label: 'Gatilho: Autoridade' },
-    prova_social: { path: 'audienceSegment.advanced_analysis.mental_triggers.prova_social', label: 'Gatilho: Prova Social' },
-    reciprocidade: { path: 'audienceSegment.advanced_analysis.mental_triggers.reciprocidade', label: 'Gatilho: Reciprocidade' },
-    consistencia: { path: 'audienceSegment.advanced_analysis.mental_triggers.consistencia', label: 'Gatilho: Consistência' },
-    afinidade: { path: 'audienceSegment.advanced_analysis.mental_triggers.afinidade', label: 'Gatilho: Afinidade' },
-    antecipacao: { path: 'audienceSegment.advanced_analysis.mental_triggers.antecipacao', label: 'Gatilho: Antecipação' },
-    exclusividade: { path: 'audienceSegment.advanced_analysis.mental_triggers.exclusividade', label: 'Gatilho: Exclusividade' },
-    
-    // OFERTA
-    nome: { path: 'offer.name', label: 'Nome da Oferta' },
-    tipo: { path: 'offer.type', label: 'Tipo da Oferta' },
-    descricao: { path: 'offer.short_description', label: 'Descrição' },
-    beneficio_principal: { path: 'offer.main_benefit', label: 'Benefício Principal' },
-    mecanismo_unico: { path: 'offer.unique_mechanism', label: 'Mecanismo Único' },
-    diferenciais: { path: 'offer.differentials', label: 'Diferenciais' },
-    prova_autoridade: { path: 'offer.proof', label: 'Prova/Autoridade' },
-    garantia: { path: 'offer.guarantee', label: 'Garantia' },
-    cta: { path: 'offer.cta', label: 'Call to Action' },
-    
-    // METODOLOGIA
-    nome_metodologia: { path: 'methodology.name', label: 'Nome da Metodologia' },
-    tese_central: { path: 'methodology.tese_central', label: 'Tese Central' },
-    mecanismo_primario: { path: 'methodology.mecanismo_primario', label: 'Mecanismo Primário' },
-    por_que_funciona: { path: 'methodology.por_que_funciona', label: 'Por Que Funciona' },
-    erro_invisivel: { path: 'methodology.erro_invisivel', label: 'Erro Invisível' },
-    diferenciacao: { path: 'methodology.diferenciacao', label: 'Diferenciação' },
-    principios: { path: 'methodology.principios_fundamentos', label: 'Princípios' },
-    etapas: { path: 'methodology.etapas_metodo', label: 'Etapas do Método' },
-    transformacao: { path: 'methodology.transformacao_real', label: 'Transformação Real' },
-    prova: { path: 'methodology.prova_funcionamento', label: 'Prova de Funcionamento' },
-  };
-  
-  // Função auxiliar para buscar valor aninhado
-  const getNestedValue = (obj: any, path: string) => {
-    const parts = path.split('.');
-    let current = obj;
-    for (const part of parts) {
-      if (current && typeof current === 'object' && part in current) {
-        current = current[part];
-      } else {
-        return null;
-      }
-    }
-    return current;
-  };
+  // 🆕 FASE 1: Usar mapa do arquivo compartilhado (elimina duplicação)
+  const variableDefinitions = getVariableMap();
   
   // Extrair valores das variáveis encontradas
   const extractedVariables: Array<{ variable: string; label: string; value: any }> = [];
+  const missingVariables: Array<{ variable: string; label: string }> = []; // 🆕 NOVO
   const uniqueVars = new Set<string>();
   
   for (const match of matches) {
@@ -628,11 +559,18 @@ function parseVariablesInMessage(
     if (varDef) {
       const value = getNestedValue(context, varDef.path);
       
-      if (value !== null && value !== undefined) {
+      // 🆕 FASE 2: Verificar se valor está vazio e registrar como ausente
+      if (value !== null && value !== undefined && value !== '') {
         extractedVariables.push({
           variable: `#${varName}`,
           label: varDef.label,
           value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+        });
+      } else {
+        // 🆕 NOVO: Registrar variável ausente em vez de ignorar silenciosamente
+        missingVariables.push({
+          variable: `#${varName}`,
+          label: varDef.label
         });
       }
     }
@@ -658,9 +596,26 @@ function parseVariablesInMessage(
     variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
   }
   
+  // 🆕 FASE 2: Adicionar seção de avisos para variáveis ausentes
+  if (missingVariables.length > 0) {
+    variableContextText += '\n\n⚠️ VARIÁVEIS SEM DADOS CADASTRADOS:\n';
+    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+    
+    for (const { variable, label } of missingVariables) {
+      variableContextText += `❌ ${variable} (${label}): [DADO NÃO CADASTRADO]\n`;
+    }
+    
+    variableContextText += '\n📌 INSTRUÇÃO CRÍTICA:\n';
+    variableContextText += 'Quando o usuário mencionar essas variáveis, informe educadamente que a informação\n';
+    variableContextText += 'não está cadastrada no projeto e sugira que ele complete o cadastro nas\n';
+    variableContextText += 'configurações do projeto. NÃO invente dados ou alucinações.\n';
+    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+  }
+  
   return {
     enhancedMessage: message,
-    variableContextText
+    variableContextText,
+    missingVariables // 🆕 NOVO: Retornar array de variáveis ausentes
   };
 }
 
