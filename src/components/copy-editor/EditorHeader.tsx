@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, Upload, ShareNetwork, Gear, Code } from 'phosphor-react';
+import { ArrowLeft, Eye, Upload, ShareNetwork, Gear } from 'phosphor-react';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,12 +21,11 @@ import { ShareModal } from './ShareModal';
 import { Session } from '@/types/copy-editor';
 
 interface EditorHeaderProps {
-  onGenerateWebPage?: () => void;
   onToggleSidebar?: () => void;
   isSidebarOpen?: boolean;
 }
 
-export const EditorHeader = ({ onGenerateWebPage, onToggleSidebar, isSidebarOpen = true }: EditorHeaderProps) => {
+export const EditorHeader = ({ onToggleSidebar, isSidebarOpen = true }: EditorHeaderProps) => {
   const navigate = useNavigate();
   const { copyId, copyTitle, copyType, setCopyTitle, isSaving, sessions, status, updateStatus, importSessions } = useCopyEditor();
   const { user } = useAuth();
@@ -124,18 +123,6 @@ export const EditorHeader = ({ onGenerateWebPage, onToggleSidebar, isSidebarOpen
       </div>
 
       <div className="flex items-center gap-2">
-        {copyType === 'landing_page' && onGenerateWebPage && (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onGenerateWebPage}
-            className="gap-2"
-          >
-            <Code size={18} />
-            <span className="hidden md:inline">Gerar Landing Page Web</span>
-          </Button>
-        )}
-        
         {onToggleSidebar && (
           <Button 
             variant="ghost" 
