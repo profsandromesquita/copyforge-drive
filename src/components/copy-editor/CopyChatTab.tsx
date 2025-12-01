@@ -775,7 +775,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                   onKeyDown={handleKeyDown}
                   onVariableSearch={handleVariableSearch}
                   placeholder="Digite sua mensagem... (Use # para variáveis contextuais)"
-                  className="pr-20 pb-12 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                  className="pr-16 pb-14 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                   disabled={isLoading}
                 />
 
@@ -786,7 +786,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                   return validVars.length > 0 && (
                     <Badge 
                       variant="secondary" 
-                      className="absolute top-2 right-2 text-xs"
+                      className="absolute top-2 right-3 text-xs pointer-events-none"
                     >
                       <Hash className="h-3 w-3 mr-1" />
                       {validVars.length}
@@ -834,7 +834,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                 )}
                 
                 {/* Action Buttons Overlay */}
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-3 py-2 bg-background/95 backdrop-blur-sm">
                   {/* Character Count - Left Side */}
                   <span className="text-[10px] text-muted-foreground/60 font-mono">
                     {message.length}/2000
