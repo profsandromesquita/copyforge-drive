@@ -5,25 +5,25 @@ export const StructuralPreviewSkeleton = () => {
         {/* Skeleton Card simulando estrutura da copy */}
         <div className="bg-card rounded-xl border p-8 space-y-6 shadow-sm">
           {/* Headline skeleton */}
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded-lg w-3/4 animate-pulse" />
+          <div className="h-8 bg-border dark:bg-muted-foreground/30 rounded-lg w-3/4 animate-pulse" />
           
           {/* Subheadline skeleton */}
           <div className="space-y-2">
-            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-lg w-full animate-pulse" />
-            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-lg w-5/6 animate-pulse" />
+            <div className="h-5 bg-border dark:bg-muted-foreground/30 rounded-lg w-full animate-pulse" />
+            <div className="h-5 bg-border dark:bg-muted-foreground/30 rounded-lg w-5/6 animate-pulse" />
           </div>
           
           {/* Paragraph skeleton */}
           <div className="space-y-2 pt-2">
-            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full animate-pulse" />
-            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full animate-pulse" />
-            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-4/5 animate-pulse" />
+            <div className="h-4 bg-muted dark:bg-muted-foreground/20 rounded w-full animate-pulse" />
+            <div className="h-4 bg-muted dark:bg-muted-foreground/20 rounded w-full animate-pulse" />
+            <div className="h-4 bg-muted dark:bg-muted-foreground/20 rounded w-4/5 animate-pulse" />
           </div>
           
           {/* Second paragraph skeleton */}
           <div className="space-y-2 pt-2">
-            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-full animate-pulse" />
-            <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-5/6 animate-pulse" />
+            <div className="h-4 bg-muted dark:bg-muted-foreground/20 rounded w-full animate-pulse" />
+            <div className="h-4 bg-muted dark:bg-muted-foreground/20 rounded w-5/6 animate-pulse" />
           </div>
           
           {/* CTA skeleton */}
