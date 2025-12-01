@@ -13,6 +13,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import MoveModal from '@/components/drive/MoveModal';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -40,6 +50,7 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
   const { user } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // Verificar se o usuário é o dono
   const isOwner = user?.id === template.created_by;
@@ -154,9 +165,7 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
                     className="cursor-pointer text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Deseja realmente excluir o modelo "${template.title}"?`)) {
-                        onDelete(template.id);
-                      }
+                      setDeleteDialogOpen(true);
                     }}
                   >
                     <Trash size={16} className="mr-2" />
@@ -235,6 +244,29 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
           await onMove(template.id, targetFolderId);
         }}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir o modelo "{template.title}"? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                onDelete(template.id);
+                setDeleteDialogOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
