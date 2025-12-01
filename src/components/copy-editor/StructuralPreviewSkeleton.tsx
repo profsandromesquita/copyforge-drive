@@ -1,79 +1,58 @@
-import { Image, AlignLeft, List, CheckCircle, HelpCircle } from "lucide-react";
+import { Image, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 export const StructuralPreviewSkeleton = () => {
-  return <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
-      <div className="max-w-2xl w-full">
-        {/* Legenda explicativa no topo */}
-        
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
+      <div className="max-w-2xl w-full space-y-6">
+        {/* Explanatory text */}
+        <div className="text-center space-y-2">
+          <p className="text-base text-foreground font-semibold">
+            Sua copy será estruturada em <span className="font-bold text-primary">blocos inteligentes</span> como este. Configure ao lado para gerar.
+          </p>
+        </div>
 
-        {/* Mock Preview Card */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 space-y-6 shadow-sm opacity-70">
+        {/* High-Fidelity Mock Preview */}
+        <div className="bg-card rounded-xl border border-border shadow-sm p-8 space-y-8">
           
-          {/* Título Block */}
-          <div className="border-2 border-dashed border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-950/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlignLeft className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-              <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase">Bloco: Título</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              Título Principal da Sua Copy
-            </h1>
+          {/* Title Block */}
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            Descubra Como Transformar Suas Ideias em Resultados Reais
+          </h1>
+
+          {/* Image Block */}
+          <div className="aspect-video bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
+            <Image className="w-16 h-16 text-slate-300 dark:text-slate-600" />
           </div>
 
-          {/* Imagem Block */}
-          <div className="border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Image className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">Bloco: Imagem</span>
-            </div>
-            <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-              <Image className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-            </div>
-          </div>
+          {/* Text Block */}
+          <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+            Imagine ter uma copy que conecta instantaneamente com seu público, transmite sua mensagem com clareza e gera resultados reais. Com nossa metodologia comprovada, você vai criar conteúdos persuasivos que convertem visitantes em clientes.
+          </p>
 
-          {/* Texto Block */}
-          <div className="border-2 border-dashed border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlignLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">Bloco: Texto</span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-              Este é um exemplo de bloco de texto. Aqui você terá parágrafos explicativos, 
-              argumentos de venda, storytelling e todo o conteúdo persuasivo da sua copy.
-            </p>
-          </div>
-
-          {/* Lista Block */}
-          <div className="border-2 border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <List className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase">Bloco: Lista</span>
-            </div>
-            <ul className="space-y-2">
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">Benefício ou item da lista</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">Outro ponto importante</span>
-              </li>
-              
-            </ul>
-          </div>
+          {/* List Block */}
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              <span className="text-slate-700 dark:text-slate-300">Aumente suas conversões em até 3x com copy estratégica</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              <span className="text-slate-700 dark:text-slate-300">Conecte-se emocionalmente com sua audiência</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+              <span className="text-slate-700 dark:text-slate-300">Destaque-se da concorrência com mensagens únicas</span>
+            </li>
+          </ul>
 
           {/* CTA Block */}
-          <div className="border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <CheckCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">Bloco: CTA</span>
-            </div>
-            <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-6">
-              Seu Botão de Ação Aqui
-            </Button>
-          </div>
+          <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 text-lg rounded-lg shadow-lg">
+            Quero Começar Agora →
+          </Button>
 
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
