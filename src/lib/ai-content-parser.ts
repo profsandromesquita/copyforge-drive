@@ -41,6 +41,56 @@ function stripMetaPrefixes(text: string): string {
     .trim();
 }
 
+interface ExtractedTitleContent {
+  title: string | null;
+  content: string;
+}
+
+/**
+ * Extrai título do conteúdo se começar com padrão de identificação
+ * Ex: "Bloco 3: CTA" → {title: "CTA", content: "..."}
+ */
+function extractTitleFromContent(text: string): ExtractedTitleContent {
+  // Padrões de identificadores que devem virar título
+  const titlePatterns = [
+    // Bloco N: Título
+    /^(?:###\s*)?(?:BLOCO|Bloco)\s*(\d+):\s*(.+?)(?:\n|$)/i,
+    // Opção N: Título
+    /^(?:###\s*)?(?:OPÇÃO|Opção|OPCAO|Opcao)\s*(\d+):\s*(.+?)(?:\n|$)/i,
+    // Versão/Variação N: Título
+    /^(?:###\s*)?(?:VERSÃO|Versão|VERSAO|Versao|VARIAÇÃO|Variação|VARIACAO|Variacao)\s*(\d+):\s*(.+?)(?:\n|$)/i,
+    // Cenário/Abordagem: Título
+    /^(?:###\s*)?(?:CENÁRIO|Cenário|CENARIO|Cenario|ABORDAGEM|Abordagem):\s*(.+?)(?:\n|$)/i,
+  ];
+
+  for (const pattern of titlePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      // Se capturou número e título (ex: "Bloco 3: CTA")
+      if (match[2]) {
+        const extractedTitle = match[2].trim();
+        const cleanContent = text.replace(pattern, '').trim();
+        return { 
+          title: extractedTitle, 
+          content: cleanContent || text // fallback se conteúdo ficar vazio
+        };
+      }
+      // Se capturou só título (ex: "Abordagem: Direta")
+      if (match[1]) {
+        const extractedTitle = match[1].trim();
+        const cleanContent = text.replace(pattern, '').trim();
+        return { 
+          title: extractedTitle, 
+          content: cleanContent || text
+        };
+      }
+    }
+  }
+
+  // Nenhum padrão encontrado - retorna original
+  return { title: null, content: text };
+}
+
 // Helper to detect if a title indicates a high-level independent item
 function isHighLevelTitle(title: string): boolean {
   const lower = title.toLowerCase();
@@ -460,6 +510,9 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
   let currentSession: any = null;
 
   blocks.forEach((block, index) => {
+    // 🆕 NOVO: Extrair título do conteúdo antes de processar
+    const { title: extractedTitle, content: cleanedContent } = extractTitleFromContent(block.content);
+    
     // ✅ FORÇAR separação para opções e numerados
     const isOptionBlock = block.title && /^Opção\s+\d+:/i.test(block.title);
     const isNumberedBlock = block.title && /^\d+\.\s+/.test(block.title);
@@ -476,9 +529,12 @@ export function convertParsedBlocksToSessions(blocks: ParsedContent[]): any[] {
       // Se o bloco tem título mas NÃO é de alto nível, tratar o título como headline
       const shouldTitleBeContent = block.title && !isHighLevelTitle(block.title);
       
+      // 🆕 NOVO: Usar título extraído se disponível
+      const finalTitle = extractedTitle || block.title;
+      
       const sessionTitle = shouldTitleBeContent
         ? `Conteúdo ${sessions.length + 1}` // Título genérico
-        : (block.title ? block.title.replace(/^\d+\.\s*/, '') : `${getBlockTypeName(block.type)}`);
+        : (finalTitle ? finalTitle.replace(/^\d+\.\s*/, '') : `${getBlockTypeName(block.type)}`);
 
       const sessionBlocks = [];
       
@@ -549,12 +605,19 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
     id: `block-${Date.now()}-${index}-${Math.random()}`,
   };
 
+  // 🆕 NOVO: Extrair título do conteúdo se existir
+  const { title: extractedTitle, content: cleanedContent } = extractTitleFromContent(block.content);
+  
+  // Usar título extraído se o título original for genérico ou inexistente
+  const genericTitles = ['Texto', 'Conteúdo', 'undefined', null, ''];
+  const shouldUseExtractedTitle = genericTitles.includes(block.title || '') && extractedTitle;
+
   switch (block.type) {
     case 'headline':
       return {
         ...baseBlock,
         type: 'headline' as const,
-        content: markdownToHtml(cleanContent(block.content)),
+        content: markdownToHtml(cleanContent(cleanedContent)),
         config: {
           fontSize: 'large',
           fontWeight: 'bold',
@@ -567,7 +630,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'text' as const,
-        content: markdownToHtml(block.content),
+        content: markdownToHtml(cleanedContent),
         config: {
           fontSize: 'medium',
           fontWeight: 'normal',
@@ -577,7 +640,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
 
     case 'list':
       // Tentar dividir conteúdo em items de lista
-      const listItems = block.content
+      const listItems = cleanedContent
         .split('\n')
         .filter(line => line.trim())
         .map(line => line.replace(/^[-•*\d+.]\s*/, '').trim())
@@ -586,7 +649,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'list' as const,
-        content: listItems.length > 0 ? listItems : [block.content],
+        content: listItems.length > 0 ? listItems : [cleanedContent],
         config: {
           listStyle: 'bullets',
           showListIcons: true,
@@ -600,7 +663,7 @@ function createBlockFromParsed(block: ParsedContent, index: number): any {
       return {
         ...baseBlock,
         type: 'text' as const,
-        content: markdownToHtml(block.content),
+        content: markdownToHtml(cleanedContent),
         config: {
           fontSize: 'medium',
           fontWeight: 'normal',
