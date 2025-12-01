@@ -1,9 +1,7 @@
 import { Image, AlignLeft, List, CheckCircle, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 export const StructuralPreviewSkeleton = () => {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
+  return <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full">
         {/* Legenda explicativa no topo */}
         <p className="text-center text-sm text-muted-foreground mb-6">
@@ -64,10 +62,7 @@ export const StructuralPreviewSkeleton = () => {
                 <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                 <span className="text-sm text-gray-600 dark:text-gray-300">Outro ponto importante</span>
               </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">Mais um item relevante</span>
-              </li>
+              
             </ul>
           </div>
 
@@ -84,6 +79,5 @@ export const StructuralPreviewSkeleton = () => {
 
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
