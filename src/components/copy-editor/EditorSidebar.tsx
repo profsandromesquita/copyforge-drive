@@ -28,6 +28,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     offerId: '',
     methodologyId: ''
   });
+  const [isContextLoaded, setIsContextLoaded] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -36,10 +37,13 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ✅ NOVO: Carregar contexto inicial do banco (Single Source of Truth)
+  // ✅ Carregar contexto inicial do banco (Single Source of Truth)
   useEffect(() => {
     const loadInitialContext = async () => {
-      if (!copyId) return;
+      if (!copyId) {
+        setIsContextLoaded(true);
+        return;
+      }
       
       const { data: copy } = await supabase
         .from('copies')
@@ -54,6 +58,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
           methodologyId: copy.selected_methodology_id || ''
         });
       }
+      setIsContextLoaded(true);
     };
     
     loadInitialContext();
@@ -79,10 +84,17 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
                   Chat
                 </TabsTrigger>
               </TabsList>
-              <ContextSettingsDropdown 
-                onContextChange={setContextSettings}
-                initialContext={contextSettings}
-              />
+              {isContextLoaded ? (
+                <ContextSettingsDropdown 
+                  key={`ctx-${contextSettings.methodologyId || 'empty'}`}
+                  onContextChange={setContextSettings}
+                  initialContext={contextSettings}
+                />
+              ) : (
+                <div className="h-8 w-8 flex items-center justify-center">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              )}
             </div>
           </div>
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
