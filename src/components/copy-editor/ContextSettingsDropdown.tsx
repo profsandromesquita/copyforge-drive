@@ -56,14 +56,15 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
       
       const { data: copy } = await supabase
         .from('copies')
-        .select('selected_audience_id, selected_offer_id')
+        .select('selected_audience_id, selected_offer_id, selected_methodology_id')
         .eq('id', copyId)
         .single();
       
-      if (copy) {
-        setAudienceSegmentId(copy.selected_audience_id || '');
-        setOfferId(copy.selected_offer_id || '');
-      }
+    if (copy) {
+      setAudienceSegmentId(copy.selected_audience_id || '');
+      setOfferId(copy.selected_offer_id || '');
+      setMethodologyId(copy.selected_methodology_id || '');
+    }
     };
     
     loadCurrentContext();
@@ -96,11 +97,11 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
         newOfferId = value;
         setOfferId(value);
         updateData.selected_offer_id = value || null;
-      } else if (field === 'methodology') {
-        newMethodologyId = value;
-        setMethodologyId(value);
-        // Metodologia não é salva na copy ainda, mas pode ser no futuro
-      }
+    } else if (field === 'methodology') {
+      newMethodologyId = value;
+      setMethodologyId(value);
+      updateData.selected_methodology_id = value || null;
+    }
       
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase

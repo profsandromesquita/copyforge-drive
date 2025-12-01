@@ -73,6 +73,7 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
   // Estado para criação
   const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
   const [offerId, setOfferId] = useState<string>('');
+  const [methodologyId, setMethodologyId] = useState<string>('');
   const [estrutura, setEstrutura] = useState<string>('');
   const [objetivo, setObjetivo] = useState<string>('');
   const [estilos, setEstilos] = useState<string[]>([]);
@@ -150,13 +151,14 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
       
       const { data: copy } = await supabase
         .from('copies')
-        .select('selected_audience_id, selected_offer_id')
+        .select('selected_audience_id, selected_offer_id, selected_methodology_id')
         .eq('id', copyId)
         .single();
       
       if (copy) {
         setAudienceSegmentId(copy.selected_audience_id || '');
         setOfferId(copy.selected_offer_id || '');
+        setMethodologyId(copy.selected_methodology_id || '');
       }
     };
     

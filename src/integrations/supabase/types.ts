@@ -272,6 +272,7 @@ export type Database = {
           project_id: string | null
           public_password: string | null
           selected_audience_id: string | null
+          selected_methodology_id: string | null
           selected_offer_id: string | null
           sessions: Json
           show_in_discover: boolean | null
@@ -301,6 +302,7 @@ export type Database = {
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
+          selected_methodology_id?: string | null
           selected_offer_id?: string | null
           sessions?: Json
           show_in_discover?: boolean | null
@@ -330,6 +332,7 @@ export type Database = {
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
+          selected_methodology_id?: string | null
           selected_offer_id?: string | null
           sessions?: Json
           show_in_discover?: boolean | null
