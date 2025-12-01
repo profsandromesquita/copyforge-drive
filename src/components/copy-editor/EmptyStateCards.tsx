@@ -48,8 +48,7 @@ Defina Persona, Oferta e Metodologia e gere uma copy completa em segundos.</p>
                 <ChatCircle size={32} weight="fill" className="text-primary" />
               </div>
               <h3 className="font-semibold text-xl mb-3">Modo Chat</h3>
-              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">Nesse modo a IA é Co-Piloto e você estará no controle, ideal para refinar e construir bloco a bloco.
-Use comandos como "Otimizar", "Variar" e cite seu contexto com #.</p>
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">Nesse modo a IA é Co-Piloto e você estará no controle, ideal para refinar e construir bloco a bloco. Use comandos como "Otimizar", "Variar" e cite o contexto com #.</p>
               
             </CardContent>
           </Card>
