@@ -24,9 +24,7 @@ export const EmptyStateCards = ({
       <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-semibold mb-2">Como você quer começar?</h2>
-          <p className="text-muted-foreground">
-            Escolha o modo de trabalho ideal para o seu projeto
-          </p>
+          <p className="text-muted-foreground">Escolha ao lado o modo de trabalho ideal para o seu projeto</p>
         </div>
         
         <div className="grid md:grid-cols-2 gap-6">
