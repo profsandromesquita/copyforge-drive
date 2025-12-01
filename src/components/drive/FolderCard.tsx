@@ -14,6 +14,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -31,6 +41,7 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
   const { deleteFolder, renameFolder, moveFolder } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
 
@@ -63,9 +74,13 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
     setRenameDialogOpen(false);
   };
 
-  const handleDelete = async () => {
-    if (!confirm(`Deseja realmente excluir "${title}"?`)) return;
+  const handleDelete = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
     await deleteFolder(id);
+    setDeleteDialogOpen(false);
   };
 
   const handleMove = async (targetFolderId: string | null) => {
@@ -188,6 +203,26 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
         currentFolderId={folderId || null}
         onMove={handleMove}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir a pasta "{title}"? Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
