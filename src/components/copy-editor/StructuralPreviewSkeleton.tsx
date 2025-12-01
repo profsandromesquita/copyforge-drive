@@ -1,14 +1,12 @@
 import { Image, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 export const StructuralPreviewSkeleton = () => {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
+  return <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full space-y-6">
         {/* Explanatory text */}
         <div className="text-center space-y-2">
-          <p className="text-base text-foreground font-semibold">
-            Sua copy será estruturada em <span className="font-bold text-primary">blocos inteligentes</span> como este. Configure ao lado para gerar.
+          <p className="text-base text-foreground font-semibold">Sua copy será estruturada em blocos inteligentes como este. 
+Configure ao lado para gerar.<span className="font-bold text-primary">blocos inteligentes</span> como este. Configure ao lado para gerar.
           </p>
         </div>
 
@@ -53,6 +51,5 @@ export const StructuralPreviewSkeleton = () => {
 
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
