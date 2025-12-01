@@ -22,6 +22,7 @@ const CopyEditorContent = () => {
   const [imageBlockId, setImageBlockId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
+  const [hasInitialized, setHasInitialized] = useState(false);
   const prevSelectedBlockId = useRef<string | null>(null);
   const { insufficientCredits, creditInfo, closeInsufficientCreditsModal } = useCopyGeneration();
 
@@ -40,7 +41,9 @@ const CopyEditorContent = () => {
     }
 
     setCopyId(id);
-    loadCopy(id);
+    loadCopy(id).finally(() => {
+      setHasInitialized(true);
+    });
   }, [id, loadCopy, setCopyId, navigate]);
 
   // Abrir sidebar quando um bloco é selecionado
@@ -195,8 +198,8 @@ const CopyEditorContent = () => {
     setImageBlockId(null);
   };
 
-  // Mostrar loading enquanto carrega
-  if (isLoading) {
+  // Mostrar loading enquanto carrega ou não inicializou
+  if (isLoading || !hasInitialized) {
     return <CopyEditorLoading />;
   }
 
