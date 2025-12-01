@@ -4,6 +4,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { CopyType } from '@/lib/ai-models';
 import { getPromptKey } from '@/lib/prompt-keys';
+import { handleSessionExpiredError } from '@/lib/auth-utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserPromptResponse {
   prompt: string;
@@ -13,6 +15,7 @@ interface UserPromptResponse {
 export const useUserPromptCustomization = (copyType: CopyType) => {
   const { toast } = useToast();
   const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   // Converter copyType para promptKey correto
@@ -33,10 +36,13 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        await handleSessionExpiredError(error);
+        throw error;
+      }
       return data;
     },
-    enabled: !!activeWorkspace?.id && !!copyType,
+    enabled: !!user && !!activeWorkspace?.id && !!copyType,
   });
 
   // Salvar personalização
@@ -54,7 +60,10 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        await handleSessionExpiredError(error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -101,7 +110,10 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        await handleSessionExpiredError(error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
