@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -956,27 +957,36 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Detalhes da Copy
               </Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowGeneratedPromptEditor(true)}
-                disabled={!generatedSystemPrompt}
-                className="gap-2 text-xs"
-              >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowGeneratedPromptEditor(true)}
+                      disabled={!generatedSystemPrompt}
+                      className={cn(
+                        "gap-2 text-xs transition-all",
+                        generatedSystemPrompt && "animate-pulse ring-2 ring-offset-2 ring-amber-300/50 hover:animate-none hover:ring-primary/50"
+                      )}
+                    >
                 <Wand2 className="h-3.5 w-3.5" />
                 {generatedSystemPrompt ? 'Editar System Prompt' : 'Aguarde geração...'}
               </Button>
             </div>
             <div className="relative">
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Descreva o que você precisa para sua copy..."
-                rows={14}
-                className="resize-none rounded-2xl pr-12 border-2 border-border/60"
-              />
+                  <Textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Ex: 'Escreva uma sequência de 3 e-mails para Black Friday focado em urgência'. (Se você selecionou Público-Alvo ou Oferta, não precisa repetir!)"
+                    rows={14}
+                    className="resize-none rounded-2xl pr-12 border-2 border-border/60"
+                  />
               <VoiceInput onTranscript={(text) => setPrompt(prompt ? `${prompt} ${text}` : text)} />
             </div>
+
+            {/* Helper Text */}
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-2">
+              <span className="text-amber-500">💡</span>
+              <span>Dica: Foque no <strong>Objetivo</strong> e no <strong>Formato</strong>. O contexto técnico já foi injetado pelo System Prompt.</span>
+            </p>
           </div>
 
           <Button
