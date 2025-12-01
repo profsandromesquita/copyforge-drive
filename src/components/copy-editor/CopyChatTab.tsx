@@ -834,7 +834,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                 )}
                 
                 {/* Action Buttons Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-3 py-2 bg-background/95 backdrop-blur-sm">
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-3 py-2" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
                   {/* Character Count - Left Side */}
                   <span className="text-[10px] text-muted-foreground/60 font-mono">
                     {message.length}/2000
