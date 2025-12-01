@@ -9,6 +9,7 @@ import { ImageAITab } from './ImageAITab';
 import { ContextSettingsDropdown } from './ContextSettingsDropdown';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EditorSidebarProps {
   showImageAI?: boolean;
@@ -19,7 +20,7 @@ interface EditorSidebarProps {
 }
 
 export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpen = true, onToggle }: EditorSidebarProps) => {
-  const { sessions, selectedBlockId, selectBlock } = useCopyEditor();
+  const { sessions, selectedBlockId, selectBlock, copyId } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
   const [contextSettings, setContextSettings] = useState({
@@ -34,6 +35,29 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // ✅ NOVO: Carregar contexto inicial do banco (Single Source of Truth)
+  useEffect(() => {
+    const loadInitialContext = async () => {
+      if (!copyId) return;
+      
+      const { data: copy } = await supabase
+        .from('copies')
+        .select('selected_audience_id, selected_offer_id, selected_methodology_id')
+        .eq('id', copyId)
+        .single();
+      
+      if (copy) {
+        setContextSettings({
+          audienceSegmentId: copy.selected_audience_id || '',
+          offerId: copy.selected_offer_id || '',
+          methodologyId: copy.selected_methodology_id || ''
+        });
+      }
+    };
+    
+    loadInitialContext();
+  }, [copyId]);
 
   const selectedBlock = sessions
     .flatMap(s => s.blocks)
@@ -55,7 +79,10 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
                   Chat
                 </TabsTrigger>
               </TabsList>
-              <ContextSettingsDropdown onContextChange={setContextSettings} />
+              <ContextSettingsDropdown 
+                onContextChange={setContextSettings}
+                initialContext={contextSettings}
+              />
             </div>
           </div>
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">

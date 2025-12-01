@@ -174,6 +174,10 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
       if (contextSettings.offerId) {
         setOfferId(contextSettings.offerId);
       }
+      // ✅ ADICIONAR: Sincronizar metodologia
+      if (contextSettings.methodologyId) {
+        setMethodologyId(contextSettings.methodologyId);
+      }
     }
   }, [contextSettings]);
 

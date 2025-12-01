@@ -16,15 +16,20 @@ interface ContextSettingsDropdownProps {
     offerId: string;
     methodologyId: string;
   }) => void;
+  initialContext?: {
+    audienceSegmentId: string;
+    offerId: string;
+    methodologyId: string;
+  };
 }
 
-export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDropdownProps) => {
+export const ContextSettingsDropdown = ({ onContextChange, initialContext }: ContextSettingsDropdownProps) => {
   const { activeProject } = useProject();
   const { copyId, loadCopy } = useCopyEditor();
   const { toast } = useToast();
-  const [audienceSegmentId, setAudienceSegmentId] = useState<string>('');
-  const [offerId, setOfferId] = useState<string>('');
-  const [methodologyId, setMethodologyId] = useState<string>('');
+  const [audienceSegmentId, setAudienceSegmentId] = useState<string>(initialContext?.audienceSegmentId || '');
+  const [offerId, setOfferId] = useState<string>(initialContext?.offerId || '');
+  const [methodologyId, setMethodologyId] = useState<string>(initialContext?.methodologyId || '');
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,6 +43,15 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
         : [activeProject.methodology])
     : [];
 
+  // ✅ NOVO: Sincronizar com initialContext quando mudar
+  useEffect(() => {
+    if (initialContext) {
+      setAudienceSegmentId(initialContext.audienceSegmentId || '');
+      setOfferId(initialContext.offerId || '');
+      setMethodologyId(initialContext.methodologyId || '');
+    }
+  }, [initialContext]);
+
   // Debug: verificar IDs dos segments
   useEffect(() => {
     if (audienceSegments.length > 0) {
@@ -48,28 +62,6 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
     }
   }, [audienceSegments, offers]);
 
-
-  // Carregar contexto atual da copy
-  useEffect(() => {
-    const loadCurrentContext = async () => {
-      if (!copyId) return;
-      
-      const { data: copy } = await supabase
-        .from('copies')
-        .select('selected_audience_id, selected_offer_id, selected_methodology_id')
-        .eq('id', copyId)
-        .single();
-      
-    if (copy) {
-      setAudienceSegmentId(copy.selected_audience_id || '');
-      setOfferId(copy.selected_offer_id || '');
-      setMethodologyId(copy.selected_methodology_id || '');
-    }
-    };
-    
-    loadCurrentContext();
-  }, [copyId]);
-
   // Função para validar UUID
   const isValidUUID = (str: string): boolean => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,6 +71,8 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
   // Salvar contexto quando mudar
   const handleContextChange = async (field: 'audience' | 'offer' | 'methodology', value: string) => {
     if (!copyId) return;
+    
+    console.log('💾 Salvando contexto:', { field, value }); // ✅ DEBUG LOG
     
     setIsSaving(true);
     try {
@@ -97,11 +91,12 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
         newOfferId = value;
         setOfferId(value);
         updateData.selected_offer_id = value || null;
-    } else if (field === 'methodology') {
-      newMethodologyId = value;
-      setMethodologyId(value);
-      updateData.selected_methodology_id = value || null;
-    }
+      } else if (field === 'methodology') {
+        newMethodologyId = value;
+        setMethodologyId(value);
+        updateData.selected_methodology_id = value || null;
+        console.log('📋 Update data para metodologia:', updateData); // ✅ DEBUG LOG
+      }
       
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase
@@ -110,9 +105,11 @@ export const ContextSettingsDropdown = ({ onContextChange }: ContextSettingsDrop
           .eq('id', copyId);
         
         if (error) {
-          console.error('Erro ao atualizar copy:', error);
+          console.error('❌ Erro ao atualizar copy:', error);
           throw error;
         }
+        
+        console.log('✅ Contexto salvo com sucesso!'); // ✅ DEBUG LOG
       }
       
       // Notificar mudança com valores atualizados
