@@ -203,35 +203,56 @@ All colors MUST be HSL.
     scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   }
 
-  /* Toast animations */
+  /* Toast animations - Modern SaaS style */
   [data-sonner-toast] {
-    animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: toastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1);
   }
 
   [data-sonner-toast][data-removed="true"] {
-    animation: slideOut 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: toastSlideOut 0.25s cubic-bezier(0.06, 0.71, 0.55, 1);
   }
 
-  @keyframes slideIn {
-    from {
-      transform: translateX(calc(100% + 1rem));
+  @keyframes toastSlideIn {
+    0% {
+      transform: translateX(calc(100% + 1rem)) scale(0.95);
       opacity: 0;
     }
-    to {
-      transform: translateX(0);
+    100% {
+      transform: translateX(0) scale(1);
       opacity: 1;
     }
   }
 
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
+  @keyframes toastSlideOut {
+    0% {
+      transform: translateX(0) scale(1);
       opacity: 1;
     }
-    to {
-      transform: translateX(calc(100% + 1rem));
+    100% {
+      transform: translateX(calc(100% + 1rem)) scale(0.95);
       opacity: 0;
     }
+  }
+
+  /* Colored shadows for toast types */
+  [data-sonner-toast][data-type="success"] {
+    box-shadow: 0 10px 40px -10px rgba(16, 185, 129, 0.25),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.25),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  [data-sonner-toast][data-type="warning"] {
+    box-shadow: 0 10px 40px -10px rgba(245, 158, 11, 0.25),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  [data-sonner-toast][data-type="info"] {
+    box-shadow: 0 10px 40px -10px rgba(59, 130, 246, 0.25),
+                0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   /* Preview scale for card previews - reduces all block elements proportionally */
