@@ -1,6 +1,6 @@
 export const StructuralPreviewSkeleton = () => {
   return (
-    <div className="flex items-center justify-center min-h-[60vh] px-6">
+    <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full">
         {/* Skeleton Card simulando estrutura da copy */}
         <div className="bg-card rounded-xl border p-8 space-y-6 shadow-sm">
