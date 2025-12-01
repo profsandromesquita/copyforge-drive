@@ -4,10 +4,9 @@ export const StructuralPreviewSkeleton = () => {
   return <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full">
         {/* Legenda explicativa no topo */}
-        <p className="text-center text-base text-foreground font-semibold mb-6">
-          Sua copy será estruturada em blocos inteligentes como este.
-          <br />
-          <span className="text-primary font-bold">Configure ao lado para gerar.</span>
+        <p className="text-center text-base text-foreground font-semibold mb-6">Sua copy será estruturada em blocos inteligentes como este.
+Escreva o seu prompt ao lado para gerar.<br />
+          <span className="text-primary font-bold">Escreva os detalhes da copy ao lado para gerar.</span>
         </p>
 
         {/* Mock Preview Card */}
