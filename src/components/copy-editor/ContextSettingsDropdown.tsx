@@ -43,15 +43,6 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
         : [activeProject.methodology])
     : [];
 
-  // ✅ NOVO: Sincronizar com initialContext quando mudar
-  useEffect(() => {
-    if (initialContext) {
-      setAudienceSegmentId(initialContext.audienceSegmentId || '');
-      setOfferId(initialContext.offerId || '');
-      setMethodologyId(initialContext.methodologyId || '');
-    }
-  }, [initialContext]);
-
   // Debug: verificar IDs dos segments
   useEffect(() => {
     if (audienceSegments.length > 0) {
@@ -70,9 +61,12 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
 
   // Salvar contexto quando mudar
   const handleContextChange = async (field: 'audience' | 'offer' | 'methodology', value: string) => {
-    if (!copyId) return;
+    if (!copyId) {
+      console.error('❌ copyId está undefined! Não é possível salvar.');
+      return;
+    }
     
-    console.log('💾 Salvando contexto:', { field, value }); // ✅ DEBUG LOG
+    console.log('💾 Iniciando save:', { field, value, copyId });
     
     setIsSaving(true);
     try {
@@ -82,12 +76,10 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
       let newMethodologyId = methodologyId;
       
       if (field === 'audience') {
-        // Agora aceitamos qualquer identificador de público vindo do projeto
         newAudienceId = value;
         setAudienceSegmentId(value);
         updateData.selected_audience_id = value || null;
       } else if (field === 'offer') {
-        // Agora aceitamos qualquer identificador de oferta vindo do projeto
         newOfferId = value;
         setOfferId(value);
         updateData.selected_offer_id = value || null;
@@ -95,21 +87,23 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
         newMethodologyId = value;
         setMethodologyId(value);
         updateData.selected_methodology_id = value || null;
-        console.log('📋 Update data para metodologia:', updateData); // ✅ DEBUG LOG
+        console.log('📋 Update data:', updateData);
       }
       
       if (Object.keys(updateData).length > 0) {
-        const { error } = await supabase
+        console.log('🔄 Executando UPDATE no Supabase...');
+        const { data, error } = await supabase
           .from('copies')
           .update(updateData)
-          .eq('id', copyId);
+          .eq('id', copyId)
+          .select();
         
         if (error) {
-          console.error('❌ Erro ao atualizar copy:', error);
+          console.error('❌ Erro Supabase:', error);
           throw error;
         }
         
-        console.log('✅ Contexto salvo com sucesso!'); // ✅ DEBUG LOG
+        console.log('✅ Dados salvos:', data);
       }
       
       // Notificar mudança com valores atualizados
@@ -157,7 +151,7 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="audience" className="text-sm font-medium">Público-alvo</Label>
               <Select 
-                value={audienceSegmentId || undefined} 
+                value={audienceSegmentId} 
                 onValueChange={(value) => handleContextChange('audience', value)}
                 disabled={isSaving}
               >
@@ -184,7 +178,7 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="offer" className="text-sm font-medium">Oferta</Label>
               <Select 
-                value={offerId || undefined} 
+                value={offerId} 
                 onValueChange={(value) => handleContextChange('offer', value)}
                 disabled={isSaving}
               >
@@ -211,7 +205,7 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="methodology" className="text-sm font-medium">Metodologia</Label>
               <Select 
-                value={methodologyId || undefined} 
+                value={methodologyId} 
                 onValueChange={(value) => handleContextChange('methodology', value)}
                 disabled={isSaving}
               >
