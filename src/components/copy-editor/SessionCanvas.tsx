@@ -7,12 +7,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { getImageFromDrop, getImageFromPaste, isValidImage, uploadImage } from '@/lib/image-upload';
+import { EmptyStateCards } from './EmptyStateCards';
 
 interface SessionCanvasProps {
   onShowImageAI?: (blockId: string) => void;
+  onStartCreation?: () => void;
+  onOpenChat?: () => void;
 }
 
-export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
+export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat }: SessionCanvasProps) => {
   const { sessions, addSession, addBlock } = useCopyEditor();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -162,15 +165,10 @@ export const SessionCanvas = ({ onShowImageAI }: SessionCanvasProps) => {
         </div>
       )}
       {sessions.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-muted-foreground mb-4">
-            Nenhuma sessão criada ainda. Comece adicionando uma sessão!
-          </p>
-          <Button onClick={addSession}>
-            <Plus size={20} className="mr-2" />
-            Adicionar Sessão
-          </Button>
-        </div>
+        <EmptyStateCards 
+          onStartCreation={onStartCreation}
+          onOpenChat={onOpenChat}
+        />
       ) : (
         <>
           <SortableContext

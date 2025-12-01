@@ -774,7 +774,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                   onChange={handleMessageChange}
                   onKeyDown={handleKeyDown}
                   onVariableSearch={handleVariableSearch}
-                  placeholder="Digite sua mensagem... (Use # para variáveis contextuais)"
+                  placeholder="Ex: 'Otimize o bloco 1', 'Crie uma variação sobre a #oferta', 'Gere um CTA'"
                   className="pr-16 pb-14 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                   disabled={isLoading}
                 />
@@ -834,11 +834,38 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                 )}
                 
                 {/* Action Buttons Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-3 py-2" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
-                  {/* Character Count - Left Side */}
-                  <span className="text-[10px] text-muted-foreground/60 font-mono">
-                    {message.length}/2000
-                  </span>
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 px-3 py-2 bg-background/95">
+                  {/* Left Side - Character Count + Cheat Sheet */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">
+                      {message.length}/2000
+                    </span>
+                    
+                    {/* Cheat Sheet Tooltip */}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-[10px] text-primary/80 hover:text-primary hover:underline cursor-help transition-colors">
+                            Ver comandos disponíveis
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs p-3">
+                          <div className="space-y-2 text-xs">
+                            <p className="font-semibold">🎯 Comandos:</p>
+                            <ul className="space-y-1 list-disc list-inside pl-1">
+                              <li><strong>Otimizar</strong> - Substitui o conteúdo selecionado</li>
+                              <li><strong>Variar</strong> - Cria nova versão ao lado</li>
+                              <li><strong>Criar/Gere</strong> - Gera novo conteúdo</li>
+                            </ul>
+                            <p className="font-semibold mt-2">🔖 Contexto:</p>
+                            <p>Use <code className="bg-muted px-1 rounded text-primary">#</code> para puxar dados do projeto</p>
+                            <p className="font-semibold mt-2">👆 Seleção:</p>
+                            <p>Clique no bloco para dar foco à IA</p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
 
                   {/* Action Buttons - Right Side */}
                   <div className="flex items-center gap-2">

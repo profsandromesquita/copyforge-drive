@@ -17,12 +17,22 @@ interface EditorSidebarProps {
   onCloseImageAI?: () => void;
   isOpen?: boolean;
   onToggle?: () => void;
+  activeTab?: 'ai' | 'chat';
+  onTabChange?: (tab: 'ai' | 'chat') => void;
 }
 
-export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpen = true, onToggle }: EditorSidebarProps) => {
+export const EditorSidebar = ({ 
+  showImageAI, 
+  imageBlockId, 
+  onCloseImageAI, 
+  isOpen = true, 
+  onToggle,
+  activeTab: controlledActiveTab,
+  onTabChange
+}: EditorSidebarProps) => {
   const { sessions, selectedBlockId, selectBlock, copyId } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
+  const [internalActiveTab, setInternalActiveTab] = useState<'ai' | 'chat'>('ai');
   const [contextSettings, setContextSettings] = useState({
     audienceSegmentId: '',
     offerId: '',
@@ -68,10 +78,17 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
     .flatMap(s => s.blocks)
     .find(b => b.id === selectedBlockId);
 
+  // Use controlled tab if provided, otherwise use internal state
+  const currentActiveTab = controlledActiveTab ?? internalActiveTab;
+  const handleTabChange = (tab: 'ai' | 'chat') => {
+    onTabChange?.(tab);
+    setInternalActiveTab(tab);
+  };
+
   const sidebarContent = (
     <div className="h-full flex flex-col relative bg-background">
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'ai' | 'chat')} className="h-full flex flex-col">
+        <Tabs value={currentActiveTab} onValueChange={(value) => handleTabChange(value as 'ai' | 'chat')} className="h-full flex flex-col">
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center gap-2">
               <TabsList className="grid w-full grid-cols-2 border-2 border-border/60 flex-1" style={{ backgroundColor: 'rgb(245, 245, 245)' }}>
@@ -104,7 +121,7 @@ export const EditorSidebar = ({ showImageAI, imageBlockId, onCloseImageAI, isOpe
           </TabsContent>
           <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
             <div className="h-full">
-              <CopyChatTab isActive={activeTab === 'chat'} contextSettings={contextSettings} />
+              <CopyChatTab isActive={currentActiveTab === 'chat'} contextSettings={contextSettings} />
             </div>
           </TabsContent>
         </Tabs>
