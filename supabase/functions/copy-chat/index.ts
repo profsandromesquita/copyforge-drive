@@ -796,16 +796,48 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
 
 🚨 **PUREZA DE CONTEÚDO (CRÍTICO):**
-⛔ NUNCA inclua prefixos de identificação no conteúdo:
-   - NÃO escreva "BLOCO 1:", "OPÇÃO 1:", "Versão Otimizada:"
-   - NÃO numere as respostas com "1.", "2.", "3."
-   
-✅ Retorne APENAS o conteúdo da copy:
-   - Separe múltiplos blocos com quebra de linha dupla (\n\n)
-   - O sistema já adiciona os identificadores visuais
-   - Exemplo correto: "<strong>Clareza que Liberta:</strong> texto..."
 
-✅ Use APENAS estas tags HTML para formatação:
+## QUANDO GERAR 1 BLOCO ÚNICO (sem variações):
+⛔ NUNCA inclua identificadores:
+✅ Retorne APENAS o conteúdo puro:
+   
+Exemplo correto:
+\`\`\`
+<strong>Clareza que Liberta:</strong> Encontre o método simples que acalma a mente...
+\`\`\`
+
+## QUANDO GERAR MÚLTIPLAS VARIAÇÕES (usuário pediu "dê 3 opções"):
+✅ USE identificadores NO INÍCIO de cada variação:
+
+Formato obrigatório:
+\`\`\`
+### Opção 1: [Título Descritivo]
+
+[conteúdo da opção 1 SEM prefixo]
+
+### Opção 2: [Título Descritivo]
+
+[conteúdo da opção 2 SEM prefixo]
+\`\`\`
+
+## QUANDO GERAR MÚLTIPLOS BLOCOS (N blocos selecionados):
+✅ USE identificadores numerados:
+
+Formato obrigatório:
+\`\`\`
+### Bloco 1: [Tipo do Bloco]
+
+[conteúdo do bloco 1 SEM prefixo interno]
+
+### Bloco 2: [Tipo do Bloco]
+
+[conteúdo do bloco 2 SEM prefixo interno]
+\`\`\`
+
+⚠️ REGRA DE OURO: O identificador "### Bloco N:" ou "### Opção N:" 
+   vai APENAS na linha de cabeçalho, NUNCA dentro do conteúdo do bloco.
+
+✅ Use APENAS estas tags HTML para formatação de conteúdo:
    - Negrito: <strong>texto</strong>
    - Itálico: <em>texto</em>
    - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3>
@@ -814,57 +846,47 @@ Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
 ### 📊 QUANTIDADE EXATA:
 - Blocos selecionados: ${selectedBlockCount}
 - Blocos a gerar: ${selectedBlockCount}
-- Separe múltiplos blocos com quebra de linha dupla (\n\n)
-- NÃO use numeração ou prefixos (BLOCO, OPÇÃO, etc)
-
-### 🎭 VARIAÇÕES MÚLTIPLAS:
-- Por padrão: gere APENAS 1 versão otimizada
-- Se usuário pedir múltiplas variações ("Me dê 3 opções"):
-  - Gere 3 blocos separados por linha dupla
-  - NÃO use "OPÇÃO 1:", apenas separe com \n\n
 
 ### ✅ EXEMPLOS CORRETOS:
 
-**1 bloco selecionado + "Otimize":**
+**1 bloco + "Otimize":**
 \`\`\`
-<strong>Clareza que Liberta:</strong> Encontre o método simples que acalma a mente...
+<strong>Clareza que Liberta:</strong> Encontre o método simples...
 \`\`\`
-(SEM "OPÇÃO", direto, com HTML)
 
-**1 bloco selecionado + "Me dê 3 variações":**
+**1 bloco + "Me dê 3 variações":**
 \`\`\`
-OPÇÃO 1: Abordagem Direta
+### Opção 1: Abordagem Direta
 
 <strong>Clareza que Liberta:</strong> Encontre o método simples...
 
-OPÇÃO 2: Abordagem Emotiva
+### Opção 2: Abordagem Emotiva
 
 <strong>Liberdade Mental:</strong> Descubra como acalmar...
 
-OPÇÃO 3: Abordagem Técnica
+### Opção 3: Abordagem Técnica
 
 <strong>Método Estruturado:</strong> Aplique o framework...
 \`\`\`
 
-**4 blocos selecionados + "Otimize":**
+**4 blocos + "Otimize":**
 \`\`\`
-BLOCO 1: Headline Otimizada
+### Bloco 1: Headline
 
 <h2>Clareza Mental com IA</h2>
 
-BLOCO 2: Texto 1 Otimizado
+### Bloco 2: Texto Principal
 
-<strong>Clareza que Liberta:</strong> Encontre o método simples...
+<strong>Clareza que Liberta:</strong> Encontre o método...
 
-BLOCO 3: Texto 2 Otimizado
+### Bloco 3: Benefícios
 
-<strong>Decisões com Convicção:</strong> Tenha critérios objetivos...
+<strong>Decisões com Convicção:</strong> Critérios objetivos...
 
-BLOCO 4: CTA Otimizado
+### Bloco 4: CTA
 
 <strong>Comece Agora</strong> e transforme sua forma de trabalhar
 \`\`\`
-(4 blocos separados, SEM caracteres Markdown)
 
 
 [texto 2]
