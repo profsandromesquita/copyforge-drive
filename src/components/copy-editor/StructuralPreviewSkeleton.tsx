@@ -5,7 +5,7 @@ export const StructuralPreviewSkeleton = () => {
       <div className="max-w-2xl w-full">
         {/* Legenda explicativa no topo */}
         <p className="text-center text-base text-foreground font-semibold mb-6">Sua copy será estruturada em blocos inteligentes como este.
-Escreva os Detalhes da Copy ao lado para gerar os blocos preenchidos.<br />
+Escreva os detalhes da copy ao lado para gerar.<br />
           <span className="text-primary font-bold">Escreva os detalhes da copy ao lado para gerar.</span>
         </p>
 
