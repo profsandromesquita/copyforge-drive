@@ -5,6 +5,13 @@ export const StructuralPreviewSkeleton = () => {
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full">
+        {/* Legenda explicativa no topo */}
+        <p className="text-center text-sm text-muted-foreground mb-6">
+          Sua copy será estruturada em blocos inteligentes como este.
+          <br />
+          <span className="text-primary font-medium">Configure ao lado para gerar.</span>
+        </p>
+
         {/* Mock Preview Card */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 space-y-6 shadow-sm opacity-70">
           
@@ -76,13 +83,6 @@ export const StructuralPreviewSkeleton = () => {
           </div>
 
         </div>
-        
-        {/* Legenda explicativa */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Sua copy será estruturada em blocos inteligentes como este.
-          <br />
-          <span className="text-primary font-medium">Configure ao lado para gerar.</span>
-        </p>
       </div>
     </div>
   );
