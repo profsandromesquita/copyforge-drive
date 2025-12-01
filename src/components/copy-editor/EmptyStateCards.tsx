@@ -7,11 +7,12 @@ interface EmptyStateCardsProps {
   onStartCreation?: () => void;
   onOpenChat?: () => void;
   activeTab?: 'ai' | 'chat';
+  isInPromptStep?: boolean;
 }
 
-export const EmptyStateCards = ({ onStartCreation, onOpenChat, activeTab }: EmptyStateCardsProps) => {
-  // Se está na aba "Copy IA", mostrar skeleton preview
-  if (activeTab === 'ai') {
+export const EmptyStateCards = ({ onStartCreation, onOpenChat, activeTab, isInPromptStep }: EmptyStateCardsProps) => {
+  // Mostrar skeleton SOMENTE quando está na aba "Copy IA" E já está na etapa de prompt (Etapa 3)
+  if (activeTab === 'ai' && isInPromptStep) {
     return <StructuralPreviewSkeleton />;
   }
   

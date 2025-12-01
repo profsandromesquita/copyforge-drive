@@ -41,9 +41,10 @@ interface CopyAITabProps {
     offerId: string;
     methodologyId: string;
   };
+  onPromptStepChange?: (isInPromptStep: boolean) => void;
 }
 
-export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
+export const CopyAITab = ({ contextSettings, onPromptStepChange }: CopyAITabProps = {}) => {
   const { copyId, copyType, sessions: copySessions, importSessions, updateSession } = useCopyEditor();
   const { activeProject } = useProject();
   const { activeWorkspace } = useWorkspace();
@@ -193,6 +194,11 @@ export const CopyAITab = ({ contextSettings }: CopyAITabProps = {}) => {
     
     checkAccess();
   }, [checkCopyAI]);
+
+  // Notificar mudança de etapa para parent
+  useEffect(() => {
+    onPromptStepChange?.(etapa === 3);
+  }, [etapa, onPromptStepChange]);
 
   const resetForm = () => {
     setEtapa(1);

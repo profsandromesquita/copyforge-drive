@@ -23,6 +23,7 @@ const CopyEditorContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isInPromptStep, setIsInPromptStep] = useState(false);
   const prevSelectedBlockId = useRef<string | null>(null);
   const { insufficientCredits, creditInfo, closeInsufficientCreditsModal } = useCopyGeneration();
 
@@ -217,27 +218,29 @@ const CopyEditorContent = () => {
         />
         <BlockToolbar />
         <div className="flex flex-1 overflow-hidden relative">
-        <SessionCanvas 
-          onShowImageAI={handleShowImageAI}
-          onStartCreation={() => {
-            setSidebarOpen(true);
-            setActiveTab('ai');
-          }}
-          onOpenChat={() => {
-            setSidebarOpen(true);
-            setActiveTab('chat');
-          }}
-          activeTab={activeTab}
-        />
-          <EditorSidebar 
-            showImageAI={showImageAI} 
-            imageBlockId={imageBlockId || undefined} 
-            onCloseImageAI={handleCloseImageAI}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          <SessionCanvas 
+            onShowImageAI={handleShowImageAI}
+            onStartCreation={() => {
+              setSidebarOpen(true);
+              setActiveTab('ai');
+            }}
+            onOpenChat={() => {
+              setSidebarOpen(true);
+              setActiveTab('chat');
+            }}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            isInPromptStep={isInPromptStep}
           />
+        <EditorSidebar 
+          showImageAI={showImageAI} 
+          imageBlockId={imageBlockId || undefined} 
+          onCloseImageAI={handleCloseImageAI}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onPromptStepChange={setIsInPromptStep}
+        />
         </div>
       </div>
       
