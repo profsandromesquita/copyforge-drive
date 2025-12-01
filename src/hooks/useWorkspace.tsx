@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { handleSessionExpiredError } from "@/lib/auth-utils";
 
 interface Workspace {
   id: string;
@@ -52,6 +53,10 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error('[Workspace] Error fetching workspaces:', error);
+      
+      // Se sessão expirou, fazer logout
+      await handleSessionExpiredError(error);
+      
       setLoading(false);
       return;
     }
