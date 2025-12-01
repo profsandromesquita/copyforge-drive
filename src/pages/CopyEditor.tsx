@@ -214,17 +214,18 @@ const CopyEditorContent = () => {
         />
         <BlockToolbar />
         <div className="flex flex-1 overflow-hidden relative">
-          <SessionCanvas 
-            onShowImageAI={handleShowImageAI}
-            onStartCreation={() => {
-              setSidebarOpen(true);
-              setActiveTab('ai');
-            }}
-            onOpenChat={() => {
-              setSidebarOpen(true);
-              setActiveTab('chat');
-            }}
-          />
+        <SessionCanvas 
+          onShowImageAI={handleShowImageAI}
+          onStartCreation={() => {
+            setSidebarOpen(true);
+            setActiveTab('ai');
+          }}
+          onOpenChat={() => {
+            setSidebarOpen(true);
+            setActiveTab('chat');
+          }}
+          activeTab={activeTab}
+        />
           <EditorSidebar 
             showImageAI={showImageAI} 
             imageBlockId={imageBlockId || undefined} 

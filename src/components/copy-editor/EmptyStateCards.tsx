@@ -1,13 +1,21 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkle, ChatCircle } from 'phosphor-react';
+import { StructuralPreviewSkeleton } from './StructuralPreviewSkeleton';
 
 interface EmptyStateCardsProps {
   onStartCreation?: () => void;
   onOpenChat?: () => void;
+  activeTab?: 'ai' | 'chat';
 }
 
-export const EmptyStateCards = ({ onStartCreation, onOpenChat }: EmptyStateCardsProps) => {
+export const EmptyStateCards = ({ onStartCreation, onOpenChat, activeTab }: EmptyStateCardsProps) => {
+  // Se está na aba "Copy IA", mostrar skeleton preview
+  if (activeTab === 'ai') {
+    return <StructuralPreviewSkeleton />;
+  }
+  
+  // Caso contrário, mostrar cards de escolha
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-6">
       <div className="max-w-4xl w-full">
