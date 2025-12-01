@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { handleSessionExpiredError } from '@/lib/auth-utils';
 
 interface UserProfile {
   name: string;
@@ -67,6 +68,11 @@ export const useUserProfile = () => {
       setProfile(data);
     } catch (error) {
       console.error('Error loading profile:', error);
+      
+      // Se sessão expirou, fazer logout e retornar
+      const wasExpired = await handleSessionExpiredError(error);
+      if (wasExpired) return;
+      
       // Fallback to user metadata
       setProfile({
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
