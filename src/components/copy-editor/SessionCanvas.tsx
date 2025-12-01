@@ -14,9 +14,10 @@ interface SessionCanvasProps {
   onStartCreation?: () => void;
   onOpenChat?: () => void;
   activeTab?: 'ai' | 'chat';
+  isInPromptStep?: boolean;
 }
 
-export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, activeTab }: SessionCanvasProps) => {
+export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, activeTab, isInPromptStep }: SessionCanvasProps) => {
   const { sessions, addSession, addBlock } = useCopyEditor();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -166,11 +167,12 @@ export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, acti
         </div>
       )}
       {sessions.length === 0 ? (
-          <EmptyStateCards 
-            onStartCreation={onStartCreation}
-            onOpenChat={onOpenChat}
-            activeTab={activeTab}
-          />
+        <EmptyStateCards 
+          onStartCreation={onStartCreation}
+          onOpenChat={onOpenChat}
+          activeTab={activeTab}
+          isInPromptStep={isInPromptStep}
+        />
       ) : (
         <>
           <SortableContext

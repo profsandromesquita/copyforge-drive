@@ -19,6 +19,7 @@ interface EditorSidebarProps {
   onToggle?: () => void;
   activeTab?: 'ai' | 'chat';
   onTabChange?: (tab: 'ai' | 'chat') => void;
+  onPromptStepChange?: (isInPromptStep: boolean) => void;
 }
 
 export const EditorSidebar = ({ 
@@ -28,7 +29,8 @@ export const EditorSidebar = ({
   isOpen = true, 
   onToggle,
   activeTab: controlledActiveTab,
-  onTabChange
+  onTabChange,
+  onPromptStepChange
 }: EditorSidebarProps) => {
   const { sessions, selectedBlockId, selectBlock, copyId } = useCopyEditor();
   const [isMobile, setIsMobile] = useState(false);
@@ -116,7 +118,10 @@ export const EditorSidebar = ({
           </div>
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-0">
             <div className="h-full p-4 overflow-y-auto">
-              <CopyAITab contextSettings={contextSettings} />
+              <CopyAITab 
+                contextSettings={contextSettings}
+                onPromptStepChange={onPromptStepChange}
+              />
             </div>
           </TabsContent>
           <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
