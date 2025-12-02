@@ -84,10 +84,10 @@ serve(async (req) => {
       selectionContext = selectionMarker + parts[1]; // Contexto completo
     }
 
-    // Buscar dados da copy incluindo selected_audience_id e selected_offer_id
+    // Buscar dados da copy incluindo selected_audience_id, selected_offer_id e selected_methodology_id
     const { data: copy, error: copyError } = await supabase
       .from('copies')
-      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, project_id')
+      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, selected_methodology_id, project_id')
       .eq('id', copyId)
       .single();
 
@@ -134,12 +134,45 @@ serve(async (req) => {
           offer = projectData.offers.find((off: any) => off.id === copy.selected_offer_id);
         }
 
-        // Buscar metodologia se disponível
-        if (projectData.methodology) {
-          methodology = projectData.methodology;
+        // Buscar metodologia se selecionada
+        if (copy.selected_methodology_id && projectData.methodology) {
+          // Normalizar methodology para array (pode ser objeto único ou array)
+          const methodologies = Array.isArray(projectData.methodology) 
+            ? projectData.methodology 
+            : [projectData.methodology];
+          
+          // Filtrar pela metodologia específica selecionada
+          methodology = methodologies.find((meth: any) => meth.id === copy.selected_methodology_id);
+          
+          if (!methodology) {
+            console.warn('⚠️ Metodologia selecionada não encontrada no projeto:', copy.selected_methodology_id);
+          }
+        } else if (projectData.methodology && !copy.selected_methodology_id) {
+          // Fallback: Se não há ID selecionado mas existe metodologia única, usar ela
+          const methodologies = Array.isArray(projectData.methodology) 
+            ? projectData.methodology 
+            : [projectData.methodology];
+          
+          if (methodologies.length === 1) {
+            methodology = methodologies[0];
+            console.log('ℹ️ Usando metodologia única do projeto (sem seleção explícita)');
+          }
         }
       }
     }
+
+    // Log de contexto resolvido para debugging
+    console.log('📋 Contexto resolvido:', {
+      hasProjectIdentity: !!projectIdentity,
+      hasAudienceSegment: !!audienceSegment,
+      hasOffer: !!offer,
+      hasMethodology: !!methodology,
+      selectedIds: {
+        audience: copy.selected_audience_id,
+        offer: copy.selected_offer_id,
+        methodology: copy.selected_methodology_id
+      }
+    });
 
     // Buscar histórico de gerações (últimas 15 para balancear contexto vs tokens)
     const { data: generationHistory, error: genHistoryError } = await supabase
