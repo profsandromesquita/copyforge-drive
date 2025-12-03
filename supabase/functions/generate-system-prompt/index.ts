@@ -361,10 +361,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ===== FASE 1: VALIDAÇÃO DE AUTENTICAÇÃO =====
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Autenticação necessária" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Obter variáveis de ambiente necessárias
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Configuração do Supabase não encontrada");
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+    // Validar usuário autenticado
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+    if (userError || !user) {
+      console.error("❌ Erro de autenticação:", userError?.message);
+      return new Response(
+        JSON.stringify({ success: false, error: "Token inválido ou expirado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("✅ Usuário autenticado:", user.id);
 
     // Extrair parâmetros enviados pelo frontend
     const { copyType, framework, objective, styles, emotionalFocus, projectIdentity, projectMethodology, audienceSegment, offer, copyId } =
@@ -441,6 +470,22 @@ Deno.serve(async (req) => {
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errorText);
+      
+      // ===== TRATAMENTO DE ERROS 429/402 =====
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Limite de requisições atingido. Tente novamente em alguns instantes." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Créditos insuficientes. Adicione mais créditos para continuar." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       throw new Error(`AI gateway returned ${aiResponse.status}: ${errorText}`);
     }
 
@@ -474,10 +519,8 @@ Deno.serve(async (req) => {
     console.log("✅ System prompt generated successfully");
 
     // Salvar system prompt no banco (copies table) antes de retornar
-    if (copyId && supabaseUrl && supabaseKey) {
+    if (copyId) {
       console.log("💾 Salvando system prompt no banco...");
-
-      const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
       const { error: updateError } = await supabaseAdmin
         .from("copies")

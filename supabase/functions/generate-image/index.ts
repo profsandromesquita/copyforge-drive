@@ -189,6 +189,39 @@ serve(async (req) => {
   }
 
   try {
+    // ===== FASE 1: VALIDAÇÃO DE AUTENTICAÇÃO =====
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Autenticação necessária' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Configuração do Supabase não encontrada');
+    }
+
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Validar usuário autenticado
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('❌ Erro de autenticação:', userError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Token inválido ou expirado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Usuário autenticado:', user.id);
+
     const { prompt, imageUrl, type = 'generate', copyId, workspaceId } = await req.json();
 
     if (!prompt || !prompt.trim()) {
@@ -200,70 +233,62 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    // ===== FASE 3.1: BUSCAR CONTEXTO COMPLETO =====
+    // ===== BUSCAR CONTEXTO COMPLETO =====
     let projectData = null;
     let copyContext = null;
-    let supabaseClient = null;
     
     if (copyId) {
       console.log('🔍 Buscando contexto COMPLETO da copy:', copyId);
       
-      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      const { data: copyData, error: copyError } = await supabaseAdmin
+        .from('copies')
+        .select(`
+          id,
+          title,
+          copy_type,
+          project_id,
+          workspace_id,
+          projects (
+            brand_name,
+            sector,
+            central_purpose,
+            brand_personality,
+            voice_tones,
+            keywords,
+            visual_style,
+            color_palette,
+            imagery_style,
+            methodology,
+            audience_segments,
+            offers
+          )
+        `)
+        .eq('id', copyId)
+        .single();
       
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
-        supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      if (copyError) {
+        console.error('⚠️ Erro ao buscar contexto da copy:', copyError);
+      } else if (copyData) {
+        console.log('✅ Contexto COMPLETO da copy recuperado');
+        copyContext = {
+          title: copyData.title,
+          copy_type: copyData.copy_type
+        };
         
-        const { data: copyData, error: copyError } = await supabaseClient
-          .from('copies')
-          .select(`
-            id,
-            title,
-            copy_type,
-            project_id,
-            projects (
-              brand_name,
-              sector,
-              central_purpose,
-              brand_personality,
-              voice_tones,
-              keywords,
-              visual_style,
-              color_palette,
-              imagery_style,
-              methodology,
-              audience_segments,
-              offers
-            )
-          `)
-          .eq('id', copyId)
-          .single();
-        
-        if (copyError) {
-          console.error('⚠️ Erro ao buscar contexto da copy:', copyError);
-        } else if (copyData) {
-          console.log('✅ Contexto COMPLETO da copy recuperado');
-          copyContext = {
-            title: copyData.title,
-            copy_type: copyData.copy_type
-          };
-          
-          if (copyData.projects) {
-            projectData = copyData.projects;
-            console.log('📊 Project data completo carregado');
-          }
+        if (copyData.projects) {
+          projectData = copyData.projects;
+          console.log('📊 Project data completo carregado');
         }
       }
     }
 
-    // ===== FASE 3.4: CONSTRUIR PROMPTS DINÂMICOS =====
+    // ===== CONSTRUIR PROMPTS DINÂMICOS =====
     let systemPrompt: string;
     let enhancedPrompt: string;
     
-    if (supabaseClient && projectData) {
+    if (projectData) {
       const { systemPrompt: dynSystem, userMessage: dynUser } = await buildDynamicImagePrompt(
-        supabaseClient,
+        supabaseAdmin,
         type as 'generate' | 'optimize' | 'variation',
         projectData,
         prompt
@@ -383,36 +408,20 @@ serve(async (req) => {
     
     console.log('✅ Imagem extraída com sucesso');
 
-    // Salvar no histórico
-    if (supabaseClient && copyId && workspaceId) {
+    // Salvar no histórico (usando usuário autenticado)
+    if (copyId && workspaceId) {
       try {
-        const authHeader = req.headers.get('Authorization');
-        let userId = null;
-        
-        if (authHeader) {
-          try {
-            const token = authHeader.replace('Bearer ', '');
-            const { data: { user }, error } = await supabaseClient.auth.getUser(token);
-            
-            if (!error && user) {
-              userId = user.id;
-            }
-          } catch (e) {
-            console.error('⚠️ Erro ao obter usuário do token:', e);
-          }
-        }
-        
         const historyData = {
           copy_id: copyId,
           workspace_id: workspaceId,
-          created_by: userId,
+          created_by: user.id,
           generation_type: type === 'generate' ? 'create' : type === 'optimize' ? 'optimize' : 'variation',
           copy_type: 'image',
           prompt,
           parameters: {
             type,
             hasImageUrl: !!imageUrl,
-            usedTemplates: supabaseClient ? 'database' : 'fallback'
+            usedTemplates: projectData ? 'database' : 'fallback'
           },
           sessions: [{ title: 'Imagem Gerada', blocks: [{ type: 'image', content: generatedImageUrl }] }],
           model_used: 'google/gemini-2.5-flash-image-preview',
@@ -426,7 +435,7 @@ serve(async (req) => {
           } : null,
         };
 
-        const { error: historyError } = await supabaseClient
+        const { error: historyError } = await supabaseAdmin
           .from('ai_generation_history')
           .insert(historyData);
 
