@@ -49,7 +49,7 @@ export const WorkspaceUsers = () => {
         user_id,
         role,
         invited_at,
-        profile:profiles!workspace_members_user_id_fkey (
+        profile:profiles!fk_members_user (
           name,
           email
         )
@@ -118,7 +118,7 @@ export const WorkspaceUsers = () => {
       // Check if user is already a member
       const { data: existingMember } = await supabase
         .from('workspace_members')
-        .select('user_id, profiles!inner(email)')
+        .select('user_id, profiles!fk_members_user(email)')
         .eq('workspace_id', activeWorkspace.id);
 
       const isAlreadyMember = existingMember?.some(

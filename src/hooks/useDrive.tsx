@@ -108,7 +108,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
         .from('copies')
         .select(`
           *,
-          creator:profiles!created_by(name, avatar_url)
+          creator:profiles!fk_copies_creator(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
         .eq('is_template', false)
