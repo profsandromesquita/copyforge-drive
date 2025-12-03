@@ -1,25 +1,24 @@
 project_id = "fnebftywudiyjguzrofg"
 
+# =============================================
+# FASE 4: JWT VERIFICATION ENABLED
+# Funções críticas protegidas por autenticação
+# =============================================
+
 [functions.generate-copy]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-system-prompt]
 verify_jwt = true
 
 [functions.send-workspace-invite]
-verify_jwt = false
+verify_jwt = true
 
 [functions.optimize-copy]
 verify_jwt = true
 
 [functions.analyze-audience]
 verify_jwt = true
-
-[functions.setup-new-user]
-verify_jwt = false
-
-[functions.webhook-ticto]
-verify_jwt = false
 
 [functions.get-user-prompt]
 verify_jwt = true
@@ -31,13 +30,23 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.copy-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-image]
 verify_jwt = true
 
-[functions.activate-workspace-payment]
+# =============================================
+# EXCEÇÕES: Funções que DEVEM permanecer públicas
+# =============================================
+
+# setup-new-user: Chamada antes da autenticação completar
+[functions.setup-new-user]
 verify_jwt = false
 
-[functions.generate-web-page]
-verify_jwt = true
+# webhook-ticto: Webhook externo (validação via token interno)
+[functions.webhook-ticto]
+verify_jwt = false
+
+# activate-workspace-payment: Webhook externo (validação via secret interno)
+[functions.activate-workspace-payment]
+verify_jwt = false

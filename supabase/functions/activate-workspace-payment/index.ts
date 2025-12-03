@@ -3,8 +3,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-activation-secret',
 };
+
+// =============================================
+// FASE 4.2: VALIDAÇÃO INTERNA DE SEGURANÇA
+// Esta função não usa JWT mas requer secret interno
+// =============================================
+
+const ACTIVATION_SECRET = Deno.env.get('WORKSPACE_ACTIVATION_SECRET');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -13,6 +20,27 @@ serve(async (req) => {
   }
 
   try {
+    // =============================================
+    // VALIDAÇÃO DE SECRET INTERNO
+    // Previne chamadas não autorizadas
+    // =============================================
+    const providedSecret = req.headers.get('x-activation-secret');
+    
+    // Se o secret está configurado, validar
+    if (ACTIVATION_SECRET && ACTIVATION_SECRET.length > 0) {
+      if (!providedSecret || providedSecret !== ACTIVATION_SECRET) {
+        console.error('Invalid or missing activation secret');
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Invalid activation secret' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+      console.log('Activation secret validated successfully');
+    } else {
+      // Secret não configurado - log warning mas permite (para backward compatibility)
+      console.warn('WARNING: WORKSPACE_ACTIVATION_SECRET not configured. Function is unprotected!');
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
