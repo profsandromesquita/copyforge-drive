@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       // MRR e Assinaturas (filtrado por período de criação)
       let subscriptionsQuery = supabase
         .from('workspace_subscriptions')
-        .select('*, subscription_plans!inner(*), plan_offers(price)')
+        .select('*, subscription_plans!plan_id(*), plan_offers!plan_offer_id(price)')
         .eq('status', 'active')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString());

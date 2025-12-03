@@ -24,7 +24,7 @@ export const useActivePaymentGateways = () => {
           id,
           integration_id,
           is_active,
-          integrations (
+          integrations!integration_id (
             id,
             name,
             slug
