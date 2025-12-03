@@ -9,19 +9,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useState } from 'react';
 
-interface HistoryItem {
-  id: string;
-  generation_type: string;
-  generation_category: string | null;
-  created_at: string;
-  prompt: string;
-  model_used: string | null;
-  sessions: any;
-  original_content: any;
-  copy_type: string | null;
-  was_auto_routed: boolean | null;
-  parameters: any;
-}
+import type { AIGenerationHistoryItem, Session, Block } from '@/types/database';
+
+type HistoryItem = AIGenerationHistoryItem;
 
 interface HistorySheetProps {
   open: boolean;
@@ -111,13 +101,13 @@ export function HistorySheet({
 
                 <div className="space-y-3 border-t pt-4">
                   <h4 className="text-sm font-semibold">Conteúdo Gerado:</h4>
-                  {viewingCopy.sessions && Array.isArray(viewingCopy.sessions) && viewingCopy.sessions.map((session: any, idx: number) => (
+                  {viewingCopy.sessions && Array.isArray(viewingCopy.sessions) && viewingCopy.sessions.map((session: Session, idx: number) => (
                     <div key={idx} className="space-y-2 p-3 rounded-lg border bg-card">
                       <p className="text-xs font-medium text-muted-foreground">Sessão {idx + 1}</p>
-                      {session.blocks && Array.isArray(session.blocks) && session.blocks.map((block: any, blockIdx: number) => (
+                      {session.blocks && Array.isArray(session.blocks) && session.blocks.map((block: Block, blockIdx: number) => (
                         <div key={blockIdx} className="text-sm space-y-1">
                           {block.content && (
-                            <p className="leading-relaxed">{block.content}</p>
+                            <p className="leading-relaxed">{typeof block.content === 'string' ? block.content : JSON.stringify(block.content)}</p>
                           )}
                         </div>
                       ))}

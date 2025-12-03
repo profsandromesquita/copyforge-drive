@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { PaymentGatewayConfig, TictoWebhookPayload, WebhookHeaders } from "@/types/database";
 
-interface PaymentGatewayConfig {
+interface PaymentGatewayRow {
   id: string;
   integration_id: string;
   workspace_id: string | null;
   is_active: boolean;
-  config: any;
+  config: PaymentGatewayConfig;
   created_at: string;
   updated_at: string;
 }
@@ -16,8 +17,8 @@ interface WebhookLog {
   id: string;
   integration_slug: string;
   event_type: string;
-  payload: any;
-  headers: any;
+  payload: TictoWebhookPayload;
+  headers: WebhookHeaders | null;
   status: string;
   error_message: string | null;
   processed_at: string | null;
@@ -30,7 +31,7 @@ export const usePaymentGateway = (integrationSlug: string) => {
   // Buscar configuração do gateway
   const { data: config, isLoading } = useQuery({
     queryKey: ['payment-gateway-config', integrationSlug],
-    queryFn: async (): Promise<PaymentGatewayConfig | null> => {
+    queryFn: async (): Promise<PaymentGatewayRow | null> => {
       const { data: integration } = await supabase
         .from('integrations')
         .select('id')
@@ -51,7 +52,7 @@ export const usePaymentGateway = (integrationSlug: string) => {
         return null;
       }
 
-      return data;
+      return data as PaymentGatewayRow;
     },
   });
 
@@ -71,7 +72,7 @@ export const usePaymentGateway = (integrationSlug: string) => {
         return [];
       }
 
-      return data || [];
+      return (data || []) as WebhookLog[];
     },
   });
 

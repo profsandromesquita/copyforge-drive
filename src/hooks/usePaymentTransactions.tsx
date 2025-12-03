@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { TictoWebhookPayload, WebhookHeaders } from "@/types/database";
 
 export interface PaymentTransaction {
   id: string;
@@ -15,8 +16,8 @@ export interface PaymentTransaction {
   workspace_name?: string;
   owner_name?: string;
   owner_email?: string;
-  payload: any;
-  headers?: any;
+  payload: TictoWebhookPayload;
+  headers?: WebhookHeaders;
   error_message?: string;
 }
 
@@ -77,11 +78,11 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
       const workspaceIds = [...new Set(
         data
           .map(log => {
-            const payload = log.payload as any;
+            const payload = log.payload as TictoWebhookPayload;
             return payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
           })
           .filter(Boolean)
-      )];
+      )] as string[];
 
       // Buscar todos os workspaces de uma vez (batch query)
       const { data: workspacesData } = await supabase
@@ -119,7 +120,7 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
 
       // Enriquecer dados usando os mapas (muito mais rápido)
       const enrichedData = data.map((log) => {
-        const payload = log.payload as any;
+        const payload = log.payload as TictoWebhookPayload;
         const workspaceIdFromPayload = payload?.query_params?.workspace_id || payload?.url_params?.workspace_id;
         
         const workspaceName = workspaceIdFromPayload ? workspaceMap.get(workspaceIdFromPayload) : undefined;
@@ -131,7 +132,7 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
           event_type: log.event_type,
           status: log.status as 'success' | 'failed' | 'processing' | 'received',
           created_at: log.created_at,
-          processed_at: log.processed_at,
+          processed_at: log.processed_at || undefined,
           paid_amount: parseFloat(payload?.order?.paid_amount || '0') / 100,
           offer_id: payload?.item?.offer_id || '',
           offer_name: payload?.item?.offer_name || '',
@@ -139,10 +140,10 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
           workspace_name: workspaceName,
           owner_name: owner?.name,
           owner_email: owner?.email,
-          payload: log.payload,
-          headers: log.headers,
-          error_message: log.error_message,
-        };
+          payload: payload,
+          headers: log.headers as WebhookHeaders | undefined,
+          error_message: log.error_message || undefined,
+        } as PaymentTransaction;
       });
 
       // Filtrar por workspace se especificado
@@ -208,7 +209,7 @@ export const usePaymentTransactionsSummary = (params?: { startDate?: string; end
         const totalAmount = data
           .filter(d => d.status === 'success')
           .reduce((acc, curr) => {
-            const payload = curr.payload as any;
+            const payload = curr.payload as TictoWebhookPayload;
             const amount = parseFloat(payload?.order?.paid_amount || '0') / 100; // Converter centavos para reais
             return acc + amount;
           }, 0);
