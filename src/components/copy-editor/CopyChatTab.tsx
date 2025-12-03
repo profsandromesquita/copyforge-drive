@@ -55,12 +55,17 @@ import { Microphone, MicrophoneSlash } from 'phosphor-react';
 import { toast as sonnerToast } from 'sonner';
 
 interface ChatResponse {
-  success: boolean;
+  success?: boolean;
   message: string;
   tokens?: any;
   intent?: 'replace' | 'insert' | 'conversational' | 'default';
   actionable?: boolean;
+  done?: boolean;
+  delta?: string;
+  error?: string;
+  missingVariables?: Array<{ variable: string; label: string }>;
 }
+
 import { 
   extractVariables, 
   validateVariables, 
@@ -94,6 +99,9 @@ interface CopyChatTabProps {
 export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabProps) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState('');
+  const [streamingIntent, setStreamingIntent] = useState<'replace' | 'insert' | 'conversational' | 'default' | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -169,12 +177,12 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     }, 0);
   };
 
-  // Auto-scroll quando o histórico muda (nova mensagem ou resposta)
+  // Auto-scroll quando o histórico muda ou streaming atualiza
   useEffect(() => {
-    if (chatHistory.length > 0) {
+    if (chatHistory.length > 0 || streamingMessage) {
       scrollToBottom();
     }
-  }, [chatHistory]);
+  }, [chatHistory, streamingMessage]);
 
   // Auto-scroll quando a aba Chat fica ativa
   useEffect(() => {
@@ -183,80 +191,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     }
   }, [isActive, chatHistory.length]);
 
-  // Enviar mensagem
-  const sendMessageMutation = useMutation<ChatResponse, Error, string>({
-    mutationFn: async (userMessage: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Sessão não encontrada');
-
-      const { data, error } = await supabase.functions.invoke('copy-chat', {
-        body: {
-          copyId,
-          message: userMessage,
-          hasSelection: selectedItems.length > 0, // 🆕 NOVO: enviar hasSelection
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data: ChatResponse) => {
-      // 🆕 NOVO COMPORTAMENTO: Apenas invalidar query para atualizar o chat
-      // A aplicação da mudança acontece EXCLUSIVAMENTE via modal/card
-      queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
-      setMessage('');
-    },
-    onError: (error: any) => {
-      console.error('Erro ao enviar mensagem:', error);
-      
-      if (error.message?.includes('insufficient_credits') || error.status === 402) {
-        toast({
-          title: 'Créditos insuficientes',
-          description: 'Adicione créditos para continuar usando o chat IA.',
-          variant: 'destructive',
-        });
-      } else if (error.message?.includes('rate_limit') || error.status === 429) {
-        toast({
-          title: 'Limite de requisições atingido',
-          description: 'Aguarde alguns segundos antes de tentar novamente.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Erro ao enviar mensagem',
-          description: 'Tente novamente em alguns instantes.',
-          variant: 'destructive',
-        });
-      }
-    },
-  });
-
-  // Limpar histórico
-  const clearHistoryMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('copy_chat_messages')
-        .delete()
-        .eq('copy_id', copyId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
-      setShowClearConfirm(false);
-    },
-    onError: () => {
-      toast({
-        title: 'Erro ao limpar histórico',
-        description: 'Tente novamente.',
-        variant: 'destructive',
-      });
-    },
-  });
-
+  // Enviar mensagem com streaming
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || !copyId) return;
@@ -310,17 +245,152 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     const fullMessage = trimmedMessage + selectionContext;
 
     setIsLoading(true);
+    setIsStreaming(true);
+    setStreamingMessage('');
+    setStreamingIntent(undefined);
+    setMessage('');
+
     try {
-      await sendMessageMutation.mutateAsync(fullMessage);
-      setMessage('');
-      // Não limpar a seleção aqui - ela será limpa após aplicar a ação (substituir/adicionar)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão não encontrada');
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      
+      // Fazer fetch com streaming
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/copy-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          copyId,
+          message: fullMessage,
+          hasSelection: selectedItems.length > 0,
+        }),
+      });
+
+      // Verificar se é erro (JSON) ou stream (SSE)
+      const contentType = response.headers.get('content-type') || '';
+      
+      if (!response.ok || contentType.includes('application/json')) {
+        const errorData = await response.json();
+        
+        if (response.status === 402 || errorData.error === 'insufficient_credits') {
+          toast({
+            title: 'Créditos insuficientes',
+            description: 'Adicione créditos para continuar usando o chat IA.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (response.status === 429 || errorData.error === 'rate_limit_exceeded') {
+          toast({
+            title: 'Limite de requisições atingido',
+            description: 'Aguarde alguns segundos antes de tentar novamente.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        throw new Error(errorData.message || 'Erro ao enviar mensagem');
+      }
+
+      // Processar stream SSE
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body reader');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Processar linhas completas
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, newlineIndex).trim();
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (!line || !line.startsWith('data: ')) continue;
+
+          const jsonStr = line.slice(6);
+          if (jsonStr === '[DONE]') continue;
+
+          try {
+            const parsed: ChatResponse = JSON.parse(jsonStr);
+
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+
+            if (parsed.delta) {
+              fullContent += parsed.delta;
+              setStreamingMessage(fullContent);
+            }
+
+            if (parsed.done) {
+              // Stream completo - capturar metadata
+              setStreamingIntent(parsed.intent);
+              console.log('✓ Stream completo:', {
+                messageLength: parsed.message?.length,
+                intent: parsed.intent,
+                tokens: parsed.tokens
+              });
+            }
+          } catch {
+            // JSON incompleto - aguardar próximo chunk
+          }
+        }
+      }
+
+      // Invalidar queries para buscar mensagens persistidas
+      await queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
+
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      toast({
+        title: 'Erro ao enviar mensagem',
+        description: error.message || 'Tente novamente em alguns instantes.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage('');
+      setStreamingIntent(undefined);
     }
   };
 
+  // Limpar histórico
+  const clearHistoryMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('copy_chat_messages')
+        .delete()
+        .eq('copy_id', copyId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
+      setShowClearConfirm(false);
+    },
+    onError: () => {
+      toast({
+        title: 'Erro ao limpar histórico',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleHistoryItemClick = (item: any) => {
-    // Importar sessões geradas
     importSessions(item.sessions);
     setShowHistory(false);
     toast({
@@ -356,7 +426,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const handleAddContent = useCallback(async (generatedSessions: Session[]) => {
     if (generatedSessions.length === 0) return;
 
-    // Se há seleção, inserir após a seleção usando insertSessionsAfterSelection
     if (selectedItems.length > 0) {
       insertSessionsAfterSelection(generatedSessions, selectedItems);
       
@@ -367,7 +436,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       
       clearSelection();
     } else {
-      // Sem seleção: adicionar no final usando importSessions
       importSessions(generatedSessions);
 
       toast({
@@ -377,30 +445,27 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     }
   }, [importSessions, insertSessionsAfterSelection, selectedItems, toast, clearSelection]);
 
-  // Inserir conteúdo após o item selecionado (não no final)
+  // Inserir conteúdo após o item selecionado
   const handleInsertAfterSelection = useCallback(async (generatedSessions: Session[]) => {
     if (generatedSessions.length === 0) return;
     
-    // Se há seleção, inserir após o último bloco selecionado
     if (selectedItems.length > 0) {
       const lastSelectedBlock = selectedItems[selectedItems.length - 1];
       
       if (lastSelectedBlock.type === 'block') {
-        // Encontrar a sessão do bloco
         const sessionIndex = sessions.findIndex(s => s.id === lastSelectedBlock.sessionId);
         const session = sessions[sessionIndex];
         
         if (session) {
           const blockIndex = session.blocks.findIndex(b => b.id === lastSelectedBlock.id);
-          const selectedBlock = session.blocks[blockIndex]; // 🆕 Pegar bloco pai
+          const selectedBlock = session.blocks[blockIndex];
           
-          // 🆕 HERDAR tipo e formatação do bloco pai
           const newBlocks = generatedSessions.flatMap(s => s.blocks).map(generatedBlock => ({
             ...generatedBlock,
-            type: selectedBlock.type, // ✅ COPIAR tipo (headline, text, list)
+            type: selectedBlock.type,
             config: {
               ...generatedBlock.config,
-              ...selectedBlock.config, // ✅ COPIAR formatação (fontSize, fontWeight, color, etc)
+              ...selectedBlock.config,
             }
           }));
           
@@ -424,7 +489,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       }
     }
     
-    // Fallback: adicionar no final (comportamento padrão)
     importSessions(generatedSessions);
     
     toast({
@@ -439,11 +503,9 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
 
     let replacedCount = 0;
 
-    // Agrupar items selecionados por tipo
     const selectedSessions = selectedItems.filter(item => item.type === 'session');
     const selectedBlocks = selectedItems.filter(item => item.type === 'block');
 
-    // Substituir sessões completas (mapear 1:1 com sessões geradas)
     selectedSessions.forEach((item, idx) => {
       if (generatedSessions[idx]) {
         updateSession(item.id, {
@@ -454,21 +516,17 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       }
     });
 
-    // Substituir blocos individuais (se não há sessões selecionadas)
     if (selectedBlocks.length > 0 && selectedSessions.length === 0) {
       const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
 
-      // Substituição 1:1 - apenas o conteúdo, mantendo tipo e config
       selectedBlocks.forEach((item, idx) => {
         const generatedBlock = allGeneratedBlocks[idx];
         if (!generatedBlock) return;
 
-        // Converter markdown para HTML antes de atualizar
         const content = typeof generatedBlock.content === 'string' 
           ? markdownToHtml(generatedBlock.content)
           : generatedBlock.content;
 
-        // Atualizar APENAS o conteúdo, preservando tipo e formatação original
         updateBlock(item.id, {
           content,
         });
@@ -493,7 +551,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     const selectedSessions = selectedItems.filter(item => item.type === 'session');
     const selectedBlocks = selectedItems.filter(item => item.type === 'block');
 
-    // Se há sessões selecionadas, substituir com sessões geradas
     if (selectedSessions.length > 0) {
       selectedSessions.forEach((item, idx) => {
         if (generatedSessions[idx]) {
@@ -506,7 +563,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       });
     }
 
-    // Se apenas blocos estão selecionados, distribuir blocos gerados
     if (selectedBlocks.length > 0 && selectedSessions.length === 0) {
       const allGeneratedBlocks = generatedSessions.flatMap(s => s.blocks);
       selectedBlocks.forEach((item, idx) => {
@@ -541,14 +597,11 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const insertVariable = (variable: string) => {
     if (!textareaRef.current) return;
     
-    // Encontrar onde começa o #
     const lastHashIndex = message.lastIndexOf('#');
     
     if (lastHashIndex === -1) {
-      // Se não há #, apenas adicionar a variável no final
       setMessage(message + variable + ' ');
     } else {
-      // Substituir de # até o cursor pela variável
       const textBeforeHash = message.substring(0, lastHashIndex);
       const textAfterCursor = message.substring(message.length);
       const newText = textBeforeHash + variable + ' ' + textAfterCursor;
@@ -557,7 +610,6 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     
     setShowVariableSuggestions(false);
     
-    // Refocar no input
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 0);
@@ -645,12 +697,10 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyboardShortcut = (e: KeyboardEvent) => {
-      // ESC para sair do modo de seleção
       if (e.key === 'Escape' && isSelectionMode) {
         clearSelection();
       }
       
-      // Ctrl/Cmd + Shift + S para ativar modo de seleção
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
         e.preventDefault();
         toggleSelectionMode();
@@ -681,7 +731,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : chatHistory.length === 0 ? (
+          ) : chatHistory.length === 0 && !isStreaming ? (
             <div className="flex items-center justify-center h-full text-center text-muted-foreground">
               <div>
                 <p className="text-sm">Nenhuma mensagem ainda</p>
@@ -707,7 +757,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
               message={msg}
               hasSelection={selectedItems.length > 0}
               selectedItems={selectedItems}
-              intent={msg.metadata?.intent} // 🆕 CORRIGIDO: passar intent do metadata
+              intent={msg.metadata?.intent}
               onAddContent={handleAddContent}
               onReplaceContent={handleReplaceContent}
               onReplaceAll={handleReplaceAll}
@@ -726,10 +776,27 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
                   </div>
                 </div>
               ))}
-              {isLoading && (
+
+              {/* Mensagem em streaming */}
+              {isStreaming && streamingMessage && (
+                <div className="flex justify-start animate-in fade-in duration-200">
+                  <div className="max-w-[90%] rounded-lg p-3 bg-muted text-foreground">
+                    <p className="text-sm whitespace-pre-wrap break-words">
+                      {streamingMessage}
+                      <span className="inline-block w-1 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading indicator quando não há streaming visível ainda */}
+              {isLoading && !streamingMessage && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg p-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Pensando...</span>
+                    </div>
                   </div>
                 </div>
               )}
