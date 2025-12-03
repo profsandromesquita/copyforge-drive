@@ -54,10 +54,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Microphone, MicrophoneSlash } from 'phosphor-react';
 import { toast as sonnerToast } from 'sonner';
 
+import type { AITokensInfo, AIGenerationHistoryItem } from '@/types/database';
+
 interface ChatResponse {
   success?: boolean;
   message: string;
-  tokens?: any;
+  tokens?: AITokensInfo;
   intent?: 'replace' | 'insert' | 'conversational' | 'default';
   actionable?: boolean;
   done?: boolean;
@@ -105,6 +107,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
   const [showHistory, setShowHistory] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [recognition, setRecognition] = useState<any>(null);
   const [showVariablesHelp, setShowVariablesHelp] = useState(false);
   const [showVariableSuggestions, setShowVariableSuggestions] = useState(false);
@@ -352,11 +355,12 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       // Invalidar queries para buscar mensagens persistidas
       await queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Tente novamente em alguns instantes.';
       toast({
         title: 'Erro ao enviar mensagem',
-        description: error.message || 'Tente novamente em alguns instantes.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -390,7 +394,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
     },
   });
 
-  const handleHistoryItemClick = (item: any) => {
+  const handleHistoryItemClick = (item: AIGenerationHistoryItem) => {
     importSessions(item.sessions);
     setShowHistory(false);
     toast({
@@ -1084,7 +1088,7 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
         <HistorySheet 
           open={showHistory}
           onOpenChange={setShowHistory}
-          history={history}
+          history={history as unknown as AIGenerationHistoryItem[]}
           loadingHistory={loadingHistory}
           onHistoryItemClick={handleHistoryItemClick}
         />

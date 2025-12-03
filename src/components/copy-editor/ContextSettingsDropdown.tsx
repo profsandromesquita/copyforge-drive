@@ -8,7 +8,7 @@ import { useProject } from '@/hooks/useProject';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AudienceSegment, Offer } from '@/types/project-config';
+import type { AudienceSegmentJson, OfferJson, MethodologyJson, CopyUpdate } from '@/types/database';
 
 interface ContextSettingsDropdownProps {
   onContextChange?: (context: {
@@ -33,14 +33,14 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const audienceSegments = (activeProject?.audience_segments as AudienceSegment[]) || [];
-  const offers = (activeProject?.offers as Offer[]) || [];
+  const audienceSegments = (activeProject?.audience_segments || []) as AudienceSegmentJson[];
+  const offers = (activeProject?.offers || []) as OfferJson[];
   
   // Metodologia pode ser array ou objeto singular, normalizar para array
-  const methodologies = activeProject?.methodology 
+  const methodologies: MethodologyJson[] = activeProject?.methodology 
     ? (Array.isArray(activeProject.methodology) 
         ? activeProject.methodology 
-        : [activeProject.methodology])
+        : [activeProject.methodology]) as MethodologyJson[]
     : [];
 
   // Debug: verificar IDs dos segments
@@ -70,7 +70,7 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
     
     setIsSaving(true);
     try {
-      const updateData: any = {};
+      const updateData: Partial<CopyUpdate> = {};
       let newAudienceId = audienceSegmentId;
       let newOfferId = offerId;
       let newMethodologyId = methodologyId;
@@ -218,7 +218,7 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
                       Nenhuma metodologia configurada
                     </div>
                   ) : (
-                    methodologies.map((methodology: any) => (
+                    methodologies.map((methodology) => (
                       <SelectItem key={methodology.id} value={methodology.id} className="text-sm">
                         {methodology.name}
                       </SelectItem>

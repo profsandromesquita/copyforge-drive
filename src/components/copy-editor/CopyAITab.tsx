@@ -20,7 +20,7 @@ import { SelectContentModal } from './SelectContentModal';
 import { OptimizeComparisonModal } from './OptimizeComparisonModal';
 import { ModelSelector } from './ModelSelector';
 import { SystemPromptEditorModal } from './SystemPromptEditorModal';
-import { AudienceSegment, Offer } from '@/types/project-config';
+import type { AudienceSegmentJson, OfferJson } from '@/types/database';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -156,8 +156,8 @@ export const CopyAITab = ({
   const [generatedSystemPrompt, setGeneratedSystemPrompt] = useState<string | null>(null);
   const [isGeneratingSystemPrompt, setIsGeneratingSystemPrompt] = useState(false);
   const [showGeneratedPromptEditor, setShowGeneratedPromptEditor] = useState(false);
-  const audienceSegments = activeProject?.audience_segments || [];
-  const offers = activeProject?.offers || [];
+  const audienceSegments = (activeProject?.audience_segments || []) as AudienceSegmentJson[];
+  const offers = (activeProject?.offers || []) as OfferJson[];
 
   // Carregar estado salvo do localStorage quando o componente montar
   useEffect(() => {
@@ -466,10 +466,11 @@ export const CopyAITab = ({
       });
       if (systemPromptError) {
         console.error('❌ Erro ao gerar system prompt:', systemPromptError);
+        const errorWithStatus = systemPromptError as { status?: number; message?: string; context?: unknown };
         console.error('📦 Detalhes do erro:', {
-          message: systemPromptError.message,
-          context: systemPromptError.context,
-          status: (systemPromptError as any).status,
+          message: errorWithStatus.message,
+          context: errorWithStatus.context,
+          status: errorWithStatus.status,
           full: JSON.stringify(systemPromptError, null, 2)
         });
       }

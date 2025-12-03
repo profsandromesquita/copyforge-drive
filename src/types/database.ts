@@ -347,3 +347,103 @@ export type CopyWithRelations = TypedCopy & WithCreator & WithProject;
  * Folder com creator
  */
 export type FolderWithCreator = FolderRow & WithCreator;
+
+// ============================================================================
+// WEBHOOK & PAYMENT TYPES
+// ============================================================================
+
+/**
+ * Ticto Webhook Payload Structure
+ * Based on actual webhook data from Ticto payment gateway
+ */
+export interface TictoWebhookPayload {
+  event?: string;
+  order?: {
+    id?: string;
+    paid_amount?: string;
+    currency?: string;
+    status?: string;
+    payment_method?: string;
+    created_at?: string;
+  };
+  item?: {
+    offer_id?: string;
+    offer_name?: string;
+    product_id?: string;
+    product_name?: string;
+  };
+  customer?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    document?: string;
+    cpf?: string;
+    cnpj?: string;
+  };
+  subscription?: {
+    id?: string;
+    status?: string;
+    plan_id?: string;
+  };
+  query_params?: {
+    workspace_id?: string;
+    [key: string]: string | undefined;
+  };
+  url_params?: {
+    workspace_id?: string;
+    [key: string]: string | undefined;
+  };
+}
+
+/**
+ * Payment Gateway Configuration
+ */
+export interface PaymentGatewayConfig {
+  validation_token?: string;
+  webhook_url?: string;
+  api_key?: string;
+  sandbox_mode?: boolean;
+  [key: string]: string | boolean | undefined;
+}
+
+/**
+ * Webhook Headers
+ */
+export interface WebhookHeaders {
+  'content-type'?: string;
+  'x-webhook-signature'?: string;
+  'user-agent'?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * AI Generation Tokens Info (for streaming responses)
+ */
+export interface AITokensInfo {
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  model?: string;
+}
+
+/**
+ * History Item for AI Generation History (UI-friendly interface)
+ */
+export interface AIGenerationHistoryItem {
+  id: string;
+  generation_type: string;
+  generation_category: string | null;
+  created_at: string;
+  prompt: string;
+  model_used: string | null;
+  sessions: Session[];
+  original_content: Session[] | null;
+  copy_type: string | null;
+  was_auto_routed: boolean | null;
+  parameters: {
+    objectives?: string[];
+    styles?: string[];
+    size?: string;
+    [key: string]: unknown;
+  } | null;
+}

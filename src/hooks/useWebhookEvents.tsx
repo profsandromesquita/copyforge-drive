@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { TictoWebhookPayload, WebhookHeaders } from "@/types/database";
 
 export interface WebhookEvent {
   id: string;
@@ -8,8 +9,8 @@ export interface WebhookEvent {
   event_category: string;
   status: string;
   error_message?: string;
-  payload: any;
-  headers: any;
+  payload: TictoWebhookPayload;
+  headers: WebhookHeaders | null;
   created_at: string;
   processed_at?: string;
 }
