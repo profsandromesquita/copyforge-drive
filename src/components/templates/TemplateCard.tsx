@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Copy } from '@/types/copy-editor';
@@ -13,18 +12,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import MoveModal from '@/components/drive/MoveModal';
 import { useAuth } from '@/hooks/useAuth';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { getCopyTypeLabel } from '@/lib/copy-types';
 
 interface TemplateCardProps {
   template: Copy;
@@ -34,17 +25,6 @@ interface TemplateCardProps {
   onDelete: (templateId: string) => void;
   onMove: (templateId: string, targetFolderId: string | null) => Promise<void> | void;
 }
-
-const COPY_TYPE_LABELS: Record<string, string> = {
-  'landing_page': 'Landing Page',
-  'anuncio': 'Anúncio',
-  'vsl': 'Video de Vendas',
-  'email': 'E-mail',
-  'webinar': 'Webinar',
-  'conteudo': 'Conteúdo',
-  'mensagem': 'Mensagem',
-  'outro': 'Outro',
-};
 
 const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }: TemplateCardProps) => {
   const { user } = useAuth();
@@ -187,7 +167,7 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
               <h2 className="text-lg md:text-xl font-bold truncate">{template.title}</h2>
               {template.copy_type && (
                 <p className="text-xs text-muted-foreground/60 mt-1 truncate">
-                  {COPY_TYPE_LABELS[template.copy_type] || template.copy_type}
+                  {getCopyTypeLabel(template.copy_type)}
                 </p>
               )}
             </div>
@@ -245,28 +225,16 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
         }}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja realmente excluir o modelo "{template.title}"? Essa ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
-                onDelete(template.id);
-                setDeleteDialogOpen(false);
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={template.title}
+        itemType="modelo"
+        onConfirm={() => {
+          onDelete(template.id);
+          setDeleteDialogOpen(false);
+        }}
+      />
     </>
   );
 };

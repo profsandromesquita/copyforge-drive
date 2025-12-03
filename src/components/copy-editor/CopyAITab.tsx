@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -89,30 +89,35 @@ export const CopyAITab = ({
   } = useAICharacteristics('foco_emocional');
 
   // Mapear características para formato esperado pelos selects (incluindo ai_instruction)
-  const FRAMEWORKS = frameworksData.map(c => ({
+  // Memoizado para evitar re-renders desnecessários
+  const FRAMEWORKS = useMemo(() => frameworksData.map(c => ({
     value: c.value,
     label: c.label,
     description: c.description,
     ai_instruction: c.ai_instruction
-  }));
-  const OBJETIVOS = objetivosData.map(c => ({
+  })), [frameworksData]);
+
+  const OBJETIVOS = useMemo(() => objetivosData.map(c => ({
     value: c.value,
     label: c.label,
     description: c.description,
     ai_instruction: c.ai_instruction
-  }));
-  const ESTILOS = estilosData.map(c => ({
+  })), [objetivosData]);
+
+  const ESTILOS = useMemo(() => estilosData.map(c => ({
     value: c.value,
     label: c.label,
     description: c.description,
     ai_instruction: c.ai_instruction
-  }));
-  const FOCO_EMOCIONAL = focoEmocionalData.map(c => ({
+  })), [estilosData]);
+
+  const FOCO_EMOCIONAL = useMemo(() => focoEmocionalData.map(c => ({
     value: c.value,
     label: c.label,
     description: c.description,
     ai_instruction: c.ai_instruction
-  }));
+  })), [focoEmocionalData]);
+
   const isLoadingCharacteristics = loadingFrameworks || loadingObjetivos || loadingEstilos || loadingFocoEmocional;
 
   // Estado para verificação de acesso Copy IA

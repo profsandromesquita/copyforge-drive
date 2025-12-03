@@ -7,17 +7,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getCopyTypeOptions, getCopyTypeLabel } from "@/lib/copy-types";
 
-const COPY_TYPES = [
-  { value: 'landing_page', label: 'Landing Page' },
-  { value: 'anuncio', label: 'Anúncio' },
-  { value: 'vsl', label: 'Video de Vendas' },
-  { value: 'email', label: 'E-mail' },
-  { value: 'webinar', label: 'Webinar' },
-  { value: 'conteudo', label: 'Conteúdo' },
-  { value: 'mensagem', label: 'Mensagem' },
-  { value: 'outro', label: 'Outro' },
-];
+const COPY_TYPES = getCopyTypeOptions();
 
 interface TypeFilterProps {
   selectedType: string | null;
@@ -25,7 +17,7 @@ interface TypeFilterProps {
 }
 
 export const TypeFilter = ({ selectedType, onTypeChange }: TypeFilterProps) => {
-  const selectedLabel = COPY_TYPES.find(t => t.value === selectedType)?.label;
+  const selectedLabel = selectedType ? getCopyTypeLabel(selectedType) : null;
 
   return (
     <DropdownMenu>
