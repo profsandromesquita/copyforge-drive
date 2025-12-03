@@ -41,7 +41,7 @@ const PublicCopy = () => {
     try {
       const { data, error } = await supabase
         .from('copies')
-        .select('*, profiles(name, avatar_url)')
+        .select('*, profiles!fk_copies_creator(name, avatar_url)')
         .eq('id', id)
         .eq('is_public', true)
         .single();

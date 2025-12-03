@@ -14,10 +14,10 @@ export const useWorkspacePlan = (workspaceId: string | undefined) => {
 
       const { data, error } = await supabase
         .from('workspace_subscriptions')
-        .select('subscription_plans(name, slug)')
+        .select('subscription_plans!fk_subscriptions_plan(name, slug)')
         .eq('workspace_id', workspaceId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching workspace plan:', error);
