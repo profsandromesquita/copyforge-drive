@@ -8,32 +8,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useDrive } from "@/hooks/useDrive";
 import MoveModal from "./MoveModal";
 import { BlockPreview } from "@/components/copy-editor/BlockPreview";
 import { Session } from "@/types/copy-editor";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { RenameDialog } from "@/components/ui/rename-dialog";
+import { getCopyTypeLabel } from "@/lib/copy-types";
 
 interface CopyCardProps {
   id: string;
@@ -48,23 +31,11 @@ interface CopyCardProps {
   onClick?: () => void;
 }
 
-const COPY_TYPE_LABELS: Record<string, string> = {
-  'landing_page': 'Landing Page',
-  'anuncio': 'Anúncio',
-  'vsl': 'Video de Vendas',
-  'email': 'E-mail',
-  'webinar': 'Webinar',
-  'conteudo': 'Conteúdo',
-  'mensagem': 'Mensagem',
-  'outro': 'Outro',
-};
-
 const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, copyType, onClick }: CopyCardProps) => {
   const { deleteCopy, renameCopy, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
 
   const getFirstImage = () => {
@@ -98,17 +69,11 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
     }
   });
 
-  const handleRename = async () => {
-    if (!newName.trim()) return;
-    
+  const handleRename = async (newName: string) => {
     setIsRenaming(true);
-    await renameCopy(id, newName.trim());
+    await renameCopy(id, newName);
     setIsRenaming(false);
     setRenameDialogOpen(false);
-  };
-
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -151,7 +116,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
               </h3>
               {copyType && (
                 <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  {COPY_TYPE_LABELS[copyType] || copyType}
+                  {getCopyTypeLabel(copyType)}
                 </p>
               )}
             </div>
@@ -198,7 +163,7 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
                   className="cursor-pointer text-destructive"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete();
+                    setDeleteDialogOpen(true);
                   }}
                 >
                   <Trash size={16} className="mr-2" />
@@ -290,42 +255,14 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         </div>
       </div>
 
-      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent onClick={(e) => e.stopPropagation()}>
-          <DialogHeader>
-            <DialogTitle>Renomear Copy</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-name">Novo Nome</Label>
-              <Input
-                id="new-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleRename();
-                  }
-                }}
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setRenameDialogOpen(false)}
-              disabled={isRenaming}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleRename} disabled={isRenaming || !newName.trim()}>
-              {isRenaming ? 'Renomeando...' : 'Renomear'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameDialog
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
+        currentName={title}
+        onRename={handleRename}
+        isRenaming={isRenaming}
+        title="Renomear Copy"
+      />
 
       <MoveModal
         open={moveModalOpen}
@@ -336,25 +273,13 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
         onMove={handleMove}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja realmente excluir a copy "{title}"? Essa ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={title}
+        itemType="copy"
+        onConfirm={confirmDelete}
+      />
     </>
   );
 };

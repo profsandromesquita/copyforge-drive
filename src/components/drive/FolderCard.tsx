@@ -7,28 +7,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { useDrive } from "@/hooks/useDrive";
 import MoveModal from "./MoveModal";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { RenameDialog } from "@/components/ui/rename-dialog";
 
 interface FolderCardProps {
   id: string;
@@ -42,7 +24,6 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [newName, setNewName] = useState(title);
   const [isRenaming, setIsRenaming] = useState(false);
 
   const { attributes, listeners, setNodeRef: setDragNodeRef, isDragging } = useDraggable({
@@ -65,17 +46,11 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
     setDropNodeRef(node);
   };
 
-  const handleRename = async () => {
-    if (!newName.trim()) return;
-    
+  const handleRename = async (newName: string) => {
     setIsRenaming(true);
-    await renameFolder(id, newName.trim());
+    await renameFolder(id, newName);
     setIsRenaming(false);
     setRenameDialogOpen(false);
-  };
-
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -148,7 +123,7 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
               className="cursor-pointer text-destructive"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete();
+                setDeleteDialogOpen(true);
               }}
             >
               <Trash size={16} className="mr-2" />
@@ -158,42 +133,14 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
         </DropdownMenu>
       </div>
 
-      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent onClick={(e) => e.stopPropagation()}>
-          <DialogHeader>
-            <DialogTitle>Renomear Pasta</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-name">Novo Nome</Label>
-              <Input
-                id="new-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleRename();
-                  }
-                }}
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setRenameDialogOpen(false)}
-              disabled={isRenaming}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleRename} disabled={isRenaming || !newName.trim()}>
-              {isRenaming ? 'Renomeando...' : 'Renomear'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameDialog
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
+        currentName={title}
+        onRename={handleRename}
+        isRenaming={isRenaming}
+        title="Renomear Pasta"
+      />
 
       <MoveModal
         open={moveModalOpen}
@@ -204,25 +151,13 @@ const FolderCard = ({ id, title, folderId, onClick }: FolderCardProps) => {
         onMove={handleMove}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja realmente excluir a pasta "{title}"? Essa ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={title}
+        itemType="pasta"
+        onConfirm={confirmDelete}
+      />
     </>
   );
 };
