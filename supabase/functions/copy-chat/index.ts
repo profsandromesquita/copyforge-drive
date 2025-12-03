@@ -15,7 +15,7 @@ interface ChatMessage {
 interface ChatRequest {
   copyId: string;
   message: string;
-  hasSelection?: boolean; // 🆕 NOVO
+  hasSelection?: boolean;
 }
 
 serve(async (req) => {
@@ -64,7 +64,7 @@ serve(async (req) => {
     console.log('✓ User autenticado em copy-chat:', userId);
 
     const body: ChatRequest = await req.json();
-    const { copyId, message, hasSelection = false } = body; // 🆕 Default false
+    const { copyId, message, hasSelection = false } = body;
 
     if (!copyId || !message?.trim()) {
       return new Response(
@@ -80,8 +80,8 @@ serve(async (req) => {
     
     if (message.includes(selectionMarker)) {
       const parts = message.split(selectionMarker);
-      cleanMessage = parts[0].trim(); // Mensagem sem o contexto
-      selectionContext = selectionMarker + parts[1]; // Contexto completo
+      cleanMessage = parts[0].trim();
+      selectionContext = selectionMarker + parts[1];
     }
 
     // Buscar dados da copy incluindo selected_audience_id, selected_offer_id e selected_methodology_id
@@ -124,31 +124,25 @@ serve(async (req) => {
           keywords: projectData.keywords,
         };
 
-        // Buscar audience segment se selecionado
         if (copy.selected_audience_id && Array.isArray(projectData.audience_segments)) {
           audienceSegment = projectData.audience_segments.find((seg: any) => seg.id === copy.selected_audience_id);
         }
 
-        // Buscar offer se selecionado
         if (copy.selected_offer_id && Array.isArray(projectData.offers)) {
           offer = projectData.offers.find((off: any) => off.id === copy.selected_offer_id);
         }
 
-        // Buscar metodologia se selecionada
         if (copy.selected_methodology_id && projectData.methodology) {
-          // Normalizar methodology para array (pode ser objeto único ou array)
           const methodologies = Array.isArray(projectData.methodology) 
             ? projectData.methodology 
             : [projectData.methodology];
           
-          // Filtrar pela metodologia específica selecionada
           methodology = methodologies.find((meth: any) => meth.id === copy.selected_methodology_id);
           
           if (!methodology) {
             console.warn('⚠️ Metodologia selecionada não encontrada no projeto:', copy.selected_methodology_id);
           }
         } else if (projectData.methodology && !copy.selected_methodology_id) {
-          // Fallback: Se não há ID selecionado mas existe metodologia única, usar ela
           const methodologies = Array.isArray(projectData.methodology) 
             ? projectData.methodology 
             : [projectData.methodology];
@@ -161,7 +155,6 @@ serve(async (req) => {
       }
     }
 
-    // Log de contexto resolvido para debugging
     console.log('📋 Contexto resolvido:', {
       hasProjectIdentity: !!projectIdentity,
       hasAudienceSegment: !!audienceSegment,
@@ -174,7 +167,7 @@ serve(async (req) => {
       }
     });
 
-    // Buscar histórico de gerações (últimas 15 para balancear contexto vs tokens)
+    // Buscar histórico de gerações
     const { data: generationHistory, error: genHistoryError } = await supabase
       .from('ai_generation_history')
       .select('id, generation_type, generation_category, created_at, prompt, model_used, sessions, original_content')
@@ -216,7 +209,7 @@ serve(async (req) => {
       );
     }
 
-    // Buscar histórico recente de mensagens (últimas 20)
+    // Buscar histórico recente de mensagens
     const { data: chatHistory, error: chatHistoryError } = await supabase
       .from('copy_chat_messages')
       .select('role, content, created_at')
@@ -231,10 +224,10 @@ serve(async (req) => {
     // Construir contexto da copy
     const copyContext = buildCopyContext(copy);
 
-    // Construir contexto do histórico com compressão dinâmica
+    // Construir contexto do histórico
     const historyContext = buildGenerationHistoryContext(generationHistory || []);
     
-    // ✅ CONTAR blocos selecionados para system prompt
+    // Contar blocos selecionados
     let selectedBlockCount = 0;
     if (hasSelection && selectionContext) {
       const blockMatches = selectionContext.match(/\d+\.\s+\*\*Bloco/g);
@@ -242,7 +235,6 @@ serve(async (req) => {
       selectedBlockCount = (blockMatches?.length || 0) + (sessionMatches?.length || 0);
     }
 
-    // ==================== SISTEMA DE VARIÁVEIS ====================
     // Processar variáveis na mensagem
     const variableContext = {
       projectIdentity,
@@ -251,20 +243,19 @@ serve(async (req) => {
       methodology
     };
 
-    // 🆕 FASE 2: Capturar missingVariables do retorno
     const { enhancedMessage, variableContextText, missingVariables } = parseVariablesInMessage(message, variableContext);
 
-    // Detectar intent ANTES de construir o prompt (passando hasSelection)
+    // Detectar intent ANTES de construir o prompt
     const messageWithoutSelection = cleanMessage;
     const intent = detectUserIntent(messageWithoutSelection, hasSelection);
     
-    // Construir system prompt especializado COM histórico, contexto, intent e variáveis
+    // Construir system prompt
     const systemPrompt = buildSystemPrompt(
       copyContext, 
       historyContext, 
       hasSelection,
       selectedBlockCount,
-      intent, // ✅ NOVO: passar intent para o prompt
+      intent,
       projectIdentity, 
       audienceSegment, 
       offer,
@@ -280,12 +271,12 @@ serve(async (req) => {
         role: msg.role as 'user' | 'assistant',
         content: msg.content
       })),
-      { role: 'user' as const, content: enhancedMessage } // Usar mensagem original (variáveis são processadas no system prompt)
+      { role: 'user' as const, content: enhancedMessage }
     ];
 
-    console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens (com histórico de ${generationHistory?.length || 0} gerações)`);
+    console.log(`📤 Enviando para Lovable AI (STREAMING): ${messages.length} mensagens`);
 
-    // Chamar Lovable AI
+    // ============ STREAMING: Chamar Lovable AI com stream: true ============
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -297,6 +288,7 @@ serve(async (req) => {
         messages: messages,
         temperature: 0.7,
         max_tokens: 2000,
+        stream: true, // ✅ ATIVAR STREAMING
       }),
     });
 
@@ -313,7 +305,7 @@ serve(async (req) => {
 
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ error: 'lovable_ai_credits_required', message: 'Créditos Lovable AI necessários. Adicione créditos em Settings -> Workspace -> Usage.' }),
+          JSON.stringify({ error: 'lovable_ai_credits_required', message: 'Créditos Lovable AI necessários.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -321,84 +313,159 @@ serve(async (req) => {
       throw new Error(`AI Gateway error: ${aiResponse.status} ${errorText}`);
     }
 
-    const aiData = await aiResponse.json();
-    const assistantMessage = aiData.choices[0]?.message?.content || '';
-    const usage = aiData.usage;
-
-    console.log('✓ Resposta recebida da IA');
-    console.log('📊 Uso de tokens:', usage);
-    
-    // 🔍 DEBUG: Verificar se a IA retornou Markdown indevido
-    const hasMarkdown = assistantMessage.includes('##') || assistantMessage.includes('**') || assistantMessage.includes('> ');
-    if (hasMarkdown) {
-      console.warn('⚠️ AI retornou Markdown indevido:', assistantMessage.substring(0, 200));
+    // ============ STREAMING: Processar resposta em chunks ============
+    const reader = aiResponse.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body reader available');
     }
 
-    // Salvar mensagem do usuário
-    const { error: userMsgError } = await supabase
-      .from('copy_chat_messages')
-      .insert({
-        copy_id: copyId,
-        workspace_id: workspaceId,
-        user_id: userId,
-        role: 'user',
-        content: cleanMessage, // Salvar apenas a mensagem sem o contexto de seleção
-      });
+    const decoder = new TextDecoder();
+    let fullMessage = '';
+    let usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
-    if (userMsgError) {
-      console.error('⚠️ Erro ao salvar mensagem do usuário:', userMsgError);
-    }
+    // Criar TransformStream para processar e reenviar chunks
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
 
-    // Salvar resposta da IA COM METADATA
-    const { error: assistantMsgError } = await supabase
-      .from('copy_chat_messages')
-      .insert({
-        copy_id: copyId,
-        workspace_id: workspaceId,
-        user_id: userId,
-        role: 'assistant',
-        content: assistantMessage,
-        metadata: { intent } // 🆕 NOVO: salvar intent no metadata
-      });
+    // Função auxiliar para enviar SSE
+    const sendSSE = async (data: any) => {
+      const sseMessage = `data: ${JSON.stringify(data)}\n\n`;
+      await writer.write(encoder.encode(sseMessage));
+    };
 
-    if (assistantMsgError) {
-      console.error('⚠️ Erro ao salvar resposta da IA:', assistantMsgError);
-    }
+    // Processar stream em background
+    (async () => {
+      try {
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-    // Debitar créditos
-    if (usage) {
-      const { error: debitError } = await supabaseAdmin.rpc('debit_workspace_credits', {
-        p_workspace_id: workspaceId,
-        p_model_name: 'google/gemini-2.5-flash',
-        tokens_used: usage.total_tokens || 0,
-        p_input_tokens: usage.prompt_tokens || 0,
-        p_output_tokens: usage.completion_tokens || 0,
-        generation_id: null,
-        p_user_id: userId
-      });
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Processar linhas completas do SSE da Lovable AI
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Manter linha incompleta no buffer
 
-      if (debitError) {
-        console.error('⚠️ Erro ao debitar créditos:', debitError);
-      } else {
-        console.log('✓ Créditos debitados com sucesso');
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+            
+            const jsonStr = trimmedLine.slice(6);
+            if (jsonStr === '[DONE]') continue;
+
+            try {
+              const chunk = JSON.parse(jsonStr);
+              const delta = chunk.choices?.[0]?.delta?.content;
+              
+              if (delta) {
+                fullMessage += delta;
+                // Reenviar delta para o frontend
+                await sendSSE({ delta });
+              }
+
+              // Capturar usage se disponível
+              if (chunk.usage) {
+                usage = chunk.usage;
+              }
+            } catch {
+              // JSON incompleto - ignorar
+            }
+          }
+        }
+
+        console.log('✓ Stream completo, mensagem total:', fullMessage.length, 'caracteres');
+
+        // ============ PERSISTÊNCIA: Salvar após stream completo ============
+        
+        // Salvar mensagem do usuário
+        const { error: userMsgError } = await supabase
+          .from('copy_chat_messages')
+          .insert({
+            copy_id: copyId,
+            workspace_id: workspaceId,
+            user_id: userId,
+            role: 'user',
+            content: cleanMessage,
+          });
+
+        if (userMsgError) {
+          console.error('⚠️ Erro ao salvar mensagem do usuário:', userMsgError);
+        }
+
+        // Salvar resposta da IA COM METADATA
+        const { error: assistantMsgError } = await supabase
+          .from('copy_chat_messages')
+          .insert({
+            copy_id: copyId,
+            workspace_id: workspaceId,
+            user_id: userId,
+            role: 'assistant',
+            content: fullMessage,
+            metadata: { intent }
+          });
+
+        if (assistantMsgError) {
+          console.error('⚠️ Erro ao salvar resposta da IA:', assistantMsgError);
+        }
+
+        // Debitar créditos
+        if (usage.total_tokens > 0) {
+          const { error: debitError } = await supabaseAdmin.rpc('debit_workspace_credits', {
+            p_workspace_id: workspaceId,
+            p_model_name: 'google/gemini-2.5-flash',
+            tokens_used: usage.total_tokens || 0,
+            p_input_tokens: usage.prompt_tokens || 0,
+            p_output_tokens: usage.completion_tokens || 0,
+            generation_id: null,
+            p_user_id: userId
+          });
+
+          if (debitError) {
+            console.error('⚠️ Erro ao debitar créditos:', debitError);
+          } else {
+            console.log('✓ Créditos debitados com sucesso');
+          }
+        }
+
+        // Determinar se a resposta é acionável
+        const isActionable = intent !== 'conversational';
+
+        // Enviar evento final com metadata
+        await sendSSE({
+          done: true,
+          message: fullMessage,
+          tokens: usage,
+          intent,
+          actionable: isActionable,
+          missingVariables
+        });
+
+        await writer.close();
+        console.log('✓ Stream SSE finalizado com sucesso');
+
+      } catch (streamError) {
+        console.error('❌ Erro durante streaming:', streamError);
+        try {
+          await sendSSE({ error: 'Erro durante streaming' });
+          await writer.close();
+        } catch {
+          // Ignorar erro ao fechar
+        }
       }
-    }
+    })();
 
-    // Determinar se a resposta é acionável
-    const isActionable = intent !== 'conversational';
-
-    // 🆕 FASE 2: Incluir missingVariables na resposta da API
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: assistantMessage,
-        tokens: usage,
-        intent,
-        actionable: isActionable,
-        missingVariables // 🆕 NOVO: Array de variáveis não encontradas
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Retornar resposta SSE
+    return new Response(readable, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      }
+    });
 
   } catch (error) {
     console.error('❌ Erro em copy-chat:', error);
@@ -450,16 +517,13 @@ function buildGenerationHistoryContext(history: any[], maxTokens: number = 3000)
     const genType = getGenerationTypeName(gen.generation_type);
     const category = gen.generation_category || 'Geral';
     
-    // Entrada básica
     let entry = `${i + 1}. ${genType} - ${category} (${timeAgo})\n`;
     entry += `   Modelo: ${gen.model_used || 'N/A'}\n`;
     
-    // Prompt truncado baseado em espaço disponível
     const remainingTokens = maxTokens - estimatedTokens;
     const promptMaxLength = remainingTokens > 1000 ? 150 : (remainingTokens > 500 ? 100 : 50);
     entry += `   Prompt: "${gen.prompt.substring(0, promptMaxLength)}${gen.prompt.length > promptMaxLength ? '...' : ''}"\n`;
     
-    // Seções modificadas (se houver espaço)
     if (gen.original_content && remainingTokens > 500) {
       const affected = getAffectedSessions(gen.sessions, gen.original_content);
       if (affected.length > 0) {
@@ -470,10 +534,7 @@ function buildGenerationHistoryContext(history: any[], maxTokens: number = 3000)
     entry += `\n`;
     
     const entryTokens = entry.length / 4;
-    
-    // Parar se exceder limite
     if (estimatedTokens + entryTokens > maxTokens) {
-      context += `... (${history.length - i} gerações mais antigas omitidas por limite de tokens)\n`;
       break;
     }
     
@@ -484,584 +545,52 @@ function buildGenerationHistoryContext(history: any[], maxTokens: number = 3000)
   return context + processedHistory.join('');
 }
 
+function getAffectedSessions(sessions: any[], originalContent: any): string[] {
+  if (!sessions || !originalContent) return [];
+  
+  const affected: string[] = [];
+  sessions.forEach((session: any, idx: number) => {
+    affected.push(`Sessão ${idx + 1}`);
+  });
+  
+  return affected.slice(0, 3);
+}
+
+function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 60) return `${diffMins}min atrás`;
+  if (diffHours < 24) return `${diffHours}h atrás`;
+  if (diffDays < 7) return `${diffDays}d atrás`;
+  return date.toLocaleDateString('pt-BR');
+}
+
 function getGenerationTypeName(type: string): string {
   const types: Record<string, string> = {
     'create': 'Criação',
     'optimize': 'Otimização',
-    'regenerate': 'Variação',
-    'expand': 'Expansão',
-    'chat': 'Conversa'
+    'variation': 'Variação',
+    'chat': 'Chat'
   };
-  return types[type] || type;
-}
-
-function getTimeAgo(timestamp: string): string {
-  const now = new Date();
-  const then = new Date(timestamp);
-  const diffMs = now.getTime() - then.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'agora';
-  if (diffMins < 60) return `há ${diffMins} min`;
-  
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `há ${diffHours}h`;
-  
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return 'ontem';
-  if (diffDays < 7) return `há ${diffDays} dias`;
-  if (diffDays < 30) return `há ${Math.floor(diffDays / 7)} semanas`;
-  
-  return `há ${Math.floor(diffDays / 30)} meses`;
-}
-
-function getAffectedSessions(newSessions: any, originalContent: any): string[] {
-  const affected: string[] = [];
-  
-  try {
-    const newData = typeof newSessions === 'string' ? JSON.parse(newSessions) : newSessions;
-    const oldData = typeof originalContent === 'string' ? JSON.parse(originalContent) : originalContent;
-    
-    if (Array.isArray(newData) && Array.isArray(oldData)) {
-      newData.forEach((session: any, idx: number) => {
-        if (oldData[idx]) {
-          // Comparação mais inteligente: verifica se os blocos mudaram
-          const newBlocks = JSON.stringify(session.blocks || []);
-          const oldBlocks = JSON.stringify(oldData[idx].blocks || []);
-          
-          if (newBlocks !== oldBlocks) {
-            affected.push(session.title || `Sessão ${idx + 1}`);
-          }
-        } else if (session) {
-          // Nova sessão adicionada
-          affected.push(`${session.title} (nova)` || `Sessão ${idx + 1} (nova)`);
-        }
-      });
-    }
-  } catch (e) {
-    console.error('⚠️ Erro ao comparar sessões:', e);
-  }
-  
-  return affected;
-}
-
-// ==================== SISTEMA DE VARIÁVEIS CONTEXTUAIS ====================
-
-// 🆕 FASE 1: Importar definições do arquivo compartilhado (fonte única de verdade)
-import { getVariableMap, getNestedValue } from '../_shared/variableDefinitions.ts';
-
-interface VariableContext {
-  projectIdentity: any;
-  audienceSegment: any;
-  offer: any;
-  methodology: any;
-}
-
-// 🆕 FASE 2: Modificar função para rastrear variáveis ausentes
-function parseVariablesInMessage(
-  message: string, 
-  context: VariableContext
-): { 
-  enhancedMessage: string; 
-  variableContextText: string;
-  missingVariables: Array<{ variable: string; label: string }>; // 🆕 NOVO
-} {
-  
-  const variableRegex = /#([a-zA-Z_]+)/g;
-  const matches = Array.from(message.matchAll(variableRegex));
-  
-  if (matches.length === 0) {
-    return { enhancedMessage: message, variableContextText: '', missingVariables: [] };
-  }
-  
-  // 🆕 FASE 1: Usar mapa do arquivo compartilhado (elimina duplicação)
-  const variableDefinitions = getVariableMap();
-  
-  // Extrair valores das variáveis encontradas
-  const extractedVariables: Array<{ variable: string; label: string; value: any }> = [];
-  const missingVariables: Array<{ variable: string; label: string }> = []; // 🆕 NOVO
-  const uniqueVars = new Set<string>();
-  
-  for (const match of matches) {
-    const varName = match[1];
-    if (uniqueVars.has(varName)) continue;
-    uniqueVars.add(varName);
-    
-    const varDef = variableDefinitions[varName];
-    
-    if (varDef) {
-      const value = getNestedValue(context, varDef.path);
-      
-      // 🆕 FASE 2: Verificar se valor está vazio e registrar como ausente
-      if (value !== null && value !== undefined && value !== '') {
-        extractedVariables.push({
-          variable: `#${varName}`,
-          label: varDef.label,
-          value: typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
-        });
-      } else {
-        // 🆕 NOVO: Registrar variável ausente em vez de ignorar silenciosamente
-        missingVariables.push({
-          variable: `#${varName}`,
-          label: varDef.label
-        });
-      }
-    }
-  }
-  
-  // Construir contexto adicional
-  let variableContextText = '';
-  
-  if (extractedVariables.length > 0) {
-    variableContextText = '\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-    variableContextText += '🎯 ATENÇÃO: O usuário referenciou campos específicos do contexto\n';
-    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
-    variableContextText += '⚡ ESTES CAMPOS DEVEM RECEBER FOCO ESPECIAL NA SUA RESPOSTA:\n\n';
-    
-    for (const { variable, label, value } of extractedVariables) {
-      variableContextText += `📌 ${variable} (${label}):\n`;
-      variableContextText += `${value}\n\n`;
-    }
-    
-    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-    variableContextText += '⚠️  IMPORTANTE: Foque sua resposta estrategicamente nos campos referenciados acima.\n';
-    variableContextText += '    Use essas informações específicas de forma destacada na copy que você criar.\n';
-    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-  }
-  
-  // 🆕 FASE 2: Adicionar seção de avisos para variáveis ausentes
-  if (missingVariables.length > 0) {
-    variableContextText += '\n\n⚠️ VARIÁVEIS SEM DADOS CADASTRADOS:\n';
-    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
-    
-    for (const { variable, label } of missingVariables) {
-      variableContextText += `❌ ${variable} (${label}): [DADO NÃO CADASTRADO]\n`;
-    }
-    
-    variableContextText += '\n📌 INSTRUÇÃO CRÍTICA:\n';
-    variableContextText += 'Quando o usuário mencionar essas variáveis, informe educadamente que a informação\n';
-    variableContextText += 'não está cadastrada no projeto e sugira que ele complete o cadastro nas\n';
-    variableContextText += 'configurações do projeto. NÃO invente dados ou alucinações.\n';
-    variableContextText += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
-  }
-  
-  return {
-    enhancedMessage: message,
-    variableContextText,
-    missingVariables // 🆕 NOVO: Retornar array de variáveis ausentes
-  };
-}
-
-// ==================== FIM DO SISTEMA DE VARIÁVEIS ====================
-
-// Detectar intenção do usuário baseado em verbos de ação E estado da seleção
-function detectUserIntent(message: string, hasSelection: boolean): 'replace' | 'insert' | 'conversational' | 'default' {
-  const lowerMessage = message.toLowerCase().trim();
-  
-  // 🚫 LISTA DE BLOQUEIO: Padrões conversacionais (prioridade máxima)
-  const conversationalPatterns = [
-    // Perguntas diretas
-    /^(o que|como|por que|por quê|quando|onde|quem|qual|quais)/i,
-    
-    // Opiniões e análises
-    /\b(acha|acho|acredita|pensa|opina|opinião|opiniao)\b/i,
-    /\b(analise|analisa|avalie|avalia|revise|revisa|verifique|verifica)\b/i,
-    /\b(explique|explica|descreva|descreve|conte|conta)\b/i,
-    
-    // Validação e feedback
-    /\b(está bom|tá bom|ficou bom|parece bom|está ok|tá ok|está legal|tá legal)\b/i,
-    /\b(pode ser|funciona|vai funcionar|dá certo|vai dar certo)\b/i,
-    
-    // Pedidos de ajuda (conversacionais)
-    /\b(me ajude|ajuda|me explique|me fale|me diga|me conte)\b/i,
-    /\b(qual a melhor|qual o melhor|o que é melhor|qual seria)\b/i,
-    /\b(você sugere|você recomenda|você acha que)\b/i,
-    
-    // Comparações e dúvidas
-    /\b(comparar|compare|diferença|qual.*melhor)\b/i,
-    /\b(dúvida|duvida|questão|questao|pergunta)\b/i,
-    
-    // Termina com '?'
-    /\?$/i
-  ];
-  
-  // ✅ Se bater em algum padrão conversacional, retorna imediatamente
-  const isConversational = conversationalPatterns.some(pattern => 
-    pattern.test(lowerMessage)
-  );
-  
-  if (isConversational) return 'conversational';
-  
-  // 🆕 REGRA SOBERANA DA SELEÇÃO
-  if (!hasSelection) {
-    // Sem seleção: NUNCA pode ser 'replace' (não há o que substituir)
-    const creationVerbs = [
-      'criar', 'crie', 'gerar', 'gere', 
-      'adicionar', 'adicione', 'fazer', 'faça',
-      'novo', 'nova', 'outra', 'outro',
-      'variação', 'variacao', 'versão', 'versao',
-      'opção', 'opcao', 'alternativa'
-    ];
-    const hasCreationVerb = creationVerbs.some(verb => lowerMessage.includes(verb));
-    
-    if (hasCreationVerb) {
-      return 'insert'; // Adicionar ao final da copy
-    }
-    
-    // Sem seleção e sem verbo de criação = conversa
-    return 'conversational';
-  }
-  
-  // COM seleção: manter lógica existente
-  // 🔧 Verbos de MELHORIA → substituir conteúdo existente
-  const improvementVerbs = [
-    'otimizar', 'otimize', 'melhorar', 'melhore', 
-    'ajustar', 'ajuste', 'refazer', 'refaça',
-    'corrigir', 'corrija', 'reescrever', 'reescreva',
-    'encurtar', 'encurte', 'expandir', 'expanda',
-    'simplificar', 'simplifique', 'revisar', 'revise',
-    'mude', 'mudar', 'alterar', 'altere',
-    'troque', 'trocar', 'substitua', 'substituir'
-  ];
-  
-  // 🆕 Verbos de CRIAÇÃO → inserir novo conteúdo
-  const creationVerbs = [
-    'criar', 'crie', 'gerar', 'gere', 
-    'adicionar', 'adicione', 'fazer', 'faça',
-    'novo', 'nova', 'outra', 'outro',
-    'variação', 'variacao', 'versão', 'versao',
-    'opção', 'opcao', 'alternativa'
-  ];
-  
-  const hasImprovementVerb = improvementVerbs.some(verb => 
-    lowerMessage.includes(verb)
-  );
-  
-  const hasCreationVerb = creationVerbs.some(verb => 
-    lowerMessage.includes(verb)
-  );
-  
-  // Priorizar melhoria sobre criação (se ambos aparecem)
-  if (hasImprovementVerb) return 'replace';
-  if (hasCreationVerb) return 'insert';
-  
-  return 'default'; // Mostrar modal com opções
-}
-
-function buildSystemPrompt(
-  copyContext: string, 
-  historyContext: string, 
-  hasSelection: boolean,
-  selectedBlockCount: number,
-  intent: string,
-  projectIdentity?: any,
-  audienceSegment?: any,
-  offer?: any,
-  methodology?: any,
-  variableContext?: string,
-  selectionContext?: string
-): string {
-  
-  // Se intent é conversacional, usar prompt com CONTEXTO ESPECÍFICO DO BLOCO
-  if (intent === 'conversational') {
-    let contextSection = '';
-    
-    // Se há blocos selecionados, extrair o conteúdo real
-    if (selectionContext && selectionContext.includes('**CONTEXTO DOS ELEMENTOS SELECIONADOS:**')) {
-      // Extrair apenas o conteúdo dos blocos (remover marcadores de estrutura)
-      const cleanedContext = selectionContext
-        .replace(/\*\*CONTEXTO DOS ELEMENTOS SELECIONADOS:\*\*/g, '')
-        .replace(/\d+\.\s+\*\*Bloco\s+\(\w+\):\*\*/g, '📝 BLOCO:')
-        .replace(/\d+\.\s+\*\*Sessão:\*\*/g, '📂 SESSÃO:')
-        .trim();
-      
-      contextSection = `
-## 📋 CONTEXTO ESPECÍFICO DA SELEÇÃO:
-
-O usuário está perguntando SOBRE o seguinte conteúdo:
-
-${cleanedContext}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`;
-    }
-    
-    return `Você é um consultor de copywriting experiente.
-
-# MODO: Análise e Feedback (Conversacional)
-
-O usuário fez uma pergunta ou pediu análise. VOCÊ DEVE:
-
-1. **Responder diretamente no chat** (modo conversacional)
-2. **NÃO gerar conteúdo estruturado** (sem blocos, listas de opções, headlines novas)
-3. **NÃO usar tags XML** (sem <block>, sem JSON, sem estruturas de edição)
-4. **Dar feedback, análise ou opinião** conforme solicitado
-5. **Ser conciso mas completo** (2-4 parágrafos no máximo)
-6. **FORMATAÇÃO:** Use HTML básico:
-   - Negrito: <strong>texto</strong>
-   - Itálico: <em>texto</em>
-   - Listas: <ul><li>item</li></ul>
-   - NÃO use Markdown (##, **, -, etc)
-
-${contextSection}
-
-${copyContext ? `## 📄 Contexto Geral da Copy:\n${copyContext}\n` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠️  IMPORTANTE: Você está em modo ANÁLISE. 
-    O usuário quer sua OPINIÃO/EXPLICAÇÃO, NÃO quer que você gere novo conteúdo.
-    Responda naturalmente, como um consultor conversando.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Responda de forma natural e útil.`;
-  }
-  
-  let prompt = `Você é um especialista em copywriting e marketing digital.
-
-# 🚨 REGRAS ABSOLUTAS
-
-${hasSelection ? `
-## 🎨 MODO EDIÇÃO ATIVO
-Usuário SELECIONOU ${selectedBlockCount} bloco(s). VOCÊ DEVE:
-
-1. **GERAR conteúdo acionável** (OBRIGATÓRIO)
-2. **NÃO conversar no chat** (PROIBIDO)
-3. **Ir direto ao ponto** (ZERO introduções como "Claro!", "Vou fazer")
-
-🚨 **PUREZA DE CONTEÚDO (CRÍTICO):**
-
-## QUANDO GERAR 1 BLOCO ÚNICO (sem variações):
-⛔ NUNCA inclua identificadores:
-✅ Retorne APENAS o conteúdo puro:
-   
-Exemplo correto:
-\`\`\`
-<strong>Clareza que Liberta:</strong> Encontre o método simples que acalma a mente...
-\`\`\`
-
-## QUANDO GERAR MÚLTIPLAS VARIAÇÕES (usuário pediu "dê 3 opções"):
-✅ USE identificadores NO INÍCIO de cada variação:
-
-Formato obrigatório:
-\`\`\`
-### Opção 1: [Título Descritivo]
-
-[conteúdo da opção 1 SEM prefixo]
-
-### Opção 2: [Título Descritivo]
-
-[conteúdo da opção 2 SEM prefixo]
-\`\`\`
-
-## QUANDO GERAR MÚLTIPLOS BLOCOS (N blocos selecionados):
-✅ USE identificadores numerados:
-
-Formato obrigatório:
-\`\`\`
-### Bloco 1: [Tipo do Bloco]
-
-[conteúdo do bloco 1 SEM prefixo interno]
-
-### Bloco 2: [Tipo do Bloco]
-
-[conteúdo do bloco 2 SEM prefixo interno]
-\`\`\`
-
-⚠️ REGRA DE OURO: O identificador "### Bloco N:" ou "### Opção N:" 
-   vai APENAS na linha de cabeçalho, NUNCA dentro do conteúdo do bloco.
-
-✅ Use APENAS estas tags HTML para formatação de conteúdo:
-   - Negrito: <strong>texto</strong>
-   - Itálico: <em>texto</em>
-   - Títulos em conteúdo: <h2>título</h2>, <h3>subtítulo</h3>
-   - Listas: <ul><li>item</li></ul>
-
-### 📊 QUANTIDADE EXATA:
-- Blocos selecionados: ${selectedBlockCount}
-- Blocos a gerar: ${selectedBlockCount}
-
-### ✅ EXEMPLOS CORRETOS:
-
-**1 bloco + "Otimize":**
-\`\`\`
-<strong>Clareza que Liberta:</strong> Encontre o método simples...
-\`\`\`
-
-**1 bloco + "Me dê 3 variações":**
-\`\`\`
-### Opção 1: Abordagem Direta
-
-<strong>Clareza que Liberta:</strong> Encontre o método simples...
-
-### Opção 2: Abordagem Emotiva
-
-<strong>Liberdade Mental:</strong> Descubra como acalmar...
-
-### Opção 3: Abordagem Técnica
-
-<strong>Método Estruturado:</strong> Aplique o framework...
-\`\`\`
-
-**4 blocos + "Otimize":**
-\`\`\`
-### Bloco 1: Headline
-
-<h2>Clareza Mental com IA</h2>
-
-### Bloco 2: Texto Principal
-
-<strong>Clareza que Liberta:</strong> Encontre o método...
-
-### Bloco 3: Benefícios
-
-<strong>Decisões com Convicção:</strong> Critérios objetivos...
-
-### Bloco 4: CTA
-
-<strong>Comece Agora</strong> e transforme sua forma de trabalhar
-\`\`\`
-
-
-[texto 2]
-
-### 4. CTA Otimizado
-[cta]
-\`\`\`
-(4 blocos separados, SEM variações)
-
-` : `
-## 💬 MODO CONVERSA ATIVO
-Usuário NÃO selecionou nada. VOCÊ DEVE:
-
-1. **Responder no chat** (conversação normal)
-2. **NÃO gerar conteúdo acionável** (PROIBIDO)
-3. **Dar opiniões e análises**
-4. **FORMATAÇÃO:** Use HTML básico para formatação de texto:
-   - Negrito: <strong>texto</strong> (NÃO use **texto**)
-   - Itálico: <em>texto</em> (NÃO use *texto*)
-   - Listas: <ul><li>item</li></ul> (NÃO use - item)
-   - Títulos: NÃO use ## ou ### em respostas de conversa
-
-### ✅ EXEMPLOS CORRETOS:
-
-**"O que você acha dessa copy?"**
-Resposta: "A copy está bem estruturada. A <strong>headline</strong> captura atenção, mas o CTA poderia ser mais urgente. Quer que eu otimize alguma parte? Selecione os blocos primeiro."
-
-**"Me dê uma opinião sobre o Bloco 1"**
-Resposta: "O Bloco 1 tem boa estrutura, mas está <em>genérico</em>. Falta conexão emocional. Quer que eu reescreva? Se sim, selecione o bloco primeiro."
-
-
-### ⚠️ EXCEÇÃO ÚNICA:
-Só gere conteúdo se pedir para CRIAR algo NOVO:
-- ✅ "Crie uma nova headline"
-- ✅ "Adicione uma seção de benefícios"
-`}
-
-# 📐 FORMATAÇÃO
-
-## Blocos independentes (múltiplos blocos):
-Use "### 1.", "### 2.":
-\`\`\`
-### 1. Primeiro Bloco
-[conteúdo]
-
-### 2. Segundo Bloco
-[conteúdo]
-\`\`\`
-
-## Variações selecionáveis:
-Use "### Opção 1:", "### Opção 2:":
-\`\`\`
-### Opção 1: Versão Direta
-[conteúdo]
-
-### Opção 2: Versão Emotiva
-[conteúdo]
-\`\`\`
-
-## Conteúdo interno (cenas, etapas):
-**NUNCA use ### no início da linha**
-Use marcadores:
-\`\`\`
-(0-5s) ABERTURA: [descrição]
-ou
-- Cena 1: [descrição]
-ou
-**Parte 1:** [descrição]
-\`\`\`
-
-${hasSelection ? `
-# ⚠️ LEMBRETE FINAL
-MODO EDIÇÃO: Vá direto ao conteúdo.
-NÃO escreva "Claro!", "Vou fazer".
-APENAS gere os ${selectedBlockCount} bloco(s) solicitado(s).
-` : ''}
-`;
-
-  // Adicionar contexto de projeto, audience e offer
-  let contextualInfo = '';
-  
-  if (projectIdentity) {
-    contextualInfo += '\n\n# 📊 CONTEXTO DO PROJETO:\n';
-    if (projectIdentity.brand_name) contextualInfo += `**Marca:** ${projectIdentity.brand_name}\n`;
-    if (projectIdentity.sector) contextualInfo += `**Setor:** ${projectIdentity.sector}\n`;
-    if (projectIdentity.central_purpose) contextualInfo += `**Propósito:** ${projectIdentity.central_purpose}\n`;
-    if (projectIdentity.brand_personality && Array.isArray(projectIdentity.brand_personality)) {
-      contextualInfo += `**Personalidade:** ${projectIdentity.brand_personality.join(', ')}\n`;
-    }
-    if (projectIdentity.voice_tones && Array.isArray(projectIdentity.voice_tones)) {
-      contextualInfo += `**Tom de voz:** ${projectIdentity.voice_tones.join(', ')}\n`;
-    }
-  }
-
-  if (audienceSegment) {
-    contextualInfo += '\n\n# 👥 PÚBLICO-ALVO:\n';
-    if (audienceSegment.who_is) contextualInfo += `**Quem é:** ${audienceSegment.who_is}\n`;
-    if (audienceSegment.biggest_desire) contextualInfo += `**Maior desejo:** ${audienceSegment.biggest_desire}\n`;
-    if (audienceSegment.biggest_pain) contextualInfo += `**Maior dor:** ${audienceSegment.biggest_pain}\n`;
-  }
-
-  if (offer) {
-    contextualInfo += '\n\n# 🎁 OFERTA:\n';
-    if (offer.name) contextualInfo += `**Nome:** ${offer.name}\n`;
-    if (offer.what_is) contextualInfo += `**O que é:** ${offer.what_is}\n`;
-    if (offer.main_benefit) contextualInfo += `**Benefício principal:** ${offer.main_benefit}\n`;
-  }
-
-  if (methodology) {
-    contextualInfo += '\n\n# 🎓 METODOLOGIA:\n';
-    if (methodology.name) contextualInfo += `**Nome:** ${methodology.name}\n`;
-    if (methodology.tese_central) contextualInfo += `**Tese Central:** ${methodology.tese_central}\n`;
-  }
-
-  prompt += contextualInfo;
-
-  // Adicionar contexto da copy e variáveis
-  prompt += `\n\n# 📄 CONTEÚDO ATUAL DA COPY:\n${copyContext}`;
-  
-  if (variableContext) {
-    prompt += `\n\n# 🔤 VARIÁVEIS DISPONÍVEIS:\n${variableContext}`;
-  }
-
-  if (historyContext) {
-    prompt += `\n\n# 💬 HISTÓRICO DA CONVERSA:\n${historyContext}`;
-  }
-
-  return prompt;
+  return types[type] || type || 'Geração';
 }
 
 function getCopyTypeName(type: string): string {
   const types: Record<string, string> = {
     'landing_page': 'Landing Page',
-    'anuncio': 'Anúncio',
+    'email': 'E-mail',
+    'ad': 'Anúncio',
     'vsl': 'VSL',
-    'email': 'Email',
     'webinar': 'Webinar',
-    'conteudo': 'Conteúdo',
-    'mensagem': 'Mensagem',
-    'outro': 'Outro'
+    'content': 'Conteúdo',
+    'message': 'Mensagem'
   };
-  return types[type] || type;
+  return types[type] || type || 'Copy';
 }
 
 function getBlockTypeName(type: string): string {
@@ -1070,13 +599,305 @@ function getBlockTypeName(type: string): string {
     'headline': 'Título',
     'subheadline': 'Subtítulo',
     'list': 'Lista',
-    'button': 'Botão',
-    'form': 'Formulário',
+    'cta': 'CTA',
     'image': 'Imagem',
     'video': 'Vídeo',
-    'audio': 'Áudio',
-    'faq': 'FAQ',
-    'testimonial': 'Depoimento'
+    'testimonial': 'Depoimento',
+    'faq': 'FAQ'
   };
-  return types[type] || type;
+  return types[type] || type || 'Bloco';
+}
+
+// Interface para contexto de variáveis
+interface VariableContext {
+  projectIdentity: any;
+  audienceSegment: any;
+  offer: any;
+  methodology: any;
+}
+
+// Definição centralizada de variáveis
+const VARIABLE_DEFINITIONS: Record<string, { path: string; label: string }> = {
+  // Identidade do Projeto
+  'marca_nome': { path: 'projectIdentity.brand_name', label: 'Nome da Marca' },
+  'setor': { path: 'projectIdentity.sector', label: 'Setor de Atuação' },
+  'proposito_central': { path: 'projectIdentity.central_purpose', label: 'Propósito Central' },
+  'personalidade_marca': { path: 'projectIdentity.brand_personality', label: 'Personalidade da Marca' },
+  'tons_voz': { path: 'projectIdentity.voice_tones', label: 'Tons de Voz' },
+  'palavras_chave': { path: 'projectIdentity.keywords', label: 'Palavras-Chave' },
+  
+  // Público-Alvo
+  'nome_persona': { path: 'audienceSegment.name', label: 'Nome da Persona' },
+  'idade_minima': { path: 'audienceSegment.age_min', label: 'Idade Mínima' },
+  'idade_maxima': { path: 'audienceSegment.age_max', label: 'Idade Máxima' },
+  'genero': { path: 'audienceSegment.gender', label: 'Gênero' },
+  'localizacao': { path: 'audienceSegment.location', label: 'Localização' },
+  'renda': { path: 'audienceSegment.income_level', label: 'Nível de Renda' },
+  'ocupacao': { path: 'audienceSegment.occupation', label: 'Ocupação' },
+  'maior_desejo': { path: 'audienceSegment.biggest_desire', label: 'Maior Desejo' },
+  'maior_medo': { path: 'audienceSegment.biggest_fear', label: 'Maior Medo' },
+  'principal_objecao': { path: 'audienceSegment.main_objection', label: 'Principal Objeção' },
+  'nivel_consciencia': { path: 'audienceSegment.awareness_level', label: 'Nível de Consciência' },
+  'sofisticacao': { path: 'audienceSegment.sophistication_level', label: 'Nível de Sofisticação' },
+  'dores': { path: 'audienceSegment.pain_points', label: 'Dores' },
+  'desejos': { path: 'audienceSegment.desires', label: 'Desejos' },
+  'objecoes': { path: 'audienceSegment.objections', label: 'Objeções' },
+  
+  // Oferta
+  'nome_oferta': { path: 'offer.name', label: 'Nome da Oferta' },
+  'descricao_oferta': { path: 'offer.description', label: 'Descrição da Oferta' },
+  'preco': { path: 'offer.price', label: 'Preço' },
+  'preco_original': { path: 'offer.original_price', label: 'Preço Original' },
+  'beneficios': { path: 'offer.benefits', label: 'Benefícios' },
+  'garantia': { path: 'offer.guarantee', label: 'Garantia' },
+  'bonus': { path: 'offer.bonuses', label: 'Bônus' },
+  'urgencia': { path: 'offer.urgency', label: 'Urgência' },
+  'escassez': { path: 'offer.scarcity', label: 'Escassez' },
+  
+  // Metodologia
+  'nome_metodologia': { path: 'methodology.name', label: 'Nome da Metodologia' },
+  'descricao_metodologia': { path: 'methodology.description', label: 'Descrição da Metodologia' },
+  'etapas': { path: 'methodology.steps', label: 'Etapas' },
+  'diferencial': { path: 'methodology.differentiator', label: 'Diferencial' },
+  'resultados': { path: 'methodology.expected_results', label: 'Resultados Esperados' },
+};
+
+function getNestedValue(obj: any, path: string): any {
+  if (!obj || !path) return undefined;
+  
+  const keys = path.split('.');
+  let value = obj;
+  
+  for (const key of keys) {
+    if (value === undefined || value === null) return undefined;
+    value = value[key];
+  }
+  
+  return value;
+}
+
+function formatValue(value: any): string {
+  if (value === undefined || value === null) return '';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function parseVariablesInMessage(
+  message: string, 
+  context: VariableContext
+): { enhancedMessage: string; variableContextText: string; missingVariables: Array<{ variable: string; label: string }> } {
+  const variablePattern = /#(\w+)/g;
+  const matches = message.match(variablePattern);
+  
+  if (!matches || matches.length === 0) {
+    return { enhancedMessage: message, variableContextText: '', missingVariables: [] };
+  }
+
+  const resolvedVariables: string[] = [];
+  const missingVariables: Array<{ variable: string; label: string }> = [];
+  let enhancedMessage = message;
+
+  for (const match of matches) {
+    const varName = match.substring(1);
+    const definition = VARIABLE_DEFINITIONS[varName];
+    
+    if (!definition) {
+      continue;
+    }
+
+    const pathParts = definition.path.split('.');
+    const contextKey = pathParts[0] as keyof VariableContext;
+    const remainingPath = pathParts.slice(1).join('.');
+    
+    const contextObj = context[contextKey];
+    const value = getNestedValue(contextObj, remainingPath);
+    
+    if (value !== undefined && value !== null && value !== '') {
+      const formattedValue = formatValue(value);
+      resolvedVariables.push(`${definition.label}: ${formattedValue}`);
+      enhancedMessage = enhancedMessage.replace(
+        match, 
+        `[${definition.label}: ${formattedValue}]`
+      );
+    } else {
+      missingVariables.push({ variable: varName, label: definition.label });
+      enhancedMessage = enhancedMessage.replace(
+        match,
+        `[${definition.label}: DADO NÃO CADASTRADO]`
+      );
+    }
+  }
+
+  let variableContextText = '';
+  if (resolvedVariables.length > 0) {
+    variableContextText = `\n\n🔖 CONTEXTO DAS VARIÁVEIS MENCIONADAS:\n${resolvedVariables.map(v => `• ${v}`).join('\n')}`;
+  }
+
+  return { enhancedMessage, variableContextText, missingVariables };
+}
+
+function detectUserIntent(message: string, hasSelection: boolean): 'replace' | 'insert' | 'conversational' | 'default' {
+  const lowerMessage = message.toLowerCase().trim();
+  
+  const creationVerbs = ['criar', 'crie', 'gerar', 'gere', 'fazer', 'faça', 'produzir', 'produza', 'escrever', 'escreva', 'elaborar', 'elabore'];
+  const hasCreationVerb = creationVerbs.some(verb => lowerMessage.includes(verb));
+  
+  if (!hasSelection) {
+    if (hasCreationVerb) {
+      return 'insert';
+    }
+    return 'conversational';
+  }
+  
+  const replacePatterns = [
+    'otimiz', 'melhore', 'melhora', 'reescrev', 'refaz', 'refaç',
+    'ajust', 'corrij', 'corrig', 'edit', 'modifiqu', 'alter',
+    'substitui', 'substitua', 'troc', 'atualiz', 'reformul'
+  ];
+  
+  const insertPatterns = [
+    'varia', 'versão', 'versoes', 'alternativ', 'opç', 'adiciona', 
+    'acrescenta', 'complement', 'expanda', 'expand', 'mais'
+  ];
+  
+  const conversationalPatterns = [
+    'o que', 'qual', 'como', 'porque', 'por que', 'quando',
+    'explique', 'explica', 'me conte', 'me fale', 'diga',
+    'analise', 'analisa', 'avalie', 'avalia', 'compare',
+    'você acha', 'vc acha', 'opinião', 'opiniao',
+    '?'
+  ];
+  
+  const isConversational = conversationalPatterns.some(p => lowerMessage.includes(p));
+  if (isConversational && !hasCreationVerb) {
+    return 'conversational';
+  }
+  
+  const isReplace = replacePatterns.some(p => lowerMessage.includes(p));
+  const isInsert = insertPatterns.some(p => lowerMessage.includes(p));
+  
+  if (isReplace && !isInsert) return 'replace';
+  if (isInsert && !isReplace) return 'insert';
+  if (isReplace && isInsert) return 'replace';
+  
+  if (hasCreationVerb) return 'insert';
+  
+  return 'default';
+}
+
+function buildSystemPrompt(
+  copyContext: string,
+  historyContext: string,
+  hasSelection: boolean,
+  selectedBlockCount: number,
+  intent: 'replace' | 'insert' | 'conversational' | 'default',
+  projectIdentity: any,
+  audienceSegment: any,
+  offer: any,
+  methodology: any,
+  variableContextText: string,
+  selectionContext: string
+): string {
+  let systemPrompt = `Você é um copywriter especialista trabalhando em uma plataforma de criação de copy.
+Você está em um CHAT COLABORATIVO onde ajuda o usuário a criar e refinar textos.
+
+📋 CONTEXTO DA COPY ATUAL:
+${copyContext}
+
+📚 HISTÓRICO DE TRABALHO:
+${historyContext}
+`;
+
+  if (projectIdentity) {
+    systemPrompt += `\n📊 CONTEXTO DO PROJETO:
+• Marca: ${projectIdentity.brand_name || 'Não definido'}
+• Setor: ${projectIdentity.sector || 'Não definido'}
+• Propósito: ${projectIdentity.central_purpose || 'Não definido'}
+• Personalidade: ${Array.isArray(projectIdentity.brand_personality) ? projectIdentity.brand_personality.join(', ') : 'Não definido'}
+• Tons de Voz: ${Array.isArray(projectIdentity.voice_tones) ? projectIdentity.voice_tones.join(', ') : 'Não definido'}
+`;
+  }
+
+  if (audienceSegment) {
+    systemPrompt += `\n👥 PÚBLICO-ALVO SELECIONADO:
+• Persona: ${audienceSegment.name || 'Não definido'}
+• Maior Desejo: ${audienceSegment.biggest_desire || 'Não definido'}
+• Maior Medo: ${audienceSegment.biggest_fear || 'Não definido'}
+• Principal Objeção: ${audienceSegment.main_objection || 'Não definido'}
+• Nível de Consciência: ${audienceSegment.awareness_level || 'Não definido'}
+`;
+  }
+
+  if (offer) {
+    systemPrompt += `\n🎯 OFERTA SELECIONADA:
+• Nome: ${offer.name || 'Não definido'}
+• Descrição: ${offer.description || 'Não definido'}
+• Preço: ${offer.price || 'Não definido'}
+• Garantia: ${offer.guarantee || 'Não definido'}
+`;
+  }
+
+  if (methodology) {
+    systemPrompt += `\n🧠 METODOLOGIA SELECIONADA:
+• Nome: ${methodology.name || 'Não definido'}
+• Descrição: ${methodology.description || 'Não definido'}
+• Diferencial: ${methodology.differentiator || 'Não definido'}
+`;
+  }
+
+  if (variableContextText) {
+    systemPrompt += variableContextText;
+  }
+
+  if (hasSelection && selectionContext) {
+    systemPrompt += `\n\n🎯 FOCO DA CONVERSA:
+O usuário selecionou ${selectedBlockCount} elemento(s) específico(s) para trabalhar.
+
+${selectionContext}
+
+IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
+`;
+  }
+
+  systemPrompt += `\n📝 REGRAS DE FORMATAÇÃO (CRÍTICO):
+1. NUNCA use formatação Markdown (##, **, >, etc)
+2. Escreva texto limpo e direto
+3. Use quebras de linha simples para separar parágrafos
+4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
+5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
+
+`;
+
+  if (intent === 'replace') {
+    systemPrompt += `🔄 MODO: SUBSTITUIÇÃO
+O usuário quer SUBSTITUIR o conteúdo selecionado.
+- Gere conteúdo que substitua diretamente o que foi selecionado
+- Mantenha o mesmo propósito/função do conteúdo original
+- Melhore a qualidade mantendo a essência
+`;
+  } else if (intent === 'insert') {
+    systemPrompt += `➕ MODO: INSERÇÃO
+O usuário quer ADICIONAR novo conteúdo.
+- Gere conteúdo novo que complemente o existente
+- Crie variações ou expansões do tema
+- O conteúdo será inserido, não substituirá nada
+`;
+  } else if (intent === 'conversational') {
+    systemPrompt += `💬 MODO: CONVERSA
+O usuário está fazendo uma pergunta ou pedindo análise.
+- Responda de forma conversacional e útil
+- NÃO gere conteúdo para inserir na copy
+- Foque em esclarecer, analisar ou aconselhar
+`;
+  } else {
+    systemPrompt += `⚡ MODO: ASSISTÊNCIA GERAL
+Analise o pedido do usuário e responda adequadamente.
+- Se for pedido de criação: gere o conteúdo solicitado
+- Se for pergunta: responda de forma útil
+- Se houver seleção: foque nos elementos selecionados
+`;
+  }
+
+  return systemPrompt;
 }
