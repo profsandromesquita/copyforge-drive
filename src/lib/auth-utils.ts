@@ -4,7 +4,10 @@ export const isSessionExpiredError = (error: any): boolean => {
   return (
     error?.code === 'PGRST303' ||
     error?.message?.includes('JWT expired') ||
-    error?.status === 401
+    error?.message?.includes('Unauthorized') ||
+    error?.status === 401 ||
+    // Supabase FunctionsHttpError pattern
+    error?.context?.status === 401
   );
 };
 
