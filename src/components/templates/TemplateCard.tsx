@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ interface TemplateCardProps {
   copyingId?: string | null;
 }
 
-const TemplateCard = ({ 
+const TemplateCard = memo(({ 
   template, 
   onUse, 
   onEdit, 
@@ -46,7 +46,8 @@ const TemplateCard = ({
   const isOwner = user?.id === template.created_by;
   const isThisCopying = isCopying && copyingId === template.id;
 
-  const getFirstImage = () => {
+  // Memoizar extração de imagem para evitar recálculo a cada render
+  const firstImage = useMemo(() => {
     if (!template.sessions || template.sessions.length === 0) return null;
     
     for (const session of template.sessions) {
@@ -57,11 +58,10 @@ const TemplateCard = ({
       }
     }
     return null;
-  };
+  }, [template.sessions]);
 
-  const firstImage = getFirstImage();
-
-  const getPreviewContent = () => {
+  // Memoizar preview de conteúdo para evitar recálculo a cada render
+  const previewContent = useMemo(() => {
     if (!template.sessions || template.sessions.length === 0) return null;
     const firstSession = template.sessions[0];
     const firstBlocks = firstSession.blocks.slice(0, 6);
@@ -99,10 +99,13 @@ const TemplateCard = ({
       }
       return null;
     });
-  };
+  }, [template.sessions]);
 
-  const sessionsCount = template.sessions?.length || 0;
-  const blocksCount = template.sessions?.reduce((acc, session) => acc + (session.blocks?.length || 0), 0) || 0;
+  // Memoizar contadores para evitar recálculo a cada render
+  const { sessionsCount, blocksCount } = useMemo(() => ({
+    sessionsCount: template.sessions?.length || 0,
+    blocksCount: template.sessions?.reduce((acc, session) => acc + (session.blocks?.length || 0), 0) || 0
+  }), [template.sessions]);
 
   return (
     <>
@@ -124,7 +127,7 @@ const TemplateCard = ({
             <>
               <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
                 <div className="space-y-1">
-                  {getPreviewContent()}
+                  {previewContent}
                 </div>
               </div>
               {/* Bottom Fade Overlay */}
@@ -255,6 +258,6 @@ const TemplateCard = ({
       />
     </>
   );
-};
+});
 
 export default TemplateCard;
