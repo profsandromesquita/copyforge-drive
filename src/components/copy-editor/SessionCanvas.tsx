@@ -1,5 +1,6 @@
-import { Plus } from 'phosphor-react';
+import { Plus, PlusCircle } from 'phosphor-react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { SessionBlock } from './SessionBlock';
 import { Button } from '@/components/ui/button';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
@@ -15,14 +16,28 @@ interface SessionCanvasProps {
   onOpenChat?: () => void;
   activeTab?: 'ai' | 'chat';
   isInPromptStep?: boolean;
+  isDraggingFromToolbar?: boolean;
 }
 
-export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, activeTab, isInPromptStep }: SessionCanvasProps) => {
+export const SessionCanvas = ({ 
+  onShowImageAI, 
+  onStartCreation, 
+  onOpenChat, 
+  activeTab, 
+  isInPromptStep,
+  isDraggingFromToolbar 
+}: SessionCanvasProps) => {
   const { sessions, addSession, addBlock } = useCopyEditor();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Droppable for empty canvas
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'empty-canvas-dropzone',
+    data: { isEmptyCanvas: true },
+  });
 
   // Handler para drag over
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -141,6 +156,39 @@ export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, acti
     return () => document.removeEventListener('paste', pasteListener);
   }, [sessions, user]);
 
+  // Render empty state with dropzone
+  const renderEmptyState = () => {
+    if (isDraggingFromToolbar) {
+      return (
+        <div 
+          ref={setNodeRef}
+          className={`flex-1 min-h-[60vh] flex items-center justify-center border-2 border-dashed rounded-xl transition-all mx-6 ${
+            isOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted/20'
+          }`}
+        >
+          <div className="text-center">
+            <PlusCircle size={64} className={`mx-auto mb-4 ${isOver ? 'text-primary' : 'text-muted-foreground/50'}`} />
+            <p className={`text-lg font-semibold ${isOver ? 'text-primary' : 'text-muted-foreground'}`}>
+              Solte aqui para começar
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              O primeiro bloco será criado automaticamente
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <EmptyStateCards 
+        onStartCreation={onStartCreation}
+        onOpenChat={onOpenChat}
+        activeTab={activeTab}
+        isInPromptStep={isInPromptStep}
+      />
+    );
+  };
+
   return (
     <div 
       className={`flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar relative ${
@@ -167,12 +215,7 @@ export const SessionCanvas = ({ onShowImageAI, onStartCreation, onOpenChat, acti
         </div>
       )}
       {sessions.length === 0 ? (
-        <EmptyStateCards 
-          onStartCreation={onStartCreation}
-          onOpenChat={onOpenChat}
-          activeTab={activeTab}
-          isInPromptStep={isInPromptStep}
-        />
+        renderEmptyState()
       ) : (
         <>
           <SortableContext
