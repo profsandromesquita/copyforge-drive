@@ -279,7 +279,8 @@ serve(async (req) => {
         offer,
         methodology,
         variableContextText,
-        selectionContext
+        selectionContext,
+        userMessage: cleanMessage // ✅ Passar mensagem para detecção de quantidade
       }
     );
     
@@ -820,6 +821,7 @@ interface DynamicPromptParams {
   methodology: any;
   variableContextText: string;
   selectionContext: string;
+  userMessage: string; // ✅ Mensagem do usuário para detectar quantidade de itens
 }
 
 /**
@@ -849,7 +851,8 @@ async function buildEnhancedSystemPrompt(
     offer,
     methodology,
     variableContextText,
-    selectionContext
+    selectionContext,
+    userMessage
   } = params;
 
   // ============ CENÁRIO 1: Herdar do Copy IA ============
@@ -915,8 +918,8 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 `;
     }
 
-    // Adicionar modo de operação
-    enhancedPrompt += buildIntentInstructions(intent);
+    // Adicionar modo de operação (com mensagem do usuário para detectar quantidade de itens)
+    enhancedPrompt += buildIntentInstructions(intent, userMessage);
 
     // Adicionar regras de formatação para chat
     enhancedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT (CRÍTICO):
@@ -997,7 +1000,8 @@ function enrichWithDynamicContext(
     offer,
     methodology,
     variableContextText,
-    selectionContext
+    selectionContext,
+    userMessage
   } = params;
 
   let enrichedPrompt = basePrompt;
@@ -1082,9 +1086,32 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
   }
 
   // Instruções de intent (incluem regras de formatação para insert/replace)
-  enrichedPrompt += buildIntentInstructions(intent);
+  // Passa userMessage para detectar quantidade de itens solicitados
+  enrichedPrompt += buildIntentInstructions(intent, userMessage);
 
   return enrichedPrompt;
+}
+
+/**
+ * Detecta quantos itens o usuário solicitou na mensagem
+ * Ex: "7 mensagens", "5 emails", "3 variações" → retorna número
+ */
+function detectRequestedItemCount(message: string): number | null {
+  const patterns = [
+    /(\d+)\s*(?:mensagens?|emails?|e-mails?|variações?|variacoes?|opções?|opcoes?|blocos?|itens?|dias?|posts?|textos?|copies?|headlines?|ctas?|scripts?|roteiros?)/i,
+    /(?:crie|gere|faça|faca|escreva|produza|elabore)\s*(\d+)/i,
+    /(?:para\s*)?(?:cada|todos?\s*os?)\s*(\d+)\s*dias?/i,
+    /(?:sequência|sequencia)\s*de\s*(\d+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match) {
+      const count = parseInt(match[1]);
+      if (count >= 2 && count <= 30) return count; // Limite razoável
+    }
+  }
+  return null;
 }
 
 /**
@@ -1092,7 +1119,12 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
  * CRÍTICO: Para intents 'insert' e 'replace', inclui formatação obrigatória
  * com ### que o parser (ai-content-parser.ts) consegue reconhecer
  */
-function buildIntentInstructions(intent: 'replace' | 'insert' | 'conversational' | 'default'): string {
+function buildIntentInstructions(
+  intent: 'replace' | 'insert' | 'conversational' | 'default',
+  userMessage: string = ''
+): string {
+  const itemCount = detectRequestedItemCount(userMessage);
+  
   if (intent === 'replace') {
     return `\n\n🔄 MODO: SUBSTITUIÇÃO - CONTEÚDO ESTRUTURADO
 O usuário quer SUBSTITUIR o conteúdo selecionado.
@@ -1123,45 +1155,59 @@ Para que seu conteúdo substitua corretamente, você DEVE:
 - Se 1 bloco foi selecionado, gere 1 bloco começando com ###
 `;
   } else if (intent === 'insert') {
-    return `\n\n➕ MODO: INSERÇÃO - CONTEÚDO ESTRUTURADO
-O usuário quer ADICIONAR novo conteúdo à copy.
+    const itemCountStr = itemCount ? `${itemCount} ITENS` : 'MÚLTIPLOS ITENS';
+    const dynamicExample = itemCount && itemCount > 3 
+      ? `\n📊 VOCÊ DEVE GERAR EXATAMENTE ${itemCount} BLOCOS SEPARADOS:
+${Array.from({length: Math.min(itemCount, 7)}, (_, i) => `### [Item ${i+1}]: [Título descritivo]`).join('\n')}
+${itemCount > 7 ? `... (continuar até ### [Item ${itemCount}])` : ''}
+`
+      : '';
 
-🎯 FORMATO OBRIGATÓRIO DA RESPOSTA:
-Para que seu conteúdo seja acionável pelo sistema, você DEVE:
-1. Começar CADA bloco/item/mensagem com ### seguido de um título descritivo
-2. Separar CADA item individual com seu próprio ###
-3. Ser DIRETO - não inclua explicações antes ou depois do conteúdo
+    return `\n\n➕ MODO: INSERÇÃO DE ${itemCountStr}
 
-📋 EXEMPLO PARA 2 OPÇÕES:
-### Opção 1: Hero - Variação Urgência
-[Conteúdo completo do bloco aqui, sem explicações]
+🚨🚨🚨 REGRA MAIS IMPORTANTE - LEIA COM ATENÇÃO 🚨🚨🚨
+CADA ITEM/MENSAGEM/VARIAÇÃO DEVE TER SEU PRÓPRIO ### NA FRENTE.
+Se o usuário pediu ${itemCount || 'N'} itens, você DEVE gerar ${itemCount || 'N'} linhas que começam com ###.
 
-### Opção 2: Hero - Variação Exclusividade
-[Conteúdo completo da alternativa aqui]
+❌❌❌ FORMATO ERRADO (NUNCA FAÇA ISSO) ❌❌❌
+### Mensagens para a semana
+Mensagem 1: Segunda-feira - Texto... Mensagem 2: Terça-feira - Texto... Mensagem 3: Quarta...
 
-📋 EXEMPLO PARA MÚLTIPLOS ITENS (ex: "7 mensagens"):
+👆 ISSO ESTÁ ERRADO! Tudo ficou em UM SÓ bloco!
+
+✅✅✅ FORMATO CORRETO (SEMPRE FAÇA ASSIM) ✅✅✅
 ### Mensagem 1: Segunda-feira - 7 dias
-[Texto da primeira mensagem aqui]
+Texto completo da primeira mensagem aqui, pronto para uso.
 
 ### Mensagem 2: Terça-feira - 6 dias
-[Texto da segunda mensagem aqui]
+Texto completo da segunda mensagem aqui, pronto para uso.
 
 ### Mensagem 3: Quarta-feira - 5 dias
-[Texto da terceira mensagem aqui]
+Texto completo da terceira mensagem aqui, pronto para uso.
 
 ### Mensagem 4: Quinta-feira - 4 dias
-[Texto da quarta mensagem aqui]
+Texto completo da quarta mensagem aqui, pronto para uso.
 
-... (continuar para cada item solicitado)
+### Mensagem 5: Sexta-feira - 3 dias
+Texto completo da quinta mensagem aqui, pronto para uso.
 
-⚠️ REGRAS CRÍTICAS:
-- NUNCA responda em formato JSON ou código
-- NUNCA agrupe múltiplos itens em um único bloco
-- CADA mensagem/variação/opção = 1 seção ### separada
-- NÃO inicie com "Aqui está..." ou explicações
-- NÃO termine com "Quer que eu ajuste..." ou perguntas
+### Mensagem 6: Sábado - 2 dias
+Texto completo da sexta mensagem aqui, pronto para uso.
+
+### Mensagem 7: Domingo - 1 dia
+Texto completo da sétima mensagem aqui, pronto para uso.
+${dynamicExample}
+
+⚠️ VERIFICAÇÃO FINAL OBRIGATÓRIA:
+- Conte quantos ### você escreveu na sua resposta
+- Se pediram ${itemCount || 'N'} itens, deve haver EXATAMENTE ${itemCount || 'N'} linhas começando com ###
+- CADA mensagem/item = NOVA LINHA com ### no início
+- NUNCA junte múltiplos itens após um único ###
+- NUNCA use formato JSON ou código
+- NÃO inicie com "Aqui estão..." ou explicações
 - O conteúdo deve estar PRONTO para uso, texto limpo
-- Se pedirem N itens, gere N seções ### separadas
+
+🚨 REPITO: ${itemCount || 'N'} ITENS = ${itemCount || 'N'} LINHAS COM ### 🚨
 `;
   } else if (intent === 'conversational') {
     return `\n\n💬 MODO: CONVERSA
@@ -1205,7 +1251,8 @@ function buildFallbackSystemPrompt(params: DynamicPromptParams): string {
     offer,
     methodology,
     variableContextText,
-    selectionContext
+    selectionContext,
+    userMessage
   } = params;
 
   let systemPrompt = `Você é um copywriter especialista trabalhando em uma plataforma de criação de copy.
@@ -1278,7 +1325,7 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 
 `;
 
-  systemPrompt += buildIntentInstructions(intent);
+  systemPrompt += buildIntentInstructions(intent, userMessage);
 
   return systemPrompt;
 }

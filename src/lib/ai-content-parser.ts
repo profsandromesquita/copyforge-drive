@@ -245,16 +245,83 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
   return blocks;
 }
 
+/**
+ * Safety net: Detecta e separa conteúdo com padrões "Mensagem N:", "Email N:" sem ###
+ * Usa quando o modelo falha em usar ### mas ainda numera os itens
+ */
+function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | null {
+  // Padrões de itens numerados sem ### (case insensitive, multiline)
+  const itemPatterns = [
+    // Mensagem 1: ... até próxima Mensagem N: ou fim
+    { regex: /(?:^|\n\n?)(Mensagem\s*\d+[:\s-][^\n]*(?:\n(?!Mensagem\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
+    // Email 1: ... até próximo Email N: ou fim
+    { regex: /(?:^|\n\n?)(E-?mail\s*\d+[:\s-][^\n]*(?:\n(?!E-?mail\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Email' },
+    // Dia 1: ... até próximo Dia N: ou fim
+    { regex: /(?:^|\n\n?)(Dia\s*\d+[:\s-][^\n]*(?:\n(?!Dia\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Dia' },
+    // Opção 1: ... até próxima Opção N: ou fim
+    { regex: /(?:^|\n\n?)(Op[çc][ãa]o\s*\d+[:\s-][^\n]*(?:\n(?!Op[çc][ãa]o\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Opção' },
+    // Post 1: ... até próximo Post N: ou fim
+    { regex: /(?:^|\n\n?)(Post\s*\d+[:\s-][^\n]*(?:\n(?!Post\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Post' },
+    // Variação 1: ... até próxima Variação N: ou fim
+    { regex: /(?:^|\n\n?)(Varia[çc][ãa]o\s*\d+[:\s-][^\n]*(?:\n(?!Varia[çc][ãa]o\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Variação' },
+    // Texto 1: ... até próximo Texto N: ou fim
+    { regex: /(?:^|\n\n?)(Texto\s*\d+[:\s-][^\n]*(?:\n(?!Texto\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+  ];
+  
+  for (const { regex, name } of itemPatterns) {
+    const matches = Array.from(content.matchAll(regex));
+    if (matches.length >= 2) { // Só se encontrar 2+ itens
+      console.log(`✅ [Parser] Safety net: Padrão "${name} N:" detectado: ${matches.length} itens`);
+      
+      return matches.map((match, index) => {
+        const fullText = match[1].trim();
+        // Extrair título (primeira linha até : ou -)
+        const firstLineMatch = fullText.match(/^([^\n]+)/);
+        const firstLine = firstLineMatch ? firstLineMatch[1] : '';
+        const titleMatch = firstLine.match(/^([^:\-]+[:\s-]?\s*[^:\n]*)/);
+        const title = titleMatch ? titleMatch[1].replace(/[:\s-]+$/, '').trim() : `${name} ${index + 1}`;
+        
+        // Conteúdo é tudo após a primeira linha (ou o resto da primeira linha após :)
+        const contentAfterTitle = fullText.replace(/^[^\n]*\n?/, '').trim();
+        const inlineContent = firstLine.replace(/^[^:]+:\s*/, '').trim();
+        const blockContent = contentAfterTitle || inlineContent || fullText;
+        
+        return {
+          id: `block-${Date.now()}-${index}`,
+          type: inferBlockType(blockContent, title),
+          title,
+          content: markdownToHtml(blockContent),
+          rawContent: fullText,
+          startIndex: match.index || 0,
+          endIndex: (match.index || 0) + fullText.length,
+        };
+      });
+    }
+  }
+  
+  return null;
+}
+
 export function parseAIResponse(markdown: string): ParsedMessage {
   console.log('🔍 [Parser] Iniciando parse de:', markdown.substring(0, 100) + '...');
   
-  // ✅ NOVO: Tentar detectar e processar JSON estruturado PRIMEIRO
+  // ✅ PASSO 1: Tentar detectar e processar JSON estruturado
   const jsonBlocks = tryParseJSONContent(markdown);
   if (jsonBlocks && jsonBlocks.length > 0) {
     console.log(`✅ [Parser] JSON detectado e convertido: ${jsonBlocks.length} blocos`);
     return {
       hasActionableContent: true,
       blocks: jsonBlocks,
+    };
+  }
+  
+  // ✅ PASSO 2: Safety net - Detectar padrões "Mensagem N:", "Email N:" sem ###
+  const numberedItemBlocks = tryParseNumberedItemsWithoutHash(markdown);
+  if (numberedItemBlocks && numberedItemBlocks.length > 1) {
+    console.log(`✅ [Parser] Safety net ativado: ${numberedItemBlocks.length} itens numerados sem ### convertidos`);
+    return {
+      hasActionableContent: true,
+      blocks: numberedItemBlocks,
     };
   }
   
