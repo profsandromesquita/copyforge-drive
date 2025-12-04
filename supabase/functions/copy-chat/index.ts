@@ -84,10 +84,10 @@ serve(async (req) => {
       selectionContext = selectionMarker + parts[1];
     }
 
-    // Buscar dados da copy incluindo selected_audience_id, selected_offer_id e selected_methodology_id
+    // Buscar dados da copy incluindo system_instruction para herança do Copy IA
     const { data: copy, error: copyError } = await supabase
       .from('copies')
-      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, selected_methodology_id, project_id')
+      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, selected_methodology_id, project_id, system_instruction')
       .eq('id', copyId)
       .single();
 
@@ -249,20 +249,26 @@ serve(async (req) => {
     const messageWithoutSelection = cleanMessage;
     const intent = detectUserIntent(messageWithoutSelection, hasSelection);
     
-    // Construir system prompt
-    const systemPrompt = buildSystemPrompt(
-      copyContext, 
-      historyContext, 
-      hasSelection,
-      selectedBlockCount,
-      intent,
-      projectIdentity, 
-      audienceSegment, 
-      offer,
-      methodology,
-      variableContextText,
-      selectionContext
+    // Construir system prompt - HERDA do Copy IA quando disponível
+    const savedSystemInstruction = copy.system_instruction;
+    const systemPrompt = buildEnhancedSystemPrompt(
+      savedSystemInstruction,
+      {
+        copyContext,
+        historyContext,
+        hasSelection,
+        selectedBlockCount,
+        intent,
+        projectIdentity,
+        audienceSegment,
+        offer,
+        methodology,
+        variableContextText,
+        selectionContext
+      }
     );
+    
+    console.log(`📋 System Prompt: ${savedSystemInstruction ? 'Herdado do Copy IA' : 'Construído dinamicamente'} (${systemPrompt.length} chars)`);
 
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
@@ -786,19 +792,185 @@ function detectUserIntent(message: string, hasSelection: boolean): 'replace' | '
   return 'default';
 }
 
-function buildSystemPrompt(
-  copyContext: string,
-  historyContext: string,
-  hasSelection: boolean,
-  selectedBlockCount: number,
-  intent: 'replace' | 'insert' | 'conversational' | 'default',
-  projectIdentity: any,
-  audienceSegment: any,
-  offer: any,
-  methodology: any,
-  variableContextText: string,
-  selectionContext: string
+// Interface para parâmetros do system prompt dinâmico
+interface DynamicPromptParams {
+  copyContext: string;
+  historyContext: string;
+  hasSelection: boolean;
+  selectedBlockCount: number;
+  intent: 'replace' | 'insert' | 'conversational' | 'default';
+  projectIdentity: any;
+  audienceSegment: any;
+  offer: any;
+  methodology: any;
+  variableContextText: string;
+  selectionContext: string;
+}
+
+/**
+ * Constrói o System Prompt com herança do Copy IA quando disponível.
+ * 
+ * ESTRATÉGIA:
+ * 1. Se system_instruction existe (veio do Copy IA): Usa como BASE RICA
+ *    e adiciona apenas seções dinâmicas (seleção, intent, histórico recente)
+ * 2. Se system_instruction é NULL (usuário foi direto ao chat): 
+ *    Reconstrói prompt genérico como fallback
+ */
+function buildEnhancedSystemPrompt(
+  savedSystemInstruction: any,
+  params: DynamicPromptParams
 ): string {
+  const {
+    copyContext,
+    historyContext,
+    hasSelection,
+    selectedBlockCount,
+    intent,
+    projectIdentity,
+    audienceSegment,
+    offer,
+    methodology,
+    variableContextText,
+    selectionContext
+  } = params;
+
+  // ============ CENÁRIO 1: Herdar do Copy IA ============
+  if (savedSystemInstruction) {
+    // Extrair o texto do system instruction (pode ser objeto ou string)
+    let basePrompt = '';
+    if (typeof savedSystemInstruction === 'string') {
+      basePrompt = savedSystemInstruction;
+    } else if (savedSystemInstruction.full_text) {
+      basePrompt = savedSystemInstruction.full_text;
+    } else if (savedSystemInstruction.base_prompt) {
+      // Reconstruir a partir das partes se necessário
+      basePrompt = savedSystemInstruction.base_prompt;
+      if (savedSystemInstruction.project_context) {
+        basePrompt += '\n\n' + savedSystemInstruction.project_context;
+      }
+      if (savedSystemInstruction.audience_context) {
+        basePrompt += '\n\n' + savedSystemInstruction.audience_context;
+      }
+      if (savedSystemInstruction.offer_context) {
+        basePrompt += '\n\n' + savedSystemInstruction.offer_context;
+      }
+      if (savedSystemInstruction.methodology_context) {
+        basePrompt += '\n\n' + savedSystemInstruction.methodology_context;
+      }
+      if (savedSystemInstruction.characteristics_context) {
+        basePrompt += '\n\n' + savedSystemInstruction.characteristics_context;
+      }
+    } else {
+      // Fallback: converter objeto para string se estrutura desconhecida
+      basePrompt = JSON.stringify(savedSystemInstruction);
+    }
+
+    console.log('🔗 Herdando System Instruction do Copy IA:', basePrompt.length, 'chars');
+
+    // Adicionar seções dinâmicas ao prompt herdado
+    let enhancedPrompt = basePrompt;
+
+    // Adicionar contexto da estrutura atual (pode ter mudado desde a geração)
+    enhancedPrompt += `\n\n---
+⚡ ATUALIZAÇÕES DINÂMICAS DESTA SESSÃO DE CHAT:
+
+📋 ESTRUTURA ATUAL DA COPY:
+${copyContext}
+
+📚 HISTÓRICO RECENTE:
+${historyContext}
+`;
+
+    // Adicionar contexto de variáveis resolvidas
+    if (variableContextText) {
+      enhancedPrompt += variableContextText;
+    }
+
+    // Adicionar contexto de seleção
+    if (hasSelection && selectionContext) {
+      enhancedPrompt += `\n\n🎯 FOCO DA CONVERSA:
+O usuário selecionou ${selectedBlockCount} elemento(s) específico(s) para trabalhar.
+
+${selectionContext}
+
+IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
+`;
+    }
+
+    // Adicionar modo de operação
+    enhancedPrompt += buildIntentInstructions(intent);
+
+    // Adicionar regras de formatação para chat
+    enhancedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT (CRÍTICO):
+1. NUNCA use formatação Markdown (##, **, >, etc)
+2. Escreva texto limpo e direto
+3. Use quebras de linha simples para separar parágrafos
+4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
+5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
+`;
+
+    return enhancedPrompt;
+  }
+
+  // ============ CENÁRIO 2: Fallback - Construir do zero ============
+  console.log('⚠️ Sem System Instruction salvo, construindo prompt genérico');
+  return buildFallbackSystemPrompt(params);
+}
+
+/**
+ * Gera instruções específicas baseadas no intent detectado
+ */
+function buildIntentInstructions(intent: 'replace' | 'insert' | 'conversational' | 'default'): string {
+  if (intent === 'replace') {
+    return `\n\n🔄 MODO: SUBSTITUIÇÃO
+O usuário quer SUBSTITUIR o conteúdo selecionado.
+- Gere conteúdo que substitua diretamente o que foi selecionado
+- Mantenha o mesmo propósito/função do conteúdo original
+- Melhore a qualidade mantendo a essência
+`;
+  } else if (intent === 'insert') {
+    return `\n\n➕ MODO: INSERÇÃO
+O usuário quer ADICIONAR novo conteúdo.
+- Gere conteúdo novo que complemente o existente
+- Crie variações ou expansões do tema
+- O conteúdo será inserido, não substituirá nada
+`;
+  } else if (intent === 'conversational') {
+    return `\n\n💬 MODO: CONVERSA
+O usuário está fazendo uma pergunta ou pedindo análise.
+- Responda de forma conversacional e útil
+- NÃO gere conteúdo para inserir na copy
+- Foque em esclarecer, analisar ou aconselhar
+`;
+  } else {
+    return `\n\n⚡ MODO: ASSISTÊNCIA GERAL
+Analise o pedido do usuário e responda adequadamente.
+- Se for pedido de criação: gere o conteúdo solicitado
+- Se for pergunta: responda de forma útil
+- Se houver seleção: foque nos elementos selecionados
+`;
+  }
+}
+
+/**
+ * Fallback: Constrói prompt genérico quando não há system_instruction salvo
+ * (usuário foi direto ao chat sem passar pelo Copy IA)
+ */
+function buildFallbackSystemPrompt(params: DynamicPromptParams): string {
+  const {
+    copyContext,
+    historyContext,
+    hasSelection,
+    selectedBlockCount,
+    intent,
+    projectIdentity,
+    audienceSegment,
+    offer,
+    methodology,
+    variableContextText,
+    selectionContext
+  } = params;
+
   let systemPrompt = `Você é um copywriter especialista trabalhando em uma plataforma de criação de copy.
 Você está em um CHAT COLABORATIVO onde ajuda o usuário a criar e refinar textos.
 
@@ -869,35 +1041,7 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 
 `;
 
-  if (intent === 'replace') {
-    systemPrompt += `🔄 MODO: SUBSTITUIÇÃO
-O usuário quer SUBSTITUIR o conteúdo selecionado.
-- Gere conteúdo que substitua diretamente o que foi selecionado
-- Mantenha o mesmo propósito/função do conteúdo original
-- Melhore a qualidade mantendo a essência
-`;
-  } else if (intent === 'insert') {
-    systemPrompt += `➕ MODO: INSERÇÃO
-O usuário quer ADICIONAR novo conteúdo.
-- Gere conteúdo novo que complemente o existente
-- Crie variações ou expansões do tema
-- O conteúdo será inserido, não substituirá nada
-`;
-  } else if (intent === 'conversational') {
-    systemPrompt += `💬 MODO: CONVERSA
-O usuário está fazendo uma pergunta ou pedindo análise.
-- Responda de forma conversacional e útil
-- NÃO gere conteúdo para inserir na copy
-- Foque em esclarecer, analisar ou aconselhar
-`;
-  } else {
-    systemPrompt += `⚡ MODO: ASSISTÊNCIA GERAL
-Analise o pedido do usuário e responda adequadamente.
-- Se for pedido de criação: gere o conteúdo solicitado
-- Se for pergunta: responda de forma útil
-- Se houver seleção: foque nos elementos selecionados
-`;
-  }
+  systemPrompt += buildIntentInstructions(intent);
 
   return systemPrompt;
 }
