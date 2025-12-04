@@ -183,6 +183,17 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     fetchDriveContent(currentFolder?.id || null);
   }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]);
 
+  // Listener para invalidação de cache externo (ex: após copiar template/discover)
+  useEffect(() => {
+    const handleInvalidate = () => {
+      console.log('🔄 Drive cache invalidated by external event');
+      fetchDriveContent(currentFolder?.id || null);
+    };
+    
+    window.addEventListener('drive-invalidate', handleInvalidate);
+    return () => window.removeEventListener('drive-invalidate', handleInvalidate);
+  }, [fetchDriveContent, currentFolder?.id]);
+
   const navigateToFolder = useCallback((folderId: string | null) => {
     if (folderId === null) {
       setCurrentFolder(null);

@@ -16,10 +16,18 @@ export const useTemplates = () => {
 
     setLoading(true);
     try {
+      // Query otimizada: buscar apenas colunas necessárias para listagem
       const { data, error } = await supabase
         .from('copies')
         .select(`
-          *,
+          id,
+          title,
+          copy_type,
+          folder_id,
+          created_by,
+          created_at,
+          updated_at,
+          sessions,
           creator:profiles!fk_copies_creator(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
@@ -86,6 +94,10 @@ export const useTemplates = () => {
       if (createError) throw createError;
 
       toast.success('Copy criada a partir do modelo!');
+      
+      // Invalidar cache do Drive para que a nova copy apareça
+      window.dispatchEvent(new CustomEvent('drive-invalidate'));
+      
       return newCopy as any as Copy;
     } catch (error) {
       console.error('Error creating from template:', error);

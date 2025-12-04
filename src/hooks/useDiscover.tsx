@@ -25,14 +25,17 @@ export const useDiscover = () => {
 
   const fetchDiscoverCopies = async () => {
     try {
+      // Query otimizada: buscar apenas colunas necessárias para listagem
       const { data, error } = await supabase
         .from('copies')
         .select(`
           id,
           title,
+          copy_type,
           sessions,
           copy_count,
           created_by,
+          created_at,
           profiles!copies_created_by_fkey (
             name,
             avatar_url
@@ -105,6 +108,10 @@ export const useDiscover = () => {
       await incrementCopyCount(copyId);
 
       toast.success('Copy copiada com sucesso!');
+      
+      // Invalidar cache do Drive para que a nova copy apareça
+      window.dispatchEvent(new CustomEvent('drive-invalidate'));
+      
       onSuccess(newCopy.id);
     } catch (error) {
       console.error('Error copying copy:', error);
