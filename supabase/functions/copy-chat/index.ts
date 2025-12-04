@@ -1070,16 +1070,18 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 `;
   }
 
-  // Regras de formatação
-  enrichedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT (CRÍTICO):
-1. NUNCA use formatação Markdown (##, **, >, etc)
-2. Escreva texto limpo e direto
-3. Use quebras de linha simples para separar parágrafos
-4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
-5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
+  // Regras de formatação - CONDICIONAIS ao intent
+  // Para insert/replace, as regras de formatação vão em buildIntentInstructions()
+  if (intent === 'conversational' || intent === 'default') {
+    enrichedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA RESPOSTAS CONVERSACIONAIS:
+1. Escreva texto limpo e direto
+2. Use quebras de linha simples para separar parágrafos
+3. Seja objetivo e útil
+4. NÃO gere blocos estruturados com ###
 `;
+  }
 
-  // Instruções de intent
+  // Instruções de intent (incluem regras de formatação para insert/replace)
   enrichedPrompt += buildIntentInstructions(intent);
 
   return enrichedPrompt;
@@ -1101,18 +1103,23 @@ Para que seu conteúdo substitua corretamente, você DEVE:
 2. Começar CADA bloco com ### seguido do título descritivo
 3. Manter a mesma quantidade de blocos que foi selecionada
 
-📋 EXEMPLO DE FORMATO CORRETO:
+📋 EXEMPLO DE FORMATO CORRETO (3 blocos):
 ### Bloco 1: Headline Otimizada
 [Conteúdo otimizado aqui, texto limpo sem explicações]
 
 ### Bloco 2: Subheadline
 [Conteúdo do segundo bloco aqui]
 
+### Bloco 3: CTA
+[Conteúdo do terceiro bloco aqui]
+
 ⚠️ REGRAS CRÍTICAS:
+- NUNCA responda em formato JSON
+- NUNCA agrupe múltiplos blocos em um só
+- CADA bloco = 1 seção ### separada
 - Mantenha o mesmo propósito/função do conteúdo original
 - NÃO inicie com "Aqui está..." ou explicações
 - NÃO termine com "Quer que eu ajuste..." ou perguntas
-- APENAS o conteúdo estruturado com ### no início de cada bloco
 - Se 1 bloco foi selecionado, gere 1 bloco começando com ###
 `;
   } else if (intent === 'insert') {
@@ -1121,23 +1128,40 @@ O usuário quer ADICIONAR novo conteúdo à copy.
 
 🎯 FORMATO OBRIGATÓRIO DA RESPOSTA:
 Para que seu conteúdo seja acionável pelo sistema, você DEVE:
-1. Começar CADA bloco/variação com ### seguido de um título descritivo
-2. Separar múltiplas opções com ### próprio para cada uma
+1. Começar CADA bloco/item/mensagem com ### seguido de um título descritivo
+2. Separar CADA item individual com seu próprio ###
 3. Ser DIRETO - não inclua explicações antes ou depois do conteúdo
 
-📋 EXEMPLO DE FORMATO CORRETO:
+📋 EXEMPLO PARA 2 OPÇÕES:
 ### Opção 1: Hero - Variação Urgência
 [Conteúdo completo do bloco aqui, sem explicações]
 
 ### Opção 2: Hero - Variação Exclusividade
 [Conteúdo completo da alternativa aqui]
 
+📋 EXEMPLO PARA MÚLTIPLOS ITENS (ex: "7 mensagens"):
+### Mensagem 1: Segunda-feira - 7 dias
+[Texto da primeira mensagem aqui]
+
+### Mensagem 2: Terça-feira - 6 dias
+[Texto da segunda mensagem aqui]
+
+### Mensagem 3: Quarta-feira - 5 dias
+[Texto da terceira mensagem aqui]
+
+### Mensagem 4: Quinta-feira - 4 dias
+[Texto da quarta mensagem aqui]
+
+... (continuar para cada item solicitado)
+
 ⚠️ REGRAS CRÍTICAS:
+- NUNCA responda em formato JSON ou código
+- NUNCA agrupe múltiplos itens em um único bloco
+- CADA mensagem/variação/opção = 1 seção ### separada
 - NÃO inicie com "Aqui está..." ou explicações
 - NÃO termine com "Quer que eu ajuste..." ou perguntas
-- APENAS o conteúdo estruturado com ###
-- Se for apenas 1 bloco, ainda assim use ### no início
 - O conteúdo deve estar PRONTO para uso, texto limpo
+- Se pedirem N itens, gere N seções ### separadas
 `;
   } else if (intent === 'conversational') {
     return `\n\n💬 MODO: CONVERSA
@@ -1153,8 +1177,10 @@ O usuário está fazendo uma pergunta ou pedindo análise.
 Analise o pedido do usuário e responda adequadamente.
 
 Se for pedido de CRIAÇÃO (criar, gerar, fazer, escrever):
-- Use ### no início de cada bloco gerado
-- Exemplo: ### Título do Bloco
+- Use ### no início de CADA bloco/item gerado
+- CADA item solicitado = 1 seção ### separada
+- Exemplo para 3 itens: ### Item 1: Título, ### Item 2: Título, ### Item 3: Título
+- NUNCA use JSON
 
 Se for PERGUNTA ou ANÁLISE:
 - Responda de forma conversacional, sem ###
