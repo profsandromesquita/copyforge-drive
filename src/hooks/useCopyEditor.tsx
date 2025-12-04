@@ -291,7 +291,9 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `block-${Date.now()}-${Math.random()}`,
     };
 
-    setSessions(sessions.map(session => {
+    // Usar callback pattern (prev => ...) para evitar race condition
+    // quando addBlock é chamado logo após addSessionAndGetId
+    setSessions(prev => prev.map(session => {
       if (session.id === sessionId) {
         const newBlocks = [...session.blocks];
         // If index is provided, insert at that position, otherwise add at end
@@ -304,7 +306,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return session;
     }));
-  }, [sessions]);
+  }, []); // Sem dependência de sessions - usa prev
 
   const removeBlock = useCallback((blockId: string) => {
     setSessions(sessions.map(session => ({
