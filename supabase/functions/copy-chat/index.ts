@@ -18,6 +18,18 @@ interface ChatRequest {
   hasSelection?: boolean;
 }
 
+// Mapeamento de copy_type para prompt_key do banco ai_prompt_templates
+const COPY_TYPE_TO_PROMPT_KEY: Record<string, string> = {
+  anuncio: 'generate_copy_ad',
+  landing_page: 'generate_copy_landing_page',
+  vsl: 'generate_copy_vsl',
+  email: 'generate_copy_email',
+  webinar: 'generate_copy_webinar',
+  conteudo: 'generate_copy_content',
+  mensagem: 'generate_copy_message',
+  outro: 'generate_copy_base'
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -250,8 +262,11 @@ serve(async (req) => {
     const intent = detectUserIntent(messageWithoutSelection, hasSelection);
     
     // Construir system prompt - HERDA do Copy IA quando disponível
+    // SMART FALLBACK: Busca prompts ricos do banco se não tiver system_instruction
     const savedSystemInstruction = copy.system_instruction;
-    const systemPrompt = buildEnhancedSystemPrompt(
+    const systemPrompt = await buildEnhancedSystemPrompt(
+      supabaseAdmin,
+      copy.copy_type || 'outro',
       savedSystemInstruction,
       {
         copyContext,
@@ -814,12 +829,15 @@ interface DynamicPromptParams {
  * 1. Se system_instruction existe (veio do Copy IA): Usa como BASE RICA
  *    e adiciona apenas seções dinâmicas (seleção, intent, histórico recente)
  * 2. Se system_instruction é NULL (usuário foi direto ao chat): 
- *    Reconstrói prompt genérico como fallback
+ *    SMART FALLBACK → Busca prompt rico do banco ai_prompt_templates
+ * 3. Se não encontrar no banco: Fallback genérico
  */
-function buildEnhancedSystemPrompt(
+async function buildEnhancedSystemPrompt(
+  supabase: any,
+  copyType: string,
   savedSystemInstruction: any,
   params: DynamicPromptParams
-): string {
+): Promise<string> {
   const {
     copyContext,
     historyContext,
@@ -912,9 +930,159 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
     return enhancedPrompt;
   }
 
-  // ============ CENÁRIO 2: Fallback - Construir do zero ============
-  console.log('⚠️ Sem System Instruction salvo, construindo prompt genérico');
+  // ============ CENÁRIO 2: SMART FALLBACK - Buscar prompt rico do banco ============
+  console.log('⚠️ Sem System Instruction salvo, ativando Smart Fallback...');
+  return await buildSmartFallbackSystemPrompt(supabase, copyType, params);
+}
+
+/**
+ * SMART FALLBACK: Busca prompt rico do banco antes de usar genérico
+ * 
+ * Hierarquia:
+ * 1º → ai_prompt_templates pelo copy_type (prompts ricos específicos)
+ * 2º → buildFallbackSystemPrompt genérico (último recurso)
+ */
+async function buildSmartFallbackSystemPrompt(
+  supabase: any,
+  copyType: string,
+  params: DynamicPromptParams
+): Promise<string> {
+  
+  // 1. Mapear copy_type para prompt_key
+  const promptKey = COPY_TYPE_TO_PROMPT_KEY[copyType] || 'generate_copy_base';
+  console.log(`🔍 Smart Fallback: Buscando prompt "${promptKey}" para tipo "${copyType}"`);
+  
+  // 2. Buscar template rico do banco
+  const { data: template, error } = await supabase
+    .from('ai_prompt_templates')
+    .select('current_prompt, system_instructions, name')
+    .eq('prompt_key', promptKey)
+    .eq('is_active', true)
+    .single();
+  
+  // 3. Se encontrou, usar como BASE RICA
+  if (template && !error) {
+    console.log(`✅ Template encontrado: "${template.name}" (${template.current_prompt?.length || 0} chars)`);
+    
+    let richBasePrompt = template.current_prompt || '';
+    if (template.system_instructions) {
+      richBasePrompt += '\n\n' + template.system_instructions;
+    }
+    
+    // Enriquecer com contexto dinâmico
+    return enrichWithDynamicContext(richBasePrompt, params, copyType);
+  }
+  
+  // 4. Se não encontrou, fallback genérico (último recurso)
+  console.log(`⚠️ Template "${promptKey}" não encontrado, usando fallback genérico`);
   return buildFallbackSystemPrompt(params);
+}
+
+/**
+ * Enriquece o prompt base do banco com contexto dinâmico da sessão
+ */
+function enrichWithDynamicContext(
+  basePrompt: string,
+  params: DynamicPromptParams,
+  copyType: string
+): string {
+  const {
+    copyContext,
+    historyContext,
+    hasSelection,
+    selectedBlockCount,
+    intent,
+    projectIdentity,
+    audienceSegment,
+    offer,
+    methodology,
+    variableContextText,
+    selectionContext
+  } = params;
+
+  let enrichedPrompt = basePrompt;
+
+  // Adicionar tipo de copy para contexto
+  enrichedPrompt += `\n\n📌 TIPO DE COPY: ${getCopyTypeName(copyType).toUpperCase()}`;
+
+  // Adicionar contexto da estrutura atual
+  enrichedPrompt += `\n\n📋 ESTRUTURA ATUAL DA COPY:
+${copyContext}
+
+📚 HISTÓRICO RECENTE:
+${historyContext}
+`;
+
+  // Contexto do projeto (se disponível)
+  if (projectIdentity) {
+    enrichedPrompt += `\n📊 CONTEXTO DO PROJETO:
+• Marca: ${projectIdentity.brand_name || 'Não definido'}
+• Setor: ${projectIdentity.sector || 'Não definido'}
+• Propósito: ${projectIdentity.central_purpose || 'Não definido'}
+• Personalidade: ${Array.isArray(projectIdentity.brand_personality) ? projectIdentity.brand_personality.join(', ') : 'Não definido'}
+• Tons de Voz: ${Array.isArray(projectIdentity.voice_tones) ? projectIdentity.voice_tones.join(', ') : 'Não definido'}
+`;
+  }
+
+  // Público-alvo (se disponível)
+  if (audienceSegment) {
+    enrichedPrompt += `\n👥 PÚBLICO-ALVO:
+• Persona: ${audienceSegment.name || 'Não definido'}
+• Maior Desejo: ${audienceSegment.biggest_desire || 'Não definido'}
+• Maior Medo: ${audienceSegment.biggest_fear || 'Não definido'}
+• Principal Objeção: ${audienceSegment.main_objection || 'Não definido'}
+• Nível de Consciência: ${audienceSegment.awareness_level || 'Não definido'}
+`;
+  }
+
+  // Oferta (se disponível)
+  if (offer) {
+    enrichedPrompt += `\n🎯 OFERTA:
+• Nome: ${offer.name || 'Não definido'}
+• Descrição: ${offer.description || 'Não definido'}
+• Preço: ${offer.price || 'Não definido'}
+• Garantia: ${offer.guarantee || 'Não definido'}
+`;
+  }
+
+  // Metodologia (se disponível)
+  if (methodology) {
+    enrichedPrompt += `\n🧠 METODOLOGIA:
+• Nome: ${methodology.name || 'Não definido'}
+• Descrição: ${methodology.description || 'Não definido'}
+• Diferencial: ${methodology.differentiator || 'Não definido'}
+`;
+  }
+
+  // Variáveis resolvidas
+  if (variableContextText) {
+    enrichedPrompt += variableContextText;
+  }
+
+  // Seleção (se houver)
+  if (hasSelection && selectionContext) {
+    enrichedPrompt += `\n\n🎯 FOCO DA CONVERSA:
+O usuário selecionou ${selectedBlockCount} elemento(s) específico(s) para trabalhar.
+
+${selectionContext}
+
+IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
+`;
+  }
+
+  // Regras de formatação
+  enrichedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT (CRÍTICO):
+1. NUNCA use formatação Markdown (##, **, >, etc)
+2. Escreva texto limpo e direto
+3. Use quebras de linha simples para separar parágrafos
+4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
+5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
+`;
+
+  // Instruções de intent
+  enrichedPrompt += buildIntentInstructions(intent);
+
+  return enrichedPrompt;
 }
 
 /**
