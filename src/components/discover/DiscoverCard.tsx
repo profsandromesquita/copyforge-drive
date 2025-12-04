@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput } from 'lucide-react';
+import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import MoveModal from '@/components/drive/MoveModal';
 import { useAuth } from '@/hooks/useAuth';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 
 interface DiscoverCardProps {
   copy: {
@@ -33,6 +34,8 @@ interface DiscoverCardProps {
   onCopy: (copyId: string) => void;
   onDelete?: (copyId: string) => Promise<void> | void;
   onMove?: (copyId: string, targetFolderId: string | null) => Promise<void> | void;
+  isCopying?: boolean;
+  copyingId?: string | null;
 }
 
 const COPY_TYPE_LABELS: Record<string, string> = {
@@ -46,13 +49,22 @@ const COPY_TYPE_LABELS: Record<string, string> = {
   'outro': 'Outro',
 };
 
-export const DiscoverCard = ({ copy, onCopy, onDelete, onMove }: DiscoverCardProps) => {
+export const DiscoverCard = ({ 
+  copy, 
+  onCopy, 
+  onDelete, 
+  onMove,
+  isCopying = false,
+  copyingId = null,
+}: DiscoverCardProps) => {
   const { user } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // Verificar se o usuário é o dono
   const isOwner = user?.id === copy.created_by;
+  const isThisCopying = isCopying && copyingId === copy.id;
 
   const getFirstBlocks = () => {
     if (!copy.sessions || copy.sessions.length === 0) return [];
@@ -141,9 +153,7 @@ export const DiscoverCard = ({ copy, onCopy, onDelete, onMove }: DiscoverCardPro
                     className="cursor-pointer text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Deseja realmente excluir "${copy.title}" do Discover?`)) {
-                        onDelete(copy.id);
-                      }
+                      setDeleteDialogOpen(true);
                     }}
                   >
                     <Trash size={16} className="mr-2" />
@@ -200,9 +210,14 @@ export const DiscoverCard = ({ copy, onCopy, onDelete, onMove }: DiscoverCardPro
           <Button
             className="flex-1"
             onClick={() => onCopy(copy.id)}
+            disabled={isThisCopying}
           >
-            <CopyIcon className="h-4 w-4 mr-2" />
-            Copiar
+            {isThisCopying ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CopyIcon className="h-4 w-4 mr-2" />
+            )}
+            {isThisCopying ? 'Copiando...' : 'Copiar'}
           </Button>
         </CardFooter>
       </Card>
@@ -226,6 +241,19 @@ export const DiscoverCard = ({ copy, onCopy, onDelete, onMove }: DiscoverCardPro
           }}
         />
       )}
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        itemName={copy.title}
+        itemType="copy"
+        onConfirm={() => {
+          if (onDelete) {
+            onDelete(copy.id);
+          }
+          setDeleteDialogOpen(false);
+        }}
+      />
     </>
   );
 };
