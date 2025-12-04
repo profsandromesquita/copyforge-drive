@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput } from 'lucide-react';
+import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Copy } from '@/types/copy-editor';
-import copyDriveLogo from '@/assets/copydrive-logo.png';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +23,20 @@ interface TemplateCardProps {
   onDuplicate: (templateId: string) => void;
   onDelete: (templateId: string) => void;
   onMove: (templateId: string, targetFolderId: string | null) => Promise<void> | void;
+  isCopying?: boolean;
+  copyingId?: string | null;
 }
 
-const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }: TemplateCardProps) => {
+const TemplateCard = ({ 
+  template, 
+  onUse, 
+  onEdit, 
+  onDuplicate, 
+  onDelete, 
+  onMove,
+  isCopying = false,
+  copyingId = null,
+}: TemplateCardProps) => {
   const { user } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
@@ -34,6 +44,7 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
   
   // Verificar se o usuário é o dono
   const isOwner = user?.id === template.created_by;
+  const isThisCopying = isCopying && copyingId === template.id;
 
   const getFirstImage = () => {
     if (!template.sessions || template.sessions.length === 0) return null;
@@ -200,9 +211,16 @@ const TemplateCard = ({ template, onUse, onEdit, onDuplicate, onDelete, onMove }
             size="sm"
             className="flex-1 min-w-0"
             onClick={() => onUse(template.id)}
+            disabled={isThisCopying}
           >
-            <CopyIcon className="h-4 w-4 xl:mr-2" />
-            <span className="hidden xl:inline truncate">Copiar</span>
+            {isThisCopying ? (
+              <Loader2 className="h-4 w-4 animate-spin xl:mr-2" />
+            ) : (
+              <CopyIcon className="h-4 w-4 xl:mr-2" />
+            )}
+            <span className="hidden xl:inline truncate">
+              {isThisCopying ? 'Copiando...' : 'Copiar'}
+            </span>
           </Button>
         </CardFooter>
       </Card>

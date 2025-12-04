@@ -7,10 +7,10 @@ import { useDiscover } from '@/hooks/useDiscover';
 import { DiscoverCard } from '@/components/discover/DiscoverCard';
 import { useState, useEffect } from 'react';
 import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
+import { CopySuccessDialog } from '@/components/discover/CopySuccessDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from 'next-themes';
 import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
@@ -25,10 +25,17 @@ const Discover = () => {
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
   const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
+  const [selectedCopyTitle, setSelectedCopyTitle] = useState<string>('');
   const [showDestinationModal, setShowDestinationModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedSort, setSelectedSort] = useState<SortType>('popular');
+
+  // Estados para fluxo de sucesso
+  const [isCopying, setIsCopying] = useState(false);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [createdCopy, setCreatedCopy] = useState<{ id: string; title: string } | null>(null);
 
   // Força modo claro no Discover
   useEffect(() => {
@@ -36,26 +43,38 @@ const Discover = () => {
   }, [setTheme]);
 
   const handleCopy = (copyId: string) => {
+    const copy = copies.find(c => c.id === copyId);
     setSelectedCopyId(copyId);
+    setSelectedCopyTitle(copy?.title || '');
     setShowDestinationModal(true);
   };
 
-  const handleConfirmDestination = (folderId: string | null) => {
+  const handleConfirmDestination = async (folderId: string | null) => {
     if (!selectedCopyId || !activeWorkspace?.id || !user?.id) return;
 
-    copyCopy(
-      selectedCopyId,
-      activeWorkspace.id,
-      activeProject?.id || null,
-      folderId,
-      user.id,
-      (newCopyId) => {
-        navigate(`/copy/${newCopyId}`);
-      }
-    );
-
+    setIsCopying(true);
+    setCopyingId(selectedCopyId);
     setShowDestinationModal(false);
-    setSelectedCopyId(null);
+
+    try {
+      await copyCopy(
+        selectedCopyId,
+        activeWorkspace.id,
+        activeProject?.id || null,
+        folderId,
+        user.id,
+        (newCopyId) => {
+          // Mostrar dialog de sucesso em vez de redirecionar
+          setCreatedCopy({ id: newCopyId, title: selectedCopyTitle });
+          setSuccessDialogOpen(true);
+        }
+      );
+    } finally {
+      setIsCopying(false);
+      setCopyingId(null);
+      setSelectedCopyId(null);
+      setSelectedCopyTitle('');
+    }
   };
 
   const filteredCopies = copies
@@ -149,6 +168,8 @@ const Discover = () => {
                     onCopy={handleCopy}
                     onDelete={deleteCopy}
                     onMove={moveCopy}
+                    isCopying={isCopying}
+                    copyingId={copyingId}
                   />
                 ))}
               </div>
@@ -168,6 +189,20 @@ const Discover = () => {
           projectId={activeProject?.id || null}
         />
       )}
+
+      <CopySuccessDialog
+        open={successDialogOpen}
+        onOpenChange={setSuccessDialogOpen}
+        copyTitle={createdCopy?.title || ''}
+        onEditNow={() => {
+          setSuccessDialogOpen(false);
+          navigate(`/copy/${createdCopy?.id}`);
+        }}
+        onContinueExploring={() => {
+          setSuccessDialogOpen(false);
+          setCreatedCopy(null);
+        }}
+      />
     </div>
   );
 };

@@ -6,8 +6,8 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import { Button } from '@/components/ui/button';
 import { useTemplates } from '@/hooks/useTemplates';
 import TemplateCard from '@/components/templates/TemplateCard';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
+import { CopySuccessDialog } from '@/components/discover/CopySuccessDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
@@ -41,6 +41,13 @@ const Templates = () => {
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [selectedDateFilter, setSelectedDateFilter] = useState<DateFilterType>(null);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>();
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Estados para fluxo de sucesso
+  const [isCopying, setIsCopying] = useState(false);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [createdCopy, setCreatedCopy] = useState<{ id: string; title: string } | null>(null);
 
   // Força modo claro no Templates
   useEffect(() => {
@@ -55,20 +62,30 @@ const Templates = () => {
   const handleConfirmDestination = async (folderId: string | null) => {
     if (!selectedTemplateId || !activeWorkspace?.id || !user?.id) return;
 
-    const newCopy = await createFromTemplate(
-      selectedTemplateId,
-      activeWorkspace.id,
-      activeProject?.id || null,
-      folderId,
-      user.id
-    );
+    setIsCopying(true);
+    setCopyingId(selectedTemplateId);
 
-    if (newCopy) {
-      navigate(`/copy/${newCopy.id}`);
+    try {
+      const newCopy = await createFromTemplate(
+        selectedTemplateId,
+        activeWorkspace.id,
+        activeProject?.id || null,
+        folderId,
+        user.id
+      );
+
+      setShowDestinationModal(false);
+      setSelectedTemplateId(null);
+
+      if (newCopy) {
+        // Mostrar dialog de sucesso em vez de redirecionar
+        setCreatedCopy({ id: newCopy.id, title: newCopy.title });
+        setSuccessDialogOpen(true);
+      }
+    } finally {
+      setIsCopying(false);
+      setCopyingId(null);
     }
-
-    setShowDestinationModal(false);
-    setSelectedTemplateId(null);
   };
 
   const handleEditTemplate = (templateId: string) => {
@@ -105,8 +122,6 @@ const Templates = () => {
       toast.error('Erro ao mover modelo');
     }
   };
-
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleDateFilterChange = (type: DateFilterType, range?: { from?: Date; to?: Date }) => {
     setSelectedDateFilter(type);
@@ -259,6 +274,8 @@ const Templates = () => {
                     onDuplicate={duplicateTemplate}
                     onDelete={deleteTemplate}
                     onMove={handleMoveTemplate}
+                    isCopying={isCopying}
+                    copyingId={copyingId}
                   />
                 ))}
               </div>
@@ -278,6 +295,20 @@ const Templates = () => {
           projectId={activeProject?.id || null}
         />
       )}
+
+      <CopySuccessDialog
+        open={successDialogOpen}
+        onOpenChange={setSuccessDialogOpen}
+        copyTitle={createdCopy?.title || ''}
+        onEditNow={() => {
+          setSuccessDialogOpen(false);
+          navigate(`/copy/${createdCopy?.id}`);
+        }}
+        onContinueExploring={() => {
+          setSuccessDialogOpen(false);
+          setCreatedCopy(null);
+        }}
+      />
 
       <CreateCopyDialog
         open={createCopyOpen}
