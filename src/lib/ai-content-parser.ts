@@ -281,6 +281,38 @@ export function parseAIResponse(markdown: string): ParsedMessage {
           currentBlock.endIndex = endIndex;
         }
       });
+    } 
+    // ✅ NOVO: Tratar caso de ÚNICA seção com ### (ex: "### Hero - Video Hook")
+    else if (sectionMatches.length === 1) {
+      const match = sectionMatches[0];
+      const title = match[1].trim();
+      const startIndex = match.index || 0;
+      
+      // Extrair conteúdo APÓS a linha do título
+      const fullContent = contentForParsing.substring(startIndex).trim();
+      // Remover a linha do título (### Hero - Video Hook) do conteúdo
+      let contentAfterTitle = fullContent.replace(/^#{1,3}\s+.+\n?/, '').trim();
+      
+      // Processar Markdown para HTML
+      contentAfterTitle = markdownToHtml(contentAfterTitle);
+      contentAfterTitle = stripMetaPrefixes(contentAfterTitle);
+      
+      const type = inferBlockType(contentAfterTitle, title);
+      
+      // Processar título para remover Markdown residual
+      const processedTitle = title.replace(/^###\s+/, '').replace(/\*\*/g, '').trim();
+      
+      blocks.push({
+        id: `block-${Date.now()}-0`,
+        type,
+        title: processedTitle, // ✅ Título extraído corretamente
+        content: contentAfterTitle, // ✅ Conteúdo sem o título
+        rawContent: fullContent,
+        startIndex,
+        endIndex: contentForParsing.length,
+      });
+      
+      console.log('✅ [Parser] Seção única com ### detectada:', { title: processedTitle, contentLength: contentAfterTitle.length });
     }
   }
 
