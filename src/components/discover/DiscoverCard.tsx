@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ const COPY_TYPE_LABELS: Record<string, string> = {
   'outro': 'Outro',
 };
 
-export const DiscoverCard = ({ 
+export const DiscoverCard = memo(({ 
   copy, 
   onCopy, 
   onDelete, 
@@ -66,13 +66,15 @@ export const DiscoverCard = ({
   const isOwner = user?.id === copy.created_by;
   const isThisCopying = isCopying && copyingId === copy.id;
 
-  const getFirstBlocks = () => {
+  // Memoizar extração de blocos para evitar recálculo a cada render
+  const firstBlocks = useMemo(() => {
     if (!copy.sessions || copy.sessions.length === 0) return [];
     const firstSession = copy.sessions[0];
-    return firstSession.blocks.slice(0, 4); // Pegar os 4 primeiros blocos
-  };
+    return firstSession.blocks.slice(0, 4);
+  }, [copy.sessions]);
 
-  const getFirstImage = () => {
+  // Memoizar extração de imagem para evitar recálculo a cada render
+  const firstImage = useMemo(() => {
     if (!copy.sessions || copy.sessions.length === 0) return null;
     
     for (const session of copy.sessions) {
@@ -83,10 +85,7 @@ export const DiscoverCard = ({
       }
     }
     return null;
-  };
-
-  const firstBlocks = getFirstBlocks();
-  const firstImage = getFirstImage();
+  }, [copy.sessions]);
 
   return (
     <>
@@ -256,4 +255,4 @@ export const DiscoverCard = ({
       />
     </>
   );
-};
+});

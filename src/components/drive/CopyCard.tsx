@@ -1,5 +1,5 @@
 import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon } from "phosphor-react";
-import { useState } from "react";
+import { useState, useMemo, memo } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import copyDriveLogo from '@/assets/copydrive-logo.png';
 import {
@@ -31,14 +31,15 @@ interface CopyCardProps {
   onClick?: () => void;
 }
 
-const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, copyType, onClick }: CopyCardProps) => {
+const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, copyType, onClick }: CopyCardProps) => {
   const { deleteCopy, renameCopy, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
 
-  const getFirstImage = () => {
+  // Memoizar extração de imagem para evitar recálculo a cada render
+  const firstImage = useMemo(() => {
     if (!sessions || sessions.length === 0) return null;
     
     for (const session of sessions) {
@@ -49,17 +50,14 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
       }
     }
     return null;
-  };
+  }, [sessions]);
 
-  const firstImage = getFirstImage();
-
-  const getFirstBlocks = () => {
+  // Memoizar extração de blocos para evitar recálculo a cada render
+  const firstBlocks = useMemo(() => {
     if (!sessions || sessions.length === 0) return [];
     const firstSession = sessions[0];
     return firstSession.blocks.slice(0, 4);
-  };
-
-  const firstBlocks = getFirstBlocks();
+  }, [sessions]);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: id,
@@ -282,6 +280,6 @@ const CopyCard = ({ id, title, subtitle, creatorName, creatorAvatar, status, fol
       />
     </>
   );
-};
+});
 
 export default CopyCard;
