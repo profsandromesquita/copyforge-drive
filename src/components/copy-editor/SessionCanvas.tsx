@@ -156,16 +156,20 @@ export const SessionCanvas = ({
     return () => document.removeEventListener('paste', pasteListener);
   }, [sessions, user]);
 
-  // Render empty state with dropzone
+  // Render empty state with dropzone - ALWAYS mounted for dnd-kit detection
   const renderEmptyState = () => {
-    if (isDraggingFromToolbar) {
-      return (
-        <div 
-          ref={setNodeRef}
-          className={`flex-1 min-h-[60vh] flex items-center justify-center border-2 border-dashed rounded-xl transition-all mx-6 ${
-            isOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted/20'
-          }`}
-        >
+    return (
+      <div 
+        ref={setNodeRef}
+        className={`flex-1 min-h-[60vh] flex flex-col transition-all ${
+          isDraggingFromToolbar 
+            ? `items-center justify-center border-2 border-dashed rounded-xl mx-6 ${
+                isOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted/20'
+              }`
+            : ''
+        }`}
+      >
+        {isDraggingFromToolbar ? (
           <div className="text-center">
             <PlusCircle size={64} className={`mx-auto mb-4 ${isOver ? 'text-primary' : 'text-muted-foreground/50'}`} />
             <p className={`text-lg font-semibold ${isOver ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -175,17 +179,15 @@ export const SessionCanvas = ({
               O primeiro bloco será criado automaticamente
             </p>
           </div>
-        </div>
-      );
-    }
-
-    return (
-      <EmptyStateCards 
-        onStartCreation={onStartCreation}
-        onOpenChat={onOpenChat}
-        activeTab={activeTab}
-        isInPromptStep={isInPromptStep}
-      />
+        ) : (
+          <EmptyStateCards 
+            onStartCreation={onStartCreation}
+            onOpenChat={onOpenChat}
+            activeTab={activeTab}
+            isInPromptStep={isInPromptStep}
+          />
+        )}
+      </div>
     );
   };
 
