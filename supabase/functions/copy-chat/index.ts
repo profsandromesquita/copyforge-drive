@@ -1087,35 +1087,78 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 
 /**
  * Gera instruções específicas baseadas no intent detectado
+ * CRÍTICO: Para intents 'insert' e 'replace', inclui formatação obrigatória
+ * com ### que o parser (ai-content-parser.ts) consegue reconhecer
  */
 function buildIntentInstructions(intent: 'replace' | 'insert' | 'conversational' | 'default'): string {
   if (intent === 'replace') {
-    return `\n\n🔄 MODO: SUBSTITUIÇÃO
+    return `\n\n🔄 MODO: SUBSTITUIÇÃO - CONTEÚDO ESTRUTURADO
 O usuário quer SUBSTITUIR o conteúdo selecionado.
-- Gere conteúdo que substitua diretamente o que foi selecionado
+
+🎯 FORMATO OBRIGATÓRIO DA RESPOSTA:
+Para que seu conteúdo substitua corretamente, você DEVE:
+1. Gerar conteúdo que SUBSTITUA diretamente o selecionado
+2. Começar CADA bloco com ### seguido do título descritivo
+3. Manter a mesma quantidade de blocos que foi selecionada
+
+📋 EXEMPLO DE FORMATO CORRETO:
+### Bloco 1: Headline Otimizada
+[Conteúdo otimizado aqui, texto limpo sem explicações]
+
+### Bloco 2: Subheadline
+[Conteúdo do segundo bloco aqui]
+
+⚠️ REGRAS CRÍTICAS:
 - Mantenha o mesmo propósito/função do conteúdo original
-- Melhore a qualidade mantendo a essência
+- NÃO inicie com "Aqui está..." ou explicações
+- NÃO termine com "Quer que eu ajuste..." ou perguntas
+- APENAS o conteúdo estruturado com ### no início de cada bloco
+- Se 1 bloco foi selecionado, gere 1 bloco começando com ###
 `;
   } else if (intent === 'insert') {
-    return `\n\n➕ MODO: INSERÇÃO
-O usuário quer ADICIONAR novo conteúdo.
-- Gere conteúdo novo que complemente o existente
-- Crie variações ou expansões do tema
-- O conteúdo será inserido, não substituirá nada
+    return `\n\n➕ MODO: INSERÇÃO - CONTEÚDO ESTRUTURADO
+O usuário quer ADICIONAR novo conteúdo à copy.
+
+🎯 FORMATO OBRIGATÓRIO DA RESPOSTA:
+Para que seu conteúdo seja acionável pelo sistema, você DEVE:
+1. Começar CADA bloco/variação com ### seguido de um título descritivo
+2. Separar múltiplas opções com ### próprio para cada uma
+3. Ser DIRETO - não inclua explicações antes ou depois do conteúdo
+
+📋 EXEMPLO DE FORMATO CORRETO:
+### Opção 1: Hero - Variação Urgência
+[Conteúdo completo do bloco aqui, sem explicações]
+
+### Opção 2: Hero - Variação Exclusividade
+[Conteúdo completo da alternativa aqui]
+
+⚠️ REGRAS CRÍTICAS:
+- NÃO inicie com "Aqui está..." ou explicações
+- NÃO termine com "Quer que eu ajuste..." ou perguntas
+- APENAS o conteúdo estruturado com ###
+- Se for apenas 1 bloco, ainda assim use ### no início
+- O conteúdo deve estar PRONTO para uso, texto limpo
 `;
   } else if (intent === 'conversational') {
     return `\n\n💬 MODO: CONVERSA
 O usuário está fazendo uma pergunta ou pedindo análise.
 - Responda de forma conversacional e útil
-- NÃO gere conteúdo para inserir na copy
-- Foque em esclarecer, analisar ou aconselhar
+- NÃO gere conteúdo estruturado com ###
+- NÃO gere blocos de copy
+- Foque em esclarecer, analisar, dar feedback ou aconselhar
+- Seja direto e objetivo na resposta
 `;
   } else {
     return `\n\n⚡ MODO: ASSISTÊNCIA GERAL
 Analise o pedido do usuário e responda adequadamente.
-- Se for pedido de criação: gere o conteúdo solicitado
-- Se for pergunta: responda de forma útil
-- Se houver seleção: foque nos elementos selecionados
+
+Se for pedido de CRIAÇÃO (criar, gerar, fazer, escrever):
+- Use ### no início de cada bloco gerado
+- Exemplo: ### Título do Bloco
+
+Se for PERGUNTA ou ANÁLISE:
+- Responda de forma conversacional, sem ###
+- Foque em ajudar e esclarecer
 `;
   }
 }
