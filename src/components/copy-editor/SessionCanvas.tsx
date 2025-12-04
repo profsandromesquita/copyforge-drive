@@ -156,37 +156,50 @@ export const SessionCanvas = ({
     return () => document.removeEventListener('paste', pasteListener);
   }, [sessions, user]);
 
-  // Render empty state with dropzone - ALWAYS mounted for dnd-kit detection
+  // Render empty state with Overlay Drop Zone pattern
   const renderEmptyState = () => {
     return (
-      <div 
-        ref={setNodeRef}
-        className={`flex-1 min-h-[60vh] flex flex-col transition-all ${
-          isDraggingFromToolbar 
-            ? `items-center justify-center border-2 border-dashed rounded-xl mx-6 ${
-                isOver ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted/20'
-              }`
-            : ''
-        }`}
-      >
-        {isDraggingFromToolbar ? (
-          <div className="text-center">
-            <PlusCircle size={64} className={`mx-auto mb-4 ${isOver ? 'text-primary' : 'text-muted-foreground/50'}`} />
-            <p className={`text-lg font-semibold ${isOver ? 'text-primary' : 'text-muted-foreground'}`}>
-              Solte aqui para começar
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              O primeiro bloco será criado automaticamente
-            </p>
-          </div>
-        ) : (
+      <div className="flex-1 min-h-[60vh] relative">
+        {/* CAMADA BASE: EmptyStateCards - sempre renderizado */}
+        <div className={`transition-opacity duration-200 ${
+          isDraggingFromToolbar ? 'opacity-20' : 'opacity-100'
+        }`}>
           <EmptyStateCards 
             onStartCreation={onStartCreation}
             onOpenChat={onOpenChat}
             activeTab={activeTab}
             isInPromptStep={isInPromptStep}
           />
-        )}
+        </div>
+
+        {/* CAMADA OVERLAY: Drop Zone - por cima de tudo */}
+        <div 
+          ref={setNodeRef}
+          className={`absolute inset-0 z-50 flex items-center justify-center 
+            rounded-xl border-2 border-dashed transition-all duration-200
+            ${isDraggingFromToolbar 
+              ? `pointer-events-auto ${isOver 
+                  ? 'bg-primary/20 border-primary' 
+                  : 'bg-background/80 border-muted-foreground/40'
+                }` 
+              : 'pointer-events-none opacity-0'
+            }`}
+        >
+          {isDraggingFromToolbar && (
+            <div className="text-center">
+              <PlusCircle 
+                size={64} 
+                className={`mx-auto mb-4 ${isOver ? 'text-primary' : 'text-muted-foreground/50'}`} 
+              />
+              <p className={`text-lg font-semibold ${isOver ? 'text-primary' : 'text-muted-foreground'}`}>
+                Solte aqui para começar
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                O primeiro bloco será criado automaticamente
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
