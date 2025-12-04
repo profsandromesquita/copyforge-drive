@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Block } from '@/types/copy-editor';
 import { Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus } from 'phosphor-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -6,85 +7,84 @@ interface BlockPreviewProps {
   block: Block;
 }
 
-export const BlockPreview = ({ block }: BlockPreviewProps) => {
-  const getFontSizeClass = () => {
-    const fontSize = block.config?.fontSize || 'medium';
-    
-    switch (block.type) {
-      case 'headline':
-        switch (fontSize) {
-          case 'small':
-            return 'text-xl';
-          case 'large':
-            return 'text-3xl';
-          default:
-            return 'text-2xl';
-        }
-      case 'subheadline':
-        switch (fontSize) {
-          case 'small':
-            return 'text-lg';
-          case 'large':
-            return 'text-2xl';
-          default:
-            return 'text-xl';
-        }
-      case 'text':
-      default:
-        switch (fontSize) {
-          case 'small':
-            return 'text-sm';
-          case 'large':
-            return 'text-lg';
-          default:
-            return 'text-base';
-        }
-    }
-  };
+// Funções puras extraídas para evitar recriação a cada render
+const computeFontSizeClass = (type: string, fontSize: string = 'medium'): string => {
+  switch (type) {
+    case 'headline':
+      switch (fontSize) {
+        case 'small': return 'text-xl';
+        case 'large': return 'text-3xl';
+        default: return 'text-2xl';
+      }
+    case 'subheadline':
+      switch (fontSize) {
+        case 'small': return 'text-lg';
+        case 'large': return 'text-2xl';
+        default: return 'text-xl';
+      }
+    default:
+      switch (fontSize) {
+        case 'small': return 'text-sm';
+        case 'large': return 'text-lg';
+        default: return 'text-base';
+      }
+  }
+};
 
-  const getTextAlignClass = () => {
-    switch (block.config?.textAlign) {
-      case 'center':
-        return 'text-center';
-      case 'right':
-        return 'text-right';
-      case 'justify':
-        return 'text-justify';
-      default:
-        return 'text-left';
-    }
-  };
+const computeTextAlignClass = (textAlign?: string): string => {
+  switch (textAlign) {
+    case 'center': return 'text-center';
+    case 'right': return 'text-right';
+    case 'justify': return 'text-justify';
+    default: return 'text-left';
+  }
+};
 
-  const getListAlignmentClass = () => {
-    switch (block.config?.textAlign) {
-      case 'center':
-        return 'justify-center';
-      case 'right':
-        return 'justify-end';
-      default:
-        return 'justify-start';
-    }
-  };
+const computeListAlignmentClass = (textAlign?: string): string => {
+  switch (textAlign) {
+    case 'center': return 'justify-center';
+    case 'right': return 'justify-end';
+    default: return 'justify-start';
+  }
+};
 
-  const getFontWeightClass = () => {
-    switch (block.config?.fontWeight) {
-      case 'normal':
-        return 'font-normal';
-      case 'semibold':
-        return 'font-semibold';
-      case 'extrabold':
-        return 'font-extrabold';
-      default:
-        return block.type === 'headline' ? 'font-bold' : 'font-semibold';
-    }
-  };
+const computeFontWeightClass = (fontWeight?: string, blockType?: string): string => {
+  switch (fontWeight) {
+    case 'normal': return 'font-normal';
+    case 'semibold': return 'font-semibold';
+    case 'extrabold': return 'font-extrabold';
+    default: return blockType === 'headline' ? 'font-bold' : 'font-semibold';
+  }
+};
+
+export const BlockPreview = memo(({ block }: BlockPreviewProps) => {
+  // Memoizar cálculos de classes CSS baseados nas dependências relevantes
+  const fontSizeClass = useMemo(
+    () => computeFontSizeClass(block.type, block.config?.fontSize),
+    [block.type, block.config?.fontSize]
+  );
+
+  const textAlignClass = useMemo(
+    () => computeTextAlignClass(block.config?.textAlign),
+    [block.config?.textAlign]
+  );
+
+  const listAlignmentClass = useMemo(
+    () => computeListAlignmentClass(block.config?.textAlign),
+    [block.config?.textAlign]
+  );
+
+  const fontWeightClass = useMemo(
+    () => computeFontWeightClass(block.config?.fontWeight, block.type),
+    [block.config?.fontWeight, block.type]
+  );
 
   const renderContent = () => {
     switch (block.type) {
       case 'headline':
         return (
           <div 
-            className={`${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
+            className={`${fontSizeClass} ${textAlignClass} ${fontWeightClass}`}
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
@@ -92,7 +92,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
       case 'subheadline':
         return (
           <div 
-            className={`${getFontSizeClass()} ${getTextAlignClass()} ${getFontWeightClass()}`}
+            className={`${fontSizeClass} ${textAlignClass} ${fontWeightClass}`}
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
@@ -100,7 +100,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
       case 'text':
         return (
           <div 
-            className={`${getFontSizeClass()} ${getTextAlignClass()}`}
+            className={`${fontSizeClass} ${textAlignClass}`}
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
@@ -134,7 +134,7 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
         return (
           <div className="space-y-2">
             {items.map((item, index) => (
-              <div key={index} className={`flex gap-2 ${getListAlignmentClass()}`}>
+              <div key={index} className={`flex gap-2 ${listAlignmentClass}`}>
                 {getListIcon(index)}
                 <span className="flex-1">{item}</span>
               </div>
@@ -589,4 +589,4 @@ export const BlockPreview = ({ block }: BlockPreviewProps) => {
       {renderContent()}
     </div>
   );
-};
+});
