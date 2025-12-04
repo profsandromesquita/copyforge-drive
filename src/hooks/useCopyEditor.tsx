@@ -24,6 +24,7 @@ interface CopyEditorContextType {
   setCopyId: (id: string) => void;
   setCopyTitle: (title: string) => void;
   addSession: () => void;
+  addSessionAndGetId: () => string;
   removeSession: (sessionId: string) => void;
   updateSession: (sessionId: string, updates: Partial<Session>) => void;
   duplicateSession: (sessionId: string) => void;
@@ -153,6 +154,17 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
     setSessions([...sessions, newSession]);
   }, [sessions]);
+
+  const addSessionAndGetId = useCallback(() => {
+    const newSessionId = `session-${Date.now()}`;
+    const newSession: Session = {
+      id: newSessionId,
+      title: `Sessão ${sessions.length + 1}`,
+      blocks: [],
+    };
+    setSessions(prev => [...prev, newSession]);
+    return newSessionId;
+  }, [sessions.length]);
 
   const removeSession = useCallback((sessionId: string) => {
     setSessions(sessions.filter(s => s.id !== sessionId));
@@ -424,6 +436,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCopyId,
     setCopyTitle,
     addSession,
+    addSessionAndGetId,
     removeSession,
     updateSession,
     duplicateSession,

@@ -15,7 +15,7 @@ import { useCopyGeneration } from '@/hooks/useCopyGeneration';
 const CopyEditorContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loadCopy, setCopyId, addBlock, moveBlock, sessions, isLoading, selectedBlockId } = useCopyEditor();
+  const { loadCopy, setCopyId, addBlock, moveBlock, addSessionAndGetId, sessions, isLoading, selectedBlockId } = useCopyEditor();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [showImageAI, setShowImageAI] = useState(false);
@@ -24,6 +24,7 @@ const CopyEditorContent = () => {
   const [activeTab, setActiveTab] = useState<'ai' | 'chat'>('ai');
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isInPromptStep, setIsInPromptStep] = useState(false);
+  const [isDraggingFromToolbar, setIsDraggingFromToolbar] = useState(false);
   const prevSelectedBlockId = useRef<string | null>(null);
   const { insufficientCredits, creditInfo, closeInsufficientCreditsModal } = useCopyGeneration();
 
@@ -67,6 +68,7 @@ const CopyEditorContent = () => {
     if (active.data.current?.block) {
       setActiveBlock(active.data.current.block);
     } else if (active.data.current?.fromToolbar) {
+      setIsDraggingFromToolbar(true);
       setActiveType(active.data.current.type);
     }
   };
@@ -75,6 +77,7 @@ const CopyEditorContent = () => {
     const { active, over } = event;
     setActiveBlock(null);
     setActiveType(null);
+    setIsDraggingFromToolbar(false);
 
     if (!over) return;
 
@@ -86,8 +89,15 @@ const CopyEditorContent = () => {
       let sessionId: string | undefined;
       let insertIndex: number | undefined;
       
+      // Check if dropping on empty canvas dropzone
+      if (over.id === 'empty-canvas-dropzone') {
+        // Create a new session and get its ID
+        const newSessionId = addSessionAndGetId();
+        sessionId = newSessionId;
+        insertIndex = 0;
+      }
       // Check if dropping on a dropzone
-      if (over.id.toString().startsWith('dropzone-')) {
+      else if (over.id.toString().startsWith('dropzone-')) {
         const parts = over.id.toString().split('-');
         sessionId = parts.slice(1, -1).join('-'); // Get session ID (handling UUIDs with dashes)
         insertIndex = parseInt(parts[parts.length - 1]); // Get index
@@ -230,6 +240,7 @@ const CopyEditorContent = () => {
             }}
             activeTab={activeTab}
             isInPromptStep={isInPromptStep}
+            isDraggingFromToolbar={isDraggingFromToolbar}
           />
         <EditorSidebar 
           showImageAI={showImageAI} 
