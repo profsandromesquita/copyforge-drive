@@ -103,8 +103,160 @@ function isHighLevelTitle(title: string): boolean {
   return highLevelKeywords.some(k => lower.includes(k));
 }
 
+/**
+ * Detecta e parseia conteúdo JSON estruturado do modelo
+ * Ex: generate_copy(..., sessions=[{...}]) ou arrays de objetos
+ */
+function tryParseJSONContent(content: string): ParsedContent[] | null {
+  // Detectar padrões JSON comuns do Gemini
+  const jsonPatterns = [
+    /generate_copy\([^)]*sessions=\[(.+)\]/s,  // generate_copy(...sessions=[...])
+    /\[\s*\{\s*"(?:session_name|blocks|title|content)"/s, // Array de objetos com keys conhecidas
+    /\{\s*"(?:blocks|sessions)"\s*:\s*\[/s,     // Objeto com blocks ou sessions
+  ];
+  
+  let isJSON = false;
+  for (const pattern of jsonPatterns) {
+    if (pattern.test(content)) {
+      isJSON = true;
+      break;
+    }
+  }
+  
+  if (!isJSON) return null;
+  
+  console.log('⚠️ [Parser] JSON detectado na resposta, tentando converter...');
+  
+  try {
+    let jsonStr = content;
+    
+    // Se for generate_copy(...), extrair apenas a parte sessions
+    const sessionsMatch = content.match(/sessions=(\[[\s\S]+\])/);
+    if (sessionsMatch) {
+      jsonStr = sessionsMatch[1];
+    }
+    
+    // Tentar extrair JSON puro (pode estar entre ```)
+    const jsonBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonBlockMatch) {
+      jsonStr = jsonBlockMatch[1].trim();
+    }
+    
+    // Tentar encontrar array ou objeto JSON no texto
+    const arrayMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    if (arrayMatch) {
+      jsonStr = arrayMatch[0];
+    }
+    
+    // Limpar para JSON válido (aspas simples para duplas, etc)
+    jsonStr = jsonStr
+      .replace(/'/g, '"')
+      .replace(/,\s*]/g, ']')
+      .replace(/,\s*}/g, '}');
+    
+    const parsed = JSON.parse(jsonStr);
+    
+    // Converter para blocos
+    return convertJSONToBlocks(parsed);
+  } catch (e) {
+    console.log('⚠️ [Parser] JSON detectado mas parse falhou:', e);
+    return null;
+  }
+}
+
+/**
+ * Converte estrutura JSON em blocos ParsedContent
+ */
+function convertJSONToBlocks(data: unknown): ParsedContent[] {
+  const blocks: ParsedContent[] = [];
+  
+  // Se for array de sessions ou objetos
+  if (Array.isArray(data)) {
+    data.forEach((item, itemIndex) => {
+      // Se item tem session_name e blocks (estrutura de sessão)
+      if (item && typeof item === 'object' && 'blocks' in item) {
+        const sessionName = (item as { session_name?: string }).session_name || 
+                           (item as { name?: string }).name || 
+                           `Sessão ${itemIndex + 1}`;
+        const sessionBlocks = (item as { blocks?: unknown[] }).blocks || [];
+        
+        sessionBlocks.forEach((block: unknown, blockIndex: number) => {
+          if (block && typeof block === 'object') {
+            const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
+            const content = blockObj.text || blockObj.content || '';
+            const title = blockObj.title || sessionName;
+            const type = inferBlockType(content, blockObj.block_type || '');
+            
+            blocks.push({
+              id: `block-${Date.now()}-${itemIndex}-${blockIndex}`,
+              type,
+              title: title,
+              content: content,
+              rawContent: JSON.stringify(block),
+              startIndex: 0,
+              endIndex: content.length,
+            });
+          }
+        });
+      }
+      // Se item é diretamente um bloco (array de blocos)
+      else if (item && typeof item === 'object') {
+        const blockObj = item as { text?: string; content?: string; block_type?: string; title?: string; name?: string };
+        const content = blockObj.text || blockObj.content || '';
+        const title = blockObj.title || blockObj.name || `Item ${itemIndex + 1}`;
+        const type = inferBlockType(content, blockObj.block_type || '');
+        
+        blocks.push({
+          id: `block-${Date.now()}-${itemIndex}`,
+          type,
+          title: title,
+          content: content,
+          rawContent: JSON.stringify(item),
+          startIndex: 0,
+          endIndex: content.length,
+        });
+      }
+    });
+  }
+  // Se for objeto único com blocks
+  else if (data && typeof data === 'object' && 'blocks' in data) {
+    const dataObj = data as { blocks?: unknown[] };
+    const dataBlocks = dataObj.blocks || [];
+    dataBlocks.forEach((block: unknown, index: number) => {
+      if (block && typeof block === 'object') {
+        const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
+        const content = blockObj.text || blockObj.content || '';
+        const title = blockObj.title || `Bloco ${index + 1}`;
+        const type = inferBlockType(content, blockObj.block_type || '');
+        
+        blocks.push({
+          id: `block-${Date.now()}-${index}`,
+          type,
+          title: title,
+          content: content,
+          rawContent: JSON.stringify(block),
+          startIndex: 0,
+          endIndex: content.length,
+        });
+      }
+    });
+  }
+  
+  return blocks;
+}
+
 export function parseAIResponse(markdown: string): ParsedMessage {
   console.log('🔍 [Parser] Iniciando parse de:', markdown.substring(0, 100) + '...');
+  
+  // ✅ NOVO: Tentar detectar e processar JSON estruturado PRIMEIRO
+  const jsonBlocks = tryParseJSONContent(markdown);
+  if (jsonBlocks && jsonBlocks.length > 0) {
+    console.log(`✅ [Parser] JSON detectado e convertido: ${jsonBlocks.length} blocos`);
+    return {
+      hasActionableContent: true,
+      blocks: jsonBlocks,
+    };
+  }
   
   const blocks: ParsedContent[] = [];
   let explanation = '';
