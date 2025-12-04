@@ -36,13 +36,23 @@ export const useUserPromptCustomization = (copyType: CopyType) => {
         },
       });
 
-      if (error) {
-        await handleSessionExpiredError(error);
-        throw error;
+      // Detectar erro 401 na resposta (vem como data.error quando JWT expira)
+      if (error || (data && 'error' in data && data.error === 'Unauthorized')) {
+        const authError = { status: 401, message: 'Unauthorized' };
+        const wasExpired = await handleSessionExpiredError(authError);
+        if (wasExpired) {
+          throw new Error('Sessão expirada');
+        }
+        if (error) throw error;
       }
       return data;
     },
     enabled: !!user && !!activeWorkspace?.id && !!copyType,
+    retry: (failureCount, error) => {
+      // Não tentar novamente se for erro de autenticação
+      if (error?.message === 'Sessão expirada') return false;
+      return failureCount < 2;
+    },
   });
 
   // Salvar personalização
