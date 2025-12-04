@@ -25,6 +25,9 @@ interface Copy {
   created_by: string;
   created_at: string;
   updated_at: string;
+  copy_type: string | null;
+  status: string | null;
+  sessions: any; // JSONB for preview
   creator?: {
     name: string;
     avatar_url: string | null;
@@ -104,10 +107,22 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (foldersError) throw foldersError;
 
       // Fetch copies with creator info (exclude templates)
+      // OTIMIZADO: Seleção explícita de colunas - exclui campos pesados não usados na listagem
+      // (system_instruction, generated_system_prompt, selected_*, copy_emotional_focus, etc.)
       const copiesQuery = supabase
         .from('copies')
         .select(`
-          *,
+          id,
+          title,
+          workspace_id,
+          project_id,
+          folder_id,
+          created_by,
+          created_at,
+          updated_at,
+          copy_type,
+          status,
+          sessions,
           creator:profiles!fk_copies_creator(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
