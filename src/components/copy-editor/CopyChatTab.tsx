@@ -276,31 +276,51 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
       // Verificar se é erro (JSON) ou stream (SSE)
       const contentType = response.headers.get('content-type') || '';
       
-      if (!response.ok || contentType.includes('application/json')) {
-        const errorData = await response.json();
+      if (contentType.includes('application/json')) {
+        const jsonData = await response.json();
         
-        if (response.status === 402 || errorData.error === 'insufficient_credits') {
-          toast({
-            title: 'Créditos insuficientes',
-            description: 'Adicione créditos para continuar usando o chat IA.',
-            variant: 'destructive',
-          });
+        // Verificar erros
+        if (!response.ok || jsonData.error) {
+          if (response.status === 402 || jsonData.error === 'insufficient_credits') {
+            toast({
+              title: 'Créditos insuficientes',
+              description: 'Adicione créditos para continuar usando o chat IA.',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
+          if (response.status === 429 || jsonData.error === 'rate_limit_exceeded') {
+            toast({
+              title: 'Limite de requisições atingido',
+              description: 'Aguarde alguns segundos antes de tentar novamente.',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
+          throw new Error(jsonData.message || 'Erro ao enviar mensagem');
+        }
+
+        // ✅ RESPOSTA JSON DIRETA (Function Calling) - blocos já estruturados
+        if (jsonData.success && jsonData.blocks) {
+          console.log('✓ Resposta Function Calling:', jsonData.blocks.length, 'blocos');
+          
+          // Atualizar streamingMessage para exibir conteúdo
+          setStreamingMessage(jsonData.message || '');
+          setStreamingIntent(jsonData.intent);
+          
+          // Invalidar queries para buscar mensagens persistidas
+          await queryClient.invalidateQueries({ queryKey: ['copy-chat-history', copyId] });
+          
+          // Finalizar com os dados já prontos
+          setIsLoading(false);
+          setIsStreaming(false);
           return;
         }
-        
-        if (response.status === 429 || errorData.error === 'rate_limit_exceeded') {
-          toast({
-            title: 'Limite de requisições atingido',
-            description: 'Aguarde alguns segundos antes de tentar novamente.',
-            variant: 'destructive',
-          });
-          return;
-        }
-        
-        throw new Error(errorData.message || 'Erro ao enviar mensagem');
       }
 
-      // Processar stream SSE
+      // Processar stream SSE (apenas para respostas conversacionais)
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body reader');
 
