@@ -236,10 +236,11 @@ const TemplateCard = memo(({
             <div className="absolute top-2 right-2 flex items-center gap-2">
               {isOwner && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger 
-                    onClick={(e) => e.stopPropagation()}
-                    className="bg-background/80 backdrop-blur-sm p-1.5 rounded-md hover:bg-background transition-colors"
-                  >
+              <DropdownMenuTrigger 
+                onClick={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="bg-background/80 backdrop-blur-sm p-1.5 rounded-md hover:bg-background transition-colors"
+              >
                     <MoreVertical size={16} />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover border-border z-50">
