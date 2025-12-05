@@ -108,17 +108,21 @@ function isHighLevelTitle(title: string): boolean {
  * Ex: generate_copy(..., sessions=[{...}]) ou arrays de objetos
  */
 function tryParseJSONContent(content: string): ParsedContent[] | null {
-  // Detectar padrões JSON comuns do Gemini
+  // Detectar padrões JSON comuns do Gemini - expandido para capturar mais variações
   const jsonPatterns = [
     /generate_copy\([^)]*sessions=\[(.+)\]/s,  // generate_copy(...sessions=[...])
-    /\[\s*\{\s*"(?:session_name|blocks|title|content)"/s, // Array de objetos com keys conhecidas
+    /\[\s*\{\s*"(?:session_name|blocks|title|content|name|text)"/s, // Array de objetos com keys conhecidas
     /\{\s*"(?:blocks|sessions)"\s*:\s*\[/s,     // Objeto com blocks ou sessions
+    /^\s*\{\s*"sessions"\s*:\s*\[/s,            // ✅ NOVO: { "sessions": [ no início
+    /^\s*\[\s*\{\s*"name"\s*:/s,                // ✅ NOVO: [{ "name": ... }]
+    /^\s*\{\s*"blocks"\s*:\s*\[\s*\{/s,         // ✅ NOVO: { "blocks": [{ ... }] }
   ];
   
   let isJSON = false;
   for (const pattern of jsonPatterns) {
     if (pattern.test(content)) {
       isJSON = true;
+      console.log(`🔍 [Parser] Padrão JSON detectado: ${pattern.source.substring(0, 50)}...`);
       break;
     }
   }
@@ -142,9 +146,15 @@ function tryParseJSONContent(content: string): ParsedContent[] | null {
       jsonStr = jsonBlockMatch[1].trim();
     }
     
+    // ✅ NOVO: Tentar encontrar objeto { "sessions": [...] } completo
+    const sessionsObjectMatch = content.match(/\{\s*"sessions"\s*:\s*\[[\s\S]*\]\s*\}/);
+    if (sessionsObjectMatch) {
+      jsonStr = sessionsObjectMatch[0];
+    }
+    
     // Tentar encontrar array ou objeto JSON no texto
     const arrayMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (arrayMatch) {
+    if (arrayMatch && !sessionsObjectMatch) {
       jsonStr = arrayMatch[0];
     }
     
@@ -155,9 +165,19 @@ function tryParseJSONContent(content: string): ParsedContent[] | null {
       .replace(/,\s*}/g, '}');
     
     const parsed = JSON.parse(jsonStr);
+    console.log('✅ [Parser] JSON parseado com sucesso, convertendo para blocos...');
     
     // Converter para blocos
-    return convertJSONToBlocks(parsed);
+    const blocks = convertJSONToBlocks(parsed);
+    
+    // ✅ VALIDAÇÃO: Se não conseguiu extrair blocos válidos, retornar null para fallback
+    if (!blocks || blocks.length === 0) {
+      console.log('⚠️ [Parser] JSON parseado mas nenhum bloco extraído, fallback para texto');
+      return null;
+    }
+    
+    console.log(`✅ [Parser] ${blocks.length} blocos extraídos do JSON`);
+    return blocks;
   } catch (e) {
     console.log('⚠️ [Parser] JSON detectado mas parse falhou:', e);
     return null;
@@ -193,29 +213,39 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
     
     return cleaned.trim();
   };
-  
-  // Se for array de sessions ou objetos
-  if (Array.isArray(data)) {
-    data.forEach((item, itemIndex) => {
-      // Se item tem session_name e blocks (estrutura de sessão)
-      if (item && typeof item === 'object' && 'blocks' in item) {
-        const sessionName = (item as { session_name?: string }).session_name || 
-                           (item as { name?: string }).name || 
-                           `Sessão ${itemIndex + 1}`;
-        const sessionBlocks = (item as { blocks?: unknown[] }).blocks || [];
-        
-        sessionBlocks.forEach((block: unknown, blockIndex: number) => {
-          if (block && typeof block === 'object') {
-            const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
-            const rawContent = blockObj.text || blockObj.content || '';
-            const title = blockObj.title || sessionName;
-            const type = inferBlockType(rawContent, blockObj.block_type || '');
-            
-            // ✅ SANITIZAR conteúdo
-            const sanitizedContent = sanitizeContent(rawContent);
-            
+
+  /**
+   * Helper para extrair blocos de uma sessão
+   */
+  const extractBlocksFromSession = (session: unknown, sessionIndex: number): void => {
+    if (!session || typeof session !== 'object') return;
+    
+    const sessionObj = session as { 
+      session_name?: string; 
+      name?: string; 
+      blocks?: unknown[];
+      text?: string;
+      content?: string;
+    };
+    
+    const sessionName = sessionObj.session_name || sessionObj.name || `Sessão ${sessionIndex + 1}`;
+    const sessionBlocks = sessionObj.blocks || [];
+    
+    // Se a sessão tem blocos
+    if (Array.isArray(sessionBlocks) && sessionBlocks.length > 0) {
+      sessionBlocks.forEach((block: unknown, blockIndex: number) => {
+        if (block && typeof block === 'object') {
+          const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
+          const rawContent = blockObj.text || blockObj.content || '';
+          const title = blockObj.title || sessionName;
+          const type = inferBlockType(rawContent, blockObj.block_type || '');
+          
+          const sanitizedContent = sanitizeContent(rawContent);
+          
+          // ✅ Só adicionar se tiver conteúdo válido
+          if (sanitizedContent && sanitizedContent.length > 0) {
             blocks.push({
-              id: `block-${Date.now()}-${itemIndex}-${blockIndex}`,
+              id: `block-${Date.now()}-${sessionIndex}-${blockIndex}`,
               type,
               title: stripMetaPrefixes(title),
               content: sanitizedContent,
@@ -224,7 +254,48 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
               endIndex: sanitizedContent.length,
             });
           }
+        }
+      });
+    }
+    // Se a sessão é diretamente um bloco (sem sub-blocos)
+    else if (sessionObj.text || sessionObj.content) {
+      const rawContent = sessionObj.text || sessionObj.content || '';
+      const sanitizedContent = sanitizeContent(rawContent);
+      
+      if (sanitizedContent && sanitizedContent.length > 0) {
+        blocks.push({
+          id: `block-${Date.now()}-${sessionIndex}`,
+          type: inferBlockType(rawContent, ''),
+          title: stripMetaPrefixes(sessionName),
+          content: sanitizedContent,
+          rawContent: rawContent,
+          startIndex: 0,
+          endIndex: sanitizedContent.length,
         });
+      }
+    }
+  };
+
+  // ✅ NOVO: Tratar objeto { "sessions": [...] }
+  if (data && typeof data === 'object' && 'sessions' in data) {
+    const dataObj = data as { sessions?: unknown[] };
+    const sessions = dataObj.sessions || [];
+    
+    console.log(`📦 [Parser] Estrutura { sessions: [...] } detectada com ${sessions.length} sessões`);
+    
+    sessions.forEach((session, sessionIndex) => {
+      extractBlocksFromSession(session, sessionIndex);
+    });
+    
+    return blocks;
+  }
+  
+  // Se for array de sessions ou objetos
+  if (Array.isArray(data)) {
+    data.forEach((item, itemIndex) => {
+      // Se item tem session_name e blocks (estrutura de sessão)
+      if (item && typeof item === 'object' && 'blocks' in item) {
+        extractBlocksFromSession(item, itemIndex);
       }
       // Se item é diretamente um bloco (array de blocos)
       else if (item && typeof item === 'object') {
@@ -233,18 +304,20 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
         const title = blockObj.title || blockObj.name || `Item ${itemIndex + 1}`;
         const type = inferBlockType(rawContent, blockObj.block_type || '');
         
-        // ✅ SANITIZAR conteúdo
         const sanitizedContent = sanitizeContent(rawContent);
         
-        blocks.push({
-          id: `block-${Date.now()}-${itemIndex}`,
-          type,
-          title: stripMetaPrefixes(title),
-          content: sanitizedContent,
-          rawContent: rawContent,
-          startIndex: 0,
-          endIndex: sanitizedContent.length,
-        });
+        // ✅ Só adicionar se tiver conteúdo válido
+        if (sanitizedContent && sanitizedContent.length > 0) {
+          blocks.push({
+            id: `block-${Date.now()}-${itemIndex}`,
+            type,
+            title: stripMetaPrefixes(title),
+            content: sanitizedContent,
+            rawContent: rawContent,
+            startIndex: 0,
+            endIndex: sanitizedContent.length,
+          });
+        }
       }
     });
   }
@@ -259,18 +332,20 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
         const title = blockObj.title || `Bloco ${index + 1}`;
         const type = inferBlockType(rawContent, blockObj.block_type || '');
         
-        // ✅ SANITIZAR conteúdo
         const sanitizedContent = sanitizeContent(rawContent);
         
-        blocks.push({
-          id: `block-${Date.now()}-${index}`,
-          type,
-          title: stripMetaPrefixes(title),
-          content: sanitizedContent,
-          rawContent: rawContent,
-          startIndex: 0,
-          endIndex: sanitizedContent.length,
-        });
+        // ✅ Só adicionar se tiver conteúdo válido
+        if (sanitizedContent && sanitizedContent.length > 0) {
+          blocks.push({
+            id: `block-${Date.now()}-${index}`,
+            type,
+            title: stripMetaPrefixes(title),
+            content: sanitizedContent,
+            rawContent: rawContent,
+            startIndex: 0,
+            endIndex: sanitizedContent.length,
+          });
+        }
       }
     });
   }
