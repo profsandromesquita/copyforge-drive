@@ -37,7 +37,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
   const { activeProject } = useProject();
-  const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy, deleteCopies, deleteFolders } = useDrive();
+  const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy, deleteCopies, deleteFolders, countCopiesInFolders } = useDrive();
   const { checkProjectLimit, checkCopyLimit } = usePlanLimits();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
@@ -70,6 +70,7 @@ const Dashboard = () => {
   const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleteWarning, setBulkDeleteWarning] = useState<string | null>(null);
 
   // Força modo claro no Dashboard
   useEffect(() => {
@@ -157,10 +158,12 @@ const Dashboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectionMode, selectedCopyIds, selectedFolderIds]);
 
+  // ✅ FIX: Usar distance dinâmica em vez de array condicional para evitar erro de hooks
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        // Distance muito alta quando em selectionMode = drag nunca ativa
+        distance: selectionMode ? 10000 : 8,
       },
     })
   );
@@ -278,6 +281,21 @@ const Dashboard = () => {
     handleClearSelection();
   }, [handleClearSelection]);
 
+  // ✅ Abrir dialog de confirmação com contagem de copies em pastas
+  const handleOpenBulkDeleteDialog = useCallback(async () => {
+    if (selectedFolderIds.size > 0) {
+      const count = await countCopiesInFolders(Array.from(selectedFolderIds));
+      if (count > 0) {
+        setBulkDeleteWarning(`Atenção: ${count} arquivo${count > 1 ? 's' : ''} dentro destas pastas também serão excluídos permanentemente.`);
+      } else {
+        setBulkDeleteWarning(null);
+      }
+    } else {
+      setBulkDeleteWarning(null);
+    }
+    setBulkDeleteDialogOpen(true);
+  }, [selectedFolderIds, countCopiesInFolders]);
+
   const handleBulkDelete = async () => {
     setIsDeleting(true);
     try {
@@ -291,14 +309,18 @@ const Dashboard = () => {
     } finally {
       setIsDeleting(false);
       setBulkDeleteDialogOpen(false);
+      setBulkDeleteWarning(null);
     }
   };
 
   const handleDragStart = (event: DragStartEvent) => {
+    if (selectionMode) return; // ← Early return quando em modo seleção
     setActiveId(event.active.id as string);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    if (selectionMode) return; // ← Early return quando em modo seleção
+    
     const { active, over } = event;
     setActiveId(null);
 
@@ -477,9 +499,9 @@ const Dashboard = () => {
             />
           )}
           <DndContext
-            sensors={selectionMode ? [] : sensors}
-            onDragStart={selectionMode ? undefined : handleDragStart}
-            onDragEnd={selectionMode ? undefined : handleDragEnd}
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
           >
             <DragOverlay dropAnimation={{
               duration: 200,
@@ -627,7 +649,7 @@ const Dashboard = () => {
           totalCount={totalItemCount}
           onSelectAll={handleSelectAll}
           onClearSelection={handleClearSelection}
-          onDelete={() => setBulkDeleteDialogOpen(true)}
+          onDelete={handleOpenBulkDeleteDialog}
           onExitSelectionMode={handleExitSelectionMode}
           isDeleting={isDeleting}
         />
@@ -639,6 +661,7 @@ const Dashboard = () => {
         onOpenChange={setBulkDeleteDialogOpen}
         itemName=""
         itemCount={totalSelectedCount}
+        warningMessage={bulkDeleteWarning || undefined}
         onConfirm={handleBulkDelete}
         isDeleting={isDeleting}
       />

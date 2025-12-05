@@ -47,6 +47,7 @@ interface DriveContextType {
   deleteCopy: (copyId: string) => Promise<void>;
   deleteCopies: (copyIds: string[]) => Promise<void>;
   deleteFolders: (folderIds: string[]) => Promise<void>;
+  countCopiesInFolders: (folderIds: string[]) => Promise<number>;
   renameFolder: (folderId: string, newName: string) => Promise<void>;
   renameCopy: (copyId: string, newTitle: string) => Promise<void>;
   moveFolder: (folderId: string, targetFolderId: string | null) => Promise<void>;
@@ -386,15 +387,49 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentFolder?.id, fetchDriveContent]);
 
-  // Batch delete folders
+  // Contar copies dentro de pastas (para warning de cascade delete)
+  const countCopiesInFolders = useCallback(async (folderIds: string[]): Promise<number> => {
+    if (folderIds.length === 0) return 0;
+    
+    try {
+      const { count, error } = await supabase
+        .from('copies')
+        .select('id', { count: 'exact', head: true })
+        .in('folder_id', folderIds);
+        
+      if (error) {
+        console.error('Error counting copies in folders:', error);
+        return 0;
+      }
+      return count || 0;
+    } catch (error) {
+      console.error('Error counting copies in folders:', error);
+      return 0;
+    }
+  }, []);
+
+  // Batch delete folders (com cascade delete de copies)
   const deleteFolders = useCallback(async (folderIds: string[]) => {
     if (folderIds.length === 0) return;
 
     try {
-      // 1. ATUALIZAÇÃO OTIMISTA
-      setFolders(prev => prev.filter(f => !folderIds.includes(f.id)));
+      // 1. PRIMEIRO: Deletar copies dentro das pastas (CASCADE manual)
+      const { error: copiesError } = await supabase
+        .from('copies')
+        .delete()
+        .in('folder_id', folderIds);
+        
+      if (copiesError) {
+        console.error('Error deleting copies in folders:', copiesError);
+        throw copiesError;
+      }
 
-      // 2. Deletar no banco com .in()
+      // 2. ATUALIZAÇÃO OTIMISTA das pastas
+      setFolders(prev => prev.filter(f => !folderIds.includes(f.id)));
+      // Também remover copies das pastas do estado local
+      setCopies(prev => prev.filter(c => !c.folder_id || !folderIds.includes(c.folder_id)));
+
+      // 3. Deletar pastas no banco com .in()
       const { error } = await supabase
         .from('folders')
         .delete()
@@ -536,6 +571,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     deleteCopy,
     deleteCopies,
     deleteFolders,
+    countCopiesInFolders,
     renameFolder,
     renameCopy,
     moveFolder,
