@@ -296,9 +296,168 @@ serve(async (req) => {
       { role: 'user' as const, content: enhancedMessage }
     ];
 
-    console.log(`📤 Enviando para Lovable AI (STREAMING): ${messages.length} mensagens`);
+    console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens, intent: ${intent}`);
 
-    // ============ STREAMING: Chamar Lovable AI com stream: true ============
+    // ============ FUNCTION CALLING: Para insert/replace, usar Tools (sem streaming) ============
+    if (intent === 'insert' || intent === 'replace') {
+      console.log('🔧 Usando Function Calling (Tools) para garantir estrutura correta');
+      
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: messages,
+          temperature: 0.4,
+          tools: [{
+            type: "function",
+            function: {
+              name: "generate_blocks",
+              description: "Gera blocos de conteúdo estruturados. CADA item solicitado DEVE ser um bloco separado no array.",
+              parameters: {
+                type: "object",
+                properties: {
+                  blocks: {
+                    type: "array",
+                    description: "Array de blocos. Se o usuário pedir N itens, DEVE haver exatamente N objetos neste array.",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { 
+                          type: "string", 
+                          description: "Título descritivo curto do bloco (ex: 'E-mail de Boas-Vindas', 'Mensagem Segunda-feira', 'Variação 1')" 
+                        },
+                        content: { 
+                          type: "string", 
+                          description: "Conteúdo completo do bloco em texto puro (sem markdown, sem JSON)" 
+                        },
+                      },
+                      required: ["title", "content"],
+                    },
+                  },
+                },
+                required: ["blocks"],
+              },
+            },
+          }],
+          tool_choice: { type: "function", function: { name: "generate_blocks" } },
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('❌ Erro da Lovable AI (Tools):', aiResponse.status, errorText);
+
+        if (aiResponse.status === 429) {
+          return new Response(
+            JSON.stringify({ error: 'rate_limit_exceeded', message: 'Limite de requisições excedido.' }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (aiResponse.status === 402) {
+          return new Response(
+            JSON.stringify({ error: 'lovable_ai_credits_required', message: 'Créditos Lovable AI necessários.' }),
+            { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        throw new Error(`AI Gateway error: ${aiResponse.status} ${errorText}`);
+      }
+
+      const data = await aiResponse.json();
+      console.log('📥 Resposta Tools recebida:', JSON.stringify(data).substring(0, 500));
+
+      // Extrair blocos do tool_call
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      let generatedBlocks: { title: string; content: string }[] = [];
+
+      if (toolCall?.function?.arguments) {
+        try {
+          const parsed = JSON.parse(toolCall.function.arguments);
+          generatedBlocks = parsed.blocks || [];
+          console.log(`✓ Tool call retornou ${generatedBlocks.length} blocos`);
+        } catch (parseError) {
+          console.error('❌ Erro ao parsear tool_call:', parseError);
+        }
+      }
+
+      // Fallback: se não conseguiu extrair do tool_call, tentar do content
+      if (generatedBlocks.length === 0 && data.choices?.[0]?.message?.content) {
+        console.log('⚠️ Fallback: tentando extrair do content');
+        const content = data.choices[0].message.content;
+        // Tentar parsear como JSON
+        try {
+          const parsed = JSON.parse(content);
+          if (parsed.blocks) {
+            generatedBlocks = parsed.blocks;
+          }
+        } catch {
+          // Se não é JSON, criar um bloco único
+          generatedBlocks = [{ title: 'Conteúdo Gerado', content: content }];
+        }
+      }
+
+      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+      // ============ PERSISTÊNCIA ============
+      // Salvar mensagem do usuário
+      await supabase.from('copy_chat_messages').insert({
+        copy_id: copyId,
+        workspace_id: workspaceId,
+        user_id: userId,
+        role: 'user',
+        content: cleanMessage,
+      });
+
+      // Construir mensagem formatada para histórico
+      const formattedMessage = generatedBlocks.map(b => `### ${b.title}\n${b.content}`).join('\n\n');
+
+      // Salvar resposta da IA
+      await supabase.from('copy_chat_messages').insert({
+        copy_id: copyId,
+        workspace_id: workspaceId,
+        user_id: userId,
+        role: 'assistant',
+        content: formattedMessage,
+        metadata: { intent, blocksCount: generatedBlocks.length }
+      });
+
+      // Debitar créditos
+      if (usage.total_tokens > 0) {
+        await supabaseAdmin.rpc('debit_workspace_credits', {
+          p_workspace_id: workspaceId,
+          p_model_name: 'google/gemini-2.5-flash',
+          tokens_used: usage.total_tokens || 0,
+          p_input_tokens: usage.prompt_tokens || 0,
+          p_output_tokens: usage.completion_tokens || 0,
+          generation_id: null,
+          p_user_id: userId
+        });
+      }
+
+      console.log(`✓ Function Calling completo: ${generatedBlocks.length} blocos gerados`);
+
+      // Retornar JSON direto com blocos estruturados
+      return new Response(JSON.stringify({
+        success: true,
+        message: formattedMessage,
+        blocks: generatedBlocks,
+        intent,
+        actionable: true,
+        tokens: usage,
+        missingVariables
+      }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    // ============ STREAMING: Para conversacional, manter streaming ============
+    console.log('💬 Usando Streaming para resposta conversacional');
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -308,10 +467,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: messages,
-        // ✅ TEMPERATURE DINÂMICA: Precisão para insert/replace, criatividade para conversacional
-        temperature: (intent === 'insert' || intent === 'replace') ? 0.4 : 0.7,
+        temperature: 0.7,
         max_tokens: 2000,
-        stream: true, // ✅ ATIVAR STREAMING
+        stream: true,
       }),
     });
 
