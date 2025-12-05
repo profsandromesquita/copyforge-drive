@@ -286,6 +286,17 @@ serve(async (req) => {
     
     console.log(`📋 System Prompt: ${savedSystemInstruction ? 'Herdado do Copy IA' : 'Construído dinamicamente'} (${systemPrompt.length} chars)`);
 
+    // ✅ CORREÇÃO: Extrair quantidade ANTES de construir mensagens
+    const itemCount = detectRequestedItemCount(cleanMessage);
+    console.log(`📊 Quantidade detectada na mensagem: ${itemCount || 'N/A'}`);
+
+    // ✅ CORREÇÃO: Enriquecer mensagem com quantidade explícita para Function Calling
+    let finalUserMessage = enhancedMessage;
+    if ((intent === 'insert' || intent === 'replace') && itemCount) {
+      finalUserMessage = `[REQUISITO OBRIGATÓRIO: VOCÊ DEVE GERAR EXATAMENTE ${itemCount} BLOCOS SEPARADOS. CADA ITEM DEVE SER UM OBJETO DISTINTO NO ARRAY.]\n\n${enhancedMessage}`;
+      console.log(`📝 Mensagem enriquecida com requisito de ${itemCount} blocos`);
+    }
+
     // Construir mensagens para a IA
     const messages: ChatMessage[] = [
       { role: 'user' as const, content: systemPrompt },
@@ -293,7 +304,7 @@ serve(async (req) => {
         role: msg.role as 'user' | 'assistant',
         content: msg.content
       })),
-      { role: 'user' as const, content: enhancedMessage }
+      { role: 'user' as const, content: finalUserMessage }
     ];
 
     console.log(`📤 Enviando para Lovable AI: ${messages.length} mensagens, intent: ${intent}`);
@@ -301,6 +312,35 @@ serve(async (req) => {
     // ============ FUNCTION CALLING: Para insert/replace, usar Tools (sem streaming) ============
     if (intent === 'insert' || intent === 'replace') {
       console.log('🔧 Usando Function Calling (Tools) para garantir estrutura correta');
+      
+      // ✅ CORREÇÃO: Construir schema dinâmico com restrições de quantidade
+      const blocksArraySchema: any = {
+        type: "array",
+        description: itemCount 
+          ? `OBRIGATÓRIO: Este array DEVE conter EXATAMENTE ${itemCount} objetos. NÃO GERE MENOS NEM MAIS.`
+          : "Array de blocos. Cada item solicitado DEVE ser um objeto separado.",
+        items: {
+          type: "object",
+          properties: {
+            title: { 
+              type: "string", 
+              description: "Título descritivo curto do bloco (ex: 'E-mail de Boas-Vindas', 'Mensagem Segunda-feira', 'Variação 1')" 
+            },
+            content: { 
+              type: "string", 
+              description: "Conteúdo completo do bloco em texto puro (sem markdown, sem JSON)" 
+            },
+          },
+          required: ["title", "content"],
+        },
+      };
+      
+      // ✅ CORREÇÃO: Adicionar minItems/maxItems quando quantidade é detectada
+      if (itemCount) {
+        blocksArraySchema.minItems = itemCount;
+        blocksArraySchema.maxItems = itemCount;
+        console.log(`🔒 Schema forçado: minItems=${itemCount}, maxItems=${itemCount}`);
+      }
       
       const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -316,28 +356,13 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "generate_blocks",
-              description: "Gera blocos de conteúdo estruturados. CADA item solicitado DEVE ser um bloco separado no array.",
+              description: itemCount 
+                ? `Gera EXATAMENTE ${itemCount} blocos de conteúdo. CADA UM DOS ${itemCount} ITENS SOLICITADOS DEVE SER UM BLOCO SEPARADO.`
+                : "Gera blocos de conteúdo estruturados. CADA item solicitado DEVE ser um bloco separado no array.",
               parameters: {
                 type: "object",
                 properties: {
-                  blocks: {
-                    type: "array",
-                    description: "Array de blocos. Se o usuário pedir N itens, DEVE haver exatamente N objetos neste array.",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { 
-                          type: "string", 
-                          description: "Título descritivo curto do bloco (ex: 'E-mail de Boas-Vindas', 'Mensagem Segunda-feira', 'Variação 1')" 
-                        },
-                        content: { 
-                          type: "string", 
-                          description: "Conteúdo completo do bloco em texto puro (sem markdown, sem JSON)" 
-                        },
-                      },
-                      required: ["title", "content"],
-                    },
-                  },
+                  blocks: blocksArraySchema
                 },
                 required: ["blocks"],
               },
@@ -924,13 +949,7 @@ function detectUserIntent(message: string, hasSelection: boolean): 'replace' | '
   const creationVerbs = ['criar', 'crie', 'gerar', 'gere', 'fazer', 'faça', 'produzir', 'produza', 'escrever', 'escreva', 'elaborar', 'elabore'];
   const hasCreationVerb = creationVerbs.some(verb => lowerMessage.includes(verb));
   
-  if (!hasSelection) {
-    if (hasCreationVerb) {
-      return 'insert';
-    }
-    return 'conversational';
-  }
-  
+  // ✅ CORREÇÃO: Definir patterns ANTES do return early
   const replacePatterns = [
     'otimiz', 'melhore', 'melhora', 'reescrev', 'refaz', 'refaç',
     'ajust', 'corrij', 'corrig', 'edit', 'modifiqu', 'alter',
@@ -941,6 +960,30 @@ function detectUserIntent(message: string, hasSelection: boolean): 'replace' | '
     'varia', 'versão', 'versoes', 'alternativ', 'opç', 'adiciona', 
     'acrescenta', 'complement', 'expanda', 'expand', 'mais'
   ];
+  
+  // ✅ NOVO: Detectar menção a elemento específico na mensagem
+  const mentionsSpecificElement = /(?:bloco|sessão|sessao|conteúdo|conteudo|headline|cta|título|titulo|seção|secao|parágrafo|paragrafo|texto)(?:\s+(?:do|da|de|sobre|#?\d+|\d+)|\s*\d+)/i.test(lowerMessage);
+  
+  const isReplace = replacePatterns.some(p => lowerMessage.includes(p));
+  const isInsert = insertPatterns.some(p => lowerMessage.includes(p));
+  
+  if (!hasSelection) {
+    // ✅ CORREÇÃO: Se menciona elemento + verbo de otimização → 'replace'
+    if (isReplace && mentionsSpecificElement) {
+      console.log('🎯 Intent detectado: replace (menção a elemento + verbo de otimização, sem seleção visual)');
+      return 'replace';
+    }
+    // ✅ CORREÇÃO: Se menciona elemento + verbo de criação/inserção → 'insert'
+    if ((hasCreationVerb || isInsert) && mentionsSpecificElement) {
+      console.log('🎯 Intent detectado: insert (menção a elemento + verbo de criação, sem seleção visual)');
+      return 'insert';
+    }
+    // Verbo de criação ou inserção sem elemento específico → 'insert'
+    if (hasCreationVerb || isInsert) {
+      return 'insert';
+    }
+    return 'conversational';
+  }
   
   const conversationalPatterns = [
     'o que', 'qual', 'como', 'porque', 'por que', 'quando',
@@ -954,9 +997,6 @@ function detectUserIntent(message: string, hasSelection: boolean): 'replace' | '
   if (isConversational && !hasCreationVerb) {
     return 'conversational';
   }
-  
-  const isReplace = replacePatterns.some(p => lowerMessage.includes(p));
-  const isInsert = insertPatterns.some(p => lowerMessage.includes(p));
   
   if (isReplace && !isInsert) return 'replace';
   if (isInsert && !isReplace) return 'insert';
