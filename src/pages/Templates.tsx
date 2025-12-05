@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { SquaresFour, MagnifyingGlass } from 'phosphor-react';
+import { SquaresFour, MagnifyingGlass, CheckSquare } from 'phosphor-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -11,7 +11,7 @@ import { CopySuccessDialog } from '@/components/discover/CopySuccessDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useProject } from '@/hooks/useProject';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 import { TypeFilter } from '@/components/filters/TypeFilter';
 import { CreatorFilter } from '@/components/filters/CreatorFilter';
@@ -24,11 +24,13 @@ import { CreateFolderDialog } from '@/components/drive/CreateFolderDialog';
 import { useDrive } from '@/hooks/useDrive';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { BulkSelectionToolbar } from '@/components/drive/BulkSelectionToolbar';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 
 const Templates = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
-  const { templates, loading, createFromTemplate, deleteTemplate, duplicateTemplate } = useTemplates();
+  const { templates, loading, createFromTemplate, deleteTemplate, deleteTemplates, duplicateTemplate } = useTemplates();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
@@ -49,10 +51,45 @@ const Templates = () => {
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [createdCopy, setCreatedCopy] = useState<{ id: string; title: string } | null>(null);
 
+  // ✅ ESTADOS DE SELEÇÃO EM MASSA
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
   // Força modo claro no Templates
   useEffect(() => {
     setTheme('light');
   }, [setTheme]);
+
+  // ✅ LISTENER PARA ATIVAR SELEÇÃO VIA LONG PRESS
+  useEffect(() => {
+    const handleActivateSelection = () => setSelectionMode(true);
+    window.addEventListener('activate-selection-mode', handleActivateSelection);
+    return () => window.removeEventListener('activate-selection-mode', handleActivateSelection);
+  }, []);
+
+  // ✅ ATALHOS DE TECLADO
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectionMode) return;
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        handleSelectAll();
+      }
+      if (e.key === 'Escape') {
+        handleExitSelectionMode();
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedTemplateIds.size > 0) {
+        e.preventDefault();
+        setBulkDeleteDialogOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectionMode, selectedTemplateIds]);
 
   const handleUseTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
@@ -185,6 +222,39 @@ const Templates = () => {
     return true;
   });
 
+  // ✅ HANDLERS DE SELEÇÃO
+  const toggleTemplateSelection = useCallback((id: string) => {
+    setSelectedTemplateIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedTemplateIds(new Set(filteredTemplates.map(t => t.id)));
+  }, [filteredTemplates]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTemplateIds(new Set());
+  }, []);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    handleClearSelection();
+  }, [handleClearSelection]);
+
+  const handleBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteTemplates(Array.from(selectedTemplateIds));
+      handleExitSelectionMode();
+    } finally {
+      setIsDeleting(false);
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar 
@@ -210,7 +280,18 @@ const Templates = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Botão Selecionar */}
+              {filteredTemplates.length > 0 && (
+                <Button
+                  variant={selectionMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => selectionMode ? handleExitSelectionMode() : setSelectionMode(true)}
+                >
+                  <CheckSquare size={16} className="mr-2" />
+                  {selectionMode ? "Cancelar" : "Selecionar"}
+                </Button>
+              )}
               <UserMenu />
             </div>
           </div>
@@ -276,6 +357,9 @@ const Templates = () => {
                     onMove={handleMoveTemplate}
                     isCopying={isCopying}
                     copyingId={copyingId}
+                    selectionMode={selectionMode}
+                    isSelected={selectedTemplateIds.has(template.id)}
+                    onToggleSelect={toggleTemplateSelection}
                   />
                 ))}
               </div>
@@ -319,6 +403,29 @@ const Templates = () => {
       <CreateFolderDialog 
         open={createFolderOpen} 
         onOpenChange={setCreateFolderOpen}
+      />
+
+      {/* ✅ TOOLBAR DE SELEÇÃO EM MASSA */}
+      {selectionMode && (
+        <BulkSelectionToolbar
+          selectedCount={selectedTemplateIds.size}
+          totalCount={filteredTemplates.length}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+          onDelete={() => setBulkDeleteDialogOpen(true)}
+          onExitSelectionMode={handleExitSelectionMode}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* ✅ DIALOG DE CONFIRMAÇÃO BULK DELETE */}
+      <DeleteConfirmDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        itemName=""
+        itemCount={selectedTemplateIds.size}
+        onConfirm={handleBulkDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

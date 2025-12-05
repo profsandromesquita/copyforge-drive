@@ -45,6 +45,8 @@ interface DriveContextType {
   createCopy: (title: string, copyType?: string) => Promise<Copy | null>;
   deleteFolder: (folderId: string) => Promise<void>;
   deleteCopy: (copyId: string) => Promise<void>;
+  deleteCopies: (copyIds: string[]) => Promise<void>;
+  deleteFolders: (folderIds: string[]) => Promise<void>;
   renameFolder: (folderId: string, newName: string) => Promise<void>;
   renameCopy: (copyId: string, newTitle: string) => Promise<void>;
   moveFolder: (folderId: string, targetFolderId: string | null) => Promise<void>;
@@ -356,6 +358,62 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentFolder?.id, fetchDriveContent]);
 
+  // Batch delete copies
+  const deleteCopies = useCallback(async (copyIds: string[]) => {
+    if (copyIds.length === 0) return;
+
+    try {
+      // 1. ATUALIZAÇÃO OTIMISTA
+      setCopies(prev => prev.filter(c => !copyIds.includes(c.id)));
+
+      // 2. Deletar no banco com .in()
+      const { error } = await supabase
+        .from('copies')
+        .delete()
+        .in('id', copyIds);
+
+      if (error) {
+        // ROLLBACK
+        await fetchDriveContent(currentFolder?.id || null);
+        throw error;
+      }
+
+      toast.success(`${copyIds.length} copies excluídas com sucesso!`);
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error batch deleting copies:', error);
+      toast.error('Erro ao excluir copies');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
+  // Batch delete folders
+  const deleteFolders = useCallback(async (folderIds: string[]) => {
+    if (folderIds.length === 0) return;
+
+    try {
+      // 1. ATUALIZAÇÃO OTIMISTA
+      setFolders(prev => prev.filter(f => !folderIds.includes(f.id)));
+
+      // 2. Deletar no banco com .in()
+      const { error } = await supabase
+        .from('folders')
+        .delete()
+        .in('id', folderIds);
+
+      if (error) {
+        // ROLLBACK
+        await fetchDriveContent(currentFolder?.id || null);
+        throw error;
+      }
+
+      toast.success(`${folderIds.length} pastas excluídas com sucesso!`);
+      await fetchDriveContent(currentFolder?.id || null);
+    } catch (error) {
+      console.error('Error batch deleting folders:', error);
+      toast.error('Erro ao excluir pastas');
+    }
+  }, [currentFolder?.id, fetchDriveContent]);
+
   const renameFolder = useCallback(async (folderId: string, newName: string) => {
     try {
       const { error } = await supabase
@@ -476,6 +534,8 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     createCopy,
     deleteFolder,
     deleteCopy,
+    deleteCopies,
+    deleteFolders,
     renameFolder,
     renameCopy,
     moveFolder,

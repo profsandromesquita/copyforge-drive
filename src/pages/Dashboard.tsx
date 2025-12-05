@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
-import { Plus, MagnifyingGlass, FolderPlus } from "phosphor-react";
+import { Plus, MagnifyingGlass, FolderPlus, CheckSquare } from "phosphor-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Sidebar from "@/components/layout/Sidebar";
@@ -30,12 +30,14 @@ import { useProject } from '@/hooks/useProject';
 import { UpgradeModal } from '@/components/workspace/UpgradeModal';
 import { LimitExceededBanner } from '@/components/workspace/LimitExceededBanner';
 import { usePlanLimits } from '@/hooks/usePlanLimits';
+import { BulkSelectionToolbar } from '@/components/drive/BulkSelectionToolbar';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
   const { activeProject } = useProject();
-  const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy } = useDrive();
+  const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy, deleteCopies, deleteFolders } = useDrive();
   const { checkProjectLimit, checkCopyLimit } = usePlanLimits();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
@@ -62,6 +64,13 @@ const Dashboard = () => {
     limit: number;
   } | null>(null);
 
+  // ✅ ESTADOS DE SELEÇÃO EM MASSA
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedCopyIds, setSelectedCopyIds] = useState<Set<string>>(new Set());
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
   // Força modo claro no Dashboard
   useEffect(() => {
     setTheme('light');
@@ -83,6 +92,13 @@ const Dashboard = () => {
     return () => {
       window.removeEventListener('show-upgrade-modal', handleShowUpgradeModal as EventListener);
     };
+  }, []);
+
+  // ✅ LISTENER PARA ATIVAR SELEÇÃO VIA LONG PRESS
+  useEffect(() => {
+    const handleActivateSelection = () => setSelectionMode(true);
+    window.addEventListener('activate-selection-mode', handleActivateSelection);
+    return () => window.removeEventListener('activate-selection-mode', handleActivateSelection);
   }, []);
 
   // Verificar limites de plano ao carregar
@@ -118,6 +134,28 @@ const Dashboard = () => {
 
     checkLimits();
   }, [activeProject, checkProjectLimit, checkCopyLimit]);
+
+  // ✅ ATALHOS DE TECLADO
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectionMode) return;
+      
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        handleSelectAll();
+      }
+      if (e.key === 'Escape') {
+        handleExitSelectionMode();
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedCopyIds.size > 0 || selectedFolderIds.size > 0)) {
+        e.preventDefault();
+        setBulkDeleteDialogOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectionMode, selectedCopyIds, selectedFolderIds]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -208,6 +246,54 @@ const Dashboard = () => {
     }).replace('há cerca de ', '').replace('há ', '');
   };
 
+  // ✅ HANDLERS DE SELEÇÃO
+  const toggleCopySelection = useCallback((id: string) => {
+    setSelectedCopyIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleFolderSelection = useCallback((id: string) => {
+    setSelectedFolderIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    setSelectedCopyIds(new Set(filteredCopies.map((c: any) => c.id)));
+    setSelectedFolderIds(new Set(filteredFolders.map(f => f.id)));
+  }, [filteredCopies, filteredFolders]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedCopyIds(new Set());
+    setSelectedFolderIds(new Set());
+  }, []);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    handleClearSelection();
+  }, [handleClearSelection]);
+
+  const handleBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (selectedCopyIds.size > 0) {
+        await deleteCopies(Array.from(selectedCopyIds));
+      }
+      if (selectedFolderIds.size > 0) {
+        await deleteFolders(Array.from(selectedFolderIds));
+      }
+      handleExitSelectionMode();
+    } finally {
+      setIsDeleting(false);
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
@@ -276,6 +362,8 @@ const Dashboard = () => {
   };
 
   const activeItem = getActiveItem();
+  const totalSelectedCount = selectedCopyIds.size + selectedFolderIds.size;
+  const totalItemCount = filteredCopies.length + filteredFolders.length;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -303,7 +391,18 @@ const Dashboard = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Botão Selecionar */}
+              {activeProject && (filteredFolders.length > 0 || filteredCopies.length > 0) && (
+                <Button
+                  variant={selectionMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => selectionMode ? handleExitSelectionMode() : setSelectionMode(true)}
+                >
+                  <CheckSquare size={16} className="mr-2" />
+                  {selectionMode ? "Cancelar" : "Selecionar"}
+                </Button>
+              )}
               <UserMenu />
             </div>
           </div>
@@ -378,9 +477,9 @@ const Dashboard = () => {
             />
           )}
           <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
+            sensors={selectionMode ? [] : sensors}
+            onDragStart={selectionMode ? undefined : handleDragStart}
+            onDragEnd={selectionMode ? undefined : handleDragEnd}
           >
             <DragOverlay dropAnimation={{
               duration: 200,
@@ -459,7 +558,10 @@ const Dashboard = () => {
                               id={folder.id}
                               title={folder.name}
                               folderId={folder.parent_id}
-                              onClick={() => navigateToFolder(folder.id)}
+                              onClick={() => !selectionMode && navigateToFolder(folder.id)}
+                              selectionMode={selectionMode}
+                              isSelected={selectedFolderIds.has(folder.id)}
+                              onToggleSelect={toggleFolderSelection}
                             />
                           ))}
                         </div>
@@ -485,7 +587,10 @@ const Dashboard = () => {
                               subtitle={formatDate(copy.updated_at)}
                               sessions={copy.sessions}
                               copyType={copy.copy_type}
-                              onClick={() => navigate(`/copy/${copy.id}`)}
+                              onClick={() => !selectionMode && navigate(`/copy/${copy.id}`)}
+                              selectionMode={selectionMode}
+                              isSelected={selectedCopyIds.has(copy.id)}
+                              onToggleSelect={toggleCopySelection}
                             />
                           ))}
                         </div>
@@ -513,6 +618,29 @@ const Dashboard = () => {
         limitType={upgradeLimitType}
         currentLimit={upgradeLimitData.currentLimit}
         currentUsage={upgradeLimitData.currentUsage}
+      />
+
+      {/* ✅ TOOLBAR DE SELEÇÃO EM MASSA */}
+      {selectionMode && (
+        <BulkSelectionToolbar
+          selectedCount={totalSelectedCount}
+          totalCount={totalItemCount}
+          onSelectAll={handleSelectAll}
+          onClearSelection={handleClearSelection}
+          onDelete={() => setBulkDeleteDialogOpen(true)}
+          onExitSelectionMode={handleExitSelectionMode}
+          isDeleting={isDeleting}
+        />
+      )}
+
+      {/* ✅ DIALOG DE CONFIRMAÇÃO BULK DELETE */}
+      <DeleteConfirmDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+        itemName=""
+        itemCount={totalSelectedCount}
+        onConfirm={handleBulkDelete}
+        isDeleting={isDeleting}
       />
     </div>
   );

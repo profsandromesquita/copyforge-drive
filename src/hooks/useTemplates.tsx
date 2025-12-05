@@ -123,6 +123,33 @@ export const useTemplates = () => {
     }
   }, [fetchTemplates]);
 
+  // Batch delete templates
+  const deleteTemplates = useCallback(async (templateIds: string[]) => {
+    if (templateIds.length === 0) return;
+
+    try {
+      // ATUALIZAÇÃO OTIMISTA
+      setTemplates(prev => prev.filter(t => !templateIds.includes(t.id)));
+
+      const { error } = await supabase
+        .from('copies')
+        .delete()
+        .in('id', templateIds);
+
+      if (error) {
+        // ROLLBACK
+        await fetchTemplates();
+        throw error;
+      }
+
+      toast.success(`${templateIds.length} modelos excluídos com sucesso!`);
+      await fetchTemplates();
+    } catch (error) {
+      console.error('Error batch deleting templates:', error);
+      toast.error('Erro ao excluir modelos');
+    }
+  }, [fetchTemplates]);
+
   const duplicateTemplate = useCallback(async (templateId: string) => {
     if (!user?.id) {
       toast.error('Usuário não encontrado');
@@ -167,6 +194,7 @@ export const useTemplates = () => {
     fetchTemplates,
     createFromTemplate,
     deleteTemplate,
+    deleteTemplates,
     duplicateTemplate,
   };
 };

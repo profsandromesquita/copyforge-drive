@@ -1,5 +1,5 @@
-import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon } from "phosphor-react";
-import { useState, useMemo, memo } from "react";
+import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon, Check } from "phosphor-react";
+import { useState, useMemo, memo, useRef, useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import copyDriveLogo from '@/assets/copydrive-logo.png';
 import {
@@ -17,6 +17,7 @@ import { Session } from "@/types/copy-editor";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { RenameDialog } from "@/components/ui/rename-dialog";
 import { getCopyTypeLabel } from "@/lib/copy-types";
+import { cn } from "@/lib/utils";
 
 interface CopyCardProps {
   id: string;
@@ -29,14 +30,39 @@ interface CopyCardProps {
   sessions?: Session[];
   copyType?: string;
   onClick?: () => void;
+  // Props de seleção
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
-const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status, folderId, sessions, copyType, onClick }: CopyCardProps) => {
+const LONG_PRESS_DURATION = 500; // ms
+const MOVE_THRESHOLD = 10; // px
+
+const CopyCard = memo(({ 
+  id, 
+  title, 
+  subtitle, 
+  creatorName, 
+  creatorAvatar, 
+  status, 
+  folderId, 
+  sessions, 
+  copyType, 
+  onClick,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelect,
+}: CopyCardProps) => {
   const { deleteCopy, renameCopy, moveCopy, duplicateCopy } = useDrive();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+
+  // Long press refs
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
 
   // Memoizar extração de imagem para evitar recálculo a cada render
   const firstImage = useMemo(() => {
@@ -59,8 +85,10 @@ const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status
     return firstSession.blocks.slice(0, 4);
   }, [sessions]);
 
+  // DESATIVAR DRAG QUANDO EM SELECTION MODE
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: id,
+    disabled: selectionMode,
     data: {
       type: 'copy',
       folderId: folderId,
@@ -83,7 +111,52 @@ const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status
     await moveCopy(id, targetFolderId);
   };
 
+  // Long press handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (selectionMode) return;
+    
+    longPressStartPos.current = { x: e.clientX, y: e.clientY };
+    
+    longPressTimer.current = setTimeout(() => {
+      // Feedback tátil
+      if (navigator.vibrate) navigator.vibrate(50);
+      window.dispatchEvent(new CustomEvent('activate-selection-mode'));
+      onToggleSelect?.(id);
+      longPressStartPos.current = null;
+    }, LONG_PRESS_DURATION);
+  }, [selectionMode, id, onToggleSelect]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    // Cancelar se mover o dedo (scroll)
+    if (longPressStartPos.current && longPressTimer.current) {
+      const dx = Math.abs(e.clientX - longPressStartPos.current.x);
+      const dy = Math.abs(e.clientY - longPressStartPos.current.y);
+      
+      if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+        longPressStartPos.current = null;
+      }
+    }
+  }, []);
+
+  const handlePointerUp = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressStartPos.current = null;
+  }, []);
+
   const handleCardClick = (e: React.MouseEvent) => {
+    if (selectionMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (navigator.vibrate) navigator.vibrate(30);
+      onToggleSelect?.(id);
+      return;
+    }
+    
     if (!isDragging && onClick) {
       onClick();
     }
@@ -93,18 +166,39 @@ const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status
     <>
       <div
         ref={setNodeRef}
-        {...attributes}
-        {...listeners}
+        {...(selectionMode ? {} : { ...attributes, ...listeners })}
         onClick={handleCardClick}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         style={{ opacity: isDragging ? 0.5 : 1 }}
-        className={`group relative border rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-card hover:shadow-md ${
-          isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'
-        }`}
+        className={cn(
+          "group relative border rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-card hover:shadow-md",
+          selectionMode && "cursor-pointer",
+          !selectionMode && (isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'),
+          isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
+          selectionMode && !isSelected && "hover:ring-2 hover:ring-primary/30"
+        )}
       >
+        {/* Checkbox de Seleção */}
+        {selectionMode && (
+          <div className="absolute top-2 left-2 z-20">
+            <div className={cn(
+              "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
+              isSelected 
+                ? "bg-primary border-primary text-primary-foreground" 
+                : "bg-background/80 border-muted-foreground/40"
+            )}>
+              {isSelected && <Check size={12} weight="bold" />}
+            </div>
+          </div>
+        )}
+
         {/* Header Section - Icon, Title and Menu */}
         <div className="p-3 pb-2 border-b" style={{ backgroundColor: 'rgb(231, 237, 248)' }}>
           <div className="flex items-start gap-2">
-            <div className="text-primary shrink-0 mt-0.5">
+            <div className={cn("text-primary shrink-0 mt-0.5", selectionMode && "ml-6")}>
               <FileText size={20} weight="duotone" />
             </div>
             
@@ -119,56 +213,58 @@ const CopyCard = memo(({ id, title, subtitle, creatorName, creatorAvatar, status
               )}
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger 
-                onClick={(e) => e.stopPropagation()}
-                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
-              >
-                <DotsThree size={20} weight="bold" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover border-border z-50">
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRenameDialogOpen(true);
-                  }}
+            {!selectionMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger 
+                  onClick={(e) => e.stopPropagation()}
+                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
                 >
-                  <Pencil size={16} className="mr-2" />
-                  Renomear
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    duplicateCopy(id);
-                  }}
-                >
-                  <CopyIcon size={16} className="mr-2" />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMoveModalOpen(true);
-                  }}
-                >
-                  <ArrowsDownUp size={16} className="mr-2" />
-                  Mover
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteDialogOpen(true);
-                  }}
-                >
-                  <Trash size={16} className="mr-2" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DotsThree size={20} weight="bold" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover border-border z-50">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRenameDialogOpen(true);
+                    }}
+                  >
+                    <Pencil size={16} className="mr-2" />
+                    Renomear
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      duplicateCopy(id);
+                    }}
+                  >
+                    <CopyIcon size={16} className="mr-2" />
+                    Duplicar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMoveModalOpen(true);
+                    }}
+                  >
+                    <ArrowsDownUp size={16} className="mr-2" />
+                    Mover
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash size={16} className="mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 

@@ -14,6 +14,7 @@ interface DeleteConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   itemName: string;
   itemType?: string;
+  itemCount?: number; // Suporte a bulk delete
   onConfirm: () => void | Promise<void>;
   isDeleting?: boolean;
 }
@@ -23,16 +24,23 @@ export const DeleteConfirmDialog = ({
   onOpenChange,
   itemName,
   itemType = "item",
+  itemCount,
   onConfirm,
   isDeleting = false,
 }: DeleteConfirmDialogProps) => {
+  const isBulkDelete = itemCount && itemCount > 1;
+  
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
           <AlertDialogDescription>
-            Deseja realmente excluir {itemType === "item" ? "o item" : `${itemType === "copy" ? "a copy" : itemType === "pasta" ? "a pasta" : itemType === "modelo" ? "o modelo" : `o ${itemType}`}`} "{itemName}"? Essa ação não pode ser desfeita.
+            {isBulkDelete ? (
+              <>Deseja realmente excluir <strong>{itemCount} itens</strong>? Essa ação não pode ser desfeita.</>
+            ) : (
+              <>Deseja realmente excluir {itemType === "item" ? "o item" : `${itemType === "copy" ? "a copy" : itemType === "pasta" ? "a pasta" : itemType === "modelo" ? "o modelo" : `o ${itemType}`}`} "{itemName}"? Essa ação não pode ser desfeita.</>
+            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
