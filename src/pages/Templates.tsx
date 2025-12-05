@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { SquaresFour, MagnifyingGlass, CheckSquare } from 'phosphor-react';
+import { SquaresFour, MagnifyingGlass, CheckSquare, XSquare } from 'phosphor-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BulkSelectionToolbar } from '@/components/drive/BulkSelectionToolbar';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { cn } from '@/lib/utils';
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -287,9 +288,22 @@ const Templates = () => {
                   variant={selectionMode ? "default" : "outline"}
                   size="sm"
                   onClick={() => selectionMode ? handleExitSelectionMode() : setSelectionMode(true)}
+                  className={cn(
+                    "transition-all duration-200",
+                    selectionMode && "ring-2 ring-primary/30 ring-offset-2"
+                  )}
                 >
-                  <CheckSquare size={16} className="mr-2" />
-                  {selectionMode ? "Cancelar" : "Selecionar"}
+                  {selectionMode ? (
+                    <>
+                      <XSquare size={16} className="mr-2" />
+                      Cancelar
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare size={16} className="mr-2" />
+                      Selecionar
+                    </>
+                  )}
                 </Button>
               )}
               <UserMenu />

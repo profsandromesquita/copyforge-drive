@@ -166,13 +166,13 @@ const TemplateCard = memo(({
 
   return (
     <>
-      <Card 
-        className={cn(
-          "h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden",
-          isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
-          selectionMode && !isSelected && "hover:ring-2 hover:ring-primary/30",
-          selectionMode && "cursor-pointer"
-        )}
+        <Card 
+          className={cn(
+            "group h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden",
+            isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
+            selectionMode && !isSelected && "hover:ring-2 hover:ring-primary/30",
+            selectionMode && "cursor-pointer"
+          )}
         onClick={handleCardClick}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -181,19 +181,33 @@ const TemplateCard = memo(({
       >
         {/* Visual Preview Section */}
         <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
-          {/* Checkbox de Seleção */}
-          {selectionMode && (
-            <div className="absolute top-2 left-2 z-20">
-              <div className={cn(
-                "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
-                isSelected 
-                  ? "bg-primary border-primary text-primary-foreground" 
-                  : "bg-background/80 border-muted-foreground/40"
-              )}>
-                {isSelected && <Check className="h-3 w-3" />}
-              </div>
+          {/* Checkbox de Seleção - Sempre renderizado, visibilidade controlada por CSS */}
+          <div 
+            className={cn(
+              "absolute top-2 left-2 z-20 transition-opacity duration-200",
+              selectionMode 
+                ? "opacity-100" 
+                : "opacity-0 group-hover:opacity-50 hover:!opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!selectionMode) {
+                if (navigator.vibrate) navigator.vibrate(50);
+                window.dispatchEvent(new CustomEvent('activate-selection-mode'));
+              }
+              onToggleSelect?.(template.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className={cn(
+              "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110",
+              isSelected 
+                ? "bg-primary border-primary text-primary-foreground" 
+                : "bg-background/80 border-muted-foreground/40 hover:border-primary/60"
+            )}>
+              {isSelected && <Check className="h-3 w-3" />}
             </div>
-          )}
+          </div>
 
           {firstImage ? (
             // Thumbnail de imagem

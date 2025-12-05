@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent } from "@dnd-kit/core";
-import { Plus, MagnifyingGlass, FolderPlus, CheckSquare } from "phosphor-react";
+import { Plus, MagnifyingGlass, FolderPlus, CheckSquare, XSquare } from "phosphor-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Sidebar from "@/components/layout/Sidebar";
@@ -32,6 +32,7 @@ import { LimitExceededBanner } from '@/components/workspace/LimitExceededBanner'
 import { usePlanLimits } from '@/hooks/usePlanLimits';
 import { BulkSelectionToolbar } from '@/components/drive/BulkSelectionToolbar';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -420,9 +421,22 @@ const Dashboard = () => {
                   variant={selectionMode ? "default" : "outline"}
                   size="sm"
                   onClick={() => selectionMode ? handleExitSelectionMode() : setSelectionMode(true)}
+                  className={cn(
+                    "transition-all duration-200",
+                    selectionMode && "ring-2 ring-primary/30 ring-offset-2"
+                  )}
                 >
-                  <CheckSquare size={16} className="mr-2" />
-                  {selectionMode ? "Cancelar" : "Selecionar"}
+                  {selectionMode ? (
+                    <>
+                      <XSquare size={16} className="mr-2" />
+                      Cancelar
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare size={16} className="mr-2" />
+                      Selecionar
+                    </>
+                  )}
                 </Button>
               )}
               <UserMenu />
