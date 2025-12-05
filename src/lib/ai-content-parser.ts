@@ -166,9 +166,33 @@ function tryParseJSONContent(content: string): ParsedContent[] | null {
 
 /**
  * Converte estrutura JSON em blocos ParsedContent
+ * ✅ SANITIZAÇÃO: Aplica markdownToHtml e stripMetaPrefixes para evitar JSON visível
  */
 function convertJSONToBlocks(data: unknown): ParsedContent[] {
   const blocks: ParsedContent[] = [];
+  
+  /**
+   * Helper para sanitizar conteúdo extraído de JSON
+   */
+  const sanitizeContent = (rawContent: string): string => {
+    if (!rawContent) return '';
+    
+    // 1. Remover possíveis resíduos de JSON (chaves, aspas, colchetes no início/fim)
+    let cleaned = rawContent
+      .replace(/^\s*[\[{]/, '')
+      .replace(/[\]}]\s*$/, '')
+      .replace(/^["']|["']$/g, '')
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"');
+    
+    // 2. Aplicar conversão Markdown → HTML
+    cleaned = markdownToHtml(cleaned);
+    
+    // 3. Remover prefixos identificadores
+    cleaned = stripMetaPrefixes(cleaned);
+    
+    return cleaned.trim();
+  };
   
   // Se for array de sessions ou objetos
   if (Array.isArray(data)) {
@@ -183,18 +207,21 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
         sessionBlocks.forEach((block: unknown, blockIndex: number) => {
           if (block && typeof block === 'object') {
             const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
-            const content = blockObj.text || blockObj.content || '';
+            const rawContent = blockObj.text || blockObj.content || '';
             const title = blockObj.title || sessionName;
-            const type = inferBlockType(content, blockObj.block_type || '');
+            const type = inferBlockType(rawContent, blockObj.block_type || '');
+            
+            // ✅ SANITIZAR conteúdo
+            const sanitizedContent = sanitizeContent(rawContent);
             
             blocks.push({
               id: `block-${Date.now()}-${itemIndex}-${blockIndex}`,
               type,
-              title: title,
-              content: content,
-              rawContent: JSON.stringify(block),
+              title: stripMetaPrefixes(title),
+              content: sanitizedContent,
+              rawContent: rawContent,
               startIndex: 0,
-              endIndex: content.length,
+              endIndex: sanitizedContent.length,
             });
           }
         });
@@ -202,18 +229,21 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
       // Se item é diretamente um bloco (array de blocos)
       else if (item && typeof item === 'object') {
         const blockObj = item as { text?: string; content?: string; block_type?: string; title?: string; name?: string };
-        const content = blockObj.text || blockObj.content || '';
+        const rawContent = blockObj.text || blockObj.content || '';
         const title = blockObj.title || blockObj.name || `Item ${itemIndex + 1}`;
-        const type = inferBlockType(content, blockObj.block_type || '');
+        const type = inferBlockType(rawContent, blockObj.block_type || '');
+        
+        // ✅ SANITIZAR conteúdo
+        const sanitizedContent = sanitizeContent(rawContent);
         
         blocks.push({
           id: `block-${Date.now()}-${itemIndex}`,
           type,
-          title: title,
-          content: content,
-          rawContent: JSON.stringify(item),
+          title: stripMetaPrefixes(title),
+          content: sanitizedContent,
+          rawContent: rawContent,
           startIndex: 0,
-          endIndex: content.length,
+          endIndex: sanitizedContent.length,
         });
       }
     });
@@ -225,18 +255,21 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
     dataBlocks.forEach((block: unknown, index: number) => {
       if (block && typeof block === 'object') {
         const blockObj = block as { text?: string; content?: string; block_type?: string; title?: string };
-        const content = blockObj.text || blockObj.content || '';
+        const rawContent = blockObj.text || blockObj.content || '';
         const title = blockObj.title || `Bloco ${index + 1}`;
-        const type = inferBlockType(content, blockObj.block_type || '');
+        const type = inferBlockType(rawContent, blockObj.block_type || '');
+        
+        // ✅ SANITIZAR conteúdo
+        const sanitizedContent = sanitizeContent(rawContent);
         
         blocks.push({
           id: `block-${Date.now()}-${index}`,
           type,
-          title: title,
-          content: content,
-          rawContent: JSON.stringify(block),
+          title: stripMetaPrefixes(title),
+          content: sanitizedContent,
+          rawContent: rawContent,
           startIndex: 0,
-          endIndex: content.length,
+          endIndex: sanitizedContent.length,
         });
       }
     });

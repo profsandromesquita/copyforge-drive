@@ -95,11 +95,29 @@ export function AIMessageWithActions({
   // Always use normal parsing - don't force structure
   const parsed = parseAIResponse(message.content);
   
-  // Filter and sanitize blocks based on selection
+  // ✅ DECISÃO DE CARD: Usar intent do backend como FALLBACK
+  // Se intent é insert/replace MAS parser não reconheceu ### → criar bloco único
+  const shouldForceCard = (intent === 'insert' || intent === 'replace') && !parsed.hasActionableContent;
+  
+  // Se deve forçar card mas parser não reconheceu, criar bloco único com conteúdo todo
   let actionableBlocks = parsed.blocks;
+  if (shouldForceCard && parsed.blocks.length === 0) {
+    // Criar bloco único com todo o conteúdo como fallback
+    actionableBlocks = [{
+      id: `fallback-${Date.now()}`,
+      type: 'text' as const,
+      title: intent === 'replace' ? 'Conteúdo Otimizado' : 'Novo Conteúdo',
+      content: message.content,
+      rawContent: message.content,
+      startIndex: 0,
+      endIndex: message.content.length,
+    }];
+  }
+  
+  // Filter and sanitize blocks based on selection
   const selectedBlocksCount = selectedItems.filter(i => i.type === 'block').length;
 
-  if (hasSelection && selectedBlocksCount > 0) {
+  if (hasSelection && selectedBlocksCount > 0 && !shouldForceCard) {
     // 1) Limit generated blocks to match selected blocks count
     actionableBlocks = actionableBlocks.slice(0, selectedBlocksCount);
 
@@ -110,11 +128,14 @@ export function AIMessageWithActions({
     }));
   }
 
-  const generatedSessions = parsed.hasActionableContent 
+  // ✅ Determinar se deve mostrar card baseado em: parser OU intent forçando
+  const showCard = parsed.hasActionableContent || shouldForceCard;
+  
+  const generatedSessions = showCard 
     ? convertParsedBlocksToSessions(actionableBlocks)
     : [];
 
-  if (!parsed.hasActionableContent) {
+  if (!showCard) {
     // Renderizar normalmente sem botões
     return (
       <div className="bg-muted text-foreground rounded-lg p-3 relative group">
