@@ -308,7 +308,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: messages,
-        temperature: 0.7,
+        // ✅ TEMPERATURE DINÂMICA: Precisão para insert/replace, criatividade para conversacional
+        temperature: (intent === 'insert' || intent === 'replace') ? 0.4 : 0.7,
         max_tokens: 2000,
         stream: true, // ✅ ATIVAR STREAMING
       }),
@@ -921,14 +922,16 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
     // Adicionar modo de operação (com mensagem do usuário para detectar quantidade de itens)
     enhancedPrompt += buildIntentInstructions(intent, userMessage);
 
-    // Adicionar regras de formatação para chat
-    enhancedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT (CRÍTICO):
-1. NUNCA use formatação Markdown (##, **, >, etc)
-2. Escreva texto limpo e direto
-3. Use quebras de linha simples para separar parágrafos
-4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
-5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
+    // ✅ REGRAS DE FORMATAÇÃO CONDICIONAIS - Só aplicar "NUNCA use ##" para conversacional
+    // Para insert/replace, as regras de ### já estão em buildIntentInstructions()
+    if (intent === 'conversational' || intent === 'default') {
+      enhancedPrompt += `\n\n📝 REGRAS DE FORMATAÇÃO PARA CHAT:
+1. Escreva texto limpo e direto
+2. Use quebras de linha simples para separar parágrafos
+3. NÃO use formatação ### para respostas conversacionais
+4. Seja objetivo e útil
 `;
+    }
 
     return enhancedPrompt;
   }
@@ -1316,14 +1319,16 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 `;
   }
 
-  systemPrompt += `\n📝 REGRAS DE FORMATAÇÃO (CRÍTICO):
-1. NUNCA use formatação Markdown (##, **, >, etc)
-2. Escreva texto limpo e direto
-3. Use quebras de linha simples para separar parágrafos
-4. NÃO inclua identificadores de bloco no texto (ex: "Bloco 1:", "Headline:")
-5. Cada bloco de conteúdo deve ser texto puro, pronto para uso
-
+  // ✅ REGRAS DE FORMATAÇÃO CONDICIONAIS - Só aplicar "NUNCA use ##" para conversacional
+  // Para insert/replace, as regras de ### já estão em buildIntentInstructions()
+  if (intent === 'conversational' || intent === 'default') {
+    systemPrompt += `\n📝 REGRAS DE FORMATAÇÃO PARA RESPOSTAS CONVERSACIONAIS:
+1. Escreva texto limpo e direto
+2. Use quebras de linha simples para separar parágrafos
+3. NÃO use formatação ### para respostas conversacionais
+4. Seja objetivo e útil
 `;
+  }
 
   systemPrompt += buildIntentInstructions(intent, userMessage);
 
