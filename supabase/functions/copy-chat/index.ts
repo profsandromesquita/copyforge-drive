@@ -1159,30 +1159,27 @@ Para que seu conteúdo substitua corretamente, você DEVE:
 `;
   } else if (intent === 'insert') {
     const itemCountStr = itemCount ? `${itemCount} ITENS` : 'MÚLTIPLOS ITENS';
-    const dynamicExample = itemCount && itemCount > 3 
-      ? `\n📊 VOCÊ DEVE GERAR EXATAMENTE ${itemCount} BLOCOS SEPARADOS:
-${Array.from({length: Math.min(itemCount, 7)}, (_, i) => `### [Item ${i+1}]: [Título descritivo]`).join('\n')}
-${itemCount > 7 ? `... (continuar até ### [Item ${itemCount}])` : ''}
-`
-      : '';
 
     return `\n\n➕ MODO: INSERÇÃO DE ${itemCountStr}
 
-🚨🚨🚨 REGRA MAIS IMPORTANTE - LEIA COM ATENÇÃO 🚨🚨🚨
-CADA ITEM/MENSAGEM/VARIAÇÃO DEVE TER SEU PRÓPRIO ### NA FRENTE.
-Se o usuário pediu ${itemCount || 'N'} itens, você DEVE gerar ${itemCount || 'N'} linhas que começam com ###.
+🚨🚨🚨 REGRA DE OURO - VIOLAÇÃO = FALHA CRÍTICA 🚨🚨🚨
+${itemCount || 'N'} ITENS PEDIDOS = ${itemCount || 'N'} LINHAS COMEÇANDO COM ###
+NÃO EXISTE EXCEÇÃO. CADA ITEM É UM ### SEPARADO.
 
-❌❌❌ FORMATO ERRADO (NUNCA FAÇA ISSO) ❌❌❌
-### Mensagens para a semana
-Mensagem 1: Segunda-feira - Texto... Mensagem 2: Terça-feira - Texto... Mensagem 3: Quarta...
+🔴🔴🔴 ANTI-PADRÃO PROIBIDO (DETECTAMOS E REJEITAMOS) 🔴🔴🔴
+### Mensagens para a semana ← TÍTULO GENÉRICO AGRUPADOR = ERRO FATAL
+Mensagem 1: Segunda-feira...
+Mensagem 2: Terça-feira...
+Mensagem 3: Quarta-feira...
 
-👆 ISSO ESTÁ ERRADO! Tudo ficou em UM SÓ bloco!
+👆 ISSO GERA 1 BLOCO COM 7 ITENS DENTRO = INUTILIZÁVEL
+O SISTEMA VAI REJEITAR ESTE FORMATO.
 
-✅✅✅ FORMATO CORRETO (SEMPRE FAÇA ASSIM) ✅✅✅
+✅✅✅ FORMATO CORRETO OBRIGATÓRIO ✅✅✅
 ### Mensagem 1: Segunda-feira - 7 dias
 Texto completo da primeira mensagem aqui, pronto para uso.
 
-### Mensagem 2: Terça-feira - 6 dias
+### Mensagem 2: Terça-feira - 6 dias  
 Texto completo da segunda mensagem aqui, pronto para uso.
 
 ### Mensagem 3: Quarta-feira - 5 dias
@@ -1199,7 +1196,6 @@ Texto completo da sexta mensagem aqui, pronto para uso.
 
 ### Mensagem 7: Domingo - 1 dia
 Texto completo da sétima mensagem aqui, pronto para uso.
-${dynamicExample}
 
 ⚠️ VERIFICAÇÃO FINAL OBRIGATÓRIA:
 - Conte quantos ### você escreveu na sua resposta

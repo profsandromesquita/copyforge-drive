@@ -335,6 +335,71 @@ function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | nu
   return null;
 }
 
+/**
+ * ✅ NOVA FUNÇÃO: Detecta e separa sub-itens DENTRO de um bloco único
+ * Caso o modelo gere um ### com título genérico e liste itens dentro
+ * Ex: "### Mensagens da semana" com "Mensagem 1:", "Mensagem 2:" dentro
+ */
+function splitSingleBlockIntoMultiple(content: string, originalTitle: string): ParsedContent[] | null {
+  // Padrões para detectar sub-itens dentro do conteúdo
+  const subItemPatterns = [
+    // **Mensagem 1:** ou Mensagem 1: com conteúdo até próximo
+    { regex: /(?:^|\n)(?:\*\*)?(?:Mensagem|Message)\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?(?:Mensagem|Message)\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
+    // **Email 1:** ou Email 1:
+    { regex: /(?:^|\n)(?:\*\*)?E-?mail\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?E-?mail\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Email' },
+    // **Dia 1:** ou Dia 1:
+    { regex: /(?:^|\n)(?:\*\*)?Dia\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Dia\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Dia' },
+    // Segunda-feira:, Terça-feira:, etc (dias da semana)
+    { regex: /(?:^|\n)(?:\*\*)?(Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)(?:-feira)?(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?(?:Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)(?:-feira)?(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Dia' },
+    // **Opção 1:** ou Opção 1:
+    { regex: /(?:^|\n)(?:\*\*)?Op[çc][ãa]o\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Op[çc][ãa]o\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Opção' },
+    // **Variação 1:** ou Variação 1:
+    { regex: /(?:^|\n)(?:\*\*)?Varia[çc][ãa]o\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Varia[çc][ãa]o\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Variação' },
+    // **Post 1:** ou Post 1:
+    { regex: /(?:^|\n)(?:\*\*)?Post\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Post\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Post' },
+    // **Texto 1:** ou Texto 1:
+    { regex: /(?:^|\n)(?:\*\*)?Texto\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Texto\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+  ];
+
+  for (const { regex, name } of subItemPatterns) {
+    const matches = Array.from(content.matchAll(regex));
+    if (matches.length >= 2) { // Só se encontrar 2+ sub-itens
+      console.log(`✅ [Parser] splitSingleBlock: Detectados ${matches.length} sub-itens "${name}" dentro do bloco "${originalTitle}"`);
+      
+      return matches.map((match, index) => {
+        const itemNumber = match[1] || String(index + 1);
+        const itemContent = (match[2] || '').trim();
+        
+        // Construir título combinando nome do padrão com número/dia
+        const title = name === 'Dia' && isNaN(Number(itemNumber)) 
+          ? `${itemNumber}` // Para dias da semana (Segunda, Terça, etc)
+          : `${name} ${itemNumber}`;
+        
+        // Limpar conteúdo
+        let cleanContent = itemContent
+          .replace(/^\*\*|\*\*$/g, '') // Remover ** do início/fim
+          .replace(/\n\s*\n/g, '\n') // Múltiplas quebras → uma
+          .trim();
+        
+        cleanContent = markdownToHtml(cleanContent);
+        cleanContent = stripMetaPrefixes(cleanContent);
+        
+        return {
+          id: `block-${Date.now()}-${index}`,
+          type: inferBlockType(cleanContent, title),
+          title,
+          content: cleanContent,
+          rawContent: match[0].trim(),
+          startIndex: match.index || 0,
+          endIndex: (match.index || 0) + match[0].length,
+        };
+      });
+    }
+  }
+  
+  return null;
+}
+
 export function parseAIResponse(markdown: string): ParsedMessage {
   console.log('🔍 [Parser] Iniciando parse de:', markdown.substring(0, 100) + '...');
   
@@ -545,26 +610,36 @@ export function parseAIResponse(markdown: string): ParsedMessage {
       // Remover a linha do título (### Hero - Video Hook) do conteúdo
       let contentAfterTitle = fullContent.replace(/^#{1,3}\s+.+\n?/, '').trim();
       
-      // Processar Markdown para HTML
-      contentAfterTitle = markdownToHtml(contentAfterTitle);
-      contentAfterTitle = stripMetaPrefixes(contentAfterTitle);
-      
-      const type = inferBlockType(contentAfterTitle, title);
-      
       // Processar título para remover Markdown residual
       const processedTitle = title.replace(/^###\s+/, '').replace(/\*\*/g, '').trim();
       
-      blocks.push({
-        id: `block-${Date.now()}-0`,
-        type,
-        title: processedTitle, // ✅ Título extraído corretamente
-        content: contentAfterTitle, // ✅ Conteúdo sem o título
-        rawContent: fullContent,
-        startIndex,
-        endIndex: contentForParsing.length,
-      });
+      // ✅ NOVO: Tentar detectar sub-itens dentro do bloco único
+      // Caso o modelo tenha gerado "### Mensagens da semana" com itens listados dentro
+      const splitBlocks = splitSingleBlockIntoMultiple(contentAfterTitle, processedTitle);
       
-      console.log('✅ [Parser] Seção única com ### detectada:', { title: processedTitle, contentLength: contentAfterTitle.length });
+      if (splitBlocks && splitBlocks.length >= 2) {
+        // Encontramos sub-itens! Usar esses em vez do bloco único
+        console.log(`✅ [Parser] Bloco único "${processedTitle}" dividido em ${splitBlocks.length} sub-blocos`);
+        blocks.push(...splitBlocks);
+      } else {
+        // Não encontrou sub-itens, criar bloco único normalmente
+        contentAfterTitle = markdownToHtml(contentAfterTitle);
+        contentAfterTitle = stripMetaPrefixes(contentAfterTitle);
+        
+        const type = inferBlockType(contentAfterTitle, title);
+        
+        blocks.push({
+          id: `block-${Date.now()}-0`,
+          type,
+          title: processedTitle, // ✅ Título extraído corretamente
+          content: contentAfterTitle, // ✅ Conteúdo sem o título
+          rawContent: fullContent,
+          startIndex,
+          endIndex: contentForParsing.length,
+        });
+        
+        console.log('✅ [Parser] Seção única com ### detectada:', { title: processedTitle, contentLength: contentAfterTitle.length });
+      }
     }
   }
 
