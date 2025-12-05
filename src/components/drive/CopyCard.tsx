@@ -181,19 +181,33 @@ const CopyCard = memo(({
           selectionMode && !isSelected && "hover:ring-2 hover:ring-primary/30"
         )}
       >
-        {/* Checkbox de Seleção */}
-        {selectionMode && (
-          <div className="absolute top-2 left-2 z-20">
-            <div className={cn(
-              "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
-              isSelected 
-                ? "bg-primary border-primary text-primary-foreground" 
-                : "bg-background/80 border-muted-foreground/40"
-            )}>
-              {isSelected && <Check size={12} weight="bold" />}
-            </div>
+        {/* Checkbox de Seleção - Sempre renderizado, visibilidade controlada por CSS */}
+        <div 
+          className={cn(
+            "absolute top-2 left-2 z-20 transition-opacity duration-200",
+            selectionMode 
+              ? "opacity-100" 
+              : "opacity-0 group-hover:opacity-50 hover:!opacity-100"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!selectionMode) {
+              if (navigator.vibrate) navigator.vibrate(50);
+              window.dispatchEvent(new CustomEvent('activate-selection-mode'));
+            }
+            onToggleSelect?.(id);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className={cn(
+            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110",
+            isSelected 
+              ? "bg-primary border-primary text-primary-foreground" 
+              : "bg-background/80 border-muted-foreground/40 hover:border-primary/60"
+          )}>
+            {isSelected && <Check size={12} weight="bold" />}
           </div>
-        )}
+        </div>
 
         {/* Header Section - Icon, Title and Menu */}
         <div className="p-3 pb-2 border-b" style={{ backgroundColor: 'rgb(231, 237, 248)' }}>

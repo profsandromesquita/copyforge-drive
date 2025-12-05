@@ -157,17 +157,33 @@ const FolderCard = memo(({
           opacity: isDragging ? 0.5 : 1
         }}
       >
-        {/* Checkbox de Seleção */}
-        {selectionMode && (
+        {/* Checkbox de Seleção - Sempre renderizado, visibilidade controlada por CSS */}
+        <div 
+          className={cn(
+            "transition-opacity duration-200 shrink-0",
+            selectionMode 
+              ? "opacity-100" 
+              : "opacity-0 group-hover:opacity-50 hover:!opacity-100"
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!selectionMode) {
+              if (navigator.vibrate) navigator.vibrate(50);
+              window.dispatchEvent(new CustomEvent('activate-selection-mode'));
+            }
+            onToggleSelect?.(id);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <div className={cn(
-            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors shrink-0",
+            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110",
             isSelected 
               ? "bg-primary border-primary text-primary-foreground" 
-              : "bg-background/80 border-muted-foreground/40"
+              : "bg-background/80 border-muted-foreground/40 hover:border-primary/60"
           )}>
             {isSelected && <Check size={12} weight="bold" />}
           </div>
-        )}
+        </div>
 
         <div className="text-muted-foreground shrink-0">
           <Folder size={24} weight="fill" />
