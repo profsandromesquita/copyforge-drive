@@ -98,7 +98,9 @@ function isHighLevelTitle(title: string): boolean {
     'anúncio', 'anuncio', 'roteiro', 'vídeo', 'video',
     'script', 'variação', 'variacao', 'copy', 'versão', 'versao',
     'headline', 'título', 'titulo', 'email', 'post',
-    'opção', 'opcao' // ✅ FORÇAR separação de opções
+    'opção', 'opcao',
+    // ✅ NOVO: Keywords adicionais para separação de blocos
+    'mensagem', 'dia', 'texto', 'cta', 'item', 'bloco'
   ];
   return highLevelKeywords.some(k => lower.includes(k));
 }
@@ -708,8 +710,12 @@ export function parseAIResponse(markdown: string): ParsedMessage {
         const isOptionBlock = /^Opção\s+\d+:/i.test(title);
         const isNumberedBlock = /^\d+\.\s+/.test(title);
         
+        // ✅ NOVO: Forçar separação quando título contém número indicativo (Mensagem 1, Dia 2, etc.)
+        const hasNumberSuffix = /\d+\s*$/.test(title.trim());
+        const hasNumberedPattern = /^[\w\s]+\s+\d+/i.test(title.trim());
+        
         // Check if this is a high-level heading or if we don't have a current block yet
-        if (isHighLevelTitle(title) || isOptionBlock || isNumberedBlock || !currentBlock) {
+        if (isHighLevelTitle(title) || isOptionBlock || isNumberedBlock || hasNumberSuffix || hasNumberedPattern || !currentBlock) {
           // Create a new block for high-level headings, options, and numbered blocks
           const type = inferBlockType(content, title);
           
