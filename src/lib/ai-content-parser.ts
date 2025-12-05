@@ -281,24 +281,28 @@ function convertJSONToBlocks(data: unknown): ParsedContent[] {
 /**
  * Safety net: Detecta e separa conteúdo com padrões "Mensagem N:", "Email N:" sem ###
  * Usa quando o modelo falha em usar ### mas ainda numera os itens
+ * GENERALIZADO: Aceita palavras intermediárias (ex: "Mensagem de Boas-Vindas 1:")
  */
 function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | null {
   // Padrões de itens numerados sem ### (case insensitive, multiline)
+  // GENERALIZADO: Aceita palavras entre identificador e número
   const itemPatterns = [
-    // Mensagem 1: ... até próxima Mensagem N: ou fim
-    { regex: /(?:^|\n\n?)(Mensagem\s*\d+[:\s-][^\n]*(?:\n(?!Mensagem\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
-    // Email 1: ... até próximo Email N: ou fim
-    { regex: /(?:^|\n\n?)(E-?mail\s*\d+[:\s-][^\n]*(?:\n(?!E-?mail\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Email' },
-    // Dia 1: ... até próximo Dia N: ou fim
-    { regex: /(?:^|\n\n?)(Dia\s*\d+[:\s-][^\n]*(?:\n(?!Dia\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Dia' },
-    // Opção 1: ... até próxima Opção N: ou fim
-    { regex: /(?:^|\n\n?)(Op[çc][ãa]o\s*\d+[:\s-][^\n]*(?:\n(?!Op[çc][ãa]o\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Opção' },
-    // Post 1: ... até próximo Post N: ou fim
-    { regex: /(?:^|\n\n?)(Post\s*\d+[:\s-][^\n]*(?:\n(?!Post\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Post' },
-    // Variação 1: ... até próxima Variação N: ou fim
-    { regex: /(?:^|\n\n?)(Varia[çc][ãa]o\s*\d+[:\s-][^\n]*(?:\n(?!Varia[çc][ãa]o\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Variação' },
-    // Texto 1: ... até próximo Texto N: ou fim
-    { regex: /(?:^|\n\n?)(Texto\s*\d+[:\s-][^\n]*(?:\n(?!Texto\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+    // Mensagem [qualquer coisa] 1: ... (GENERALIZADO)
+    { regex: /(?:^|\n\n?)(Mensagem(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Mensagem(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
+    // Email [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(E-?mail(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!E-?mail(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Email' },
+    // Dia [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(Dia(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Dia(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Dia' },
+    // Opção [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(Op[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Op[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Opção' },
+    // Post [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(Post(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Post(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Post' },
+    // Variação [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(Varia[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Varia[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Variação' },
+    // Texto [qualquer coisa] 1: ...
+    { regex: /(?:^|\n\n?)(Texto(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-][^\n]*(?:\n(?!Texto(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+    // ✅ NOVO: Listas numeradas simples (1. Texto, 2. Texto, 3. Texto)
+    { regex: /(?:^|\n)(\d+\.\s+[^\n]+(?:\n(?!\d+\.\s+)[^\n]*)*)/gm, name: 'Item' },
   ];
   
   for (const { regex, name } of itemPatterns) {
@@ -306,18 +310,29 @@ function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | nu
     if (matches.length >= 2) { // Só se encontrar 2+ itens
       console.log(`✅ [Parser] Safety net: Padrão "${name} N:" detectado: ${matches.length} itens`);
       
-      return matches.map((match, index) => {
+      const blocks = matches.map((match, index) => {
         const fullText = match[1].trim();
         // Extrair título (primeira linha até : ou -)
         const firstLineMatch = fullText.match(/^([^\n]+)/);
         const firstLine = firstLineMatch ? firstLineMatch[1] : '';
-        const titleMatch = firstLine.match(/^([^:\-]+[:\s-]?\s*[^:\n]*)/);
-        const title = titleMatch ? titleMatch[1].replace(/[:\s-]+$/, '').trim() : `${name} ${index + 1}`;
         
-        // Conteúdo é tudo após a primeira linha (ou o resto da primeira linha após :)
-        const contentAfterTitle = fullText.replace(/^[^\n]*\n?/, '').trim();
-        const inlineContent = firstLine.replace(/^[^:]+:\s*/, '').trim();
-        const blockContent = contentAfterTitle || inlineContent || fullText;
+        // Para listas numeradas simples, extrair número e título
+        let title: string;
+        let blockContent: string;
+        
+        if (name === 'Item') {
+          // Lista numerada: "1. Título aqui" → Título: "Título aqui"
+          const numberedMatch = firstLine.match(/^\d+\.\s+(.+)$/);
+          title = numberedMatch ? numberedMatch[1].trim() : `${name} ${index + 1}`;
+          blockContent = fullText.replace(/^\d+\.\s+[^\n]*\n?/, '').trim() || title;
+        } else {
+          const titleMatch = firstLine.match(/^([^:\-]+[:\s-]?\s*[^:\n]*)/);
+          title = titleMatch ? titleMatch[1].replace(/[:\s-]+$/, '').trim() : `${name} ${index + 1}`;
+          // Conteúdo é tudo após a primeira linha (ou o resto da primeira linha após :)
+          const contentAfterTitle = fullText.replace(/^[^\n]*\n?/, '').trim();
+          const inlineContent = firstLine.replace(/^[^:]+:\s*/, '').trim();
+          blockContent = contentAfterTitle || inlineContent || fullText;
+        }
         
         return {
           id: `block-${Date.now()}-${index}`,
@@ -329,6 +344,13 @@ function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | nu
           endIndex: (match.index || 0) + fullText.length,
         };
       });
+      
+      // ✅ FALLBACK ROBUSTO: Filtrar blocos vazios
+      const validBlocks = blocks.filter(b => b.content && b.content.trim().length > 0);
+      if (validBlocks.length >= 2) {
+        return validBlocks;
+      }
+      console.log(`⚠️ [Parser] Safety net: Após filtrar vazios, só ${validBlocks.length} blocos válidos. Continuando...`);
     }
   }
   
@@ -336,29 +358,35 @@ function tryParseNumberedItemsWithoutHash(content: string): ParsedContent[] | nu
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Detecta e separa sub-itens DENTRO de um bloco único
+ * ✅ FUNÇÃO CORRIGIDA: Detecta e separa sub-itens DENTRO de um bloco único
  * Caso o modelo gere um ### com título genérico e liste itens dentro
  * Ex: "### Mensagens da semana" com "Mensagem 1:", "Mensagem 2:" dentro
+ * GENERALIZADO: Aceita palavras intermediárias e listas numeradas
  */
 function splitSingleBlockIntoMultiple(content: string, originalTitle: string): ParsedContent[] | null {
   // Padrões para detectar sub-itens dentro do conteúdo
+  // GENERALIZADO: Aceita palavras entre identificador e número
   const subItemPatterns = [
-    // **Mensagem 1:** ou Mensagem 1: com conteúdo até próximo
-    { regex: /(?:^|\n)(?:\*\*)?(?:Mensagem|Message)\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?(?:Mensagem|Message)\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
-    // **Email 1:** ou Email 1:
-    { regex: /(?:^|\n)(?:\*\*)?E-?mail\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?E-?mail\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Email' },
-    // **Dia 1:** ou Dia 1:
-    { regex: /(?:^|\n)(?:\*\*)?Dia\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Dia\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Dia' },
+    // **Mensagem [qualquer coisa] 1:** ou Mensagem [qualquer coisa] 1: (GENERALIZADO)
+    { regex: /(?:^|\n)(?:\*\*)?(?:Mensagem|Message)(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?(?:Mensagem|Message)(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Mensagem' },
+    // **Email [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?E-?mail(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?E-?mail(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Email' },
+    // **Dia [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?Dia(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Dia(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Dia' },
     // Segunda-feira:, Terça-feira:, etc (dias da semana)
     { regex: /(?:^|\n)(?:\*\*)?(Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)(?:-feira)?(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?(?:Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo)(?:-feira)?(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Dia' },
-    // **Opção 1:** ou Opção 1:
-    { regex: /(?:^|\n)(?:\*\*)?Op[çc][ãa]o\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Op[çc][ãa]o\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Opção' },
-    // **Variação 1:** ou Variação 1:
-    { regex: /(?:^|\n)(?:\*\*)?Varia[çc][ãa]o\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Varia[çc][ãa]o\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Variação' },
-    // **Post 1:** ou Post 1:
-    { regex: /(?:^|\n)(?:\*\*)?Post\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Post\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Post' },
-    // **Texto 1:** ou Texto 1:
-    { regex: /(?:^|\n)(?:\*\*)?Texto\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Texto\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+    // **Opção [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?Op[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Op[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Opção' },
+    // **Variação [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?Varia[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Varia[çc][ãa]o(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Variação' },
+    // **Post [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?Post(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Post(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Post' },
+    // **Texto [qualquer coisa] 1:**
+    { regex: /(?:^|\n)(?:\*\*)?Texto(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*(\d+)(?:\*\*)?[:\s-]+([^\n]*(?:\n(?!(?:\*\*)?Texto(?:\s+[\w\-áàâãéêíóôõúç]+)*\s*\d+(?:\*\*)?[:\s-])[^\n]*)*)/gi, name: 'Texto' },
+    // ✅ NOVO: Listas numeradas simples dentro do bloco (1. Texto, 2. Texto)
+    { regex: /(?:^|\n)(\d+)\.\s+([^\n]+(?:\n(?!\d+\.\s+)[^\n]*)*)/gm, name: 'Item' },
+    // ✅ NOVO: Headers markdown internos (## Título ou **Título**)
+    { regex: /(?:^|\n)##\s+([^\n]+)\n([^\n]*(?:\n(?!##\s+)[^\n]*)*)/gm, name: 'Seção' },
   ];
 
   for (const { regex, name } of subItemPatterns) {
@@ -366,20 +394,39 @@ function splitSingleBlockIntoMultiple(content: string, originalTitle: string): P
     if (matches.length >= 2) { // Só se encontrar 2+ sub-itens
       console.log(`✅ [Parser] splitSingleBlock: Detectados ${matches.length} sub-itens "${name}" dentro do bloco "${originalTitle}"`);
       
-      return matches.map((match, index) => {
+      const blocks = matches.map((match, index) => {
         const itemNumber = match[1] || String(index + 1);
         const itemContent = (match[2] || '').trim();
         
-        // Construir título combinando nome do padrão com número/dia
-        const title = name === 'Dia' && isNaN(Number(itemNumber)) 
-          ? `${itemNumber}` // Para dias da semana (Segunda, Terça, etc)
-          : `${name} ${itemNumber}`;
+        // Construir título baseado no padrão
+        let title: string;
+        if (name === 'Dia' && isNaN(Number(itemNumber))) {
+          title = `${itemNumber}`; // Para dias da semana (Segunda, Terça, etc)
+        } else if (name === 'Item') {
+          // Para listas numeradas, usar primeira linha como título
+          const firstLine = itemContent.split('\n')[0].trim();
+          title = firstLine.length > 50 ? firstLine.substring(0, 47) + '...' : firstLine;
+        } else if (name === 'Seção') {
+          title = itemNumber; // Para ## headers, usar o header como título
+        } else {
+          title = `${name} ${itemNumber}`;
+        }
         
         // Limpar conteúdo
         let cleanContent = itemContent
           .replace(/^\*\*|\*\*$/g, '') // Remover ** do início/fim
           .replace(/\n\s*\n/g, '\n') // Múltiplas quebras → uma
           .trim();
+        
+        // Para listas numeradas, remover primeira linha do conteúdo se for igual ao título
+        if (name === 'Item' && cleanContent.startsWith(title)) {
+          cleanContent = cleanContent.replace(title, '').trim();
+        }
+        
+        // Se conteúdo ficou vazio, usar título como conteúdo
+        if (!cleanContent) {
+          cleanContent = title;
+        }
         
         cleanContent = markdownToHtml(cleanContent);
         cleanContent = stripMetaPrefixes(cleanContent);
@@ -394,6 +441,20 @@ function splitSingleBlockIntoMultiple(content: string, originalTitle: string): P
           endIndex: (match.index || 0) + match[0].length,
         };
       });
+      
+      // ✅ FALLBACK ROBUSTO: Filtrar blocos com conteúdo vazio ou muito curto
+      const validBlocks = blocks.filter(b => 
+        b.content && 
+        b.content.trim().length > 0 && 
+        b.content.trim() !== '<p></p>'
+      );
+      
+      if (validBlocks.length >= 2) {
+        console.log(`✅ [Parser] splitSingleBlock: ${validBlocks.length} blocos válidos após filtrar vazios`);
+        return validBlocks;
+      }
+      
+      console.log(`⚠️ [Parser] splitSingleBlock: Após filtrar vazios, só ${validBlocks.length} blocos válidos. Retornando null (fallback).`);
     }
   }
   
