@@ -181,6 +181,7 @@ const FolderCard = memo(({
           <DropdownMenu>
             <DropdownMenuTrigger 
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
             >
               <DotsThree size={20} weight="bold" />
