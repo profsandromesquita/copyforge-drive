@@ -970,12 +970,12 @@ async function buildSmartFallbackSystemPrompt(
   if (template && !error) {
     console.log(`✅ Template encontrado: "${template.name}" (${template.current_prompt?.length || 0} chars)`);
     
-    let richBasePrompt = template.current_prompt || '';
-    if (template.system_instructions) {
-      richBasePrompt += '\n\n' + template.system_instructions;
-    }
+    // ✅ CORREÇÃO CRÍTICA: Usar APENAS current_prompt (conteúdo rico de copywriting)
+    // ❌ NÃO usar system_instructions - contém instruções JSON que conflitam com formato ### do Chat
+    // As instruções de formato ### virão EXCLUSIVAMENTE de buildIntentInstructions()
+    const richBasePrompt = template.current_prompt || '';
     
-    // Enriquecer com contexto dinâmico
+    // Enriquecer com contexto dinâmico (sem system_instructions do banco)
     return enrichWithDynamicContext(richBasePrompt, params, copyType);
   }
   
