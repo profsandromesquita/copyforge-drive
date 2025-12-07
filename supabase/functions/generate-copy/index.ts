@@ -175,7 +175,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "generate_copy_structure",
-              description: "Gera estrutura de copy com sessões e blocos",
+              description: "Gera estrutura de copy com sessões e blocos. REGRA CRÍTICA: Se um bloco de texto termina com ':' ou promete uma lista/enumeração, o PRÓXIMO bloco DEVE ser type='list' com os itens reais e específicos.",
               parameters: {
                 type: "object",
                 properties: {
@@ -193,9 +193,26 @@ serve(async (req) => {
                               type: {
                                 type: "string",
                                 enum: ["headline", "subheadline", "text", "list", "button"],
+                                description: "Tipo do bloco. Use 'list' SEMPRE que precisar enumerar itens, benefícios, resultados, passos, etc."
                               },
                               content: {
-                                description: "String para texto/headline/subheadline/button, array de strings para listas",
+                                oneOf: [
+                                  { 
+                                    type: "string",
+                                    description: "Use para headline, subheadline, text e button. NUNCA termine um text com ':' sem que o próximo bloco seja uma lista."
+                                  },
+                                  { 
+                                    type: "array",
+                                    items: { 
+                                      type: "string",
+                                      minLength: 10,
+                                      description: "Cada item deve ser específico, real e completo (ex: 'Aumento de 47% nas conversões em 30 dias'). NUNCA use placeholders como 'Item da lista...' ou 'Benefício aqui...'."
+                                    },
+                                    minItems: 3,
+                                    description: "OBRIGATÓRIO para type='list': array com PELO MENOS 3 itens reais, específicos e baseados no contexto do projeto. PROIBIDO: placeholders genéricos."
+                                  }
+                                ],
+                                description: "String para text/headline/subheadline/button, ARRAY DE STRINGS OBRIGATÓRIO para listas com mínimo 3 itens reais e específicos."
                               },
                               config: {
                                 type: "object",
@@ -283,7 +300,77 @@ serve(async (req) => {
       })),
     }));
 
-    console.log(`Copy gerada com sucesso: ${sessionsWithIds.length} sessões`);
+    // === VALIDAÇÃO PÓS-GERAÇÃO: Detectar placeholders e listas vazias ===
+    const PLACEHOLDER_PATTERNS = [
+      /^item\s*(da\s*)?lista/i,
+      /^benefício\s*(aqui)?/i,
+      /^resultado\s*(aqui)?/i,
+      /^exemplo\s*(aqui)?/i,
+      /^\.\.\./,
+      /^xxx/i,
+      /^lorem/i,
+      /^placeholder/i,
+    ];
+
+    const validateAndCleanBlocks = (sessions: any[]) => {
+      let issuesFound = 0;
+      
+      for (const session of sessions) {
+        for (let i = 0; i < session.blocks.length; i++) {
+          const block = session.blocks[i];
+          
+          // Validar blocos de lista
+          if (block.type === 'list') {
+            const content = block.content;
+            
+            // Se content não é array ou está vazio, marcar como problema
+            if (!Array.isArray(content) || content.length === 0) {
+              console.warn(`⚠️ Lista vazia detectada no bloco ${block.id}`);
+              block.content = ['[Conteúdo da lista não foi gerado corretamente - regenere a copy]'];
+              issuesFound++;
+              continue;
+            }
+            
+            // Filtrar itens que são placeholders
+            const validItems = content.filter((item: string) => {
+              if (typeof item !== 'string' || item.length < 10) return false;
+              return !PLACEHOLDER_PATTERNS.some(pattern => pattern.test(item.trim()));
+            });
+            
+            if (validItems.length < content.length) {
+              console.warn(`⚠️ Placeholders removidos da lista ${block.id}: ${content.length - validItems.length} itens`);
+              issuesFound += content.length - validItems.length;
+            }
+            
+            if (validItems.length === 0) {
+              block.content = ['[Itens da lista não foram gerados corretamente - regenere a copy]'];
+            } else {
+              block.content = validItems;
+            }
+          }
+          
+          // Detectar "handoff blocks" - texto que termina com : mas não é seguido por lista
+          if (block.type === 'text' && typeof block.content === 'string') {
+            const endsWithHandoff = /[:：]\s*$/.test(block.content.trim());
+            const nextBlock = session.blocks[i + 1];
+            
+            if (endsWithHandoff && (!nextBlock || nextBlock.type !== 'list')) {
+              console.warn(`⚠️ Handoff vazio detectado: bloco "${block.content.substring(0, 50)}..." promete lista mas próximo bloco é ${nextBlock?.type || 'nenhum'}`);
+              issuesFound++;
+            }
+          }
+        }
+      }
+      
+      if (issuesFound > 0) {
+        console.warn(`⚠️ Total de problemas de continuidade detectados: ${issuesFound}`);
+      }
+      
+      return sessions;
+    };
+
+    const validatedSessions = validateAndCleanBlocks(sessionsWithIds);
+    console.log(`Copy gerada com sucesso: ${validatedSessions.length} sessões`);
 
     // Salvar no histórico e debitar créditos
     let generationId = null;
@@ -341,7 +428,7 @@ serve(async (req) => {
           project_identity: null,
           audience_segment: null,
           offer: null,
-          sessions: sessionsWithIds,
+          sessions: validatedSessions,
           generation_type: 'create',
           model_used: modelToUse,
           was_auto_routed: wasAutoRouted,
@@ -469,7 +556,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        sessions: sessionsWithIds,
+        sessions: validatedSessions,
         modelUsed: modelToUse,
         wasAutoRouted: wasAutoRouted
       }),
