@@ -53,6 +53,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Microphone, MicrophoneSlash } from 'phosphor-react';
 import { toast as sonnerToast } from 'sonner';
+import { ContextConfigCard } from './ContextConfigCard';
 
 import type { AITokensInfo, AIGenerationHistoryItem } from '@/types/database';
 
@@ -756,11 +757,8 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : chatHistory.length === 0 && !isStreaming ? (
-            <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-              <div>
-                <p className="text-sm">Nenhuma mensagem ainda</p>
-                <p className="text-xs mt-1">Comece uma conversa sobre esta copy</p>
-              </div>
+            <div className="flex items-center justify-center h-full p-6">
+              <ContextConfigCard variant="compact" />
             </div>
           ) : (
             <div className="space-y-4">
