@@ -803,10 +803,11 @@ export function CopyChatTab({ isActive = true, contextSettings }: CopyChatTabPro
               {isStreaming && streamingMessage && (
                 <div className="flex justify-start animate-in fade-in duration-200">
                   <div className="max-w-[90%] rounded-lg p-3 bg-muted text-foreground">
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {streamingMessage}
-                      <span className="inline-block w-1 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
-                    </p>
+                    <div 
+                      className="prose prose-sm dark:prose-invert max-w-none text-sm"
+                      dangerouslySetInnerHTML={{ __html: markdownToHtml(streamingMessage) }}
+                    />
+                    <span className="inline-block w-1 h-4 ml-1 bg-primary animate-pulse rounded-sm" />
                   </div>
                 </div>
               )}
