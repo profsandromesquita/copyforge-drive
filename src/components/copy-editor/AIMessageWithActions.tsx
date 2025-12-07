@@ -5,6 +5,7 @@ import { Sparkles, ChevronRight, Copy, Check } from 'lucide-react';
 import { parseAIResponse, convertParsedBlocksToSessions } from '@/lib/ai-content-parser';
 import { ChatGeneratedPreviewModal } from './ChatGeneratedPreviewModal';
 import { useToast } from '@/hooks/use-toast';
+import { markdownToHtml } from '@/lib/markdown-utils';
 import type { SelectedItem } from '@/hooks/useCopyEditor';
 import type { Session } from '@/types/copy-editor';
 
@@ -80,7 +81,7 @@ export function AIMessageWithActions({
         </Button>
         <div 
           className="prose prose-sm dark:prose-invert max-w-none pr-8"
-          dangerouslySetInnerHTML={{ __html: message.content }}
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }}
         />
         <p className="text-xs opacity-70 mt-2">
           {new Date(message.created_at).toLocaleTimeString('pt-BR', {
@@ -153,7 +154,7 @@ export function AIMessageWithActions({
         </Button>
         <div 
           className="prose prose-sm dark:prose-invert max-w-none pr-8"
-          dangerouslySetInnerHTML={{ __html: message.content }}
+          dangerouslySetInnerHTML={{ __html: markdownToHtml(message.content) }}
         />
         <p className="text-xs opacity-70 mt-2">
           {new Date(message.created_at).toLocaleTimeString('pt-BR', {
@@ -258,7 +259,7 @@ export function AIMessageWithActions({
         {parsed.explanation && (
           <div 
             className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground mb-3 pr-8"
-            dangerouslySetInnerHTML={{ __html: parsed.explanation }}
+            dangerouslySetInnerHTML={{ __html: markdownToHtml(parsed.explanation) }}
           />
         )}
 
