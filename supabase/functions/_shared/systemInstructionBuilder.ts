@@ -196,6 +196,28 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
     sections.push("");
   }
 
+  // 6. REGRAS DE CONTINUIDADE ESTRUTURAL - Garantir listas completas
+  sections.push("=== REGRAS DE CONTINUIDADE ESTRUTURAL ===");
+  sections.push("");
+  sections.push("**REGRA CRÍTICA - PROIBIÇÃO DE HANDOFFS VAZIOS:**");
+  sections.push("Se um bloco de texto termina com ':' ou promete uma enumeração (ex: 'Os resultados incluem:', 'Benefícios:', 'Você vai descobrir:'), o PRÓXIMO bloco DEVE OBRIGATORIAMENTE ser type='list' contendo 3-7 itens REAIS e ESPECÍFICOS baseados no contexto do projeto.");
+  sections.push("");
+  sections.push("**EXEMPLOS CORRETOS:**");
+  sections.push("✅ Bloco text: 'Resultados que nossos clientes alcançam:' → PRÓXIMO bloco DEVE SER type='list' com: ['Aumento de 47% nas conversões em 30 dias', 'Redução de 60% no custo por lead', 'ROI de 5x no primeiro mês']");
+  sections.push("✅ Bloco text: 'O método inclui:' → PRÓXIMO bloco DEVE SER type='list' com itens específicos da metodologia");
+  sections.push("");
+  sections.push("**EXEMPLOS PROIBIDOS (NUNCA FAZER):**");
+  sections.push("❌ Bloco text: 'Benefícios que você terá:' → E depois NÃO gerar lista");
+  sections.push("❌ Bloco list com: ['Item da lista...', 'Benefício aqui...', 'Resultado...'] → PLACEHOLDERS SÃO PROIBIDOS");
+  sections.push("❌ Bloco list com menos de 3 itens quando prometeu vários");
+  sections.push("");
+  sections.push("**VALIDAÇÃO OBRIGATÓRIA:**");
+  sections.push("1. Todo item de lista DEVE ter pelo menos 10 caracteres");
+  sections.push("2. Todo item de lista DEVE ser específico ao contexto (use dados da marca, audiência e oferta)");
+  sections.push("3. NUNCA use placeholders genéricos como '...', 'Item aqui', 'Benefício X'");
+  sections.push("4. Se prometeu uma lista, GERE a lista no próximo bloco - não pule para outro tipo de bloco");
+  sections.push("");
+
   // Compilar em objeto estruturado para salvar
   const compiledInstruction = {
     full_text: sections.join("\n"),
