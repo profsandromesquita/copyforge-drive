@@ -7,7 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock, Settings } from 'lucide-react';
+import { Sparkles, Wand2, History, Loader2, Copy as CopyIcon, Eye, Lock } from 'lucide-react';
+import { ContextConfigCard } from './ContextConfigCard';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -806,13 +807,7 @@ export const CopyAITab = ({
     if (etapa === 1) {
       return <ScrollArea className="h-[calc(100vh-12rem)]">
           <div className="space-y-6 p-4">
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4 text-primary" />
-                <h4 className="font-semibold text-primary">Configure o Contexto de Criação</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">Clique no ícone de engrenagem no canto superior direito do editor para configurar o Público-Alvo e a Oferta e personalizar o contexto da sua copy.</p>
-            </div>
+            <ContextConfigCard variant="full" />
 
             <Button onClick={() => setEtapa(2)} className="w-full">
               Iniciar Criação
