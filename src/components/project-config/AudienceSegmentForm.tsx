@@ -420,7 +420,7 @@ export const AudienceSegmentForm = ({
       </div>
 
       {/* Form fields - only show after segment is created */}
-      {segmentCreated && (segment || localSegment) && (
+      {segmentCreated && (
         <Tabs defaultValue="basic" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
