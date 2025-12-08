@@ -12,6 +12,7 @@ interface ProjectContextType {
   loading: boolean;
   refreshProjects: () => Promise<void>;
   createProject: (name: string) => Promise<Project | null>;
+  deleteProject: (projectId: string) => Promise<boolean>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -141,6 +142,44 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [activeWorkspace, user, fetchProjects, setActiveProject]);
 
+  const deleteProject = useCallback(async (projectId: string): Promise<boolean> => {
+    if (!activeWorkspace?.id) {
+      toast.error('Workspace não encontrado');
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      // Atualizar lista local de projetos
+      const updatedProjects = projects.filter(p => p.id !== projectId);
+      setProjects(updatedProjects);
+
+      // Se o projeto excluído era o ativo, selecionar próximo
+      if (activeProject?.id === projectId) {
+        if (updatedProjects.length > 0) {
+          setActiveProject(updatedProjects[0]);
+        } else {
+          setActiveProjectState(null);
+          // Limpar localStorage
+          localStorage.removeItem(`activeProjectId_${activeWorkspace.id}`);
+        }
+      }
+
+      toast.success('Projeto excluído com sucesso!');
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting project:', error);
+      toast.error('Erro ao excluir projeto');
+      return false;
+    }
+  }, [activeWorkspace?.id, activeProject?.id, projects, setActiveProject]);
+
   const value: ProjectContextType = {
     projects,
     activeProject,
@@ -148,6 +187,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loading,
     refreshProjects: fetchProjects,
     createProject,
+    deleteProject,
   };
 
   return (

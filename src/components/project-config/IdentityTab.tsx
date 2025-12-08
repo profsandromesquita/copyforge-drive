@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VoiceInput } from './VoiceInput';
 import { IdentityCard } from './IdentityCard';
+import { DeleteProjectDialog, ProjectDeletionImpact } from './DeleteProjectDialog';
 import { SECTORS, VOICE_TONES, BRAND_PERSONALITIES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { AlertTriangle } from 'lucide-react';
 
 const identitySchema = z.object({
   brand_name: z.string().min(1, 'Nome da marca é obrigatório'),
@@ -33,13 +35,21 @@ interface IdentityTabProps {
 
 export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const navigate = useNavigate();
-  const { activeProject, createProject, refreshProjects, setActiveProject } = useProject();
+  const { activeProject, createProject, refreshProjects, setActiveProject, deleteProject, projects } = useProject();
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletionImpact, setDeletionImpact] = useState<ProjectDeletionImpact>({
+    totalCopies: 0,
+    totalFolders: 0,
+    publicCopies: 0,
+    templates: 0,
+  });
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(identitySchema),
@@ -187,6 +197,59 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   
   // Verificar se os campos obrigatórios estão preenchidos
   const isFormValid = brandName && brandName.trim() !== '' && sector && sector.trim() !== '';
+
+  // Buscar impacto da deleção antes de abrir o modal
+  const fetchDeletionImpact = async () => {
+    if (!activeProject?.id) return;
+    
+    try {
+      const [copiesResult, foldersResult] = await Promise.all([
+        supabase
+          .from('copies')
+          .select('id, is_public, is_template')
+          .eq('project_id', activeProject.id),
+        supabase
+          .from('folders')
+          .select('id')
+          .eq('project_id', activeProject.id),
+      ]);
+
+      const copies = copiesResult.data || [];
+      const folders = foldersResult.data || [];
+
+      setDeletionImpact({
+        totalCopies: copies.length,
+        totalFolders: folders.length,
+        publicCopies: copies.filter(c => c.is_public).length,
+        templates: copies.filter(c => c.is_template).length,
+      });
+
+      setShowDeleteDialog(true);
+    } catch (error) {
+      console.error('Error fetching deletion impact:', error);
+      toast.error('Erro ao verificar dados do projeto');
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!activeProject?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await deleteProject(activeProject.id);
+      
+      if (success) {
+        setShowDeleteDialog(false);
+        // Se não houver mais projetos, redirecionar para o drive
+        if (projects.length <= 1) {
+          navigate('/drive');
+        }
+        // Se houver outros projetos, permanece na página (já selecionou outro automaticamente)
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Modo de visualização
   if (!isEditing && activeProject && (activeProject.brand_name || activeProject.name) && activeProject.sector) {
@@ -339,6 +402,40 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           </Button>
         </div>
       )}
+
+      {/* Danger Zone - apenas para projetos existentes */}
+      {!isNew && activeProject && (
+        <div className="border-2 border-destructive/30 rounded-xl p-4 md:p-6 space-y-4 bg-destructive/5">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <h3 className="text-lg font-semibold text-destructive">Zona de Perigo</h3>
+          </div>
+          
+          <p className="text-sm text-muted-foreground">
+            A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
+            Esta ação não pode ser desfeita.
+          </p>
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={fetchDeletionImpact}
+            className="w-full sm:w-auto"
+          >
+            Excluir Projeto
+          </Button>
+        </div>
+      )}
+
+      {/* Delete Project Dialog */}
+      <DeleteProjectDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        projectName={activeProject?.brand_name || activeProject?.name || ''}
+        impact={deletionImpact}
+        onConfirm={handleDeleteProject}
+        isDeleting={isDeleting}
+      />
     </form>
   );
 };
