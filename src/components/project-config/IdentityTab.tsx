@@ -254,10 +254,44 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   // Modo de visualização
   if (!isEditing && activeProject && (activeProject.brand_name || activeProject.name) && activeProject.sector) {
     return (
-      <IdentityCard 
-        project={activeProject} 
-        onEdit={() => setIsEditing(true)} 
-      />
+      <div className="space-y-6">
+        <IdentityCard 
+          project={activeProject} 
+          onEdit={() => setIsEditing(true)} 
+        />
+
+        {/* Danger Zone - visível no modo de visualização */}
+        <div className="border-2 border-destructive/30 rounded-xl p-4 md:p-6 space-y-4 bg-destructive/5">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <h3 className="text-lg font-semibold text-destructive">Zona de Perigo</h3>
+          </div>
+          
+          <p className="text-sm text-muted-foreground">
+            A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
+            Esta ação não pode ser desfeita.
+          </p>
+
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={fetchDeletionImpact}
+            className="w-full sm:w-auto"
+          >
+            Excluir Projeto
+          </Button>
+        </div>
+
+        {/* Delete Project Dialog */}
+        <DeleteProjectDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          projectName={activeProject?.brand_name || activeProject?.name || ''}
+          impact={deletionImpact}
+          onConfirm={handleDeleteProject}
+          isDeleting={isDeleting}
+        />
+      </div>
     );
   }
 
