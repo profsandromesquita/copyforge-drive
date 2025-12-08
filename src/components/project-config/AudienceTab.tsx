@@ -172,6 +172,10 @@ export const AudienceTab = ({ onSaveSuccess }: AudienceTabProps) => {
           <AudienceSegmentForm
             segment={editingSegment}
             allSegments={segments}
+            onSegmentCreated={(newSegment) => {
+              setEditingSegment(newSegment);
+              setSegments(prev => [...prev, newSegment]);
+            }}
             onSave={(newSegments) => {
               setSegments(newSegments);
               setIsFormOpen(false);

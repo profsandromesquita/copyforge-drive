@@ -18,6 +18,7 @@ interface AudienceSegmentFormProps {
   onUpdate?: (segments: AudienceSegment[]) => void;
   onCancel: () => void;
   onAutoSavingChange?: (isSaving: boolean) => void;
+  onSegmentCreated?: (segment: AudienceSegment) => void;
 }
 
 export const AudienceSegmentForm = ({ 
@@ -26,7 +27,8 @@ export const AudienceSegmentForm = ({
   onSave,
   onUpdate, 
   onCancel, 
-  onAutoSavingChange 
+  onAutoSavingChange,
+  onSegmentCreated
 }: AudienceSegmentFormProps) => {
   const { activeProject, refreshProjects, setActiveProject } = useProject();
   const [formData, setFormData] = useState<Partial<AudienceSegment>>({
@@ -45,6 +47,7 @@ export const AudienceSegmentForm = ({
   const [autoSaving, setAutoSaving] = useState(false);
   const [segmentCreated, setSegmentCreated] = useState(!!segment);
   const [originalId, setOriginalId] = useState(segment?.id || '');
+  const [localSegment, setLocalSegment] = useState<AudienceSegment | null>(null);
 
   const MIN_CHARS = 50;
 
@@ -222,6 +225,12 @@ export const AudienceSegmentForm = ({
       await refreshProjects();
       setSegmentCreated(true);
       setOriginalId(identification);
+      
+      // Atualizar estado local para transição imediata ao formulário de edição
+      setLocalSegment(newSegment);
+      setFormData(newSegment);
+      onSegmentCreated?.(newSegment);
+      
       toast.success('Segmento criado! Agora preencha os campos abaixo.');
     } catch (error) {
       console.error('Erro ao criar segmento:', error);
@@ -411,7 +420,7 @@ export const AudienceSegmentForm = ({
       </div>
 
       {/* Form fields - only show after segment is created */}
-      {segmentCreated && segment && (
+      {segmentCreated && (segment || localSegment) && (
         <Tabs defaultValue="basic" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
