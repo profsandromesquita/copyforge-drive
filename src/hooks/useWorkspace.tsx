@@ -42,7 +42,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       .from('workspace_members')
       .select(`
         role,
-        workspace:workspaces!fk_members_workspace (
+        workspace:workspaces!workspace_members_workspace_id_fkey (
           id,
           name,
           avatar_url,
