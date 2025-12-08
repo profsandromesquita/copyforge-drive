@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { AlertTriangle } from 'lucide-react';
+import { Trash } from 'lucide-react';
 
 const identitySchema = z.object({
   brand_name: z.string().min(1, 'Nome da marca é obrigatório'),
@@ -260,26 +260,26 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           onEdit={() => setIsEditing(true)} 
         />
 
-        {/* Danger Zone - visível no modo de visualização */}
-        <div className="border-2 border-destructive/30 rounded-xl p-4 md:p-6 space-y-4 bg-destructive/5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <h3 className="text-lg font-semibold text-destructive">Zona de Perigo</h3>
+        {/* Danger Zone - Card Minimalista */}
+        <div className="rounded-lg border border-destructive/50 bg-card p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-destructive">Zona de Perigo</h3>
+              <p className="text-sm text-muted-foreground">
+                A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={fetchDeletionImpact}
+              className="shrink-0"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir Projeto
+            </Button>
           </div>
-          
-          <p className="text-sm text-muted-foreground">
-            A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
-            Esta ação não pode ser desfeita.
-          </p>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={fetchDeletionImpact}
-            className="w-full sm:w-auto"
-          >
-            Excluir Projeto
-          </Button>
         </div>
 
         {/* Delete Project Dialog */}
@@ -437,27 +437,27 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
         </div>
       )}
 
-      {/* Danger Zone - apenas para projetos existentes */}
+      {/* Danger Zone - Card Minimalista (apenas para projetos existentes) */}
       {!isNew && activeProject && (
-        <div className="border-2 border-destructive/30 rounded-xl p-4 md:p-6 space-y-4 bg-destructive/5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <h3 className="text-lg font-semibold text-destructive">Zona de Perigo</h3>
+        <div className="rounded-lg border border-destructive/50 bg-card p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-destructive">Zona de Perigo</h3>
+              <p className="text-sm text-muted-foreground">
+                A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={fetchDeletionImpact}
+              className="shrink-0"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir Projeto
+            </Button>
           </div>
-          
-          <p className="text-sm text-muted-foreground">
-            A exclusão do projeto é permanente e irá remover todas as copies, pastas e configurações associadas.
-            Esta ação não pode ser desfeita.
-          </p>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={fetchDeletionImpact}
-            className="w-full sm:w-auto"
-          >
-            Excluir Projeto
-          </Button>
         </div>
       )}
 
