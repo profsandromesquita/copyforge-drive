@@ -397,11 +397,14 @@ export const AudienceSegmentForm = ({
             value={identification}
             onChange={(e) => setIdentification(e.target.value)}
             placeholder="Ex: Profissionais TI | Mães Empreendedoras | Gestores"
-            disabled={segmentCreated}
             className="placeholder:text-xs"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !segmentCreated && identification.trim()) {
-                handleCreateSegment();
+              if (e.key === 'Enter' && identification.trim()) {
+                if (!segmentCreated) {
+                  handleCreateSegment();
+                } else if (identification !== originalId) {
+                  handleUpdateIdentification();
+                }
               }
             }}
           />
@@ -412,7 +415,7 @@ export const AudienceSegmentForm = ({
           ) : (
             identification !== originalId && (
               <Button onClick={handleUpdateIdentification} variant="outline" size="lg">
-                Atualizar
+                Atualizar Nome
               </Button>
             )
           )}
