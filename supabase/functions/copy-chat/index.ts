@@ -30,6 +30,70 @@ const COPY_TYPE_TO_PROMPT_KEY: Record<string, string> = {
   outro: 'generate_copy_base'
 };
 
+/**
+ * Busca prompt especializado de OTIMIZAÇÃO ou VARIAÇÃO do banco
+ * 
+ * Esses prompts contêm instruções ricas de copywriting (clareza radical, 
+ * power words, especificidade, etc.) que o modelo precisa para saber
+ * COMO otimizar/variar, não apenas formatar.
+ */
+async function getOptimizationPromptFromDatabase(
+  supabase: any, 
+  intent: 'replace' | 'insert'
+): Promise<string | null> {
+  try {
+    // Mapear intent para prompt_key correto
+    // replace = otimização (melhorar o que existe)
+    // insert = variação (explorar novos ângulos)
+    const promptKey = intent === 'replace' 
+      ? 'optimize_copy_otimizar' 
+      : 'optimize_copy_variacao';
+    
+    console.log(`🔍 Buscando prompt especializado: ${promptKey}`);
+    
+    const { data, error } = await supabase
+      .from('ai_prompt_templates')
+      .select('current_prompt, name')
+      .eq('prompt_key', promptKey)
+      .eq('is_active', true)
+      .single();
+    
+    if (error || !data?.current_prompt) {
+      console.log(`⚠️ Prompt ${promptKey} não encontrado, usando instruções padrão`);
+      return null;
+    }
+    
+    console.log(`✅ Prompt "${data.name}" carregado (${data.current_prompt.length} chars)`);
+    return data.current_prompt;
+  } catch (error) {
+    console.error('❌ Erro ao buscar prompt de otimização:', error);
+    return null;
+  }
+}
+
+/**
+ * Extrai o conteúdo COMPLETO da copy (sem truncamento)
+ * para que o modelo possa VER o que precisa editar/variar
+ */
+function buildFullCopyContent(sessions: any[]): string {
+  if (!sessions || sessions.length === 0) return '[Nenhum conteúdo gerado ainda]';
+  
+  let fullContent = '';
+  sessions.forEach((session, sIdx) => {
+    fullContent += `=== ${session.title || `Sessão ${sIdx + 1}`} ===\n\n`;
+    (session.blocks || []).forEach((block: any) => {
+      if (block.title) {
+        fullContent += `**${block.title}**\n`;
+      }
+      const content = Array.isArray(block.content) 
+        ? block.content.map((item: string) => `• ${item}`).join('\n')
+        : String(block.content || '');
+      fullContent += content + '\n\n';
+    });
+  });
+  return fullContent.trim();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1117,6 +1181,34 @@ IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 `;
     }
 
+    // ✅ NOVO: Injetar prompt especializado de OTIMIZAÇÃO/VARIAÇÃO quando intent é replace/insert
+    if (intent === 'replace' || intent === 'insert') {
+      const specializedPrompt = await getOptimizationPromptFromDatabase(supabase, intent);
+      if (specializedPrompt) {
+        // Obter conteúdo completo da copy para edição
+        const sessions = params.copyContext ? [] : []; // sessions virá do copy original
+        
+        enhancedPrompt += `\n\n${'='.repeat(60)}
+🎯 INSTRUÇÕES ESPECIALIZADAS DE ${intent === 'replace' ? 'OTIMIZAÇÃO' : 'VARIAÇÃO'}:
+${'='.repeat(60)}
+
+${specializedPrompt}
+
+📄 CONTEÚDO ATUAL COMPLETO QUE VOCÊ DEVE ${intent === 'replace' ? 'OTIMIZAR' : 'USAR COMO BASE PARA VARIAÇÃO'}:
+---INÍCIO DO CONTEÚDO---
+${copyContext}
+---FIM DO CONTEÚDO---
+
+⚠️ REGRA CRÍTICA: 
+- NÃO copie o texto acima literalmente
+- ${intent === 'replace' ? 'MODIFIQUE aplicando as técnicas de otimização' : 'CRIE uma variação explorando novo ângulo/estrutura'}
+- Mantenha a ESSÊNCIA e o TEMA original
+- Se o usuário pediu limite de caracteres, CONTE e RESPEITE
+`;
+        console.log(`🎯 Prompt especializado de ${intent} injetado`);
+      }
+    }
+
     // Adicionar modo de operação (com mensagem do usuário para detectar quantidade de itens)
     enhancedPrompt += buildIntentInstructions(intent, userMessage);
 
@@ -1173,8 +1265,8 @@ async function buildSmartFallbackSystemPrompt(
     // As instruções de formato ### virão EXCLUSIVAMENTE de buildIntentInstructions()
     const richBasePrompt = template.current_prompt || '';
     
-    // Enriquecer com contexto dinâmico (sem system_instructions do banco)
-    return enrichWithDynamicContext(richBasePrompt, params, copyType);
+    // Enriquecer com contexto dinâmico (agora assíncrono para buscar prompts especializados)
+    return await enrichWithDynamicContext(supabase, richBasePrompt, params, copyType);
   }
   
   // 4. Se não encontrou, fallback genérico (último recurso)
@@ -1184,12 +1276,14 @@ async function buildSmartFallbackSystemPrompt(
 
 /**
  * Enriquece o prompt base do banco com contexto dinâmico da sessão
+ * AGORA ASSÍNCRONO: Busca prompts especializados de otimização/variação
  */
-function enrichWithDynamicContext(
+async function enrichWithDynamicContext(
+  supabase: any,
   basePrompt: string,
   params: DynamicPromptParams,
   copyType: string
-): string {
+): Promise<string> {
   const {
     copyContext,
     historyContext,
@@ -1273,6 +1367,31 @@ ${selectionContext}
 
 IMPORTANTE: Foque sua resposta EXCLUSIVAMENTE nos elementos selecionados acima.
 `;
+  }
+
+  // ✅ NOVO: Injetar prompt especializado de OTIMIZAÇÃO/VARIAÇÃO quando intent é replace/insert
+  if (intent === 'replace' || intent === 'insert') {
+    const specializedPrompt = await getOptimizationPromptFromDatabase(supabase, intent);
+    if (specializedPrompt) {
+      enrichedPrompt += `\n\n${'='.repeat(60)}
+🎯 INSTRUÇÕES ESPECIALIZADAS DE ${intent === 'replace' ? 'OTIMIZAÇÃO' : 'VARIAÇÃO'}:
+${'='.repeat(60)}
+
+${specializedPrompt}
+
+📄 CONTEÚDO ATUAL COMPLETO QUE VOCÊ DEVE ${intent === 'replace' ? 'OTIMIZAR' : 'USAR COMO BASE PARA VARIAÇÃO'}:
+---INÍCIO DO CONTEÚDO---
+${copyContext}
+---FIM DO CONTEÚDO---
+
+⚠️ REGRA CRÍTICA: 
+- NÃO copie o texto acima literalmente
+- ${intent === 'replace' ? 'MODIFIQUE aplicando as técnicas de otimização' : 'CRIE uma variação explorando novo ângulo/estrutura'}
+- Mantenha a ESSÊNCIA e o TEMA original
+- Se o usuário pediu limite de caracteres, CONTE e RESPEITE
+`;
+      console.log(`🎯 Prompt especializado de ${intent} injetado via enrichWithDynamicContext`);
+    }
   }
 
   // Regras de formatação - CONDICIONAIS ao intent
