@@ -218,6 +218,50 @@ export function buildContextualSystemInstruction(context: SystemInstructionConte
   sections.push("4. Se prometeu uma lista, GERE a lista no próximo bloco - não pule para outro tipo de bloco");
   sections.push("");
 
+  // 7. REGRAS ESPECÍFICAS PARA ANÚNCIOS VISUAIS
+  if (context.copyType === 'anuncio' || context.copyType === 'ad') {
+    sections.push("=== REGRAS PARA ANÚNCIOS VISUAIS ===");
+    sections.push("");
+    sections.push("**REGRA DE OURO - ABSORÇÃO EM 3 SEGUNDOS:**");
+    sections.push("Se o usuário pedir copy para ARTE, IMAGEM, CRIATIVO ou ANÚNCIO DE IMAGEM, o texto deve ser absorvido INSTANTANEAMENTE.");
+    sections.push("");
+    sections.push("**ESTRUTURA OBRIGATÓRIA PARA ARTE/CRIATIVO:**");
+    sections.push("1. HEADLINE: Máximo 8 palavras (benefício direto ou provocação)");
+    sections.push("2. SUBHEADLINE: Máximo 12 palavras (complemento ou especificação)");
+    sections.push("3. CTA: Máximo 4 palavras (verbo imperativo + benefício)");
+    sections.push("TOTAL MÁXIMO: 30 palavras para toda a arte");
+    sections.push("");
+    sections.push("**FOCO NO BENEFÍCIO (não na característica):**");
+    sections.push("❌ ERRADO: 'Nosso método inovador de 7 passos foi desenvolvido por especialistas...'");
+    sections.push("✅ CERTO: 'Emagreça 5kg em 30 dias'");
+    sections.push("");
+    sections.push("**CTA IMPERATIVO E CLARO:**");
+    sections.push("❌ ERRADO: 'Gostaríamos de convidar você para conhecer...'");
+    sections.push("✅ CERTO: 'Baixe Grátis Agora' | 'Garanta Sua Vaga' | 'Compre Hoje'");
+    sections.push("");
+    sections.push("**GATILHOS MENTAIS PARA ADS:**");
+    sections.push("- Urgência: 'Só hoje', 'Últimas vagas', 'Oferta expira em 24h'");
+    sections.push("- Escassez: 'Apenas 10 disponíveis', 'Edição limitada'");
+    sections.push("- Prova Social: 'Mais de 10.000 clientes', 'Nota 4.9'");
+    sections.push("- Gratuidade: 'Grátis', 'Sem custo', 'Liberado'");
+    sections.push("");
+    sections.push("**LÓGICA DE VARIAÇÃO (TESTE A/B):**");
+    sections.push("Se o usuário pedir variações, mude o ÂNGULO, não apenas palavras:");
+    sections.push("- Variação A: Foco na DOR ('Cansado de perder dinheiro?')");
+    sections.push("- Variação B: Foco no PRAZER ('Comece a lucrar hoje!')");
+    sections.push("- Variação C: Foco na PROVA ('10.000 empresários já usam')");
+    sections.push("- Variação D: Foco na URGÊNCIA ('Só até meia-noite')");
+    sections.push("");
+    sections.push("**RESTRIÇÕES NEGATIVAS (PROIBIÇÕES):**");
+    sections.push("❌ NÃO escreva parágrafos longos para artes de imagem");
+    sections.push("❌ NÃO use jargões técnicos complexos");
+    sections.push("❌ NÃO liste todas as features do produto");
+    sections.push("❌ NÃO use linguagem passiva ou indireta");
+    sections.push("❌ NÃO comece com 'Descubra como...' ou frases clichês");
+    sections.push("❌ NÃO ultrapasse 30 palavras para artes visuais");
+    sections.push("");
+  }
+
   // Compilar em objeto estruturado para salvar
   const compiledInstruction = {
     full_text: sections.join("\n"),
