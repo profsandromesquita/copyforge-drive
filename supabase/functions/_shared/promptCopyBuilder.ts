@@ -197,16 +197,46 @@ Foque na clareza, escaneabilidade e persuasão.
 Utilize frases curtas, estruturas em blocos e CTAs visíveis e diretas.
 Toda landing page deve conduzir o leitor logicamente até a ação desejada.`,
 
-    'anuncio': `Produza um texto curto, direto e altamente persuasivo.
-A copy deve:
-- Capturar atenção imediatamente
-- Destacar o benefício principal
-- Criar curiosidade ou urgência
-- Conduzir para um clique ou ação específica
+    'anuncio': `TIPO: ANÚNCIO PUBLICITÁRIO
 
-Evite excesso de detalhes.
-Use gatilhos mentais apropriados ao canal (Facebook, Google, Instagram, etc.).
-O foco é sempre atrair cliques, não explicar tudo.`,
+=== DISTINÇÃO CRÍTICA: COPY PARA ARTE vs LEGENDA ===
+
+**1. COPY PARA ARTE/IMAGEM/CRIATIVO** (quando pedir "texto para arte", "copy do criativo", "headline de anúncio"):
+- MÁXIMO 30 palavras TOTAIS
+- Estrutura obrigatória:
+  • HEADLINE: Máximo 8 palavras (benefício direto ou provocação)
+  • SUBHEADLINE: Máximo 12 palavras (complemento ou especificação)  
+  • CTA: Máximo 4 palavras (verbo imperativo + benefício)
+- Absorção em 3 segundos
+- ZERO parágrafos - apenas frases soltas e impactantes
+- Foco 100% no BENEFÍCIO, não na característica
+
+**2. LEGENDA/CAPTION** (quando pedir "legenda", "caption", "texto do post"):
+- Até 150 palavras
+- 2-3 parágrafos curtos permitidos
+- Pode incluir emojis e hashtags
+- Permite storytelling condensado
+
+=== PRINCÍPIOS UNIVERSAIS PARA ANÚNCIOS ===
+- Capturar atenção INSTANTANEAMENTE (primeiras 3 palavras são cruciais)
+- Foco no BENEFÍCIO: O que o cliente GANHA? (não o que o produto É)
+- CTA com verbo imperativo: "Baixe", "Compre", "Garanta", "Acesse"
+- Gatilhos: Urgência, Escassez, Prova Social, Gratuidade
+
+=== LÓGICA DE VARIAÇÃO (TESTE A/B) ===
+Se pedir variações, mude o ÂNGULO, não apenas palavras:
+- Ângulo DOR: "Cansado de perder dinheiro?"
+- Ângulo PRAZER: "Comece a lucrar hoje!"
+- Ângulo PROVA: "10.000 empresários já usam"
+- Ângulo URGÊNCIA: "Só até meia-noite"
+
+=== RESTRIÇÕES NEGATIVAS (NUNCA FAZER) ===
+❌ Parágrafos longos para artes de imagem
+❌ Jargões técnicos complexos
+❌ Lista de features do produto (a menos que pedido)
+❌ Linguagem passiva ou indireta
+❌ Clichês: "Descubra como...", "Você sabia que...", "Conheça o..."
+❌ Textos genéricos sem benefício claro`,
 
     'vsl': `Estruture o texto no formato de um roteiro persuasivo.
 Inclua:
