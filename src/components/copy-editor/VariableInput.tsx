@@ -1,4 +1,4 @@
-import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isValidVariable } from '@/lib/context-variables';
@@ -17,6 +17,24 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
   ({ value, onChange, onKeyDown, placeholder, disabled, className, onVariableSearch }, ref) => {
     const divRef = useRef<HTMLDivElement>(null);
     const isUpdatingRef = useRef(false);
+
+    // Auto-grow: ajusta altura baseado no conteúdo
+    const adjustHeight = useCallback(() => {
+      if (!divRef.current) return;
+      
+      // Reset para medir scrollHeight real
+      divRef.current.style.height = 'auto';
+      
+      // 5 linhas visíveis: 5 * 24px (line-height) + 16px (padding) = 136px
+      const minHeight = 44;  // ~1 linha
+      const maxHeight = 160; // ~5 linhas com padding
+      
+      const newHeight = Math.min(Math.max(divRef.current.scrollHeight, minHeight), maxHeight);
+      divRef.current.style.height = `${newHeight}px`;
+      
+      // CRÍTICO: Garantir que última linha/cursor esteja visível
+      divRef.current.scrollTop = divRef.current.scrollHeight;
+    }, []);
 
     // Expor métodos compatíveis com textarea
     useImperativeHandle(ref, () => ({
@@ -86,6 +104,9 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
         const startOffset = range?.startOffset || 0;
         
         divRef.current.innerHTML = textToHTML(value);
+        
+        // Auto-resize após update externo
+        adjustHeight();
         
         // Tentar restaurar cursor
         try {
@@ -204,6 +225,9 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
         onVariableSearch?.('', false);
       }
       
+      // Auto-resize após cada input
+      adjustHeight();
+      
       setTimeout(() => {
         isUpdatingRef.current = false;
       }, 0);
@@ -298,16 +322,16 @@ export const VariableInput = forwardRef<HTMLTextAreaElement, VariableInputProps>
         onKeyDown={handleKeyDown}
         data-placeholder={placeholder}
         className={cn(
-          'min-h-[100px] max-h-[7.5rem] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm',
+          'min-h-[44px] max-h-[160px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm',
           'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           'overflow-y-auto resize-none',
           'whitespace-pre-wrap break-words',
+          'transition-[height] duration-75 ease-out',
           '[&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-muted-foreground/60',
           className
         )}
         style={{
-          minHeight: '100px',
           lineHeight: '1.5rem',
         }}
       />
