@@ -930,12 +930,12 @@ export const CopyAITab = ({
                   📱 Plataforma de Destino
                   <Badge variant="outline" className="text-[10px]">Opcional</Badge>
                 </Label>
-                <Select value={platform} onValueChange={setPlatform}>
+                <Select value={platform || "_none"} onValueChange={(val) => setPlatform(val === "_none" ? "" : val)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sem limite específico" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem limite específico</SelectItem>
+                    <SelectItem value="_none">Sem limite específico</SelectItem>
                     {PLATFORMS.map(p => (
                       <SelectItem key={p.value} value={p.value}>
                         <div className="flex items-center justify-between w-full gap-4">
