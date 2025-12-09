@@ -47,6 +47,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [focusModeContent, setFocusModeContent] = useState('');
+  const [focusModeKey, setFocusModeKey] = useState(0);
   const [showTextDetails, setShowTextDetails] = useState(false);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
@@ -212,19 +213,15 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   };
 
   const handleFocusModeOpen = () => {
-    // Capture content at the moment of click, BEFORE opening modal
     const refContent = editableRef.current?.innerHTML || '';
     const blockContent = typeof block.content === 'string' ? block.content : '';
-    
-    // Prefer ref content (most current), fallback to block.content
     const contentToUse = refContent.trim() ? refContent : blockContent;
     
-    setFocusModeContent(contentToUse);
+    console.log('[FocusMode] Opening with:', contentToUse.length, 'chars');
     
-    // Small delay to ensure state is updated before opening modal
-    requestAnimationFrame(() => {
-      setShowFocusMode(true);
-    });
+    setFocusModeContent(contentToUse);
+    setFocusModeKey(prev => prev + 1); // Force complete remount
+    setShowFocusMode(true);
   };
 
   const handleFocusModeSave = (content: string, config: typeof block.config) => {
@@ -288,6 +285,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               suppressContentEditableWarning
             />
             <FocusModeModal
+              key={`focus-${block.id}-${focusModeKey}`}
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
               content={focusModeContent}
@@ -322,6 +320,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               suppressContentEditableWarning
             />
             <FocusModeModal
+              key={`focus-${block.id}-${focusModeKey}`}
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
               content={focusModeContent}
@@ -356,6 +355,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               suppressContentEditableWarning
             />
             <FocusModeModal
+              key={`focus-${block.id}-${focusModeKey}`}
               open={showFocusMode}
               onOpenChange={setShowFocusMode}
               content={focusModeContent}

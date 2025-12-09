@@ -72,27 +72,23 @@ export const FocusModeModal = ({
     underline: false,
   });
 
+  // With key-based remount, this runs once on fresh mount
   useEffect(() => {
-    if (editorRef.current && open) {
-      // Use setTimeout to ensure modal is fully mounted before injecting content
-      const timeoutId = setTimeout(() => {
-        if (editorRef.current) {
-          const contentToLoad = content || '';
-          editorRef.current.innerHTML = contentToLoad;
-          
-          if (!contentToLoad.trim()) {
-            editorRef.current.classList.add('empty');
-          } else {
-            editorRef.current.classList.remove('empty');
-          }
-          
-          editorRef.current.focus();
-        }
-      }, 50);
+    if (editorRef.current) {
+      const contentToLoad = content || '';
+      console.log('[FocusModeModal] Mounted with:', contentToLoad.length, 'chars');
       
-      return () => clearTimeout(timeoutId);
+      editorRef.current.innerHTML = contentToLoad;
+      
+      if (!contentToLoad.trim()) {
+        editorRef.current.classList.add('empty');
+      } else {
+        editorRef.current.classList.remove('empty');
+      }
+      
+      editorRef.current.focus();
     }
-  }, [content, open]);
+  }, []); // Empty deps - component is fully remounted each time
 
   useEffect(() => {
     setLocalConfig(config || {});
