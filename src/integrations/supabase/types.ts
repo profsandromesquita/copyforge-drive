@@ -297,6 +297,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           is_template: boolean | null
+          platform: string | null
           project_id: string | null
           public_password: string | null
           selected_audience_id: string | null
@@ -327,6 +328,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
+          platform?: string | null
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
@@ -357,6 +359,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
+          platform?: string | null
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
