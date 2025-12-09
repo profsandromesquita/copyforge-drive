@@ -121,6 +121,18 @@ export const CopyAITab = ({
 
   const isLoadingCharacteristics = loadingFrameworks || loadingObjetivos || loadingEstilos || loadingFocoEmocional;
 
+  // Constantes de plataformas para limites de caracteres
+  const PLATFORMS = [
+    { value: 'x_twitter', label: 'X (Twitter)', limit: '280 chars', strictMode: true },
+    { value: 'threads', label: 'Threads', limit: '500 chars', strictMode: true },
+    { value: 'pinterest', label: 'Pinterest', limit: '500 chars', strictMode: true },
+    { value: 'instagram', label: 'Instagram', limit: '2.200 chars', strictMode: false },
+    { value: 'linkedin', label: 'LinkedIn', limit: '3.000 chars', strictMode: false },
+    { value: 'tiktok', label: 'TikTok', limit: '4.000 chars', strictMode: false },
+    { value: 'youtube', label: 'YouTube', limit: '5.000 chars', strictMode: false },
+    { value: 'facebook', label: 'Facebook', limit: '63.206 chars', strictMode: false },
+  ];
+
   // Estado para verificação de acesso Copy IA
   const [copyAIEnabled, setCopyAIEnabled] = useState<boolean | null>(null);
   const [loadingAccess, setLoadingAccess] = useState(true);
@@ -133,6 +145,7 @@ export const CopyAITab = ({
   const [objetivo, setObjetivo] = useState<string>('');
   const [estilos, setEstilos] = useState<string[]>([]);
   const [focoEmocional, setFocoEmocional] = useState<string>('');
+  const [platform, setPlatform] = useState<string>(''); // Plataforma para limites de caracteres
   const [prompt, setPrompt] = useState('');
   const [etapa, setEtapa] = useState<Etapa>(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -203,15 +216,32 @@ export const CopyAITab = ({
       if (!copyId) return;
       const {
         data: copy
-      } = await supabase.from('copies').select('selected_audience_id, selected_offer_id, selected_methodology_id').eq('id', copyId).single();
+      } = await supabase.from('copies').select('selected_audience_id, selected_offer_id, selected_methodology_id, platform').eq('id', copyId).single();
       if (copy) {
         setAudienceSegmentId(copy.selected_audience_id || '');
         setOfferId(copy.selected_offer_id || '');
         setMethodologyId(copy.selected_methodology_id || '');
+        setPlatform(copy.platform || ''); // Carregar plataforma salva
       }
     };
     loadCopyContext();
   }, [copyId]);
+
+  // Salvar platform no banco quando mudar
+  useEffect(() => {
+    if (!copyId || platform === undefined) return;
+    
+    const updatePlatform = async () => {
+      await supabase
+        .from('copies')
+        .update({ platform: platform || null })
+        .eq('id', copyId);
+    };
+    
+    // Debounce para evitar múltiplas atualizações
+    const timeout = setTimeout(updatePlatform, 500);
+    return () => clearTimeout(timeout);
+  }, [platform, copyId]);
 
   // Sincronizar com contextSettings quando mudar (fallback)
   useEffect(() => {
@@ -337,7 +367,8 @@ export const CopyAITab = ({
           projectMethodology,
           audienceSegment,
           offer,
-          copyId
+          copyId,
+          platform: platform || undefined
         },
         headers: {
           Authorization: `Bearer ${accessToken}`
@@ -459,7 +490,8 @@ export const CopyAITab = ({
           projectMethodology,
           audienceSegment,
           offer,
-          copyId
+          copyId,
+          platform: platform || undefined
         },
         headers: {
           Authorization: `Bearer ${accessToken}`
@@ -890,6 +922,37 @@ export const CopyAITab = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Seletor de Plataforma - Apenas para tipo Conteúdo */}
+            {copyType === 'conteudo' && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  📱 Plataforma de Destino
+                  <Badge variant="outline" className="text-[10px]">Opcional</Badge>
+                </Label>
+                <Select value={platform} onValueChange={setPlatform}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sem limite específico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sem limite específico</SelectItem>
+                    {PLATFORMS.map(p => (
+                      <SelectItem key={p.value} value={p.value}>
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <span>{p.label}</span>
+                          <span className="text-xs text-muted-foreground">({p.limit})</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {platform && PLATFORMS.find(p => p.value === platform)?.strictMode && (
+                  <p className="text-xs text-amber-500 flex items-center gap-1">
+                    ⚠️ Modo conciso ativado - limite de caracteres rigoroso
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="pt-2">
               <Button onClick={handleGenerateSystemPrompt} disabled={isGeneratingSystemPrompt} className="w-full rounded-full shadow-sm hover:shadow-md transition-shadow">

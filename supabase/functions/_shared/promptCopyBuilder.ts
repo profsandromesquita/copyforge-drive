@@ -4,6 +4,8 @@
  *                    prompt_Oferta + prompt_Objetivo + prompt_Estilos + prompt_FocoEmocional
  */
 
+import { buildPlatformConstraint } from './platformLimits.ts';
+
 interface CopyContext {
   copyType: string;
   framework?: string;
@@ -12,6 +14,7 @@ interface CopyContext {
   objective?: string;
   styles?: string[];
   emotionalFocus?: string;
+  platform?: string; // Plataforma de destino para limites de caracteres
 }
 
 export function buildCopyPrompt(context: CopyContext): string {
@@ -172,6 +175,15 @@ export function buildCopyPrompt(context: CopyContext): string {
   // prompt_FocoEmocional (opcional)
   if (context.emotionalFocus) {
     parts.push(`## Foco Emocional\n${getEmotionalFocusDescription(context.emotionalFocus)}`);
+  }
+
+  // ÚLTIMA COISA: Restrição de plataforma (Negative Constraint)
+  // Adicionada ao final para ter prioridade sobre outras instruções
+  if (context.platform) {
+    const platformConstraint = buildPlatformConstraint(context.platform);
+    if (platformConstraint) {
+      parts.push(platformConstraint);
+    }
   }
 
   return parts.join('\n\n');

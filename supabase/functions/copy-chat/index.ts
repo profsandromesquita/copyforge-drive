@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { buildPlatformConstraint } from '../_shared/platformLimits.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -170,10 +171,10 @@ serve(async (req) => {
       selectionContext = selectionMarker + parts[1];
     }
 
-    // Buscar dados da copy incluindo system_instruction para herança do Copy IA
+    // Buscar dados da copy incluindo system_instruction para herança do Copy IA e platform para limites
     const { data: copy, error: copyError } = await supabase
       .from('copies')
-      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, selected_methodology_id, project_id, system_instruction')
+      .select('id, workspace_id, title, copy_type, sessions, selected_audience_id, selected_offer_id, selected_methodology_id, project_id, system_instruction, platform')
       .eq('id', copyId)
       .single();
 
@@ -375,7 +376,8 @@ serve(async (req) => {
         methodology,
         variableContextText,
         selectionContext,
-        userMessage: cleanMessage // ✅ Passar mensagem para detecção de quantidade
+        userMessage: cleanMessage, // ✅ Passar mensagem para detecção de quantidade
+        platform: copy.platform // ✅ Plataforma para limites de caracteres
       }
     );
     
@@ -1143,6 +1145,7 @@ interface DynamicPromptParams {
   variableContextText: string;
   selectionContext: string;
   userMessage: string; // ✅ Mensagem do usuário para detectar quantidade de itens
+  platform?: string; // Plataforma de destino para limites de caracteres
 }
 
 /**
@@ -1279,6 +1282,15 @@ ${copyContext}
 3. NÃO use formatação ### para respostas conversacionais
 4. Seja objetivo e útil
 `;
+    }
+
+    // ✅ RESTRIÇÃO DE PLATAFORMA (Negative Constraint - adicionada ao FINAL)
+    if (params.platform) {
+      const platformConstraint = buildPlatformConstraint(params.platform);
+      if (platformConstraint) {
+        enhancedPrompt += '\n\n' + platformConstraint;
+        console.log(`📱 Restrição de plataforma injetada: ${params.platform}`);
+      }
     }
 
     return enhancedPrompt;
@@ -1466,6 +1478,15 @@ ${copyContext}
   // Instruções de intent (incluem regras de formatação para insert/replace)
   // Passa userMessage para detectar quantidade de itens solicitados
   enrichedPrompt += buildIntentInstructions(intent, userMessage);
+
+  // ✅ RESTRIÇÃO DE PLATAFORMA (Negative Constraint - adicionada ao FINAL)
+  if (params.platform) {
+    const platformConstraint = buildPlatformConstraint(params.platform);
+    if (platformConstraint) {
+      enrichedPrompt += '\n\n' + platformConstraint;
+      console.log(`📱 Restrição de plataforma injetada via enrichWithDynamicContext: ${params.platform}`);
+    }
+  }
 
   return enrichedPrompt;
 }

@@ -396,10 +396,10 @@ Deno.serve(async (req) => {
     console.log("✅ Usuário autenticado:", user.id);
 
     // Extrair parâmetros enviados pelo frontend
-    const { copyType, framework, objective, styles, emotionalFocus, projectIdentity, projectMethodology, audienceSegment, offer, copyId } =
+    const { copyType, framework, objective, styles, emotionalFocus, projectIdentity, projectMethodology, audienceSegment, offer, copyId, platform } =
       await req.json();
 
-    console.log("📋 Generating system prompt with params:", { copyType, framework, objective, styles, emotionalFocus });
+    console.log("📋 Generating system prompt with params:", { copyType, framework, objective, styles, emotionalFocus, platform });
 
     // Construir copyContext a partir dos parâmetros
     const copyContext = {
@@ -410,6 +410,7 @@ Deno.serve(async (req) => {
       objective,
       styles,
       emotionalFocus,
+      platform, // Plataforma de destino para limites de caracteres
     };
 
     // Construir prompt_Projeto (se projectIdentity foi fornecido)
