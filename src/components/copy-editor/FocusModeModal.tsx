@@ -1,5 +1,10 @@
 import { useRef, useEffect, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
+// Accessibility wrapper for Radix UI
+const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
+  <span className="sr-only">{children}</span>
+);
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -69,8 +74,8 @@ export const FocusModeModal = ({
 
   useEffect(() => {
     if (editorRef.current && open) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
+      // Use setTimeout to ensure modal is fully mounted before injecting content
+      const timeoutId = setTimeout(() => {
         if (editorRef.current) {
           const contentToLoad = content || '';
           editorRef.current.innerHTML = contentToLoad;
@@ -83,7 +88,9 @@ export const FocusModeModal = ({
           
           editorRef.current.focus();
         }
-      });
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [content, open]);
 
@@ -189,6 +196,10 @@ export const FocusModeModal = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-full w-screen h-screen p-0 gap-0">
+          <VisuallyHidden>
+            <DialogTitle>Modo Foco - Editor de Bloco</DialogTitle>
+            <DialogDescription>Edite o conteúdo do bloco em tela cheia</DialogDescription>
+          </VisuallyHidden>
           {/* Toolbar */}
           <div className="sticky top-0 z-50 bg-background border-b">
             <div className="flex items-center justify-between px-6 py-4">
@@ -384,6 +395,10 @@ export const FocusModeModal = ({
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
         <DialogContent>
+          <VisuallyHidden>
+            <DialogTitle>Inserir Link</DialogTitle>
+            <DialogDescription>Adicione uma URL ao texto selecionado</DialogDescription>
+          </VisuallyHidden>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="focus-link-url">URL</Label>
