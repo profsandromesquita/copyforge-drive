@@ -31,6 +31,16 @@ const COPY_TYPE_TO_PROMPT_KEY: Record<string, string> = {
 };
 
 /**
+ * Valida se uma string é um UUID válido (v4 format)
+ * Usado para evitar "vazamento de contexto" quando IDs inválidos estão salvos
+ */
+function isValidUUID(str: string | null | undefined): boolean {
+  if (!str) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+/**
  * Busca prompt especializado de OTIMIZAÇÃO ou VARIAÇÃO do banco
  * 
  * Esses prompts contêm instruções ricas de copywriting (clareza radical, 
@@ -200,34 +210,44 @@ serve(async (req) => {
           keywords: projectData.keywords,
         };
 
-        if (copy.selected_audience_id && Array.isArray(projectData.audience_segments)) {
+        // ✅ GUARDA DE CONTEXTO: Só busca audience se ID for UUID válido
+        if (copy.selected_audience_id && isValidUUID(copy.selected_audience_id) && Array.isArray(projectData.audience_segments)) {
           audienceSegment = projectData.audience_segments.find((seg: any) => seg.id === copy.selected_audience_id);
+          if (audienceSegment) {
+            console.log('✅ Público-alvo carregado:', audienceSegment.who_is?.substring(0, 30));
+          }
+        } else if (copy.selected_audience_id && !isValidUUID(copy.selected_audience_id)) {
+          console.warn('⚠️ selected_audience_id inválido (não é UUID):', copy.selected_audience_id);
         }
 
-        if (copy.selected_offer_id && Array.isArray(projectData.offers)) {
+        // ✅ GUARDA DE CONTEXTO: Só busca offer se ID for UUID válido
+        if (copy.selected_offer_id && isValidUUID(copy.selected_offer_id) && Array.isArray(projectData.offers)) {
           offer = projectData.offers.find((off: any) => off.id === copy.selected_offer_id);
+          if (offer) {
+            console.log('✅ Oferta carregada:', offer.name?.substring(0, 30));
+          }
+        } else if (copy.selected_offer_id && !isValidUUID(copy.selected_offer_id)) {
+          console.warn('⚠️ selected_offer_id inválido (não é UUID):', copy.selected_offer_id);
         }
 
-        if (copy.selected_methodology_id && projectData.methodology) {
+        // ✅ GUARDA DE CONTEXTO: Só busca methodology se ID for UUID válido
+        if (copy.selected_methodology_id && isValidUUID(copy.selected_methodology_id) && projectData.methodology) {
           const methodologies = Array.isArray(projectData.methodology) 
             ? projectData.methodology 
             : [projectData.methodology];
           
           methodology = methodologies.find((meth: any) => meth.id === copy.selected_methodology_id);
           
-          if (!methodology) {
+          if (methodology) {
+            console.log('✅ Metodologia carregada:', methodology.name?.substring(0, 30));
+          } else {
             console.warn('⚠️ Metodologia selecionada não encontrada no projeto:', copy.selected_methodology_id);
           }
-        } else if (projectData.methodology && !copy.selected_methodology_id) {
-          const methodologies = Array.isArray(projectData.methodology) 
-            ? projectData.methodology 
-            : [projectData.methodology];
-          
-          if (methodologies.length === 1) {
-            methodology = methodologies[0];
-            console.log('ℹ️ Usando metodologia única do projeto (sem seleção explícita)');
-          }
+        } else if (copy.selected_methodology_id && !isValidUUID(copy.selected_methodology_id)) {
+          console.warn('⚠️ selected_methodology_id inválido (não é UUID):', copy.selected_methodology_id);
         }
+        // ✅ NÃO FAZ MAIS FALLBACK AUTOMÁTICO PARA METODOLOGIA ÚNICA
+        // O usuário DEVE selecionar explicitamente
       }
     }
 
@@ -953,6 +973,16 @@ function formatValue(value: any): string {
   return String(value);
 }
 
+/**
+ * Mapeia groupKey da variável para o nome amigável do contexto
+ */
+const CONTEXT_FRIENDLY_NAMES: Record<string, string> = {
+  audienceSegment: 'Público-alvo',
+  offer: 'Oferta',
+  methodology: 'Metodologia',
+  projectIdentity: 'Identidade do Projeto'
+};
+
 function parseVariablesInMessage(
   message: string, 
   context: VariableContext
@@ -980,7 +1010,24 @@ function parseVariablesInMessage(
     const contextKey = pathParts[0] as keyof VariableContext;
     const remainingPath = pathParts.slice(1).join('.');
     
+    // ✅ GUARDA DE CONTEXTO: Verificar se o contexto foi explicitamente selecionado
     const contextObj = context[contextKey];
+    
+    // Se o contexto requerido é null/undefined, significa que NÃO foi selecionado
+    if (contextObj === null || contextObj === undefined) {
+      const friendlyName = CONTEXT_FRIENDLY_NAMES[contextKey] || contextKey;
+      missingVariables.push({ 
+        variable: varName, 
+        label: `${definition.label} (${friendlyName} não selecionado)` 
+      });
+      enhancedMessage = enhancedMessage.replace(
+        match,
+        `[⚠️ Selecione um ${friendlyName} nas configurações para usar #${varName}]`
+      );
+      console.log(`🚫 Variável #${varName} bloqueada: ${friendlyName} não selecionado`);
+      continue;
+    }
+    
     const value = getNestedValue(contextObj, remainingPath);
     
     if (value !== undefined && value !== null && value !== '') {

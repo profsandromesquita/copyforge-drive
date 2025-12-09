@@ -151,14 +151,17 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="audience" className="text-sm font-medium">Público-alvo</Label>
               <Select 
-                value={audienceSegmentId} 
-                onValueChange={(value) => handleContextChange('audience', value)}
+                value={audienceSegmentId || '_none'} 
+                onValueChange={(value) => handleContextChange('audience', value === '_none' ? '' : value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="audience" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhum selecionado" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_none" className="text-sm text-muted-foreground">
+                    Nenhum selecionado
+                  </SelectItem>
                   {audienceSegments.length === 0 ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhum público configurado
@@ -178,14 +181,17 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="offer" className="text-sm font-medium">Oferta</Label>
               <Select 
-                value={offerId} 
-                onValueChange={(value) => handleContextChange('offer', value)}
+                value={offerId || '_none'} 
+                onValueChange={(value) => handleContextChange('offer', value === '_none' ? '' : value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="offer" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_none" className="text-sm text-muted-foreground">
+                    Nenhuma selecionada
+                  </SelectItem>
                   {offers.length === 0 ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhuma oferta configurada
@@ -205,14 +211,17 @@ export const ContextSettingsDropdown = ({ onContextChange, initialContext }: Con
             <div className="space-y-2">
               <Label htmlFor="methodology" className="text-sm font-medium">Metodologia</Label>
               <Select 
-                value={methodologyId} 
-                onValueChange={(value) => handleContextChange('methodology', value)}
+                value={methodologyId || '_none'} 
+                onValueChange={(value) => handleContextChange('methodology', value === '_none' ? '' : value)}
                 disabled={isSaving}
               >
                 <SelectTrigger id="methodology" className="h-10 text-sm">
                   <SelectValue placeholder="Nenhuma selecionada" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_none" className="text-sm text-muted-foreground">
+                    Nenhuma selecionada
+                  </SelectItem>
                   {methodologies.length === 0 ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
                       Nenhuma metodologia configurada
