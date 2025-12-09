@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 // Accessibility wrapper for Radix UI
@@ -72,23 +72,26 @@ export const FocusModeModal = ({
     underline: false,
   });
 
-  // With key-based remount, this runs once on fresh mount
-  useEffect(() => {
-    if (editorRef.current) {
-      const contentToLoad = content || '';
-      console.log('[FocusModeModal] Mounted with:', contentToLoad.length, 'chars');
+  // Callback ref - injects content immediately when DOM node is attached
+  const editorRefCallback = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Store ref for later use (handleSave, etc.)
+      editorRef.current = node;
       
-      editorRef.current.innerHTML = contentToLoad;
+      const contentToLoad = content || '';
+      console.log('[FocusModeModal] Callback ref fired with:', contentToLoad.length, 'chars');
+      
+      node.innerHTML = contentToLoad;
       
       if (!contentToLoad.trim()) {
-        editorRef.current.classList.add('empty');
+        node.classList.add('empty');
       } else {
-        editorRef.current.classList.remove('empty');
+        node.classList.remove('empty');
       }
       
-      editorRef.current.focus();
+      node.focus();
     }
-  }, []); // Empty deps - component is fully remounted each time
+  }, [content]);
 
   useEffect(() => {
     setLocalConfig(config || {});
@@ -363,7 +366,7 @@ export const FocusModeModal = ({
           <div className="flex-1 overflow-y-auto bg-muted/10">
             <div className="max-w-4xl mx-auto px-8 py-16">
               <div
-                ref={editorRef}
+                ref={editorRefCallback}
                 contentEditable
                 onPaste={handlePaste}
                 className={`
