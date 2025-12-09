@@ -251,7 +251,11 @@ serve(async (req) => {
       }
     }
 
-    console.log('📋 Contexto resolvido:', {
+    // ✅ GUARDA MESTRE: Só injeta contexto do projeto se houver seleção explícita
+    const hasExplicitContextSelection = !!(audienceSegment || offer || methodology);
+
+    console.log('🔐 Guarda de Contexto:', {
+      hasExplicitContextSelection,
       hasProjectIdentity: !!projectIdentity,
       hasAudienceSegment: !!audienceSegment,
       hasOffer: !!offer,
@@ -262,6 +266,13 @@ serve(async (req) => {
         methodology: copy.selected_methodology_id
       }
     });
+
+    // ✅ CORREÇÃO CRÍTICA: Se NENHUM contexto foi selecionado, NÃO injeta projectIdentity
+    // Isso previne "vazamento de contexto" onde dados do projeto aparecem sem seleção explícita
+    if (!hasExplicitContextSelection && projectIdentity) {
+      console.log('⛔ GUARDA ATIVADA: Nenhum contexto selecionado - projectIdentity será ignorado para evitar vazamento');
+      projectIdentity = null;
+    }
 
     // Buscar histórico de gerações
     const { data: generationHistory, error: genHistoryError } = await supabase
