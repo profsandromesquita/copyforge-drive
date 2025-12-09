@@ -46,7 +46,6 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const { user } = useAuth();
   const editableRef = useRef<HTMLDivElement>(null);
   const [showFocusMode, setShowFocusMode] = useState(false);
-  const [focusModeContent, setFocusModeContent] = useState('');
   const [showTextDetails, setShowTextDetails] = useState(false);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
@@ -212,11 +211,11 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   };
 
   const handleFocusModeOpen = () => {
-    // Pegar o conteúdo atual do editableRef antes de abrir o modal
-    const currentContent = editableRef.current?.innerHTML || (typeof block.content === 'string' ? block.content : '');
-    setFocusModeContent(currentContent);
     setShowFocusMode(true);
   };
+
+  // Compute content for focus mode directly, avoiding async state issues
+  const focusModeContent = editableRef.current?.innerHTML || (typeof block.content === 'string' ? block.content : '');
 
   const handleFocusModeSave = (content: string, config: typeof block.config) => {
     updateBlock(block.id, { content, config });

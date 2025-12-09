@@ -69,21 +69,21 @@ export const FocusModeModal = ({
 
   useEffect(() => {
     if (editorRef.current && open) {
-      // Garantir que o conteúdo seja carregado, mesmo que seja vazio
-      const contentToLoad = content || '';
-      editorRef.current.innerHTML = contentToLoad;
-      
-      // Adicionar placeholder visual se estiver vazio
-      if (!contentToLoad.trim()) {
-        editorRef.current.classList.add('empty');
-      } else {
-        editorRef.current.classList.remove('empty');
-      }
-      
-      // Focar com um pequeno delay para garantir que o modal esteja montado
-      setTimeout(() => {
-        editorRef.current?.focus();
-      }, 100);
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (editorRef.current) {
+          const contentToLoad = content || '';
+          editorRef.current.innerHTML = contentToLoad;
+          
+          if (!contentToLoad.trim()) {
+            editorRef.current.classList.add('empty');
+          } else {
+            editorRef.current.classList.remove('empty');
+          }
+          
+          editorRef.current.focus();
+        }
+      });
     }
   }, [content, open]);
 
