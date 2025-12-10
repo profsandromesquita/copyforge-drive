@@ -53,19 +53,39 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const [showTextDetails, setShowTextDetails] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   
-  // AUTO-CURA Frontend: Converter string para array se necessário
-  const [listItems, setListItems] = useState<string[]>(() => {
-    if (Array.isArray(block.content)) return block.content;
-    if (typeof block.content === 'string' && block.content.includes('\n')) {
-      // Fallback: converter string com quebras de linha para array
-      const items = block.content.split('\n')
+  // Helper function para sanitizar conteúdo de lista
+  const sanitizeListContent = (content: unknown): string[] => {
+    if (Array.isArray(content)) return content;
+    if (typeof content === 'string' && content.includes('\n')) {
+      const items = content.split('\n')
         .map(item => item.replace(/^[\*\-\•\→]\s*/, '').replace(/^\d+[\.\)]\s*/, '').trim())
         .filter(item => item.length > 0);
-      console.log(`🔧 Frontend AUTO-CURA: Lista convertida de string para ${items.length} itens`);
       return items.length > 0 ? items : [''];
     }
-    return block.content ? [String(block.content)] : [''];
+    return content ? [String(content)] : [''];
+  };
+
+  // AUTO-CURA Frontend: Converter string para array se necessário
+  const [listItems, setListItems] = useState<string[]>(() => {
+    const items = sanitizeListContent(block.content);
+    if (typeof block.content === 'string' && block.content.includes('\n')) {
+      console.log(`🔧 Frontend AUTO-CURA: Lista convertida de string para ${items.length} itens`);
+    }
+    return items;
   });
+
+  // Sincronizar listItems quando block.content mudar via props (ex: Substituir Seleção)
+  useEffect(() => {
+    if (block.type !== 'list') return;
+    
+    const newListItems = sanitizeListContent(block.content);
+    
+    // Só atualizar se realmente mudou para evitar loops
+    if (JSON.stringify(newListItems) !== JSON.stringify(listItems)) {
+      console.log('🔄 [ContentBlock] Sincronizando listItems:', newListItems.length, 'itens');
+      setListItems(newListItems);
+    }
+  }, [block.content, block.type]);
 
   // Load content into contentEditable div
   useEffect(() => {
