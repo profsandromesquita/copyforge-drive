@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@/types/copy-editor';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ interface DiscoverCopy {
   title: string;
   sessions: Session[];
   copy_count: number;
+  likes_count: number;
   created_by: string;
   creator: {
     name: string;
@@ -18,10 +19,18 @@ interface DiscoverCopy {
 export const useDiscover = () => {
   const [copies, setCopies] = useState<DiscoverCopy[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedCopyIds, setLikedCopyIds] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDiscoverCopies();
+    fetchCurrentUser();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUserId(user?.id || null);
+  };
 
   const fetchDiscoverCopies = async () => {
     try {
@@ -34,6 +43,7 @@ export const useDiscover = () => {
           copy_type,
           sessions,
           copy_count,
+          likes_count,
           created_by,
           created_at,
           profiles!copies_created_by_fkey (
@@ -52,6 +62,7 @@ export const useDiscover = () => {
         title: copy.title,
         sessions: copy.sessions as Session[],
         copy_count: copy.copy_count || 0,
+        likes_count: copy.likes_count || 0,
         created_by: copy.created_by,
         creator: {
           name: copy.profiles?.name || 'Usuário',
@@ -60,6 +71,21 @@ export const useDiscover = () => {
       }));
 
       setCopies(formattedCopies);
+      
+      // Fetch user likes for these copies
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && data.length > 0) {
+        const copyIds = data.map((c: any) => c.id);
+        const { data: userLikes } = await supabase
+          .from('copy_likes')
+          .select('copy_id')
+          .eq('user_id', user.id)
+          .in('copy_id', copyIds);
+        
+        if (userLikes) {
+          setLikedCopyIds(new Set(userLikes.map(l => l.copy_id)));
+        }
+      }
     } catch (error) {
       console.error('Error fetching discover copies:', error);
       toast.error('Erro ao carregar copies');
@@ -67,6 +93,74 @@ export const useDiscover = () => {
       setLoading(false);
     }
   };
+
+  const toggleLike = useCallback(async (copyId: string) => {
+    if (!currentUserId) {
+      toast.error('Faça login para curtir');
+      return;
+    }
+
+    const isCurrentlyLiked = likedCopyIds.has(copyId);
+
+    // Optimistic update
+    setCopies(prev => prev.map(c =>
+      c.id === copyId
+        ? { ...c, likes_count: c.likes_count + (isCurrentlyLiked ? -1 : 1) }
+        : c
+    ));
+    setLikedCopyIds(prev => {
+      const next = new Set(prev);
+      if (isCurrentlyLiked) {
+        next.delete(copyId);
+      } else {
+        next.add(copyId);
+      }
+      return next;
+    });
+
+    try {
+      if (isCurrentlyLiked) {
+        const { error } = await supabase
+          .from('copy_likes')
+          .delete()
+          .eq('copy_id', copyId)
+          .eq('user_id', currentUserId);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('copy_likes')
+          .insert({
+            copy_id: copyId,
+            user_id: currentUserId
+          });
+        
+        if (error) throw error;
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      console.error('Error toggling like:', error);
+      setCopies(prev => prev.map(c =>
+        c.id === copyId
+          ? { ...c, likes_count: c.likes_count + (isCurrentlyLiked ? 1 : -1) }
+          : c
+      ));
+      setLikedCopyIds(prev => {
+        const next = new Set(prev);
+        if (isCurrentlyLiked) {
+          next.add(copyId);
+        } else {
+          next.delete(copyId);
+        }
+        return next;
+      });
+      toast.error('Erro ao processar curtida');
+    }
+  }, [currentUserId, likedCopyIds]);
+
+  const isLikedByUser = useCallback((copyId: string) => {
+    return likedCopyIds.has(copyId);
+  }, [likedCopyIds]);
 
   const copyCopy = async (
     copyId: string,
@@ -179,5 +273,7 @@ export const useDiscover = () => {
     copyCopy,
     deleteCopy,
     moveCopy,
+    toggleLike,
+    isLikedByUser,
   };
 };

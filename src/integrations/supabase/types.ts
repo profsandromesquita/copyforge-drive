@@ -297,6 +297,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           is_template: boolean | null
+          likes_count: number | null
           platform: string | null
           project_id: string | null
           public_password: string | null
@@ -328,6 +329,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
+          likes_count?: number | null
           platform?: string | null
           project_id?: string | null
           public_password?: string | null
@@ -359,6 +361,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           is_template?: boolean | null
+          likes_count?: number | null
           platform?: string | null
           project_id?: string | null
           public_password?: string | null
@@ -500,6 +503,35 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      copy_likes: {
+        Row: {
+          copy_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          copy_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          copy_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copy_likes_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "copies"
             referencedColumns: ["id"]
           },
         ]

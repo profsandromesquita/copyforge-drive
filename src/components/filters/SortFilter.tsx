@@ -1,4 +1,4 @@
-import { SortAscending } from "phosphor-react";
+import { SortAscending, Heart } from "phosphor-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,9 +6,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
-export type SortType = 'popular' | 'recent';
+export type SortType = 'popular' | 'recent' | 'most_liked';
 
 interface SortFilterProps {
   selectedSort: SortType;
@@ -17,7 +16,15 @@ interface SortFilterProps {
 
 export const SortFilter = ({ selectedSort, onSortChange }: SortFilterProps) => {
   const getLabel = () => {
-    return selectedSort === 'popular' ? 'Populares' : 'Recentes';
+    switch (selectedSort) {
+      case 'popular':
+        return 'Populares';
+      case 'most_liked':
+        return 'Mais Curtidas';
+      case 'recent':
+      default:
+        return 'Recentes';
+    }
   };
 
   return (
@@ -34,6 +41,13 @@ export const SortFilter = ({ selectedSort, onSortChange }: SortFilterProps) => {
           className={selectedSort === 'popular' ? 'bg-accent' : ''}
         >
           Populares
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => onSortChange('most_liked')}
+          className={selectedSort === 'most_liked' ? 'bg-accent' : ''}
+        >
+          <Heart size={16} className="mr-2" />
+          Mais Curtidas
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => onSortChange('recent')}

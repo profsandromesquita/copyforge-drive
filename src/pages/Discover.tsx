@@ -20,7 +20,7 @@ import { UserMenu } from '@/components/layout/UserMenu';
 const Discover = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
-  const { copies, loading, copyCopy, deleteCopy, moveCopy } = useDiscover();
+  const { copies, loading, copyCopy, deleteCopy, moveCopy, toggleLike, isLikedByUser } = useDiscover();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
@@ -92,11 +92,14 @@ const Discover = () => {
       return true;
     })
     .sort((a: any, b: any) => {
-      if (selectedSort === 'popular') {
-        return (b.copy_count || 0) - (a.copy_count || 0);
-      } else {
-        // Sort by creation date for recents
-        return new Date(b.sessions?.[0]?.created_at || 0).getTime() - new Date(a.sessions?.[0]?.created_at || 0).getTime();
+      switch (selectedSort) {
+        case 'popular':
+          return (b.copy_count || 0) - (a.copy_count || 0);
+        case 'most_liked':
+          return (b.likes_count || 0) - (a.likes_count || 0);
+        case 'recent':
+        default:
+          return new Date(b.sessions?.[0]?.created_at || 0).getTime() - new Date(a.sessions?.[0]?.created_at || 0).getTime();
       }
     });
 
@@ -168,6 +171,8 @@ const Discover = () => {
                     onCopy={handleCopy}
                     onDelete={deleteCopy}
                     onMove={moveCopy}
+                    onLike={toggleLike}
+                    isLikedByUser={isLikedByUser(copy.id)}
                     isCopying={isCopying}
                     copyingId={copyingId}
                   />
