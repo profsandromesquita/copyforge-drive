@@ -52,9 +52,20 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const [focusModeKey, setFocusModeKey] = useState(0);
   const [showTextDetails, setShowTextDetails] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [listItems, setListItems] = useState<string[]>(
-    Array.isArray(block.content) ? block.content : ['']
-  );
+  
+  // AUTO-CURA Frontend: Converter string para array se necessário
+  const [listItems, setListItems] = useState<string[]>(() => {
+    if (Array.isArray(block.content)) return block.content;
+    if (typeof block.content === 'string' && block.content.includes('\n')) {
+      // Fallback: converter string com quebras de linha para array
+      const items = block.content.split('\n')
+        .map(item => item.replace(/^[\*\-\•\→]\s*/, '').replace(/^\d+[\.\)]\s*/, '').trim())
+        .filter(item => item.length > 0);
+      console.log(`🔧 Frontend AUTO-CURA: Lista convertida de string para ${items.length} itens`);
+      return items.length > 0 ? items : [''];
+    }
+    return block.content ? [String(block.content)] : [''];
+  });
 
   // Load content into contentEditable div
   useEffect(() => {

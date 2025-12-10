@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { buildContextualSystemInstruction, getSystemInstructionText } from '../_shared/systemInstructionBuilder.ts';
 import { getFullPrompt } from '../_shared/promptHelper.ts';
+import { sanitizeListContent } from '../_shared/listSanitizer.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -319,31 +320,33 @@ serve(async (req) => {
         for (let i = 0; i < session.blocks.length; i++) {
           const block = session.blocks[i];
           
-          // Validar blocos de lista
+          // Validar blocos de lista com AUTO-CURA
           if (block.type === 'list') {
-            const content = block.content;
+            const originalContent = block.content;
+            const wasString = typeof originalContent === 'string';
             
-            // Se content não é array ou está vazio, marcar como problema
-            if (!Array.isArray(content) || content.length === 0) {
-              console.warn(`⚠️ Lista vazia detectada no bloco ${block.id}`);
-              block.content = ['[Conteúdo da lista não foi gerado corretamente - regenere a copy]'];
-              issuesFound++;
-              continue;
+            // === AUTO-CURA: Converter string para array ANTES de validar ===
+            const sanitizedContent = sanitizeListContent(originalContent);
+            
+            if (wasString && sanitizedContent.length > 0) {
+              console.log(`✅ AUTO-CURA: Lista ${block.id} convertida de string para array com ${sanitizedContent.length} itens`);
             }
             
             // Filtrar itens que são placeholders
-            const validItems = content.filter((item: string) => {
+            const validItems = sanitizedContent.filter((item: string) => {
               if (typeof item !== 'string' || item.length < 10) return false;
               return !PLACEHOLDER_PATTERNS.some(pattern => pattern.test(item.trim()));
             });
             
-            if (validItems.length < content.length) {
-              console.warn(`⚠️ Placeholders removidos da lista ${block.id}: ${content.length - validItems.length} itens`);
-              issuesFound += content.length - validItems.length;
+            if (validItems.length < sanitizedContent.length) {
+              console.warn(`⚠️ Placeholders removidos da lista ${block.id}: ${sanitizedContent.length - validItems.length} itens`);
+              issuesFound += sanitizedContent.length - validItems.length;
             }
             
             if (validItems.length === 0) {
-              block.content = ['[Itens da lista não foram gerados corretamente - regenere a copy]'];
+              console.warn(`⚠️ Lista completamente vazia após sanitização no bloco ${block.id}`);
+              block.content = ['[Conteúdo da lista não foi gerado - tente regenerar]'];
+              issuesFound++;
             } else {
               block.content = validItems;
             }
