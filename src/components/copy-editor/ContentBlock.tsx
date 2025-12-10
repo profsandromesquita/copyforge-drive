@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, ChatCircle } from 'phosphor-react';
+import { DotsSixVertical, DotsThree, Trash, Copy as CopyIcon, Check, ArrowRight, Star, Heart, DownloadSimple, Play, ShoppingCart, Plus, ChatCircle, ClipboardText } from 'phosphor-react';
 import { Sparkles, Info } from 'lucide-react';
 import { Block } from '@/types/copy-editor';
 import { CommentsButton } from './CommentsButton';
@@ -25,6 +25,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { FormattingToolbar } from './FormattingToolbar';
 import { FocusModeModal } from './FocusModeModal';
 import { handlePaste } from '@/lib/paste-utils';
+import { extractCleanText, copyToClipboard } from '@/lib/clipboard-utils';
+import { toast } from 'sonner';
 
 interface ContentBlockProps {
   block: Block;
@@ -49,6 +51,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const [focusModeContent, setFocusModeContent] = useState('');
   const [focusModeKey, setFocusModeKey] = useState(0);
   const [showTextDetails, setShowTextDetails] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [listItems, setListItems] = useState<string[]>(
     Array.isArray(block.content) ? block.content : ['']
   );
@@ -945,6 +948,29 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     });
   };
 
+  const handleCopyContent = async () => {
+    const content = Array.isArray(block.content) 
+      ? block.content 
+      : (editableRef.current?.innerHTML || block.content);
+    
+    const cleanText = extractCleanText(content, block.type);
+    
+    if (!cleanText) {
+      toast.error('Nenhum conteúdo para copiar');
+      return;
+    }
+    
+    const success = await copyToClipboard(cleanText);
+    
+    if (success) {
+      setIsCopied(true);
+      toast.success('Copiado para a área de transferência!');
+      setTimeout(() => setIsCopied(false), 2000);
+    } else {
+      toast.error('Falha ao copiar. Tente novamente.');
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -991,6 +1017,20 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
               onDeleteComment={handleDeleteComment}
             />
 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleCopyContent}
+              aria-label="Copiar conteúdo do bloco"
+            >
+              {isCopied ? (
+                <Check size={20} className="text-green-500" />
+              ) : (
+                <ClipboardText size={20} />
+              )}
+            </Button>
+
           <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -1029,6 +1069,10 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                 )}
               </>
             )}
+            <DropdownMenuItem onClick={handleCopyContent}>
+              <ClipboardText size={16} className="mr-2" />
+              Copiar conteúdo
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => duplicateBlock(block.id)}>
               <CopyIcon size={16} className="mr-2" />
               Duplicar
