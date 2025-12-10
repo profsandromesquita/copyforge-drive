@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2 } from 'lucide-react';
+import { Eye, Copy as CopyIcon, MoreVertical, Trash, FolderInput, Loader2, Heart } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,6 +17,7 @@ import {
 import MoveModal from '@/components/drive/MoveModal';
 import { useAuth } from '@/hooks/useAuth';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
+import { cn } from '@/lib/utils';
 
 interface DiscoverCardProps {
   copy: {
@@ -24,6 +25,7 @@ interface DiscoverCardProps {
     title: string;
     sessions: Session[];
     copy_count: number;
+    likes_count: number;
     copy_type?: string;
     created_by: string;
     creator: {
@@ -34,6 +36,8 @@ interface DiscoverCardProps {
   onCopy: (copyId: string) => void;
   onDelete?: (copyId: string) => Promise<void> | void;
   onMove?: (copyId: string, targetFolderId: string | null) => Promise<void> | void;
+  onLike?: (copyId: string) => void;
+  isLikedByUser?: boolean;
   isCopying?: boolean;
   copyingId?: string | null;
 }
@@ -54,6 +58,8 @@ export const DiscoverCard = memo(({
   onCopy, 
   onDelete, 
   onMove,
+  onLike,
+  isLikedByUser = false,
   isCopying = false,
   copyingId = null,
 }: DiscoverCardProps) => {
@@ -190,9 +196,32 @@ export const DiscoverCard = memo(({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{copy.creator.name}</p>
               </div>
-              <Badge variant="secondary" className="shrink-0">
-                {copy.copy_count} {copy.copy_count === 1 ? 'cópia' : 'cópias'}
-              </Badge>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Like Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLike?.(copy.id);
+                  }}
+                  className="flex items-center gap-1 group"
+                  aria-label={isLikedByUser ? 'Remover curtida' : 'Curtir copy'}
+                >
+                  <Heart
+                    className={cn(
+                      "h-5 w-5 transition-all duration-200",
+                      isLikedByUser
+                        ? "fill-primary text-primary scale-110"
+                        : "text-muted-foreground group-hover:text-primary group-hover:scale-110"
+                    )}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {copy.likes_count || 0}
+                  </span>
+                </button>
+                <Badge variant="secondary">
+                  {copy.copy_count} {copy.copy_count === 1 ? 'cópia' : 'cópias'}
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
