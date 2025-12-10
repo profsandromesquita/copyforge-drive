@@ -46,7 +46,6 @@ export const SortFilter = ({ selectedSort, onSortChange }: SortFilterProps) => {
           onClick={() => onSortChange('most_liked')}
           className={selectedSort === 'most_liked' ? 'bg-accent' : ''}
         >
-          <Heart size={16} className="mr-2" />
           Mais Curtidas
         </DropdownMenuItem>
         <DropdownMenuItem
