@@ -53,15 +53,87 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   const [showTextDetails, setShowTextDetails] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   
-  // Helper function para sanitizar conteúdo de lista
-  const sanitizeListContent = (content: unknown): string[] => {
-    if (Array.isArray(content)) return content;
-    if (typeof content === 'string' && content.includes('\n')) {
-      const items = content.split('\n')
-        .map(item => item.replace(/^[\*\-\•\→]\s*/, '').replace(/^\d+[\.\)]\s*/, '').trim())
-        .filter(item => item.length > 0);
-      return items.length > 0 ? items : [''];
+  // Helper functions para sanitizar conteúdo de lista (espelhando backend listSanitizer.ts)
+  const stripHtmlTags = (text: string): string => text.replace(/<[^>]*>/g, '');
+  
+  const decodeHtmlEntities = (text: string): string => {
+    return text
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&apos;/gi, "'")
+      .replace(/&#x27;/gi, "'")
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)));
+  };
+  
+  const cleanMarkdownPrefixes = (text: string): string => {
+    return text
+      .replace(/^[\*\-\•\→\▸\▹\►\◆\◇\○\●]\s*/, '')
+      .replace(/^\d+[\.\)\-]\s*/, '')
+      .replace(/^\[[\sx✓✔]\]\s*/i, '')
+      .replace(/^>\s*/, '')
+      .trim();
+  };
+  
+  const cleanListItem = (item: string): string => {
+    let cleaned = item;
+    cleaned = stripHtmlTags(cleaned);
+    cleaned = decodeHtmlEntities(cleaned);
+    cleaned = cleanMarkdownPrefixes(cleaned);
+    return cleaned.trim();
+  };
+  
+  const containsHtmlList = (text: string): boolean => /<(ul|ol|li)[^>]*>/i.test(text);
+  
+  const extractListItemsFromHtml = (html: string): string[] => {
+    const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+    const items: string[] = [];
+    let match;
+    while ((match = liRegex.exec(html)) !== null) {
+      items.push(match[1]);
     }
+    return items;
+  };
+  
+  const sanitizeListContent = (content: unknown): string[] => {
+    // Array: limpar cada item
+    if (Array.isArray(content)) {
+      const cleaned = content
+        .map(item => typeof item === 'string' ? cleanListItem(item) : String(item))
+        .filter(item => item.length > 0);
+      return cleaned.length > 0 ? cleaned : [''];
+    }
+    
+    // String: detectar formato e converter
+    if (typeof content === 'string') {
+      let lines: string[];
+      
+      // HTML de lista detectado
+      if (containsHtmlList(content)) {
+        const extracted = extractListItemsFromHtml(content);
+        if (extracted.length > 0) {
+          lines = extracted;
+        } else {
+          lines = stripHtmlTags(content).split('\n');
+        }
+      }
+      // Quebras de linha
+      else if (content.includes('\n')) {
+        lines = content.split('\n');
+      }
+      // Item único
+      else {
+        const cleaned = cleanListItem(content);
+        return cleaned.length > 0 ? [cleaned] : [''];
+      }
+      
+      const cleaned = lines.map(cleanListItem).filter(item => item.length > 0);
+      return cleaned.length > 0 ? cleaned : [''];
+    }
+    
     return content ? [String(content)] : [''];
   };
 

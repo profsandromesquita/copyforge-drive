@@ -3,7 +3,53 @@
  * 
  * Converte automaticamente strings em arrays quando o LLM retorna
  * conteúdo de lista em formato incorreto (string com \n em vez de array).
+ * Suporta limpeza de HTML, entidades HTML e Markdown.
  */
+
+/**
+ * Remove TODAS as tags HTML de uma string
+ */
+export function stripHtmlTags(text: string): string {
+  return text.replace(/<[^>]*>/g, '');
+}
+
+/**
+ * Decodifica entidades HTML comuns
+ */
+export function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec));
+}
+
+/**
+ * Extrai conteúdo de cada <li> tag como itens separados
+ */
+export function extractListItemsFromHtml(html: string): string[] {
+  const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+  const items: string[] = [];
+  let match;
+  
+  while ((match = liRegex.exec(html)) !== null) {
+    items.push(match[1]);
+  }
+  
+  return items;
+}
+
+/**
+ * Detecta se a string contém estrutura HTML de lista
+ */
+export function containsHtmlList(text: string): boolean {
+  return /<(ul|ol|li)[^>]*>/i.test(text);
+}
 
 /**
  * Remove prefixos de Markdown comuns de um item de lista
@@ -18,8 +64,20 @@ export function cleanMarkdownPrefixes(text: string): string {
 }
 
 /**
+ * Pipeline completo de limpeza de um item de lista
+ * Ordem: HTML tags → Entidades HTML → Markdown → Trim
+ */
+export function cleanListItem(item: string): string {
+  let cleaned = item;
+  cleaned = stripHtmlTags(cleaned);
+  cleaned = decodeHtmlEntities(cleaned);
+  cleaned = cleanMarkdownPrefixes(cleaned);
+  return cleaned.trim();
+}
+
+/**
  * Sanitiza o conteúdo de uma lista, convertendo string para array se necessário
- * e limpando prefixos de Markdown de cada item.
+ * e limpando HTML, entidades HTML e prefixos de Markdown de cada item.
  * 
  * @param content - Conteúdo da lista (pode ser string ou array)
  * @param minItemLength - Tamanho mínimo para considerar um item válido (default: 5)
@@ -38,8 +96,8 @@ export function sanitizeListContent(
   // Se já é array, apenas limpar cada item
   if (Array.isArray(content)) {
     const cleaned = content
-      .map(item => typeof item === 'string' ? cleanMarkdownPrefixes(item) : String(item))
-      .filter(item => item.trim().length >= minItemLength);
+      .map(item => typeof item === 'string' ? cleanListItem(item) : String(item))
+      .filter(item => item.length >= minItemLength);
     
     console.log(`🔧 LIST SANITIZER: Array recebido com ${content.length} itens → ${cleaned.length} válidos`);
     return cleaned;
@@ -48,22 +106,37 @@ export function sanitizeListContent(
   // Se é string, converter para array
   if (typeof content === 'string') {
     const originalLength = content.length;
-    
-    // Tentar diferentes separadores
     let lines: string[];
     
-    if (content.includes('\n')) {
-      // Separador mais comum: quebra de linha
+    // CENÁRIO A: String contém HTML de lista (<ul>, <ol>, <li>)
+    if (containsHtmlList(content)) {
+      const extractedItems = extractListItemsFromHtml(content);
+      
+      if (extractedItems.length > 0) {
+        lines = extractedItems;
+        console.log(`🔧 LIST SANITIZER: HTML detectado, ${lines.length} <li> extraídos`);
+      } else {
+        // Fallback: remover todo HTML e dividir por \n
+        const stripped = stripHtmlTags(content);
+        lines = stripped.split('\n');
+        console.log(`🔧 LIST SANITIZER: HTML sem <li>, fallback para split`);
+      }
+    }
+    // CENÁRIO B: String com quebras de linha
+    else if (content.includes('\n')) {
       lines = content.split('\n');
-    } else if (content.includes(';')) {
-      // Alternativo: ponto e vírgula
+    } 
+    // CENÁRIO C: Ponto e vírgula como separador
+    else if (content.includes(';')) {
       lines = content.split(';');
-    } else if (content.includes(' - ') && content.split(' - ').length >= 3) {
-      // Alternativo: hífen com espaços (comum em listas inline)
+    } 
+    // CENÁRIO D: Hífen com espaços (listas inline)
+    else if (content.includes(' - ') && content.split(' - ').length >= 3) {
       lines = content.split(' - ');
-    } else {
-      // Se não tem separadores claros, retorna como item único
-      const cleaned = cleanMarkdownPrefixes(content);
+    } 
+    // CENÁRIO E: Item único
+    else {
+      const cleaned = cleanListItem(content);
       if (cleaned.length >= minItemLength) {
         console.log(`🔧 LIST SANITIZER: String sem separadores → 1 item`);
         return [cleaned];
@@ -71,8 +144,9 @@ export function sanitizeListContent(
       return [];
     }
 
+    // Aplicar pipeline de limpeza em cada item
     const cleaned = lines
-      .map(line => cleanMarkdownPrefixes(line.trim()))
+      .map(line => cleanListItem(line))
       .filter(item => item.length >= minItemLength);
 
     console.log(`🔧 LIST SANITIZER: String (${originalLength} chars) convertida → ${cleaned.length} itens`);
