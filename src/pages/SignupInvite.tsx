@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import copydriveIcon from "@/assets/copydrive-icon.svg";
-import { ValidateInviteResponse, InviteDisplayData } from "@/types/invite";
+import { ValidateInviteResponse, InviteDisplayData, AcceptInviteResponse } from "@/types/invite";
 
 export default function SignupInvite() {
   const [searchParams] = useSearchParams();
@@ -19,6 +19,7 @@ export default function SignupInvite() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoginMode, setIsLoginMode] = useState(false);
 
   const [inviteData, setInviteData] = useState<InviteDisplayData | null>(null);
   const [formData, setFormData] = useState({
@@ -39,7 +40,6 @@ export default function SignupInvite() {
 
   const loadInviteData = async () => {
     try {
-      // Use RPC function instead of direct table access
       const { data, error } = await supabase.rpc('validate_invite_token', {
         p_token: token
       });
@@ -62,20 +62,6 @@ export default function SignupInvite() {
         return;
       }
 
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", result.email!)
-        .single();
-
-      if (existingUser) {
-        // User already has account, redirect to accept invite
-        navigate(`/accept-invite?token=${token}`);
-        return;
-      }
-
-      // Transform RPC response to display data structure
       setInviteData({
         email: result.email!,
         role: result.role!,
@@ -96,7 +82,74 @@ export default function SignupInvite() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const acceptInviteAfterAuth = async () => {
+    try {
+      const { data, error } = await supabase.rpc('accept_invite_by_token', {
+        p_token: token
+      });
+
+      if (error) {
+        console.error("Error accepting invite:", error);
+        toast.error("Erro ao aceitar convite. Tente novamente.");
+        navigate("/my-project");
+        return;
+      }
+
+      const result = data as unknown as AcceptInviteResponse;
+
+      if (result?.success) {
+        if (result.workspace_id) {
+          localStorage.setItem('activeWorkspaceId', result.workspace_id);
+        }
+        toast.success(`Bem-vindo ao workspace ${inviteData?.workspace?.name}!`);
+      } else if (result?.already_member) {
+        toast.info('Você já é membro deste workspace');
+      } else if (result?.error) {
+        const errorMessages: Record<string, string> = {
+          'email_mismatch': 'Este convite foi enviado para outro email',
+          'invite_expired': 'Este convite expirou',
+          'invite_not_found': 'Convite não encontrado',
+          'not_authenticated': 'Você precisa estar autenticado',
+        };
+        toast.error(errorMessages[result.error] || 'Erro ao processar convite');
+      }
+
+      navigate("/my-project");
+    } catch (error) {
+      console.error("Error in acceptInviteAfterAuth:", error);
+      navigate("/my-project");
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.password) {
+      toast.error("Por favor, preencha sua senha");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: inviteData!.email,
+        password: formData.password,
+      });
+
+      if (error) throw error;
+
+      // Sessão estabelecida - aceitar o convite
+      await acceptInviteAfterAuth();
+    } catch (error: any) {
+      console.error("Error logging in:", error);
+      toast.error(error.message || "Erro ao fazer login");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
@@ -124,14 +177,23 @@ export default function SignupInvite() {
           data: {
             name: formData.name,
           },
-          emailRedirectTo: `${window.location.origin}/accept-invite?token=${token}`,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Detectar erro de usuário já registrado
+        if (error.message?.toLowerCase().includes('already registered') || 
+            error.message?.toLowerCase().includes('already exists')) {
+          toast.error("Este email já está cadastrado. Faça login para continuar.");
+          setIsLoginMode(true);
+          setSubmitting(false);
+          return;
+        }
+        throw error;
+      }
       
-      // Redirect to accept invite page
-      navigate(`/accept-invite?token=${token}`);
+      // Sessão estabelecida - aceitar o convite
+      await acceptInviteAfterAuth();
     } catch (error: any) {
       console.error("Error creating account:", error);
       toast.error(error.message || "Erro ao criar conta");
@@ -155,13 +217,15 @@ export default function SignupInvite() {
           <div className="mx-auto mb-4 w-20 h-20 flex items-center justify-center">
             <img src={copydriveIcon} alt="CopyDrive" className="w-full h-full object-contain" />
           </div>
-          <CardTitle className="text-2xl">Criar Conta</CardTitle>
+          <CardTitle className="text-2xl">
+            {isLoginMode ? "Fazer Login" : "Criar Conta"}
+          </CardTitle>
           <CardDescription>
             Você foi convidado para o workspace <strong>{inviteData?.workspace?.name}</strong>
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={isLoginMode ? handleLogin : handleSignup} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -176,16 +240,18 @@ export default function SignupInvite() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                placeholder="Seu nome completo"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
+            {!isLoginMode && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome Completo</Label>
+                <Input
+                  id="name"
+                  placeholder="Seu nome completo"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -193,11 +259,11 @@ export default function SignupInvite() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={isLoginMode ? "Sua senha" : "Mínimo 6 caracteres"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
-                  minLength={6}
+                  minLength={isLoginMode ? undefined : 6}
                 />
                 <button
                   type="button"
@@ -209,31 +275,52 @@ export default function SignupInvite() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Digite a senha novamente"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+            {!isLoginMode && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Digite a senha novamente"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Criando conta..." : "Criar Conta e Continuar"}
+              {submitting 
+                ? (isLoginMode ? "Entrando..." : "Criando conta...") 
+                : (isLoginMode ? "Entrar e Aceitar Convite" : "Criar Conta e Aceitar Convite")
+              }
             </Button>
           </form>
+
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoginMode(!isLoginMode);
+                setFormData({ ...formData, password: "", confirmPassword: "" });
+              }}
+              className="text-sm text-primary hover:underline"
+            >
+              {isLoginMode 
+                ? "Não tem conta? Cadastre-se" 
+                : "Já tem uma conta? Faça Login"
+              }
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
