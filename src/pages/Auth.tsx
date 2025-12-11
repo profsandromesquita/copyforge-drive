@@ -27,12 +27,12 @@ const Auth = () => {
     // Force light mode on login page
     document.documentElement.classList.remove('dark');
     
-    // Check if signup is disabled
+    // Check if signup is disabled using public view
     const checkSignupStatus = async () => {
       const { data } = await supabase
-        .from('system_settings')
+        .from('public_system_settings')
         .select('disable_signup')
-        .single();
+        .maybeSingle();
       
       if (data?.disable_signup) {
         setSignupDisabled(true);

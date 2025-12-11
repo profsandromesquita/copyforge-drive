@@ -14,7 +14,7 @@ import { Loader2, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import { buildCheckoutUrl } from "@/lib/checkout-utils";
-import { PlanOffer } from "@/hooks/usePlanOffers";
+import { PublicPlanOffer } from "@/hooks/usePlanOffersPublic";
 import { toast } from "sonner";
 
 interface SubscriptionPlan {
