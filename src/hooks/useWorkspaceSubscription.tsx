@@ -54,7 +54,7 @@ export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
           current_max_copies,
           current_copy_ai_enabled,
           plan_offer_id,
-          subscription_plans (
+          subscription_plans!fk_subscriptions_plan (
             id,
             name,
             slug,

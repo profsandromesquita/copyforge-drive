@@ -143,7 +143,7 @@ export const UpgradeModal = ({
         .from('workspace_subscriptions')
         .select(`
           *,
-          subscription_plans (*)
+          subscription_plans!fk_subscriptions_plan (*)
         `)
         .eq('workspace_id', targetWorkspaceId)
         .eq('status', 'active')
