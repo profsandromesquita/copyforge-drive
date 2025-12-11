@@ -34,24 +34,10 @@ export const useDiscover = () => {
 
   const fetchDiscoverCopies = async () => {
     try {
-      // Query otimizada: buscar apenas colunas necessárias para listagem
+      // Usar VIEW public_copies que expõe apenas dados seguros (oculta system_instruction, prompts, IDs internos)
       const { data, error } = await supabase
-        .from('copies')
-        .select(`
-          id,
-          title,
-          copy_type,
-          sessions,
-          copy_count,
-          likes_count,
-          created_by,
-          created_at,
-          profiles!copies_created_by_fkey (
-            name,
-            avatar_url
-          )
-        `)
-        .eq('is_public', true)
+        .from('public_copies')
+        .select('*')
         .eq('show_in_discover', true)
         .order('created_at', { ascending: false });
 
@@ -65,8 +51,8 @@ export const useDiscover = () => {
         likes_count: copy.likes_count || 0,
         created_by: copy.created_by,
         creator: {
-          name: copy.profiles?.name || 'Usuário',
-          avatar_url: copy.profiles?.avatar_url || null,
+          name: copy.creator_name || 'Usuário',
+          avatar_url: copy.creator_avatar_url || null,
         },
       }));
 
@@ -171,9 +157,9 @@ export const useDiscover = () => {
     onSuccess: (newCopyId: string) => void
   ) => {
     try {
-      // Fetch original copy
+      // Usar VIEW public_copies para buscar dados seguros da copy original
       const { data: originalCopy, error: fetchError } = await supabase
-        .from('copies')
+        .from('public_copies')
         .select('*')
         .eq('id', copyId)
         .single();

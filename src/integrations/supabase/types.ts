@@ -151,10 +151,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_gen_history_copy"
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_gen_history_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "public_copies"
             referencedColumns: ["id"]
           },
           {
@@ -471,6 +485,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "copy_chat_messages_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "copy_chat_messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -489,6 +510,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "public_copies"
             referencedColumns: ["id"]
           },
           {
@@ -532,6 +560,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copy_likes_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "public_copies"
             referencedColumns: ["id"]
           },
         ]
@@ -2017,6 +2052,39 @@ export type Database = {
       }
     }
     Views: {
+      public_copies: {
+        Row: {
+          copy_count: number | null
+          copy_type: string | null
+          created_at: string | null
+          created_by: string | null
+          creator_avatar_url: string | null
+          creator_name: string | null
+          id: string | null
+          is_public: boolean | null
+          likes_count: number | null
+          public_password: string | null
+          sessions: Json | null
+          show_in_discover: boolean | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_plan_offers: {
         Row: {
           billing_period_unit: string | null
