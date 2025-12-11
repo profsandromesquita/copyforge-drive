@@ -39,11 +39,11 @@ const PublicCopy = () => {
 
   const loadCopy = async () => {
     try {
+      // Usar VIEW public_copies que expõe apenas dados seguros (oculta system_instruction, prompts, IDs internos)
       const { data, error } = await supabase
-        .from('copies')
-        .select('*, profiles!fk_copies_creator(name, avatar_url)')
+        .from('public_copies')
+        .select('*')
         .eq('id', id)
-        .eq('is_public', true)
         .single();
 
       if (error) throw error;
@@ -321,17 +321,17 @@ const PublicCopy = () => {
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             {copy.title}
           </h1>
-          {copy.profiles && (
+          {copy.creator_name && (
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={copy.profiles.avatar_url || undefined} />
+                <AvatarImage src={copy.creator_avatar_url || undefined} />
                 <AvatarFallback>
-                  {copy.profiles.name.charAt(0).toUpperCase()}
+                  {copy.creator_name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-sm font-medium">
-                  {copy.profiles.name}
+                  {copy.creator_name}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Autor
