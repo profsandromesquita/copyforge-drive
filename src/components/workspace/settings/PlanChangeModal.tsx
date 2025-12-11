@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
-import { PlanOffer } from "@/hooks/usePlanOffers";
+import { PublicPlanOffer } from "@/hooks/usePlanOffersPublic";
 
 interface SubscriptionPlan {
   id: string;
@@ -37,7 +37,7 @@ interface PlanChangeModalProps {
   onClose: () => void;
   currentSubscription: WorkspaceSubscription;
   newPlan: SubscriptionPlan;
-  availableOffers: PlanOffer[];
+  availableOffers: PublicPlanOffer[];
   workspaceId: string;
 }
 

@@ -1,6 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlanOffer } from "./usePlanOffers";
+
+// Interface for public plan offer (excludes sensitive gateway data)
+export interface PublicPlanOffer {
+  id: string;
+  plan_id: string;
+  name: string;
+  price: number;
+  billing_period_value: number;
+  billing_period_unit: string;
+  checkout_url: string;
+  is_active: boolean | null;
+  display_order: number | null;
+}
 
 // Hook para buscar ofertas ativas de múltiplos planos (para página pública)
 export const usePlanOffersPublic = (planIds: string[]) => {
@@ -9,11 +21,11 @@ export const usePlanOffersPublic = (planIds: string[]) => {
     queryFn: async () => {
       if (planIds.length === 0) return {};
 
+      // Use public_plan_offers view instead of plan_offers table
       const { data, error } = await supabase
-        .from('plan_offers')
-        .select('*')
+        .from('public_plan_offers')
+        .select('id, plan_id, name, price, billing_period_value, billing_period_unit, checkout_url, is_active, display_order')
         .in('plan_id', planIds)
-        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (error) {
@@ -22,12 +34,15 @@ export const usePlanOffersPublic = (planIds: string[]) => {
       }
 
       // Agrupar ofertas por plan_id
-      const offersByPlan: Record<string, PlanOffer[]> = {};
-      data.forEach((offer: any) => {
-        if (!offersByPlan[offer.plan_id]) {
-          offersByPlan[offer.plan_id] = [];
+      const offersByPlan: Record<string, PublicPlanOffer[]> = {};
+      data?.forEach((offer) => {
+        const planId = offer.plan_id;
+        if (planId) {
+          if (!offersByPlan[planId]) {
+            offersByPlan[planId] = [];
+          }
+          offersByPlan[planId].push(offer as PublicPlanOffer);
         }
-        offersByPlan[offer.plan_id].push(offer as PlanOffer);
       });
 
       return offersByPlan;

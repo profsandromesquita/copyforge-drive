@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Sparkles, Users, Zap } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
-import { PlanOffer } from "@/hooks/usePlanOffers";
+import { PublicPlanOffer } from "@/hooks/usePlanOffersPublic";
 
 interface SubscriptionPlan {
   id: string;
@@ -22,7 +22,7 @@ interface SubscriptionPlan {
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
-  offers: PlanOffer[];
+  offers: PublicPlanOffer[];
   selectedOfferId: string;
   isCurrentPlan: boolean;
   onSelect: (offerId: string) => void;

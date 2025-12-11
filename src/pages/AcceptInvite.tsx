@@ -9,17 +9,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, X } from "lucide-react";
+import { 
+  ValidateInviteResponse, 
+  AcceptInviteResponse, 
+  DeclineInviteResponse,
+  InviteDisplayData 
+} from "@/types/invite";
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { refreshWorkspaces, setActiveWorkspace } = useWorkspace();
+  const { refreshWorkspaces } = useWorkspace();
   const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [inviteData, setInviteData] = useState<any>(null);
+  const [inviteData, setInviteData] = useState<InviteDisplayData | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -33,26 +39,25 @@ export default function AcceptInvite() {
 
   const loadInviteData = async () => {
     try {
-      const { data, error } = await supabase
-        .from("workspace_invitations")
-        .select(`
-          *,
-          workspace:workspaces(id, name, avatar_url),
-          inviter:profiles!workspace_invitations_invited_by_fkey(name)
-        `)
-        .eq("token", token)
-        .eq("status", "pending")
-        .single();
+      // Use RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('validate_invite_token', {
+        p_token: token
+      });
 
-      if (error || !data) {
-        toast.error("Convite não encontrado ou já utilizado");
+      if (error) {
+        console.error("Error validating invite:", error);
+        toast.error("Erro ao validar convite");
         navigate("/my-project");
         return;
       }
 
-      // Check if invite has expired
-      if (new Date(data.expires_at) < new Date()) {
-        toast.error("Este convite expirou");
+      const result = data as unknown as ValidateInviteResponse;
+
+      if (!result?.success) {
+        const errorMsg = result?.error === 'invite_expired' 
+          ? 'Este convite expirou' 
+          : 'Convite não encontrado ou já utilizado';
+        toast.error(errorMsg);
         navigate("/my-project");
         return;
       }
@@ -64,34 +69,32 @@ export default function AcceptInvite() {
         return;
       }
 
-      // Check if email matches
+      // Check if email matches using profile lookup
       const { data: profile } = await supabase
         .from("profiles")
         .select("email")
         .eq("id", user.id)
         .single();
 
-      if (profile?.email !== data.email) {
+      if (profile?.email !== result.email) {
         toast.error("Este convite foi enviado para outro email");
         navigate("/my-project");
         return;
       }
 
-      // Check if user is already a member
-      const { data: existingMember } = await supabase
-        .from("workspace_members")
-        .select("id")
-        .eq("workspace_id", data.workspace_id)
-        .eq("user_id", user.id)
-        .single();
-
-      if (existingMember) {
-        toast.info("Você já é membro deste workspace");
-        navigate("/my-project");
-        return;
-      }
-
-      setInviteData(data);
+      // Transform RPC response to display data structure
+      setInviteData({
+        email: result.email!,
+        role: result.role!,
+        workspace: {
+          name: result.workspace_name!,
+          avatar_url: result.workspace_avatar,
+        },
+        inviter: {
+          name: result.inviter_name!,
+        },
+        expires_at: result.expires_at!,
+      });
       setLoading(false);
     } catch (error) {
       console.error("Error loading invite:", error);
@@ -106,41 +109,39 @@ export default function AcceptInvite() {
     setProcessing(true);
 
     try {
-      // Add user to workspace
-      const { error: memberError } = await supabase
-        .from("workspace_members")
-        .insert({
-          workspace_id: inviteData.workspace_id,
-          user_id: user.id,
-          role: inviteData.role,
-          invited_by: inviteData.invited_by,
-        });
+      // Use RPC function instead of manual INSERT + UPDATE
+      const { data, error } = await supabase.rpc('accept_invite_by_token', {
+        p_token: token
+      });
 
-      // Check if error is duplicate key (user already member)
-      if (memberError && memberError.code !== '23505') {
-        // Only throw if it's not a duplicate key error
-        throw memberError;
+      if (error) {
+        console.error("Error accepting invite:", error);
+        toast.error("Erro ao aceitar convite");
+        return;
       }
 
-      // If user is already a member (duplicate key error), just update the invite status
-      if (memberError && memberError.code === '23505') {
-        console.log("User already member of workspace, updating invite status");
+      const result = data as unknown as AcceptInviteResponse;
+
+      if (!result?.success) {
+        const errorMessages: Record<string, string> = {
+          'email_mismatch': 'Este convite foi enviado para outro email',
+          'invite_expired': 'Este convite expirou',
+          'invite_not_found': 'Convite não encontrado',
+          'not_authenticated': 'Você precisa estar logado',
+        };
+        toast.error(errorMessages[result?.error || ''] || 'Erro ao aceitar convite');
+        return;
       }
 
-      // Update invite status
-      const { error: updateError } = await supabase
-        .from("workspace_invitations")
-        .update({ status: "accepted" })
-        .eq("token", token);
-
-      if (updateError) throw updateError;
-
-      const workspaceName = inviteData?.workspace?.name || "este workspace";
-      toast.success(`Você agora faz parte do workspace ${workspaceName}!`);
+      if (result.already_member) {
+        toast.info(`Você já é membro do workspace ${inviteData.workspace.name}!`);
+      } else {
+        toast.success(`Você agora faz parte do workspace ${inviteData.workspace.name}!`);
+      }
 
       // Save the workspace ID to localStorage before refreshing
-      if (inviteData?.workspace?.id) {
-        localStorage.setItem('activeWorkspaceId', inviteData.workspace.id);
+      if (result.workspace_id) {
+        localStorage.setItem('activeWorkspaceId', result.workspace_id);
       }
 
       // Refresh workspaces (will pick up the saved workspace ID)
@@ -163,12 +164,23 @@ export default function AcceptInvite() {
     setProcessing(true);
 
     try {
-      const { error } = await supabase
-        .from("workspace_invitations")
-        .update({ status: "declined" })
-        .eq("token", token);
+      // Use RPC function instead of manual UPDATE
+      const { data, error } = await supabase.rpc('decline_invite_by_token', {
+        p_token: token
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error declining invite:", error);
+        toast.error("Erro ao recusar convite");
+        return;
+      }
+
+      const result = data as unknown as DeclineInviteResponse;
+
+      if (!result?.success) {
+        toast.error('Erro ao recusar convite');
+        return;
+      }
 
       toast.info("Convite recusado");
       navigate("/my-project");

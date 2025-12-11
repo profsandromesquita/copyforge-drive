@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import copydriveIcon from "@/assets/copydrive-icon.svg";
+import { ValidateInviteResponse, InviteDisplayData } from "@/types/invite";
 
 export default function SignupInvite() {
   const [searchParams] = useSearchParams();
@@ -19,7 +20,7 @@ export default function SignupInvite() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [inviteData, setInviteData] = useState<any>(null);
+  const [inviteData, setInviteData] = useState<InviteDisplayData | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     password: "",
@@ -38,26 +39,25 @@ export default function SignupInvite() {
 
   const loadInviteData = async () => {
     try {
-      const { data, error } = await supabase
-        .from("workspace_invitations")
-        .select(`
-          *,
-          workspace:workspaces(name, avatar_url),
-          inviter:profiles!workspace_invitations_invited_by_fkey(name)
-        `)
-        .eq("token", token)
-        .eq("status", "pending")
-        .single();
+      // Use RPC function instead of direct table access
+      const { data, error } = await supabase.rpc('validate_invite_token', {
+        p_token: token
+      });
 
-      if (error || !data) {
-        toast.error("Convite não encontrado ou já utilizado");
+      if (error) {
+        console.error("Error validating invite:", error);
+        toast.error("Erro ao validar convite");
         navigate("/auth");
         return;
       }
 
-      // Check if invite has expired
-      if (new Date(data.expires_at) < new Date()) {
-        toast.error("Este convite expirou");
+      const result = data as unknown as ValidateInviteResponse;
+
+      if (!result?.success) {
+        const errorMsg = result?.error === 'invite_expired' 
+          ? 'Este convite expirou' 
+          : 'Convite não encontrado ou já utilizado';
+        toast.error(errorMsg);
         navigate("/auth");
         return;
       }
@@ -66,7 +66,7 @@ export default function SignupInvite() {
       const { data: existingUser } = await supabase
         .from("profiles")
         .select("id")
-        .eq("email", data.email)
+        .eq("email", result.email!)
         .single();
 
       if (existingUser) {
@@ -75,7 +75,19 @@ export default function SignupInvite() {
         return;
       }
 
-      setInviteData(data);
+      // Transform RPC response to display data structure
+      setInviteData({
+        email: result.email!,
+        role: result.role!,
+        workspace: {
+          name: result.workspace_name!,
+          avatar_url: result.workspace_avatar,
+        },
+        inviter: {
+          name: result.inviter_name!,
+        },
+        expires_at: result.expires_at!,
+      });
       setLoading(false);
     } catch (error) {
       console.error("Error loading invite:", error);
@@ -106,7 +118,7 @@ export default function SignupInvite() {
 
     try {
       const { error } = await supabase.auth.signUp({
-        email: inviteData.email,
+        email: inviteData!.email,
         password: formData.password,
         options: {
           data: {
