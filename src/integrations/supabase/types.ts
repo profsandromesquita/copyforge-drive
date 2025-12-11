@@ -1920,6 +1920,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_subscriptions_offer"
+            columns: ["plan_offer_id"]
+            isOneToOne: false
+            referencedRelation: "public_plan_offers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_subscriptions_plan"
             columns: ["plan_id"]
             isOneToOne: false
@@ -1945,6 +1952,13 @@ export type Database = {
             columns: ["plan_offer_id"]
             isOneToOne: false
             referencedRelation: "plan_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_subscriptions_plan_offer_id_fkey"
+            columns: ["plan_offer_id"]
+            isOneToOne: false
+            referencedRelation: "public_plan_offers"
             referencedColumns: ["id"]
           },
           {
@@ -2003,6 +2017,64 @@ export type Database = {
       }
     }
     Views: {
+      public_plan_offers: {
+        Row: {
+          billing_period_unit: string | null
+          billing_period_value: number | null
+          checkout_url: string | null
+          display_order: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          plan_id: string | null
+          price: number | null
+        }
+        Insert: {
+          billing_period_unit?: string | null
+          billing_period_value?: number | null
+          checkout_url?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          plan_id?: string | null
+          price?: number | null
+        }
+        Update: {
+          billing_period_unit?: string | null
+          billing_period_value?: number | null
+          checkout_url?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          plan_id?: string | null
+          price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_offers_plan"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_offers_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_system_settings: {
+        Row: {
+          disable_signup: boolean | null
+          maintenance_mode: boolean | null
+        }
+        Relationships: []
+      }
       webhook_events_summary: {
         Row: {
           event_category: string | null
@@ -2018,6 +2090,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_invite_by_token: { Args: { p_token: string }; Returns: Json }
       activate_workspace_after_payment: {
         Args: { p_workspace_id: string }
         Returns: Json
@@ -2081,6 +2154,7 @@ export type Database = {
         }
         Returns: Json
       }
+      decline_invite_by_token: { Args: { p_token: string }; Returns: Json }
       delete_user_admin: { Args: { p_user_id: string }; Returns: Json }
       delete_workspace_admin: {
         Args: { p_workspace_id: string }
@@ -2144,6 +2218,7 @@ export type Database = {
         Args: { p_validation_token: string }
         Returns: Json
       }
+      validate_invite_token: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {
       billing_cycle_type: "monthly" | "annual" | "free"
