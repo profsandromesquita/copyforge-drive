@@ -59,7 +59,7 @@ serve(async (req) => {
       const { data: promptData } = await supabase
         .from('ai_prompt_templates')
         .select('current_prompt')
-        .eq('prompt_key', 'analyze_audience_base')
+        .eq('prompt_key', 'analyze_audience_psychographic')
         .eq('is_active', true)
         .single();
       
@@ -128,6 +128,8 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
         ],
+        temperature: 0.7,
+        max_tokens: 8000,
         tools: [
           {
             type: "function",
