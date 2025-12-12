@@ -35,18 +35,12 @@ export const PlanUsageIndicator = () => {
 
     setLoading(true);
     try {
+      // Use VIEW segura que não requer admin
       const { data, error } = await supabase
-        .from('workspace_subscriptions')
-        .select(`
-          projects_count,
-          copies_count,
-          current_max_projects,
-          current_max_copies,
-          subscription_plans!inner(name)
-        `)
+        .from('public_workspace_plan_summary')
+        .select('plan_name, projects_count, copies_count, current_max_projects, current_max_copies')
         .eq('workspace_id', activeWorkspace.id)
-        .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -60,7 +54,7 @@ export const PlanUsageIndicator = () => {
             current: data.copies_count || 0,
             limit: data.current_max_copies,
           },
-          planName: (data.subscription_plans as any)?.name || 'Free',
+          planName: data.plan_name || 'Free',
         });
       }
     } catch (error) {

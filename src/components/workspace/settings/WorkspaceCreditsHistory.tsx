@@ -178,8 +178,11 @@ export const WorkspaceCreditsHistory = () => {
             <div>
               <CardTitle className="text-base">Histórico de Transações</CardTitle>
               <CardDescription className="text-xs">
-                Visualize todas as operações de crédito e débito
+                Visualize todas as operações de crédito e débito do workspace
               </CardDescription>
+              <p className="text-xs text-muted-foreground mt-1">
+                Membros comuns visualizam apenas suas próprias transações.
+              </p>
             </div>
             <div className="flex gap-2">
               <Select value={typeFilter} onValueChange={(value: any) => setTypeFilter(value)}>

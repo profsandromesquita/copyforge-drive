@@ -2384,6 +2384,35 @@ export type Database = {
         }
         Relationships: []
       }
+      public_workspace_plan_summary: {
+        Row: {
+          copies_count: number | null
+          credits_per_month: number | null
+          current_copy_ai_enabled: boolean | null
+          current_max_copies: number | null
+          current_max_projects: number | null
+          plan_name: string | null
+          plan_slug: string | null
+          projects_count: number | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_subscriptions_workspace"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webhook_events_summary: {
         Row: {
           event_category: string | null
