@@ -61,6 +61,19 @@ export type WorkspaceSubscriptionRow = Tables<'workspace_subscriptions'>;
 export type PlanOfferRow = Tables<'plan_offers'>;
 export type WorkspaceInvoiceRow = Tables<'workspace_invoices'>;
 
+// Secure VIEWs (dados públicos/seguros)
+export interface PublicWorkspacePlanSummary {
+  workspace_id: string;
+  plan_name: string;
+  plan_slug: string;
+  projects_count: number;
+  copies_count: number;
+  current_max_projects: number | null;
+  current_max_copies: number | null;
+  current_copy_ai_enabled: boolean;
+  credits_per_month: number;
+}
+
 // AI & Prompts
 export type AIPromptTemplateRow = Tables<'ai_prompt_templates'>;
 export type AICharacteristicRow = Tables<'ai_characteristics'>;

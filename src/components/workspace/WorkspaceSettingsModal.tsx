@@ -5,6 +5,10 @@ import { WorkspaceGeneral } from "./settings/WorkspaceGeneral";
 import { WorkspaceUsers } from "./settings/WorkspaceUsers";
 import { WorkspaceBilling } from "./settings/WorkspaceBilling";
 import { WorkspaceCreditsTab } from "./settings/WorkspaceCreditsTab";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WorkspaceSettingsModalProps {
   open: boolean;
@@ -14,13 +18,38 @@ interface WorkspaceSettingsModalProps {
 
 export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "general" }: WorkspaceSettingsModalProps) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const { activeWorkspace } = useWorkspace();
+  const { user } = useAuth();
+
+  // Fetch user role in workspace
+  const { data: memberRole } = useQuery({
+    queryKey: ['workspace-member-role', activeWorkspace?.id, user?.id],
+    queryFn: async () => {
+      if (!activeWorkspace?.id || !user?.id) return null;
+      const { data } = await supabase
+        .from('workspace_members')
+        .select('role')
+        .eq('workspace_id', activeWorkspace.id)
+        .eq('user_id', user.id)
+        .single();
+      return data?.role as 'owner' | 'admin' | 'member' | null;
+    },
+    enabled: !!activeWorkspace?.id && !!user?.id,
+  });
+
+  const isAdmin = memberRole === 'owner' || memberRole === 'admin';
   
   // Update activeTab when defaultTab changes
   useEffect(() => {
     if (open) {
-      setActiveTab(defaultTab);
+      // If non-admin trying to access restricted tabs, redirect to general
+      if (!isAdmin && (defaultTab === 'credits' || defaultTab === 'billing')) {
+        setActiveTab('general');
+      } else {
+        setActiveTab(defaultTab);
+      }
     }
-  }, [open, defaultTab]);
+  }, [open, defaultTab, isAdmin]);
 
   // Handle close with navigation logic
   const handleClose = (newOpen: boolean) => {
@@ -61,26 +90,31 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
               >
                 Usuários
               </button>
-              <button
-                onClick={() => setActiveTab("credits")}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${
-                  activeTab === "credits"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent"
-                }`}
-              >
-                Créditos
-              </button>
-              <button
-                onClick={() => setActiveTab("billing")}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${
-                  activeTab === "billing"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent"
-                }`}
-              >
-                Planos e Faturas
-              </button>
+              {/* Tabs restritas apenas para admins/owners */}
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("credits")}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${
+                      activeTab === "credits"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    Créditos
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("billing")}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${
+                      activeTab === "billing"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    Planos e Faturas
+                  </button>
+                </>
+              )}
             </nav>
           </div>
 
@@ -92,12 +126,17 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
             <TabsContent value="users" className="flex-1 overflow-y-auto p-8 m-0 h-0">
               <WorkspaceUsers />
             </TabsContent>
-            <TabsContent value="credits" className="flex-1 overflow-y-auto overflow-x-hidden p-8 m-0 h-0">
-              <WorkspaceCreditsTab />
-            </TabsContent>
-            <TabsContent value="billing" className="flex-1 overflow-y-auto p-8 m-0 h-0">
-              <WorkspaceBilling />
-            </TabsContent>
+            {/* Conteúdo restrito apenas para admins/owners */}
+            {isAdmin && (
+              <>
+                <TabsContent value="credits" className="flex-1 overflow-y-auto overflow-x-hidden p-8 m-0 h-0">
+                  <WorkspaceCreditsTab />
+                </TabsContent>
+                <TabsContent value="billing" className="flex-1 overflow-y-auto p-8 m-0 h-0">
+                  <WorkspaceBilling />
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         </div>
       </DialogContent>
