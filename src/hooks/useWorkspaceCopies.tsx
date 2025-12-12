@@ -38,11 +38,12 @@ export const useWorkspaceCopies = (params: UseWorkspaceCopiesParams) => {
   return useQuery({
     queryKey: ['workspace-copies', workspaceId, copyType, status, isTemplate, isPublic],
     queryFn: async (): Promise<WorkspaceCopy[]> => {
+      // Usa VIEW basic_profiles (sem PII) para dados do criador
       let query = supabase
         .from('copies')
         .select(`
           *,
-          creator:profiles!copies_created_by_fkey(name, email, avatar_url),
+          creator:basic_profiles!copies_created_by_fkey(name, email, avatar_url),
           project:projects!copies_project_id_fkey(name)
         `)
         .eq('workspace_id', workspaceId)

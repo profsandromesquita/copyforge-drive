@@ -71,7 +71,7 @@ export const WorkspaceMembersTab = ({ workspaceId }: WorkspaceMembersTabProps) =
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      // Fetch members with credits used
+      // Fetch members with credits used - usando basic_profiles VIEW (sem PII)
       const { data: membersData, error: membersError } = await supabase
         .from('workspace_members')
         .select(`
@@ -80,7 +80,7 @@ export const WorkspaceMembersTab = ({ workspaceId }: WorkspaceMembersTabProps) =
           role,
           invited_at,
           invited_by,
-          profiles!workspace_members_user_id_fkey(name, email, avatar_url)
+          profiles:basic_profiles!workspace_members_user_id_fkey(name, email, avatar_url)
         `)
         .eq('workspace_id', workspaceId)
         .order('invited_at', { ascending: false });

@@ -42,6 +42,7 @@ export const WorkspaceUsers = () => {
     if (!activeWorkspace) return;
 
     setLoading(true);
+    // Usar VIEW basic_profiles (sem PII) para listar membros
     const { data, error } = await supabase
       .from('workspace_members')
       .select(`
@@ -49,7 +50,7 @@ export const WorkspaceUsers = () => {
         user_id,
         role,
         invited_at,
-        profile:profiles!fk_members_user (
+        profile:basic_profiles!fk_members_user (
           name,
           email
         )
@@ -115,10 +116,10 @@ export const WorkspaceUsers = () => {
         return;
       }
 
-      // Check if user is already a member
+      // Check if user is already a member (usando basic_profiles)
       const { data: existingMember } = await supabase
         .from('workspace_members')
-        .select('user_id, profiles!fk_members_user(email)')
+        .select('user_id, profiles:basic_profiles!fk_members_user(email)')
         .eq('workspace_id', activeWorkspace.id);
 
       const isAlreadyMember = existingMember?.some(

@@ -42,11 +42,12 @@ export const useWorkspaceTransactions = (params?: UseWorkspaceTransactionsParams
     queryFn: async (): Promise<CreditTransaction[]> => {
       if (!activeWorkspace?.id) return [];
 
+      // Usar VIEW basic_profiles (sem PII) para dados do usuário
       let query = supabase
         .from('credit_transactions')
         .select(`
           *,
-          user:profiles!credit_transactions_user_id_fkey(
+          user:basic_profiles!credit_transactions_user_id_fkey(
             name,
             email,
             avatar_url

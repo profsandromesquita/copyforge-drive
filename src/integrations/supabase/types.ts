@@ -140,6 +140,13 @@ export type Database = {
             foreignKeyName: "ai_generation_history_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_generation_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -169,6 +176,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_gen_history_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -398,6 +412,13 @@ export type Database = {
             foreignKeyName: "copies_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -420,6 +441,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -495,6 +523,13 @@ export type Database = {
             foreignKeyName: "copy_chat_messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copy_chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -517,6 +552,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -598,7 +640,21 @@ export type Database = {
             foreignKeyName: "credit_config_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_credit_config_updater"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -637,7 +693,21 @@ export type Database = {
             foreignKeyName: "credit_config_history_changed_by_fkey"
             columns: ["changed_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_config_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_config_history_changer"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -781,6 +851,13 @@ export type Database = {
             foreignKeyName: "credit_transactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -789,6 +866,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_transactions_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -839,6 +923,13 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_folders_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_folders_creator"
             columns: ["created_by"]
@@ -988,7 +1079,21 @@ export type Database = {
             foreignKeyName: "fk_routing_config_updater"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_routing_config_updater"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_routing_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1033,7 +1138,21 @@ export type Database = {
             foreignKeyName: "fk_routing_history_changer"
             columns: ["changed_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_routing_history_changer"
+            columns: ["changed_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "model_routing_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1312,6 +1431,13 @@ export type Database = {
             foreignKeyName: "fk_projects_creator"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_projects_creator"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1320,6 +1446,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1520,6 +1653,13 @@ export type Database = {
             foreignKeyName: "fk_prompt_custom_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_prompt_custom_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1560,7 +1700,21 @@ export type Database = {
             foreignKeyName: "fk_roles_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_roles_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1701,6 +1855,13 @@ export type Database = {
             foreignKeyName: "fk_invitations_inviter"
             columns: ["invited_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_invitations_inviter"
+            columns: ["invited_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1709,6 +1870,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1849,6 +2017,13 @@ export type Database = {
             foreignKeyName: "fk_members_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_members_user"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1863,7 +2038,21 @@ export type Database = {
             foreignKeyName: "workspace_members_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2038,7 +2227,21 @@ export type Database = {
             foreignKeyName: "fk_workspaces_creator"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_workspaces_creator"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2052,6 +2255,30 @@ export type Database = {
       }
     }
     Views: {
+      basic_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       public_copies: {
         Row: {
           copy_count: number | null
@@ -2073,7 +2300,21 @@ export type Database = {
             foreignKeyName: "copies_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
             referencedColumns: ["id"]
           },
           {
