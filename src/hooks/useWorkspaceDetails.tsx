@@ -46,10 +46,10 @@ export const useWorkspaceDetails = (workspaceId: string) => {
 
       if (workspaceError) throw workspaceError;
 
-      // Fetch members with profiles using foreign key
+      // Fetch members with basic_profiles (VIEW segura sem PII)
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select('id, role, invited_at, profiles!workspace_members_user_id_fkey(name, email, avatar_url)')
+        .select('id, role, invited_at, profiles:basic_profiles!workspace_members_user_id_fkey(name, email, avatar_url)')
         .eq('workspace_id', workspaceId)
         .order('invited_at', { ascending: false });
 

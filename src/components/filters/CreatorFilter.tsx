@@ -34,11 +34,12 @@ export const CreatorFilter = ({ selectedCreator, onCreatorChange }: CreatorFilte
     const fetchMembers = async () => {
       if (!activeWorkspace?.id) return;
 
+      // Usar VIEW basic_profiles (sem PII)
       const { data, error } = await supabase
         .from('workspace_members')
         .select(`
           user_id,
-          profile:profiles!user_id (
+          profile:basic_profiles!user_id (
             name,
             avatar_url
           )

@@ -111,7 +111,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
       // Fetch copies with creator info (exclude templates)
       // OTIMIZADO: Seleção explícita de colunas - exclui campos pesados não usados na listagem
-      // (system_instruction, generated_system_prompt, selected_*, copy_emotional_focus, etc.)
+      // Usa VIEW basic_profiles (sem PII) para dados do criador
       const copiesQuery = supabase
         .from('copies')
         .select(`
@@ -126,7 +126,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
           copy_type,
           status,
           sessions,
-          creator:profiles!fk_copies_creator(name, avatar_url)
+          creator:basic_profiles!fk_copies_creator(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
         .eq('is_template', false)

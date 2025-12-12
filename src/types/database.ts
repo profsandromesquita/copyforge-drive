@@ -447,3 +447,20 @@ export interface AIGenerationHistoryItem {
     [key: string]: unknown;
   } | null;
 }
+
+// ============================================================================
+// SECURE VIEW TYPES (PII Protection)
+// ============================================================================
+
+/**
+ * BasicProfile - VIEW segura para dados públicos de perfil (sem PII)
+ * Use esta interface para listar membros de workspace e exibir avatares.
+ * NÃO inclui: CPF, telefone, endereço
+ */
+export interface BasicProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
+  created_at: string;
+}

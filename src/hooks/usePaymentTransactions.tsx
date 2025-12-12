@@ -90,12 +90,12 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
         .select('id, name')
         .in('id', workspaceIds);
 
-      // Buscar todos os owners de uma vez (batch query)
+      // Buscar todos os owners de uma vez (batch query) usando basic_profiles VIEW
       const { data: membersData } = await supabase
         .from('workspace_members')
         .select(`
           workspace_id,
-          profiles!workspace_members_user_id_fkey(
+          profiles:basic_profiles!workspace_members_user_id_fkey(
             name,
             email
           )

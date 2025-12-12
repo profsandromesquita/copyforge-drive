@@ -17,6 +17,7 @@ export const useTemplates = () => {
     setLoading(true);
     try {
       // Query otimizada: buscar apenas colunas necessárias para listagem
+      // Usa VIEW basic_profiles (sem PII) para dados do criador
       const { data, error } = await supabase
         .from('copies')
         .select(`
@@ -28,7 +29,7 @@ export const useTemplates = () => {
           created_at,
           updated_at,
           sessions,
-          creator:profiles!fk_copies_creator(name, avatar_url)
+          creator:basic_profiles!fk_copies_creator(name, avatar_url)
         `)
         .eq('workspace_id', activeWorkspace.id)
         .eq('is_template', true)
