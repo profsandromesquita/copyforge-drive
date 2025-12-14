@@ -2172,20 +2172,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "workspace_subscriptions_plan_offer_id_fkey"
-            columns: ["plan_offer_id"]
-            isOneToOne: false
-            referencedRelation: "plan_offers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "workspace_subscriptions_plan_offer_id_fkey"
-            columns: ["plan_offer_id"]
-            isOneToOne: false
-            referencedRelation: "public_plan_offers"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: true
