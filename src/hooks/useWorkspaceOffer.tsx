@@ -10,7 +10,7 @@ export const useWorkspaceOffer = (workspaceId: string | undefined) => {
 
       const { data, error } = await supabase
         .from('workspace_subscriptions')
-        .select('plan_offers!plan_offer_id(*)')
+        .select('plan_offers!fk_subscriptions_offer(*)')
         .eq('workspace_id', workspaceId)
         .eq('status', 'active')
         .maybeSingle();
