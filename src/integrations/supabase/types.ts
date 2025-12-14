@@ -2160,7 +2160,7 @@ export type Database = {
           {
             foreignKeyName: "fk_subscriptions_workspace"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -2174,7 +2174,7 @@ export type Database = {
           {
             foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -2386,14 +2386,14 @@ export type Database = {
           {
             foreignKeyName: "fk_subscriptions_workspace"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
