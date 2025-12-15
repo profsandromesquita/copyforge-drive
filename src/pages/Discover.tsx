@@ -5,6 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { useDiscover } from '@/hooks/useDiscover';
 import { DiscoverCard } from '@/components/discover/DiscoverCard';
+import { DiscoverCardSkeleton } from '@/components/discover/DiscoverCardSkeleton';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
 import { CopySuccessDialog } from '@/components/discover/CopySuccessDialog';
@@ -17,7 +18,7 @@ import { SortFilter, SortType } from '@/components/filters/SortFilter';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { Loader2 } from 'lucide-react';
+
 
 const Discover = () => {
   const navigate = useNavigate();
@@ -202,8 +203,10 @@ const Discover = () => {
                 
                 {/* Loading more indicator */}
                 {loadingMore && (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <DiscoverCardSkeleton key={`skeleton-${i}`} />
+                    ))}
                   </div>
                 )}
                 
