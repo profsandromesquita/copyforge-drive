@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import copydriveLogo from "@/assets/copydrive-logo.png";
 import {
   DropdownMenu,
@@ -10,10 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, LogOut } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const AdminHeader = () => {
   const { user, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
+  
+  // Use profile data - no Google fallback
+  const userName = profile?.name || user?.email?.split('@')[0] || 'Usuário';
+  const avatarUrl = profile?.avatar_url;
   
   const getUserInitials = (name?: string) => {
     if (!name) return "U";
@@ -36,17 +43,19 @@ export const AdminHeader = () => {
         <DropdownMenuTrigger asChild>
           <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
             <div className="text-right">
-              <p className="text-sm font-medium">
-                {user?.user_metadata?.name || user?.email?.split("@")[0] || "Usuário"}
-              </p>
+              <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={user?.user_metadata?.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {getUserInitials(user?.user_metadata?.name || user?.email)}
-              </AvatarFallback>
-            </Avatar>
+            {profileLoading ? (
+              <Skeleton className="h-9 w-9 rounded-full" />
+            ) : (
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {getUserInitials(userName)}
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

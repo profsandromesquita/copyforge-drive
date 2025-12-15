@@ -73,11 +73,11 @@ export const useUserProfile = () => {
       const wasExpired = await handleSessionExpiredError(error);
       if (wasExpired) return;
       
-      // Fallback to user metadata
+      // Fallback to user metadata - no avatar to avoid Google flash
       setProfile({
         name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
         email: user.email || '',
-        avatar_url: user.user_metadata?.avatar_url || null,
+        avatar_url: null, // Don't use Google avatar as fallback
         cpf: null,
         phone: null,
         cep: null,

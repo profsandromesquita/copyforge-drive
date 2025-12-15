@@ -1,9 +1,9 @@
 import { User, SignOut, Gear, Plus, Buildings, Check, CaretRight } from "phosphor-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceCredits } from "@/hooks/useWorkspaceCredits";
 import { useWorkspacePlan } from "@/hooks/useWorkspacePlan";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
@@ -76,9 +76,8 @@ const WorkspaceItem = ({ workspace, isActive, onClick, disabled }: any) => {
 };
 
 export const UserMenu = () => {
-  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, loading: profileLoading } = useUserProfile();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const { data: credits } = useWorkspaceCredits();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -88,8 +87,10 @@ export const UserMenu = () => {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [selectedInactiveWorkspaceId, setSelectedInactiveWorkspaceId] = useState<string | undefined>(undefined);
 
-  const userName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
-  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
+  // Use profile avatar only - no Google fallback to avoid flash
+  const userName = profile?.name || user?.email?.split('@')[0] || 'Usuário';
+  const userAvatarUrl = profile?.avatar_url;
+  const workspaceAvatarUrl = activeWorkspace?.avatar_url;
 
   return (
     <>
@@ -109,31 +110,49 @@ export const UserMenu = () => {
       
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={avatarUrl || undefined} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-              {userName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          {profileLoading ? (
+            <Skeleton className="h-8 w-8 rounded-full" />
+          ) : (
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={userAvatarUrl || undefined} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                {userName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          )}
           <div className="hidden md:flex flex-col items-start">
             <p className="font-medium text-sm text-foreground leading-none">
               {userName}
             </p>
-            <p className="text-xs text-muted-foreground leading-none mt-1">
-              {activeWorkspace?.name || 'Carregando...'}
-            </p>
+            <div className="flex items-center gap-1.5 mt-1">
+              {workspaceAvatarUrl && (
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={workspaceAvatarUrl} />
+                  <AvatarFallback className="text-[8px] bg-muted">
+                    {activeWorkspace?.name?.charAt(0) || 'W'}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <p className="text-xs text-muted-foreground leading-none">
+                {activeWorkspace?.name || 'Carregando...'}
+              </p>
+            </div>
           </div>
         </DropdownMenuTrigger>
         
         <DropdownMenuContent align="end" className="w-72 bg-popover border-border p-2">
           {/* User Info Header */}
           <div className="flex items-center gap-3 px-2 py-3 mb-1">
-            <Avatar className="h-10 w-10 ring-2 ring-border">
-              <AvatarImage src={avatarUrl || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {userName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            {profileLoading ? (
+              <Skeleton className="h-10 w-10 rounded-full" />
+            ) : (
+              <Avatar className="h-10 w-10 ring-2 ring-border">
+                <AvatarImage src={userAvatarUrl || undefined} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {userName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
             <div className="flex flex-col flex-1 min-w-0">
               <p className="font-semibold text-sm text-foreground truncate">
                 {userName}
