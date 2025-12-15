@@ -172,6 +172,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "templates_cards"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_gen_history_copy"
             columns: ["copy_id"]
             isOneToOne: false
@@ -190,6 +197,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_gen_history_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "templates_cards"
             referencedColumns: ["id"]
           },
           {
@@ -541,6 +555,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "copy_chat_messages_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "templates_cards"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "copy_chat_messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -580,6 +601,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_copy"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "templates_cards"
             referencedColumns: ["id"]
           },
           {
@@ -644,6 +672,13 @@ export type Database = {
             columns: ["copy_id"]
             isOneToOne: false
             referencedRelation: "public_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copy_likes_copy_id_fkey"
+            columns: ["copy_id"]
+            isOneToOne: false
+            referencedRelation: "templates_cards"
             referencedColumns: ["id"]
           },
         ]
@@ -2472,6 +2507,82 @@ export type Database = {
           },
           {
             foreignKeyName: "workspace_subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates_cards: {
+        Row: {
+          blocks_count: number | null
+          copy_type: string | null
+          created_at: string | null
+          created_by: string | null
+          creator_avatar_url: string | null
+          creator_name: string | null
+          folder_id: string | null
+          id: string | null
+          preview_image_url: string | null
+          preview_text: string | null
+          sessions_count: number | null
+          title: string | null
+          updated_at: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "copies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "copies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "basic_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_folder"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_copies_workspace"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
