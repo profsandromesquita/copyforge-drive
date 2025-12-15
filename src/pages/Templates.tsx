@@ -333,10 +333,15 @@ const Templates = () => {
           {/* Content */}
           <div className="p-6 space-y-6">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <TemplateCardSkeleton key={`skeleton-${i}`} />
-                ))}
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                  <img 
+                    src={copyDriveIcon} 
+                    alt="Loading" 
+                    className="h-16 animate-spin"
+                  />
+                  <p className="text-muted-foreground text-sm">Carregando...</p>
+                </div>
               </div>
             ) : templates.length === 0 ? (
               <div className="text-center py-20">
