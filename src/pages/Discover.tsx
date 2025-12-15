@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { MagnifyingGlass, Sparkle } from 'phosphor-react';
+import { MagnifyingGlass } from 'phosphor-react';
 import { Input } from '@/components/ui/input';
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { useDiscover } from '@/hooks/useDiscover';
 import { DiscoverCard } from '@/components/discover/DiscoverCard';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CopyDestinationModal } from '@/components/discover/CopyDestinationModal';
 import { CopySuccessDialog } from '@/components/discover/CopySuccessDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,38 +16,84 @@ import { TypeFilter } from '@/components/filters/TypeFilter';
 import { SortFilter, SortType } from '@/components/filters/SortFilter';
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 import { UserMenu } from '@/components/layout/UserMenu';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { Loader2 } from 'lucide-react';
 
 const Discover = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
-  const { copies, loading, copyCopy, deleteCopy, moveCopy, toggleLike, isLikedByUser } = useDiscover();
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
-  const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
-  const [selectedCopyTitle, setSelectedCopyTitle] = useState<string>('');
-  const [showDestinationModal, setShowDestinationModal] = useState(false);
+  
+  // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedSort, setSelectedSort] = useState<SortType>('popular');
+  
+  // Debounce search to avoid excessive API calls
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
+  
+  // Use the optimized hook with server-side filtering
+  const { 
+    copies, 
+    loading, 
+    loadingMore,
+    hasMore,
+    loadMore,
+    copyCopy, 
+    toggleLike, 
+    isLikedByUser 
+  } = useDiscover({
+    search: debouncedSearch,
+    type: selectedType,
+    sort: selectedSort,
+    limit: 20,
+  });
 
-  // Estados para fluxo de sucesso
+  // Copy modal states
+  const [selectedCopyId, setSelectedCopyId] = useState<string | null>(null);
+  const [selectedCopyTitle, setSelectedCopyTitle] = useState<string>('');
+  const [showDestinationModal, setShowDestinationModal] = useState(false);
+
+  // Copy flow states
   const [isCopying, setIsCopying] = useState(false);
   const [copyingId, setCopyingId] = useState<string | null>(null);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [createdCopy, setCreatedCopy] = useState<{ id: string; title: string } | null>(null);
 
-  // Força modo claro no Discover
+  // Infinite scroll sentinel ref
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Force light mode on Discover
   useEffect(() => {
     setTheme('light');
   }, [setTheme]);
 
-  const handleCopy = (copyId: string) => {
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, loadMore]);
+
+  const handleCopy = useCallback((copyId: string) => {
     const copy = copies.find(c => c.id === copyId);
     setSelectedCopyId(copyId);
     setSelectedCopyTitle(copy?.title || '');
     setShowDestinationModal(true);
-  };
+  }, [copies]);
 
   const handleConfirmDestination = async (folderId: string | null) => {
     if (!selectedCopyId || !activeWorkspace?.id || !user?.id) return;
@@ -64,7 +110,6 @@ const Discover = () => {
         folderId,
         user.id,
         (newCopyId) => {
-          // Mostrar dialog de sucesso em vez de redirecionar
           setCreatedCopy({ id: newCopyId, title: selectedCopyTitle });
           setSuccessDialogOpen(true);
         }
@@ -76,32 +121,6 @@ const Discover = () => {
       setSelectedCopyTitle('');
     }
   };
-
-  const filteredCopies = copies
-    .filter((copy: any) => {
-      // Search filter
-      if (searchQuery && !copy.title?.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-
-      // Type filter
-      if (selectedType && copy.copy_type !== selectedType) {
-        return false;
-      }
-
-      return true;
-    })
-    .sort((a: any, b: any) => {
-      switch (selectedSort) {
-        case 'popular':
-          return (b.copy_count || 0) - (a.copy_count || 0);
-        case 'most_liked':
-          return (b.likes_count || 0) - (a.likes_count || 0);
-        case 'recent':
-        default:
-          return new Date(b.sessions?.[0]?.created_at || 0).getTime() - new Date(a.sessions?.[0]?.created_at || 0).getTime();
-      }
-    });
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -153,7 +172,7 @@ const Discover = () => {
                   <p className="text-muted-foreground text-sm">Carregando...</p>
                 </div>
               </div>
-            ) : filteredCopies.length === 0 ? (
+            ) : copies.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-muted-foreground">
                   {searchQuery 
@@ -163,21 +182,38 @@ const Discover = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCopies.map((copy) => (
-                  <DiscoverCard
-                    key={copy.id}
-                    copy={copy}
-                    onCopy={handleCopy}
-                    onDelete={deleteCopy}
-                    onMove={moveCopy}
-                    onLike={toggleLike}
-                    isLikedByUser={isLikedByUser(copy.id)}
-                    isCopying={isCopying}
-                    copyingId={copyingId}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {copies.map((copy) => (
+                    <DiscoverCard
+                      key={copy.id}
+                      copy={copy}
+                      onCopy={handleCopy}
+                      onLike={toggleLike}
+                      isLikedByUser={isLikedByUser(copy.id)}
+                      isCopying={isCopying}
+                      copyingId={copyingId}
+                    />
+                  ))}
+                </div>
+                
+                {/* Infinite scroll sentinel */}
+                <div ref={sentinelRef} className="h-4" />
+                
+                {/* Loading more indicator */}
+                {loadingMore && (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                
+                {/* End of list indicator */}
+                {!hasMore && copies.length > 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">Você viu todas as copies!</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>
