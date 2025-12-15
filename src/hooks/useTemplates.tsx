@@ -3,52 +3,125 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from './useWorkspace';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
-import { Copy } from '@/types/copy-editor';
 
-export const useTemplates = () => {
+// Type para o card de template (vindo da VIEW templates_cards)
+export interface TemplateCard {
+  id: string;
+  title: string;
+  copy_type: string | null;
+  folder_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  workspace_id: string;
+  preview_image_url: string | null;
+  preview_text: string | null;
+  sessions_count: number;
+  blocks_count: number;
+  creator_name: string | null;
+  creator_avatar_url: string | null;
+}
+
+interface UseTemplatesParams {
+  searchQuery?: string;
+  selectedType?: string | null;
+  selectedCreator?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}
+
+const PAGE_SIZE = 20;
+
+export const useTemplates = (params: UseTemplatesParams = {}) => {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
-  const [templates, setTemplates] = useState<Copy[]>([]);
+  const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchTemplates = useCallback(async () => {
+  const { searchQuery, selectedType, selectedCreator, dateFrom, dateTo } = params;
+
+  const fetchTemplates = useCallback(async (reset = false) => {
     if (!activeWorkspace?.id) return;
 
-    setLoading(true);
+    const isInitialLoad = reset || templates.length === 0;
+    if (isInitialLoad) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      // Query otimizada: buscar apenas colunas necessárias para listagem
-      // Usa VIEW basic_profiles (sem PII) para dados do criador
-      const { data, error } = await supabase
-        .from('copies')
-        .select(`
-          id,
-          title,
-          copy_type,
-          folder_id,
-          created_by,
-          created_at,
-          updated_at,
-          sessions,
-          creator:basic_profiles!fk_copies_creator(name, avatar_url)
-        `)
-        .eq('workspace_id', activeWorkspace.id)
-        .eq('is_template', true)
-        .order('created_at', { ascending: false });
+      const from = reset ? 0 : templates.length;
+      const to = from + PAGE_SIZE - 1;
+
+      // Query na VIEW otimizada (sem sessions JSONB)
+      let query = supabase
+        .from('templates_cards')
+        .select('*', { count: 'exact' })
+        .eq('workspace_id', activeWorkspace.id);
+
+      // Filtros server-side
+      if (searchQuery) {
+        query = query.ilike('title', `%${searchQuery}%`);
+      }
+      if (selectedType) {
+        query = query.eq('copy_type', selectedType);
+      }
+      if (selectedCreator) {
+        query = query.eq('created_by', selectedCreator);
+      }
+      if (dateFrom) {
+        query = query.gte('updated_at', dateFrom);
+      }
+      if (dateTo) {
+        query = query.lte('updated_at', dateTo);
+      }
+
+      // Ordenação e paginação
+      query = query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      const { data, count, error } = await query;
 
       if (error) throw error;
 
-      setTemplates(data as any || []);
+      const newTemplates = (data || []) as TemplateCard[];
+
+      if (reset) {
+        setTemplates(newTemplates);
+      } else {
+        setTemplates(prev => [...prev, ...newTemplates]);
+      }
+
+      setTotalCount(count || 0);
+      setHasMore(newTemplates.length === PAGE_SIZE);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Erro ao carregar modelos');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [activeWorkspace?.id]);
+  }, [activeWorkspace?.id, searchQuery, selectedType, selectedCreator, dateFrom, dateTo, templates.length]);
 
+  // Reset e fetch quando filtros mudam
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    if (activeWorkspace?.id) {
+      setTemplates([]);
+      setHasMore(true);
+      fetchTemplates(true);
+    }
+  }, [activeWorkspace?.id, searchQuery, selectedType, selectedCreator, dateFrom, dateTo]);
+
+  const loadMore = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchTemplates(false);
+    }
+  }, [loadingMore, hasMore, fetchTemplates]);
 
   const createFromTemplate = useCallback(async (
     templateId: string,
@@ -56,7 +129,7 @@ export const useTemplates = () => {
     projectId?: string | null,
     folderId?: string | null,
     userId?: string
-  ): Promise<Copy | null> => {
+  ) => {
     const finalWorkspaceId = workspaceId || activeWorkspace?.id;
     const finalUserId = userId || user?.id;
 
@@ -66,7 +139,7 @@ export const useTemplates = () => {
     }
 
     try {
-      // Fetch template
+      // Fetch template completo (precisa do sessions)
       const { data: template, error: fetchError } = await supabase
         .from('copies')
         .select('*')
@@ -99,7 +172,7 @@ export const useTemplates = () => {
       // Invalidar cache do Drive para que a nova copy apareça
       window.dispatchEvent(new CustomEvent('drive-invalidate'));
       
-      return newCopy as any as Copy;
+      return newCopy;
     } catch (error) {
       console.error('Error creating from template:', error);
       toast.error('Erro ao criar copy do modelo');
@@ -116,20 +189,21 @@ export const useTemplates = () => {
 
       if (error) throw error;
 
+      // Otimista: remove do estado local
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
       toast.success('Modelo excluído com sucesso!');
-      await fetchTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
       toast.error('Erro ao excluir modelo');
     }
-  }, [fetchTemplates]);
+  }, []);
 
   // Batch delete templates
   const deleteTemplates = useCallback(async (templateIds: string[]) => {
     if (templateIds.length === 0) return;
 
     try {
-      // ATUALIZAÇÃO OTIMISTA
+      // Otimista
       setTemplates(prev => prev.filter(t => !templateIds.includes(t.id)));
 
       const { error } = await supabase
@@ -138,13 +212,12 @@ export const useTemplates = () => {
         .in('id', templateIds);
 
       if (error) {
-        // ROLLBACK
-        await fetchTemplates();
+        // Rollback - refetch
+        fetchTemplates(true);
         throw error;
       }
 
       toast.success(`${templateIds.length} modelos excluídos com sucesso!`);
-      await fetchTemplates();
     } catch (error) {
       console.error('Error batch deleting templates:', error);
       toast.error('Erro ao excluir modelos');
@@ -182,7 +255,7 @@ export const useTemplates = () => {
       if (createError) throw createError;
 
       toast.success('Modelo duplicado com sucesso!');
-      await fetchTemplates();
+      fetchTemplates(true);
     } catch (error) {
       console.error('Error duplicating template:', error);
       toast.error('Erro ao duplicar modelo');
@@ -192,7 +265,11 @@ export const useTemplates = () => {
   return {
     templates,
     loading,
+    loadingMore,
+    hasMore,
+    totalCount,
     fetchTemplates,
+    loadMore,
     createFromTemplate,
     deleteTemplate,
     deleteTemplates,
