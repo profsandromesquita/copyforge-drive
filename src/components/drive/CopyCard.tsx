@@ -1,7 +1,9 @@
-import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon, Check } from "phosphor-react";
+import { DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon, Check } from "phosphor-react";
 import { useState, memo, useRef, useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import copyDriveLogo from '@/assets/copydrive-logo.png';
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,7 +146,7 @@ const CopyCard = memo(({
 
   return (
     <>
-      <div
+      <Card
         ref={setNodeRef}
         {...(selectionMode ? {} : { ...attributes, ...listeners })}
         onClick={handleCardClick}
@@ -154,67 +156,85 @@ const CopyCard = memo(({
         onPointerCancel={handlePointerUp}
         style={{ opacity: isDragging ? 0.5 : 1 }}
         className={cn(
-          "group relative border rounded-lg transition-all duration-200 cursor-pointer overflow-hidden bg-card hover:shadow-md",
+          "group h-full flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden",
           selectionMode && "cursor-pointer",
           !selectionMode && (isDragging ? 'cursor-grabbing opacity-50' : 'cursor-grab'),
           isSelected && "ring-2 ring-primary ring-offset-2 bg-primary/5",
           selectionMode && !isSelected && "hover:ring-2 hover:ring-primary/30"
         )}
       >
-        {/* Checkbox de Seleção - Sempre renderizado, visibilidade controlada por CSS */}
-        <div 
-          className={cn(
-            "absolute top-2 left-2 z-20 transition-opacity duration-200",
-            selectionMode 
-              ? "opacity-100" 
-              : "opacity-0 group-hover:opacity-50 hover:!opacity-100"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!selectionMode) {
-              if (navigator.vibrate) navigator.vibrate(50);
-              window.dispatchEvent(new CustomEvent('activate-selection-mode'));
-            }
-            onToggleSelect?.(id);
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <div className={cn(
-            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110",
-            isSelected 
-              ? "bg-primary border-primary text-primary-foreground" 
-              : "bg-background/80 border-muted-foreground/40 hover:border-primary/60"
-          )}>
-            {isSelected && <Check size={12} weight="bold" />}
+        {/* Visual Preview Section - No topo, dominante */}
+        <div className="relative h-36 md:h-48 bg-gradient-to-br from-background via-muted/10 to-muted/30 overflow-hidden border-b">
+          {/* Checkbox de Seleção */}
+          <div 
+            className={cn(
+              "absolute top-2 left-2 z-20 transition-opacity duration-200",
+              selectionMode 
+                ? "opacity-100" 
+                : "opacity-0 group-hover:opacity-50 hover:!opacity-100"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!selectionMode) {
+                if (navigator.vibrate) navigator.vibrate(50);
+                window.dispatchEvent(new CustomEvent('activate-selection-mode'));
+              }
+              onToggleSelect?.(id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className={cn(
+              "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer hover:scale-110",
+              isSelected 
+                ? "bg-primary border-primary text-primary-foreground" 
+                : "bg-background/80 border-muted-foreground/40 hover:border-primary/60"
+            )}>
+              {isSelected && <Check size={12} weight="bold" />}
+            </div>
           </div>
-        </div>
 
-        {/* Header Section - Icon, Title and Menu */}
-        <div className="p-3 pb-2 border-b" style={{ backgroundColor: 'rgb(231, 237, 248)' }}>
-          <div className="flex items-start gap-2">
-            <div className={cn("text-primary shrink-0 mt-0.5", selectionMode && "ml-6")}>
-              <FileText size={20} weight="duotone" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-foreground truncate leading-tight">
-                {title}
-              </h3>
-              {copyType && (
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                  {getCopyTypeLabel(copyType)}
+          {previewImageUrl ? (
+            // Thumbnail de imagem (projetado da VIEW)
+            <>
+              <img 
+                src={previewImageUrl} 
+                alt={title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
+            </>
+          ) : previewText ? (
+            // Preview de texto (projetado da VIEW)
+            <>
+              <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
+                <p className="text-sm text-muted-foreground/80 line-clamp-4">
+                  {previewText}
                 </p>
-              )}
+              </div>
+              {/* Bottom Fade Overlay */}
+              <div className="absolute bottom-0 inset-x-0 h-12 md:h-16 bg-gradient-to-t from-background/90 via-background/50 to-transparent pointer-events-none" />
+            </>
+          ) : (
+            // Fallback: Logo CopyDrive
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img 
+                src={copyDriveLogo} 
+                alt="CopyDrive"
+                className="w-24 h-24 object-contain opacity-30"
+              />
             </div>
-            
-            {!selectionMode && (
+          )}
+          
+          {/* Menu de ações e Status Badge - Overlay no canto superior direito */}
+          {!selectionMode && (
+            <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
               <DropdownMenu>
                 <DropdownMenuTrigger 
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-accent"
+                  className="bg-background/80 backdrop-blur-sm p-1.5 rounded-md hover:bg-background transition-colors"
                 >
-                  <DotsThree size={20} weight="bold" />
+                  <DotsThree size={16} weight="bold" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-popover border-border z-50">
                   <DropdownMenuItem 
@@ -259,84 +279,72 @@ const CopyCard = memo(({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
-          </div>
-        </div>
 
-        {/* Preview Section - Otimizado: usa dados projetados da VIEW */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden px-4">
-          {previewImageUrl ? (
-            // Thumbnail de imagem (projetado da VIEW)
-            <>
-              <img 
-                src={previewImageUrl} 
-                alt={title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-40" />
-            </>
-          ) : previewText ? (
-            // Preview de texto (projetado da VIEW)
-            <div className="absolute inset-0 p-4 overflow-hidden">
-              <p className="text-xs text-muted-foreground line-clamp-6 leading-relaxed">
-                {previewText}
-              </p>
-              {/* Bottom Fade Overlay */}
-              <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+              {status && (
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "text-[10px] px-1.5 py-0 h-5 font-medium",
+                    status === 'published' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
+                      : 'bg-background/80 text-muted-foreground border-border'
+                  )}
+                >
+                  {status === 'published' ? 'Publicado' : 'Rascunho'}
+                </Badge>
+              )}
             </div>
-          ) : (
-            // Fallback: Logo CopyDrive
-            <div className="absolute inset-0 flex items-center justify-center">
-              <img 
-                src={copyDriveLogo} 
-                alt="CopyDrive"
-                className="w-24 h-24 object-contain opacity-30"
-              />
-            </div>
-          )}
-          
-          {/* Status Badge - positioned absolute */}
-          {status && (
-            <Badge 
-              variant="outline"
-              className={`absolute top-2 right-2 text-[10px] px-1.5 py-0 h-5 font-medium z-10 ${
-                status === 'published' 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
-                  : 'bg-muted text-muted-foreground border-border'
-              }`}
-            >
-              {status === 'published' ? 'Publicado' : 'Rascunho'}
-            </Badge>
           )}
         </div>
 
-        {/* Footer - Appears on hover */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.45) 30%, rgba(0, 0, 0, 0.25) 55%, rgba(0, 0, 0, 0.1) 75%, transparent 100%)', paddingTop: '2rem' }}>
-          <div className="flex items-center justify-between gap-2">
-            {creatorName ? (
+        {/* Content Section - Título e info abaixo do preview */}
+        <CardContent className="flex-1 p-3 md:p-6">
+          <div className="space-y-2">
+            {/* Title */}
+            <div>
+              <h2 className="text-lg md:text-xl font-bold truncate">{title}</h2>
+              {copyType && (
+                <p className="text-xs text-muted-foreground/60 mt-1 truncate">
+                  {getCopyTypeLabel(copyType)}
+                </p>
+              )}
+            </div>
+
+            {/* Creator info */}
+            {creatorName && (
               <div className="flex items-center gap-2">
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage src={creatorAvatar || undefined} />
-                  <AvatarFallback className="text-[10px] bg-white/20 text-white">
+                  <AvatarFallback className="text-[10px]">
                     {creatorName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] text-white font-medium drop-shadow-sm">
+                <span className="text-xs text-muted-foreground truncate">
                   {creatorName}
                 </span>
               </div>
-            ) : (
-              <div />
-            )}
-            
-            {subtitle && (
-              <span className="text-[10px] text-white/90 shrink-0 drop-shadow-sm">
-                {subtitle}
-              </span>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+
+        {/* Footer - Sempre visível (quando não em selection mode) */}
+        {!selectionMode && (
+          <CardFooter className="p-3 md:p-4 pt-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick?.();
+              }}
+            >
+              <Pencil size={16} className="mr-2" />
+              Editar
+            </Button>
+          </CardFooter>
+        )}
+      </Card>
 
       <RenameDialog
         open={renameDialogOpen}
