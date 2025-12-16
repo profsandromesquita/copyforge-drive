@@ -319,11 +319,11 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [sessions, selectedBlockId]);
 
   const updateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
-    setSessions(sessions.map(session => ({
+    setSessions(prev => prev.map(session => ({
       ...session,
       blocks: session.blocks.map(b => b.id === blockId ? { ...b, ...updates } : b),
     })));
-  }, [sessions]);
+  }, []);
 
   const duplicateBlock = useCallback((blockId: string) => {
     setSessions(sessions.map(session => {
