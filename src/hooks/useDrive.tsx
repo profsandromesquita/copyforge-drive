@@ -27,11 +27,11 @@ interface Copy {
   updated_at: string;
   copy_type: string | null;
   status: string | null;
-  sessions: any; // JSONB for preview
-  creator?: {
-    name: string;
-    avatar_url: string | null;
-  };
+  // Campos projetados da VIEW drive_cards (substituem sessions)
+  preview_image_url: string | null;
+  preview_text: string | null;
+  creator_name: string | null;
+  creator_avatar_url: string | null;
 }
 
 interface DriveContextType {
@@ -109,27 +109,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: foldersData, error: foldersError } = await foldersQuery;
       if (foldersError) throw foldersError;
 
-      // Fetch copies with creator info (exclude templates)
-      // OTIMIZADO: Seleção explícita de colunas - exclui campos pesados não usados na listagem
-      // Usa VIEW basic_profiles (sem PII) para dados do criador
+      // Fetch copies usando VIEW otimizada (elimina over-fetching de sessions)
+      // drive_cards já projeta preview_image_url, preview_text e creator info
       const copiesQuery = supabase
-        .from('copies')
-        .select(`
-          id,
-          title,
-          workspace_id,
-          project_id,
-          folder_id,
-          created_by,
-          created_at,
-          updated_at,
-          copy_type,
-          status,
-          sessions,
-          creator:basic_profiles!fk_copies_creator(name, avatar_url)
-        `)
+        .from('drive_cards')
+        .select('*')
         .eq('workspace_id', activeWorkspace.id)
-        .eq('is_template', false)
         .order('created_at', { ascending: false });
 
       if (folderId) {
@@ -300,7 +285,14 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
       toast.success('Copy criada com sucesso!');
       await fetchDriveContent(currentFolder?.id || null);
-      return data as Copy;
+      // Retorna dados básicos para navegação (não precisa dos campos da VIEW)
+      return {
+        ...data,
+        preview_image_url: null,
+        preview_text: null,
+        creator_name: null,
+        creator_avatar_url: null,
+      } as Copy;
     } catch (error) {
       console.error('Error creating copy:', error);
       toast.error('Erro ao criar copy');

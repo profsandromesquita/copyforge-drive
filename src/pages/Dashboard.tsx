@@ -370,11 +370,12 @@ const Dashboard = () => {
             id={copy.id}
             title={copy.title}
             folderId={copy.folder_id}
-            creatorName={copy.creator?.name}
-            creatorAvatar={copy.creator?.avatar_url}
+            creatorName={copy.creator_name || undefined}
+            creatorAvatar={copy.creator_avatar_url}
             status={(copy as any).status || 'draft'}
             subtitle={formatDate(copy.updated_at)}
-            sessions={(copy as any).sessions}
+            previewImageUrl={copy.preview_image_url}
+            previewText={copy.preview_text}
             copyType={(copy as any).copy_type}
           />
         )
@@ -617,11 +618,12 @@ const Dashboard = () => {
                               id={copy.id}
                               title={copy.title}
                               folderId={copy.folder_id}
-                              creatorName={copy.creator?.name}
-                              creatorAvatar={copy.creator?.avatar_url}
+                              creatorName={copy.creator_name || undefined}
+                              creatorAvatar={copy.creator_avatar_url}
                               status={copy.status || 'draft'}
                               subtitle={formatDate(copy.updated_at)}
-                              sessions={copy.sessions}
+                              previewImageUrl={copy.preview_image_url}
+                              previewText={copy.preview_text}
                               copyType={copy.copy_type}
                               onClick={() => !selectionMode && navigate(`/copy/${copy.id}`)}
                               selectionMode={selectionMode}
