@@ -46,7 +46,14 @@ export const MethodologyForm = ({
 
   const MIN_CHARS = 50;
 
+  // Refs para valores usados no cleanup (evita problemas de closure)
   const mountedRef = useRef(true);
+  const methodologyRef = useRef(editingMethodology);
+  const methodologyCreatedRef = useRef(methodologyCreated);
+  const formDataRef = useRef(formData);
+  const identificationRef = useRef(identification);
+  const autoSaveRef = useRef<() => Promise<void>>();
+
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
@@ -88,6 +95,35 @@ export const MethodologyForm = ({
       localStorage.setItem('methodology-draft', JSON.stringify(formData));
     }
   }, [formData, editingMethodology]);
+
+  // Manter refs atualizados para uso no cleanup
+  useEffect(() => { methodologyRef.current = editingMethodology; }, [editingMethodology]);
+  useEffect(() => { methodologyCreatedRef.current = methodologyCreated; }, [methodologyCreated]);
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { identificationRef.current = identification; }, [identification]);
+
+  // Flush auto-save on unmount - APENAS no unmount real
+  useEffect(() => {
+    return () => {
+      const currentMethodology = methodologyRef.current;
+      if (currentMethodology && methodologyCreatedRef.current) {
+        // Salvar draft no localStorage como backup
+        try {
+          localStorage.setItem(
+            `methodology-draft-${currentMethodology.id}`,
+            JSON.stringify({
+              formData: formDataRef.current,
+              identification: identificationRef.current
+            })
+          );
+        } catch (e) {
+          console.error('Erro ao salvar draft no unmount:', e);
+        }
+        // Fire-and-forget save via ref
+        autoSaveRef.current?.();
+      }
+    };
+  }, []); // Array vazio = executa apenas no unmount real
 
   // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
@@ -139,6 +175,9 @@ export const MethodologyForm = ({
       }
     }
   }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange, setActiveProject]);
+
+  // Manter autoSaveRef atualizado
+  useEffect(() => { autoSaveRef.current = autoSaveToDatabase; }, [autoSaveToDatabase]);
 
   // Trigger auto-save com debounce de 3 segundos
   useEffect(() => {
