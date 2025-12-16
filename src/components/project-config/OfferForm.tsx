@@ -38,6 +38,14 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   const [originalId, setOriginalId] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
+  
+  // Refs para valores usados no cleanup (evita loop infinito)
+  const offerRef = useRef(offer);
+  const offerCreatedRef = useRef(offerCreated);
+  const formDataRef = useRef(formData);
+  const identificationRef = useRef(identification);
+  const autoSaveRef = useRef<() => Promise<void>>();
+
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
@@ -132,18 +140,29 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
     }
   }, [offer, offerCreated, autoSaveToDatabase]);
 
-  // Flush auto-save on unmount and persist a local draft for existing offer
+  // Manter refs atualizados
+  useEffect(() => { offerRef.current = offer; }, [offer]);
+  useEffect(() => { offerCreatedRef.current = offerCreated; }, [offerCreated]);
+  useEffect(() => { formDataRef.current = formData; }, [formData]);
+  useEffect(() => { identificationRef.current = identification; }, [identification]);
+  useEffect(() => { autoSaveRef.current = autoSaveToDatabase; }, [autoSaveToDatabase]);
+
+  // Flush auto-save on unmount ONLY (array vazio = executa apenas no unmount real)
   useEffect(() => {
     return () => {
-      if (offer && offerCreated) {
+      const currentOffer = offerRef.current;
+      if (currentOffer && offerCreatedRef.current) {
         try {
-          localStorage.setItem(`offer-draft-${offer.id}`, JSON.stringify({ formData, identification }));
+          localStorage.setItem(
+            `offer-draft-${currentOffer.id}`,
+            JSON.stringify({ formData: formDataRef.current, identification: identificationRef.current })
+          );
         } catch {}
-        // Fire-and-forget save to backend
-        void autoSaveToDatabase();
+        // Fire-and-forget save via ref (não causa re-render)
+        autoSaveRef.current?.();
       }
     };
-  }, [offer, offerCreated, formData, identification, autoSaveToDatabase]);
+  }, []); // 🟢 Array vazio garante execução apenas no unmount real
 
   const handleCreateOffer = async () => {
     if (!identification.trim()) {
