@@ -329,7 +329,12 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
                 value={formData.type} 
                 onValueChange={(v) => {
                   setFormData({...formData, type: v as any});
-                  handleBlur();
+                }}
+                onOpenChange={(open) => {
+                  // Salva quando o dropdown fecha (após state estar atualizado)
+                  if (!open && offer && offerCreated) {
+                    autoSaveToDatabase();
+                  }
                 }}
               >
                 <SelectTrigger>
