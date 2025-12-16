@@ -1,42 +1,22 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider, useTheme } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { ProjectProvider } from "@/hooks/useProject";
 import { DriveProvider } from "@/hooks/useDrive";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
 import Discover from "./pages/Discover";
 import CopyEditor from "./pages/CopyEditor";
 import MyProject from "./pages/MyProject";
-import { useEffect } from "react";
-import { useTheme } from "next-themes";
-
-// Wrapper para permitir tema apenas no CopyEditor
-const CopyEditorWithTheme = () => {
-  const { setTheme } = useTheme();
-  
-  useEffect(() => {
-    // Restaura o tema salvo do editor (se existir)
-    const editorTheme = localStorage.getItem('editor-theme');
-    if (editorTheme) {
-      setTheme(editorTheme);
-    }
-    
-    return () => {
-      // Volta para light mode ao sair do editor
-      setTheme('light');
-    };
-  }, [setTheme]);
-  
-  return <CopyEditor />;
-};
 import PublicCopy from "./pages/PublicCopy";
 import SuperAdmin from "./pages/SuperAdmin";
 import ProjectConfig from "./pages/ProjectConfig";
@@ -44,7 +24,6 @@ import SignupInvite from "./pages/SignupInvite";
 import AcceptInvite from "./pages/AcceptInvite";
 import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
-import { AdminRoute } from "./components/auth/AdminRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminClientes from "./pages/admin/AdminClientes";
 import AdminClienteDetalhes from "./pages/admin/AdminClienteDetalhes";
@@ -55,6 +34,24 @@ import AdminWorkspaceDetalhes from "./pages/admin/AdminWorkspaceDetalhes";
 import AdminTransactions from "./pages/admin/AdminTransactions";
 import Plans from "./pages/Plans";
 import Onboarding from "./pages/Onboarding";
+
+// Wrapper para permitir tema apenas no CopyEditor
+const CopyEditorWithTheme = () => {
+  const { setTheme } = useTheme();
+  
+  useEffect(() => {
+    const editorTheme = localStorage.getItem('editor-theme');
+    if (editorTheme) {
+      setTheme(editorTheme);
+    }
+    
+    return () => {
+      setTheme('light');
+    };
+  }, [setTheme]);
+  
+  return <CopyEditor />;
+};
 
 const queryClient = new QueryClient();
 
