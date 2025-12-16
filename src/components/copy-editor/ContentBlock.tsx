@@ -529,7 +529,15 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
             ))}
             {isSelected && (
               <div className={`flex ${getListAlignmentClass()}`}>
-                <Button variant="outline" size="sm" onClick={addListItem}>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addListItem();
+                  }}
+                >
                   + Adicionar item
                 </Button>
               </div>
