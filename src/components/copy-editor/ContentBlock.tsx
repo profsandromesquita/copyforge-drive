@@ -47,6 +47,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   } = useCopyEditor();
   const { user } = useAuth();
   const editableRef = useRef<HTMLDivElement>(null);
+  const isEditingRef = useRef(false); // Protege estado local durante edição ativa
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [focusModeContent, setFocusModeContent] = useState('');
   const [focusModeKey, setFocusModeKey] = useState(0);
@@ -149,6 +150,12 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   // Sincronizar listItems quando block.content mudar via props (ex: Substituir Seleção)
   useEffect(() => {
     if (block.type !== 'list') return;
+    
+    // ⚠️ Não sobrescrever enquanto usuário está editando (protege itens novos/vazios)
+    if (isEditingRef.current) {
+      console.log('🛡️ [ContentBlock] Sincronização bloqueada: edição ativa');
+      return;
+    }
     
     const newListItems = sanitizeListContent(block.content);
     
@@ -335,6 +342,8 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   };
 
   const handleListChange = (index: number, value: string) => {
+    isEditingRef.current = true; // Bloquear sincronização
+    
     const newItems = [...listItems];
     newItems[index] = value;
     setListItems(newItems);
@@ -348,18 +357,35 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     } else {
       handleContentChange(newItems);
     }
+    
+    setTimeout(() => {
+      isEditingRef.current = false;
+    }, 150);
   };
 
   const addListItem = () => {
+    isEditingRef.current = true; // Bloquear sincronização
+    
     const newItems = [...listItems, ''];
     setListItems(newItems);
     handleContentChange(newItems);
+    
+    // Liberar após ciclo de render
+    setTimeout(() => {
+      isEditingRef.current = false;
+    }, 150);
   };
 
   const removeListItem = (index: number) => {
+    isEditingRef.current = true;
+    
     const newItems = listItems.filter((_, i) => i !== index);
     setListItems(newItems);
     handleContentChange(newItems);
+    
+    setTimeout(() => {
+      isEditingRef.current = false;
+    }, 150);
   };
 
   const renderContent = () => {
