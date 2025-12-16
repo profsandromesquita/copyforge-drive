@@ -1,5 +1,5 @@
 import { FileText, DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon, Check } from "phosphor-react";
-import { useState, useMemo, memo, useRef, useCallback } from "react";
+import { useState, memo, useRef, useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import copyDriveLogo from '@/assets/copydrive-logo.png';
 import {
@@ -12,8 +12,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useDrive } from "@/hooks/useDrive";
 import MoveModal from "./MoveModal";
-import { BlockPreview } from "@/components/copy-editor/BlockPreview";
-import { Session } from "@/types/copy-editor";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { RenameDialog } from "@/components/ui/rename-dialog";
 import { getCopyTypeLabel } from "@/lib/copy-types";
@@ -27,7 +25,9 @@ interface CopyCardProps {
   creatorAvatar?: string | null;
   status?: 'draft' | 'published';
   folderId?: string | null;
-  sessions?: Session[];
+  // Campos projetados da VIEW drive_cards (substituem sessions)
+  previewImageUrl?: string | null;
+  previewText?: string | null;
   copyType?: string;
   onClick?: () => void;
   // Props de seleção
@@ -47,7 +47,8 @@ const CopyCard = memo(({
   creatorAvatar, 
   status, 
   folderId, 
-  sessions, 
+  previewImageUrl,
+  previewText,
   copyType, 
   onClick,
   selectionMode = false,
@@ -63,27 +64,6 @@ const CopyCard = memo(({
   // Long press refs
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const longPressStartPos = useRef<{ x: number; y: number } | null>(null);
-
-  // Memoizar extração de imagem para evitar recálculo a cada render
-  const firstImage = useMemo(() => {
-    if (!sessions || sessions.length === 0) return null;
-    
-    for (const session of sessions) {
-      for (const block of session.blocks) {
-        if (block.type === 'image' && block.config?.imageUrl) {
-          return block.config.imageUrl;
-        }
-      }
-    }
-    return null;
-  }, [sessions]);
-
-  // Memoizar extração de blocos para evitar recálculo a cada render
-  const firstBlocks = useMemo(() => {
-    if (!sessions || sessions.length === 0) return [];
-    const firstSession = sessions[0];
-    return firstSession.blocks.slice(0, 4);
-  }, [sessions]);
 
   // DESATIVAR DRAG QUANDO EM SELECTION MODE
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -283,33 +263,27 @@ const CopyCard = memo(({
           </div>
         </div>
 
-        {/* Preview Section */}
+        {/* Preview Section - Otimizado: usa dados projetados da VIEW */}
         <div className="aspect-[4/3] bg-gradient-to-br from-background via-muted/10 to-muted/30 relative overflow-hidden px-4">
-          {firstImage ? (
-            // Thumbnail de imagem
+          {previewImageUrl ? (
+            // Thumbnail de imagem (projetado da VIEW)
             <>
               <img 
-                src={firstImage} 
+                src={previewImageUrl} 
                 alt={title}
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-40" />
             </>
-          ) : firstBlocks.length > 0 ? (
-            // Preview de blocos
-            <>
-              <div className="absolute inset-x-4 top-0 bottom-0 p-2 overflow-hidden">
-                <div className="space-y-0.5 scale-[0.55] origin-top-left transform-gpu pointer-events-none" style={{ width: '165%' }}>
-                  {firstBlocks.map((block) => (
-                    <div key={block.id} className="opacity-90">
-                      <BlockPreview block={block} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+          ) : previewText ? (
+            // Preview de texto (projetado da VIEW)
+            <div className="absolute inset-0 p-4 overflow-hidden">
+              <p className="text-xs text-muted-foreground line-clamp-6 leading-relaxed">
+                {previewText}
+              </p>
               {/* Bottom Fade Overlay */}
               <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
-            </>
+            </div>
           ) : (
             // Fallback: Logo CopyDrive
             <div className="absolute inset-0 flex items-center justify-center">
