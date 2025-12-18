@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -27,6 +37,10 @@ export const ShareModal = ({ open, onOpenChange, copyId }: ShareModalProps) => {
   const [showInDiscover, setShowInDiscover] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  // Estado para AlertDialog de confirmação
+  const [showPublicConfirm, setShowPublicConfirm] = useState(false);
+  const [wasPublicOnLoad, setWasPublicOnLoad] = useState(false);
 
   const publicLink = `${window.location.origin}/view/${copyId}`;
 
@@ -46,7 +60,9 @@ export const ShareModal = ({ open, onOpenChange, copyId }: ShareModalProps) => {
 
       if (error) throw error;
 
-      setIsPublic(data.is_public || false);
+      const publicState = data.is_public || false;
+      setIsPublic(publicState);
+      setWasPublicOnLoad(publicState);
       setHasPassword(!!data.public_password);
       setPassword(data.public_password || '');
       setShowInDiscover(data.show_in_discover || false);
@@ -54,6 +70,25 @@ export const ShareModal = ({ open, onOpenChange, copyId }: ShareModalProps) => {
       console.error('Error loading copy settings:', error);
       toast.error('Erro ao carregar configurações');
     }
+  };
+
+  // Interceptar mudança de visibilidade para exigir confirmação
+  const handleVisibilityChange = (newValue: boolean) => {
+    if (newValue && !wasPublicOnLoad) {
+      // Tornando público pela primeira vez - exigir confirmação
+      setShowPublicConfirm(true);
+    } else {
+      // Tornando privado ou já era público - OK direto
+      setIsPublic(newValue);
+      if (!newValue) {
+        setShowInDiscover(false);
+      }
+    }
+  };
+
+  const confirmMakePublic = () => {
+    setIsPublic(true);
+    setShowPublicConfirm(false);
   };
 
   const handleSave = async () => {
@@ -87,100 +122,134 @@ export const ShareModal = ({ open, onOpenChange, copyId }: ShareModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Compartilhar Copy</DialogTitle>
-          <DialogDescription>
-            Configure como você deseja compartilhar esta copy
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartilhar Copy</DialogTitle>
+            <DialogDescription>
+              Configure como você deseja compartilhar esta copy
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Visibilidade Toggle */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="visibility">Visibilidade</Label>
-              <p className="text-sm text-muted-foreground">
-                {isPublic ? 'Pública' : 'Privada'}
-              </p>
+          <div className="space-y-6 py-4">
+            {/* Visibilidade Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="visibility">Visibilidade</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isPublic ? 'Pública' : 'Privada'}
+                </p>
+              </div>
+              <Switch
+                id="visibility"
+                checked={isPublic}
+                onCheckedChange={handleVisibilityChange}
+              />
             </div>
-            <Switch
-              id="visibility"
-              checked={isPublic}
-              onCheckedChange={setIsPublic}
-            />
+
+            {/* Opções Públicas */}
+            {isPublic && (
+              <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                {/* Link Público */}
+                <div className="space-y-2">
+                  <Label>Link Público</Label>
+                  <div className="flex gap-2">
+                    <Input value={publicLink} readOnly className="flex-1" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={copyToClipboard}
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Proteger com Senha */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password-toggle">Proteger com senha</Label>
+                    <Switch
+                      id="password-toggle"
+                      checked={hasPassword}
+                      onCheckedChange={setHasPassword}
+                    />
+                  </div>
+                  {hasPassword && (
+                    <Input
+                      type="password"
+                      placeholder="Digite a senha"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                {/* Exibir em Descobrir */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="discover">Exibir em "Descobrir"</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Outros usuários poderão ver e copiar
+                    </p>
+                  </div>
+                  <Switch
+                    id="discover"
+                    checked={showInDiscover}
+                    onCheckedChange={setShowInDiscover}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Opções Públicas */}
-          {isPublic && (
-            <div className="space-y-4 pl-4 border-l-2 border-primary/20">
-              {/* Link Público */}
-              <div className="space-y-2">
-                <Label>Link Público</Label>
-                <div className="flex gap-2">
-                  <Input value={publicLink} readOnly className="flex-1" />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={copyToClipboard}
-                  >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-              {/* Proteger com Senha */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password-toggle">Proteger com senha</Label>
-                  <Switch
-                    id="password-toggle"
-                    checked={hasPassword}
-                    onCheckedChange={setHasPassword}
-                  />
-                </div>
-                {hasPassword && (
-                  <Input
-                    type="password"
-                    placeholder="Digite a senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                )}
+      {/* AlertDialog de Confirmação para Tornar Público */}
+      <AlertDialog open={showPublicConfirm} onOpenChange={setShowPublicConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Tornar Copy Pública?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Ao tornar esta copy pública:</p>
+                <ul className="list-disc pl-4 space-y-1 text-sm">
+                  <li>Qualquer pessoa com o link poderá visualizar o conteúdo</li>
+                  <li>Se ativar "Descobrir", outros usuários poderão copiar</li>
+                  <li>Dados de negócio podem ser expostos acidentalmente</li>
+                </ul>
+                <p className="font-medium pt-1">Tem certeza que deseja continuar?</p>
               </div>
-
-              {/* Exibir em Descobrir */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="discover">Exibir em "Descobrir"</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Outros usuários poderão ver e copiar
-                  </p>
-                </div>
-                <Switch
-                  id="discover"
-                  checked={showInDiscover}
-                  onCheckedChange={setShowInDiscover}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmMakePublic}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              Sim, Tornar Pública
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
