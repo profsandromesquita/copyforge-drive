@@ -69,7 +69,7 @@ export const cleanPastedHTML = (html: string): string => {
 
 /**
  * Handler para evento de paste em contentEditable
- * Limpa a formatação do conteúdo colado
+ * Limpa a formatação do conteúdo colado com fallback robusto
  */
 export const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
   e.preventDefault();
@@ -88,7 +88,18 @@ export const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     contentToInsert = textData.replace(/\n/g, '<br>');
   }
 
-  // Inserir o conteúdo limpo no cursor atual
+  // MÉTODO 1: execCommand (funciona na maioria dos browsers)
+  if (document.queryCommandSupported && document.queryCommandSupported('insertHTML')) {
+    const success = document.execCommand('insertHTML', false, contentToInsert);
+    if (success) {
+      // Disparar evento de input para react detectar mudança
+      const target = e.currentTarget;
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+  }
+
+  // MÉTODO 2: Fallback com Selection API
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return;
 
@@ -114,4 +125,40 @@ export const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     selection.removeAllRanges();
     selection.addRange(range);
   }
+
+  // Disparar evento de input para react detectar mudança
+  const target = e.currentTarget;
+  target.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
+/**
+ * Handler simples para Textarea controlado
+ * NÃO previne o default - deixa o browser e react-hook-form gerenciarem
+ */
+export const handleTextareaPaste = (
+  e: React.ClipboardEvent<HTMLTextAreaElement>,
+  setValue: (value: string) => void,
+  currentValue: string
+) => {
+  // Previne apenas se precisar limpar formatação HTML
+  const htmlData = e.clipboardData.getData('text/html');
+  
+  if (htmlData) {
+    e.preventDefault();
+    const textData = e.clipboardData.getData('text/plain');
+    
+    // Para textarea, usar apenas texto plain (sem HTML)
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    
+    const newValue = currentValue.substring(0, start) + textData + currentValue.substring(end);
+    setValue(newValue);
+    
+    // Reposicionar cursor após o texto colado
+    requestAnimationFrame(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + textData.length;
+    });
+  }
+  // Se não tiver HTML, deixa o comportamento padrão do browser
 };

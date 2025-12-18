@@ -55,17 +55,8 @@ export const OffersTab = () => {
     }
   }, [offers, editingOffer]);
 
-  // Recarregar dados quando a aba ganha foco
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isFormOpen) {
-        refreshProjects();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isFormOpen, refreshProjects]);
+  // REMOVIDO: visibilitychange listener causava race conditions e perda de dados
+  // Os dados são sincronizados via setActiveProject no auto-save
 
   const handleAddOffer = () => {
     localStorage.removeItem(EDITING_STORAGE_KEY);
