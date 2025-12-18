@@ -88,6 +88,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   };
 
   const onSubmit = async (data: any) => {
+    console.log('🚀 [IdentityTab] onSubmit iniciado', { isNew, hasActiveProject: !!activeProject, data });
     setSaving(true);
     try {
       const updates = {
@@ -97,9 +98,11 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
         brand_personality: brandPersonality,
       };
 
-      if (isNew && !activeProject) {
+      if (isNew) {
+        console.log('📝 [IdentityTab] Modo criação de projeto novo');
         // Create new project with identity data
         if (!activeWorkspace?.id || !user?.id) {
+          console.error('❌ [IdentityTab] Workspace ou usuário não encontrado', { workspaceId: activeWorkspace?.id, userId: user?.id });
           toast.error('Workspace ou usuário não encontrado');
           return;
         }
@@ -136,16 +139,23 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
           .single();
 
         if (createError) {
+          console.error('❌ [IdentityTab] Erro ao criar projeto:', createError);
           throw createError;
         }
 
+        console.log('✅ [IdentityTab] Projeto criado com sucesso:', projectData);
         toast.success('Projeto criado com sucesso!');
         await refreshProjects();
         setActiveProject(projectData as any);
         setIsEditing(false);
-        navigate(`/project/${projectData.id}`);
+        
+        // Navega para página do projeto recém-criado
+        console.log('🔄 [IdentityTab] Navegando para:', `/project/${projectData.id}`);
+        navigate(`/project/${projectData.id}`, { replace: true });
+        
         // Avança para próxima aba após navegação
         setTimeout(() => {
+          console.log('➡️ [IdentityTab] Chamando onSaveSuccess');
           onSaveSuccess?.();
         }, 100);
       } else if (activeProject) {

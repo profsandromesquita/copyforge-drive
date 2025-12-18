@@ -58,17 +58,8 @@ export const MethodologyTab = () => {
     }
   }, [methodologies, editingMethodology]);
 
-  // Recarregar dados quando a aba ganha foco
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isFormOpen) {
-        refreshProjects();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isFormOpen, refreshProjects]);
+  // REMOVIDO: visibilitychange listener causava race conditions e perda de dados
+  // Os dados são sincronizados via setActiveProject no auto-save
 
   const handleAddMethodology = () => {
     localStorage.removeItem(EDITING_STORAGE_KEY);
