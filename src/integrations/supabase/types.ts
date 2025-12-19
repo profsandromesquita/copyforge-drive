@@ -369,6 +369,8 @@ export type Database = {
           is_template: boolean | null
           likes_count: number | null
           platform: string | null
+          preview_image_url: string | null
+          preview_text: string | null
           project_id: string | null
           public_password: string | null
           selected_audience_id: string | null
@@ -401,6 +403,8 @@ export type Database = {
           is_template?: boolean | null
           likes_count?: number | null
           platform?: string | null
+          preview_image_url?: string | null
+          preview_text?: string | null
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
@@ -433,6 +437,8 @@ export type Database = {
           is_template?: boolean | null
           likes_count?: number | null
           platform?: string | null
+          preview_image_url?: string | null
+          preview_text?: string | null
           project_id?: string | null
           public_password?: string | null
           selected_audience_id?: string | null
