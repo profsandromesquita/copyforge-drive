@@ -342,71 +342,133 @@ serve(async (req) => {
     ];
 
     // Chamar API de geração de imagem
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: messages,
-        modalities: ['image', 'text']
-      }),
-    });
+    // Função auxiliar para fazer a chamada de geração
+    async function callImageAPI(msgs: any[]): Promise<any> {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: msgs,
+          modalities: ['image', 'text']
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erro na API:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de requisições atingido. Tente novamente em alguns instantes.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos insuficientes. Adicione mais créditos para continuar.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro na API:', response.status, errorText);
+        
+        if (response.status === 429) {
+          throw { status: 429, message: 'Limite de requisições atingido. Tente novamente em alguns instantes.' };
+        }
+        
+        if (response.status === 402) {
+          throw { status: 402, message: 'Créditos insuficientes. Adicione mais créditos para continuar.' };
+        }
+
+        throw new Error(`Erro na API: ${response.status}`);
       }
 
-      throw new Error(`Erro na API: ${response.status}`);
+      return response.json();
     }
 
-    const data = await response.json();
+    // Função para extrair URL da imagem da resposta
+    function extractImageUrl(data: any): string | null {
+      // Tentar extrair de message.images
+      let imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
+      if (!imageUrl && data.choices?.[0]?.message?.content) {
+        const content = data.choices[0].message.content;
+        if (Array.isArray(content)) {
+          const imageContent = content.find((c: any) => c.type === 'image_url');
+          if (imageContent) {
+            imageUrl = imageContent.image_url?.url;
+          }
+        }
+      }
+      
+      if (!imageUrl && data.data?.[0]?.url) {
+        imageUrl = data.data[0].url;
+      }
+
+      return imageUrl || null;
+    }
+
+    let data: any;
+    let generatedImageUrl: string | null = null;
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    // Tentar gerar imagem, com retry se modelo retornar apenas texto
+    while (retryCount <= maxRetries && !generatedImageUrl) {
+      try {
+        let currentMessages = messages;
+        
+        // Se for retry, usar prompt mais direto
+        if (retryCount > 0) {
+          console.log(`🔄 Retry ${retryCount}/${maxRetries} - usando prompt mais direto`);
+          
+          // Para variation/optimize, manter a imagem mas simplificar o texto
+          if (type !== 'generate' && imageUrl) {
+            currentMessages = [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `Generate an image: ${type === 'variation' ? 'Create a creative variation of this image' : 'Optimize this image'}. ${prompt}. DO NOT respond with text, ONLY generate the image.`
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: { url: imageUrl }
+                  }
+                ]
+              }
+            ];
+          } else {
+            // Para generate, simplificar o prompt
+            currentMessages = [
+              {
+                role: 'user',
+                content: `Generate an image: ${prompt}. DO NOT respond with text, ONLY generate the image.`
+              }
+            ];
+          }
+        }
+
+        data = await callImageAPI(currentMessages);
+        generatedImageUrl = extractImageUrl(data);
+        
+        if (!generatedImageUrl) {
+          console.log(`⚠️ Tentativa ${retryCount + 1}: Nenhuma imagem retornada, modelo respondeu com texto`);
+          retryCount++;
+        }
+      } catch (apiError: any) {
+        if (apiError.status) {
+          return new Response(
+            JSON.stringify({ error: apiError.message }),
+            { status: apiError.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        throw apiError;
+      }
+    }
+
+    if (!generatedImageUrl) {
+      console.error('❌ Falha após todas as tentativas. Última resposta:', JSON.stringify(data, null, 2).substring(0, 500));
+      throw new Error('O modelo não conseguiu gerar uma imagem. Tente reformular o prompt.');
+    }
+    
+    console.log('✅ Imagem extraída com sucesso');
 
     // Extrair informações de uso
     const usage = data.usage || {};
     const inputTokens = usage.prompt_tokens || 0;
     const outputTokens = usage.completion_tokens || 0;
     const totalTokens = usage.total_tokens || 0;
-
-    // Extrair a imagem gerada
-    let generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    
-    if (!generatedImageUrl && data.choices?.[0]?.message?.content) {
-      const content = data.choices[0].message.content;
-      if (Array.isArray(content)) {
-        const imageContent = content.find((c: any) => c.type === 'image_url');
-        if (imageContent) {
-          generatedImageUrl = imageContent.image_url?.url;
-        }
-      }
-    }
-    
-    if (!generatedImageUrl && data.data?.[0]?.url) {
-      generatedImageUrl = data.data[0].url;
-    }
-    
-    if (!generatedImageUrl) {
-      console.error('❌ Estrutura de resposta inesperada:', data);
-      throw new Error('Nenhuma imagem foi gerada - estrutura de resposta inesperada');
-    }
-    
-    console.log('✅ Imagem extraída com sucesso');
 
     // Salvar no histórico (usando usuário autenticado)
     if (copyId && workspaceId) {
