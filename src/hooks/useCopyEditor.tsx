@@ -20,6 +20,7 @@ interface CopyEditorContextType {
   status: 'draft' | 'published';
   selectedItems: SelectedItem[];
   isSelectionMode: boolean;
+  lastAddedBlockId: string | null;
   
   setCopyId: (id: string) => void;
   setCopyTitle: (title: string) => void;
@@ -42,6 +43,7 @@ interface CopyEditorContextType {
   toggleSelectionMode: () => void;
   toggleItemSelection: (id: string, type: 'session' | 'block', sessionId?: string) => void;
   clearSelection: () => void;
+  clearLastAddedBlock: () => void;
   
   updateStatus: (newStatus: 'draft' | 'published') => Promise<void>;
   saveCopy: () => Promise<void>;
@@ -61,6 +63,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [lastAddedBlockId, setLastAddedBlockId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Auto-save every 3 seconds
@@ -200,20 +203,24 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const importSessions = useCallback((importedSessions: Session[]) => {
     // Regenerar IDs únicos para sessões e blocos importados
     let blockCounter = 0;
+    let firstBlockId: string | null = null;
     const sessionsWithNewIds = importedSessions.map((session, sessionIndex) => ({
       ...session,
       id: `session-${Date.now()}-${sessionIndex}-${Math.random()}`,
       blocks: session.blocks.map((block) => {
         blockCounter++;
+        const newBlockId = `block-${Date.now()}-${blockCounter}-${Math.random()}`;
+        if (!firstBlockId) firstBlockId = newBlockId;
         return {
           ...block,
-          id: `block-${Date.now()}-${blockCounter}-${Math.random()}`,
+          id: newBlockId,
           config: block.config || {} // Garantir que config sempre existe
         };
       })
     }));
     
     setSessions([...sessions, ...sessionsWithNewIds]);
+    if (firstBlockId) setLastAddedBlockId(firstBlockId);
   }, [sessions]);
 
   const insertSessionsAfterSelection = useCallback((importedSessions: Session[], selectedItems: SelectedItem[]) => {
@@ -236,12 +243,17 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const blockIndex = session.blocks.findIndex(b => b.id === lastSelected.id);
       
       // Extrair todos os blocos das sessões importadas e marcar como novos
+      let firstBlockId: string | null = null;
       const allNewBlocks = importedSessions.flatMap(s => 
-        s.blocks.map(block => ({
-          ...block,
-          id: `block-${Date.now()}-${Math.random()}`,
-          config: { ...block.config, isNewFromChat: true }
-        }))
+        s.blocks.map(block => {
+          const newBlockId = `block-${Date.now()}-${Math.random()}`;
+          if (!firstBlockId) firstBlockId = newBlockId;
+          return {
+            ...block,
+            id: newBlockId,
+            config: { ...block.config, isNewFromChat: true }
+          };
+        })
       );
       
       const updatedBlocks = [...session.blocks];
@@ -250,6 +262,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const newSessions = [...sessions];
       newSessions[sessionIndex] = { ...session, blocks: updatedBlocks };
       setSessions(newSessions);
+      if (firstBlockId) setLastAddedBlockId(firstBlockId);
       return;
     }
 
@@ -264,14 +277,17 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       // Regenerar IDs únicos para sessões e blocos importados
       let blockCounter = 0;
+      let firstBlockId: string | null = null;
       const sessionsWithNewIds = importedSessions.map((session, idx) => ({
         ...session,
         id: `session-${Date.now()}-${idx}-${Math.random()}`,
         blocks: session.blocks.map((block) => {
           blockCounter++;
+          const newBlockId = `block-${Date.now()}-${blockCounter}-${Math.random()}`;
+          if (!firstBlockId) firstBlockId = newBlockId;
           return {
             ...block,
-            id: `block-${Date.now()}-${blockCounter}-${Math.random()}`,
+            id: newBlockId,
             config: block.config || {}
           };
         })
@@ -280,15 +296,17 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const newSessions = [...sessions];
       newSessions.splice(sessionIndex + 1, 0, ...sessionsWithNewIds);
       setSessions(newSessions);
+      if (firstBlockId) setLastAddedBlockId(firstBlockId);
     } else {
       importSessions(importedSessions);
     }
   }, [sessions, importSessions]);
 
   const addBlock = useCallback((sessionId: string, block: Omit<Block, 'id'>, index?: number) => {
+    const newBlockId = `block-${Date.now()}-${Math.random()}`;
     const newBlock: Block = {
       ...block,
-      id: `block-${Date.now()}-${Math.random()}`,
+      id: newBlockId,
     };
 
     // Usar callback pattern (prev => ...) para evitar race condition
@@ -306,6 +324,8 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       return session;
     }));
+    
+    setLastAddedBlockId(newBlockId);
   }, []); // Sem dependência de sessions - usa prev
 
   const removeBlock = useCallback((blockId: string) => {
@@ -396,6 +416,10 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setIsSelectionMode(false);
   }, []);
 
+  const clearLastAddedBlock = useCallback(() => {
+    setLastAddedBlockId(null);
+  }, []);
+
   const updateStatus = useCallback(async (newStatus: 'draft' | 'published') => {
     if (!copyId) return;
 
@@ -435,6 +459,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     status,
     selectedItems,
     isSelectionMode,
+    lastAddedBlockId,
     setCopyId,
     setCopyTitle,
     addSession,
@@ -454,6 +479,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     toggleSelectionMode,
     toggleItemSelection,
     clearSelection,
+    clearLastAddedBlock,
     updateStatus,
     saveCopy,
     loadCopy,

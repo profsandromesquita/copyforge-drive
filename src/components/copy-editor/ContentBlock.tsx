@@ -43,10 +43,13 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     selectedBlockId,
     isSelectionMode,
     selectedItems,
-    toggleItemSelection
+    toggleItemSelection,
+    lastAddedBlockId,
+    clearLastAddedBlock
   } = useCopyEditor();
   const { user } = useAuth();
   const editableRef = useRef<HTMLDivElement>(null);
+  const blockRef = useRef<HTMLDivElement>(null);
   const isEditingRef = useRef(false); // Protege estado local durante edição ativa
   const [showFocusMode, setShowFocusMode] = useState(false);
   const [focusModeContent, setFocusModeContent] = useState('');
@@ -207,6 +210,21 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
       return () => clearTimeout(timer);
     }
   }, [block.id, isNewFromChat]);
+
+  // Auto-scroll para bloco recém-adicionado
+  useEffect(() => {
+    if (block.id === lastAddedBlockId && blockRef.current) {
+      // Pequeno delay para garantir que o DOM está estável
+      const timer = setTimeout(() => {
+        blockRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+        clearLastAddedBlock();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [block.id, lastAddedBlockId, clearLastAddedBlock]);
 
   const handleBlockClick = (e: React.MouseEvent) => {
     if (isSelectionMode) {
@@ -1115,9 +1133,15 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
     }
   };
 
+  // Combinar refs: dnd-kit setNodeRef + blockRef para scroll
+  const setCombinedRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    (blockRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+  };
+
   return (
     <div
-      ref={setNodeRef}
+      ref={setCombinedRef}
       style={style}
       className={`
         relative bg-background rounded-lg border transition-all group
@@ -1126,6 +1150,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
         ${isSelectionMode ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : ''}
         ${isItemSelected ? 'ring-2 ring-blue-500 bg-blue-50/50 dark:bg-blue-950/20' : ''}
         ${isNewFromChat ? 'border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20' : ''}
+        ${block.id === lastAddedBlockId ? 'ring-2 ring-primary/70 animate-pulse' : ''}
       `}
       onClick={isSelectionMode ? handleBlockClick : () => selectBlock(block.id)}
     >
