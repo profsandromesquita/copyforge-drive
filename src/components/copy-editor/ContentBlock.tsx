@@ -535,11 +535,18 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                 ) : block.config?.showListIcons !== false && (
                   getListIcon()
                 )}
-                <Input
+                <textarea
                   value={item}
                   onChange={(e) => handleListChange(index, e.target.value)}
                   placeholder="Item da lista..."
-                  className={`border-none focus-visible:ring-0 ${isSelected ? 'max-w-md' : 'flex-1'}`}
+                  rows={1}
+                  className={`border-none focus-visible:ring-0 bg-transparent resize-none overflow-hidden flex-1 min-h-[1.5rem] py-2 px-3 text-sm break-words whitespace-pre-wrap`}
+                  style={{ wordBreak: 'break-word' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = target.scrollHeight + 'px';
+                  }}
                 />
                 {isSelected && listItems.length > 1 && (
                   <Button
