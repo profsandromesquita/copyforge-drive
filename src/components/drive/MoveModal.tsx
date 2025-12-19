@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Folder } from "phosphor-react";
+import { Plus, X, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,10 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useProject } from "@/hooks/useProject";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface FolderOption {
   id: string;
@@ -32,15 +36,24 @@ interface MoveModalProps {
 const MoveModal = ({ open, onOpenChange, itemId, itemType, currentFolderId, onMove }: MoveModalProps) => {
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
+  const { user } = useAuth();
   const [folders, setFolders] = useState<FolderOption[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isMoving, setIsMoving] = useState(false);
+  
+  // Estados para criar pasta inline
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchFolders();
       setSelectedFolder(null);
+      // Reset do formulário de criação
+      setIsCreatingFolder(false);
+      setNewFolderName('');
     }
   }, [open, activeWorkspace?.id, activeProject?.id]);
 
@@ -78,6 +91,44 @@ const MoveModal = ({ open, onOpenChange, itemId, itemType, currentFolderId, onMo
     }
   };
 
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim() || !activeWorkspace?.id || !user?.id) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('folders')
+        .insert({
+          name: newFolderName.trim(),
+          workspace_id: activeWorkspace.id,
+          project_id: activeProject?.id || null,
+          parent_id: null,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Pasta criada com sucesso!');
+      
+      // REQUISITO UX: Auto-seleciona a pasta criada
+      setSelectedFolder(data.id);
+      
+      // Atualiza a lista de pastas
+      await fetchFolders();
+      
+      // Limpa o formulário
+      setNewFolderName('');
+      setIsCreatingFolder(false);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Erro ao criar pasta');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleMove = async () => {
     setIsMoving(true);
     try {
@@ -100,9 +151,64 @@ const MoveModal = ({ open, onOpenChange, itemId, itemType, currentFolderId, onMo
         </DialogHeader>
 
         <div className="py-4">
-          <p className="text-sm text-muted-foreground mb-4">
-            Selecione o destino:
-          </p>
+          {/* Header com botão Nova Pasta */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground">
+              Selecione o destino:
+            </p>
+            {!isCreatingFolder && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCreatingFolder(true)}
+                className="text-primary h-8"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Nova Pasta
+              </Button>
+            )}
+          </div>
+
+          {/* Formulário inline para criar pasta */}
+          {isCreatingFolder && (
+            <div className="flex gap-2 mb-3 p-2 bg-muted/50 rounded-md">
+              <Input
+                placeholder="Nome da pasta"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newFolderName.trim()) handleCreateFolder();
+                  if (e.key === 'Escape') {
+                    setIsCreatingFolder(false);
+                    setNewFolderName('');
+                  }
+                }}
+                autoFocus
+                disabled={isSubmitting}
+                className="h-9"
+              />
+              <Button 
+                size="sm" 
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim() || isSubmitting}
+                className="h-9"
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Criar'}
+              </Button>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => {
+                  setIsCreatingFolder(false);
+                  setNewFolderName('');
+                }}
+                disabled={isSubmitting}
+                className="h-9 px-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           <ScrollArea className="h-[300px] border rounded-lg">
             {/* Raiz do Drive */}
