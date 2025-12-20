@@ -1320,6 +1320,45 @@ export type Database = {
           },
         ]
       }
+      plan_offer_gateway_ids: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          gateway_offer_id: string
+          id: string
+          plan_offer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          gateway_offer_id: string
+          id?: string
+          plan_offer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          gateway_offer_id?: string
+          id?: string
+          plan_offer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_offer_gateway_ids_plan_offer_id_fkey"
+            columns: ["plan_offer_id"]
+            isOneToOne: false
+            referencedRelation: "plan_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_offer_gateway_ids_plan_offer_id_fkey"
+            columns: ["plan_offer_id"]
+            isOneToOne: false
+            referencedRelation: "public_plan_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_offers: {
         Row: {
           billing_period_unit: string
