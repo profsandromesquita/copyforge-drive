@@ -651,15 +651,47 @@ async function sendWelcomeEmailWithPasswordSetup(
 }
 
 // Função para buscar oferta pelo gateway_offer_id da Ticto
+// Busca primeiro na tabela de múltiplos IDs, depois faz fallback para o ID principal
 async function findPlanOfferByGatewayId(
   supabase: any, 
   gatewayOfferId: string | number, 
   gatewayId: string
 ): Promise<any> {
+  const offerIdStr = gatewayOfferId.toString();
+  
+  console.log(`🔍 Buscando oferta pelo gateway_offer_id: ${offerIdStr}`);
+  
+  // 1. Primeiro buscar na tabela de múltiplos IDs
+  const { data: gatewayIdRecord, error: gatewayIdError } = await supabase
+    .from('plan_offer_gateway_ids')
+    .select('plan_offer_id')
+    .eq('gateway_offer_id', offerIdStr)
+    .maybeSingle();
+  
+  if (gatewayIdRecord) {
+    console.log(`✅ ID encontrado na tabela plan_offer_gateway_ids: ${gatewayIdRecord.plan_offer_id}`);
+    
+    // Buscar oferta pelo ID encontrado
+    const { data: offer, error: offerError } = await supabase
+      .from('plan_offers')
+      .select('*, subscription_plans(*)')
+      .eq('id', gatewayIdRecord.plan_offer_id)
+      .eq('is_active', true)
+      .single();
+    
+    if (offer) {
+      console.log(`✅ Oferta encontrada via múltiplos IDs: ${offer.name}`);
+      return offer;
+    }
+  }
+  
+  // 2. Fallback: buscar diretamente pelo campo legacy gateway_offer_id
+  console.log(`🔄 Fallback: buscando pelo campo gateway_offer_id principal`);
+  
   const { data: offer, error } = await supabase
     .from('plan_offers')
     .select('*, subscription_plans(*)')
-    .eq('gateway_offer_id', gatewayOfferId.toString())
+    .eq('gateway_offer_id', offerIdStr)
     .eq('payment_gateway_id', gatewayId)
     .eq('is_active', true)
     .single();
@@ -668,6 +700,7 @@ async function findPlanOfferByGatewayId(
     throw new Error(`Oferta ${gatewayOfferId} não encontrada ou não está ativa`);
   }
   
+  console.log(`✅ Oferta encontrada pelo campo principal: ${offer.name}`);
   return offer;
 }
 
@@ -835,32 +868,74 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   
   console.log('🔍 Buscando oferta pelo código:', tictoOfferCode, 'gateway:', gateway.id);
   
-  // Buscar oferta e plano separadamente para evitar problemas com relacionamentos
-  const { data: offer, error: offerError } = await supabase
-    .from('plan_offers')
-    .select('*')
-    .eq('gateway_offer_id', tictoOfferCode)
-    .eq('payment_gateway_id', gateway.id)
-    .eq('is_active', true)
-    .single();
+  // Buscar oferta usando a função que suporta múltiplos IDs
+  console.log('🔍 Buscando oferta e plano...');
   
-  console.log('🔍 Resultado da busca da oferta:', { offer, offerError });
+  let offer: any;
+  let plan: any;
   
-  if (offerError || !offer) {
-    throw new Error(`Oferta ${tictoOfferCode} não encontrada ou não está ativa. Erro: ${offerError?.message}`);
-  }
-  
-  // Buscar o plano associado
-  const { data: plan, error: planError } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .eq('id', offer.plan_id)
-    .single();
-  
-  console.log('🔍 Resultado da busca do plano:', { plan, planError });
-  
-  if (planError || !plan) {
-    throw new Error(`Plano ${offer.plan_id} não encontrado. Erro: ${planError?.message}`);
+  try {
+    // Primeiro tentar pela tabela de múltiplos IDs
+    const { data: gatewayIdRecord } = await supabase
+      .from('plan_offer_gateway_ids')
+      .select('plan_offer_id')
+      .eq('gateway_offer_id', tictoOfferCode)
+      .maybeSingle();
+    
+    if (gatewayIdRecord) {
+      console.log(`✅ ID encontrado na tabela plan_offer_gateway_ids: ${gatewayIdRecord.plan_offer_id}`);
+      
+      const { data: foundOffer, error: offerError } = await supabase
+        .from('plan_offers')
+        .select('*')
+        .eq('id', gatewayIdRecord.plan_offer_id)
+        .eq('is_active', true)
+        .single();
+      
+      if (foundOffer) {
+        offer = foundOffer;
+      }
+    }
+    
+    // Fallback: buscar pelo campo gateway_offer_id principal
+    if (!offer) {
+      console.log(`🔄 Fallback: buscando pelo campo gateway_offer_id principal`);
+      
+      const { data: foundOffer, error: offerError } = await supabase
+        .from('plan_offers')
+        .select('*')
+        .eq('gateway_offer_id', tictoOfferCode)
+        .eq('payment_gateway_id', gateway.id)
+        .eq('is_active', true)
+        .single();
+      
+      if (offerError || !foundOffer) {
+        throw new Error(`Oferta ${tictoOfferCode} não encontrada ou não está ativa. Erro: ${offerError?.message}`);
+      }
+      
+      offer = foundOffer;
+    }
+    
+    console.log('🔍 Resultado da busca da oferta:', { offer_id: offer.id, offer_name: offer.name });
+    
+    // Buscar o plano associado
+    const { data: foundPlan, error: planError } = await supabase
+      .from('subscription_plans')
+      .select('*')
+      .eq('id', offer.plan_id)
+      .single();
+    
+    console.log('🔍 Resultado da busca do plano:', { plan: foundPlan, planError });
+    
+    if (planError || !foundPlan) {
+      throw new Error(`Plano ${offer.plan_id} não encontrado. Erro: ${planError?.message}`);
+    }
+    
+    plan = foundPlan;
+    
+  } catch (error) {
+    console.error('❌ Erro ao buscar oferta/plano:', error);
+    throw error;
   }
   
   console.log('✅ Oferta e Plano encontrados:', {

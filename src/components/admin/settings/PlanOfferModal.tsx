@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PlanOffer, PlanOfferFormData } from "@/hooks/usePlanOffers";
+import { usePlanOfferGatewayIds } from "@/hooks/usePlanOfferGatewayIds";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 
 interface PlanOfferModalProps {
   open: boolean;
@@ -55,6 +57,18 @@ export function PlanOfferModal({
     display_order: 0,
   });
 
+  const [newGatewayId, setNewGatewayId] = useState('');
+  const [newGatewayDescription, setNewGatewayDescription] = useState('');
+
+  const { 
+    gatewayIds, 
+    isLoading: isLoadingGatewayIds, 
+    isAdding, 
+    isDeleting,
+    addGatewayId, 
+    removeGatewayId 
+  } = usePlanOfferGatewayIds(offer?.id || null);
+
   useEffect(() => {
     if (offer) {
       setFormData({
@@ -81,11 +95,22 @@ export function PlanOfferModal({
         display_order: 0,
       });
     }
+    setNewGatewayId('');
+    setNewGatewayDescription('');
   }, [offer, planId, activeGatewayId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
+  };
+
+  const handleAddGatewayId = async () => {
+    if (!newGatewayId.trim()) return;
+    const success = await addGatewayId(newGatewayId.trim(), newGatewayDescription.trim());
+    if (success) {
+      setNewGatewayId('');
+      setNewGatewayDescription('');
+    }
   };
 
   return (
@@ -158,7 +183,7 @@ export function PlanOfferModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gateway_offer_id">ID da Oferta no Gateway *</Label>
+            <Label htmlFor="gateway_offer_id">ID Principal da Oferta no Gateway *</Label>
             <Input
               id="gateway_offer_id"
               value={formData.gateway_offer_id}
@@ -167,9 +192,84 @@ export function PlanOfferModal({
               required
             />
             <p className="text-xs text-muted-foreground">
-              Insira o ID da oferta/produto criado no gateway de pagamento (ex: Ticto)
+              ID principal da oferta/produto criado no gateway (ex: Ticto)
             </p>
           </div>
+
+          {/* Seção de IDs adicionais do Gateway - só aparece ao editar */}
+          {offer && (
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <Label className="text-sm font-medium">IDs Adicionais do Gateway</Label>
+              <p className="text-xs text-muted-foreground">
+                Adicione múltiplos IDs de oferta do gateway que devem ser reconhecidos para esta oferta.
+              </p>
+
+              {/* Lista de IDs existentes */}
+              {isLoadingGatewayIds ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando...
+                </div>
+              ) : gatewayIds.length > 0 ? (
+                <div className="space-y-2">
+                  {gatewayIds.map((gid) => (
+                    <div key={gid.id} className="flex items-center gap-2 p-2 bg-background rounded border">
+                      <div className="flex-1 min-w-0">
+                        <code className="text-sm font-mono">{gid.gateway_offer_id}</code>
+                        {gid.description && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({gid.description})
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeGatewayId(gid.id)}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Nenhum ID adicional cadastrado
+                </p>
+              )}
+
+              {/* Formulário para adicionar novo ID */}
+              <div className="flex gap-2 pt-2">
+                <Input
+                  placeholder="ID do gateway"
+                  value={newGatewayId}
+                  onChange={(e) => setNewGatewayId(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Descrição (opcional)"
+                  value={newGatewayDescription}
+                  onChange={(e) => setNewGatewayDescription(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddGatewayId}
+                  disabled={isAdding || !newGatewayId.trim()}
+                >
+                  {isAdding ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="checkout_url">URL de Checkout *</Label>
