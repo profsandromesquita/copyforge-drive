@@ -3,11 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Loader2, ExternalLink } from "lucide-react";
+import { Copy, Loader2, ExternalLink, Info } from "lucide-react";
 import { usePaymentGateway } from "@/hooks/usePaymentGateway";
-import { useSubscriptionPlans } from "@/hooks/useSubscriptionPlans";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TictoConfigModalProps {
   open: boolean;
@@ -17,50 +16,19 @@ interface TictoConfigModalProps {
 
 export function TictoConfigModal({ open, onOpenChange, onViewLogs }: TictoConfigModalProps) {
   const { config, saveConfig, testConnection } = usePaymentGateway('ticto');
-  const { plans } = useSubscriptionPlans();
   
   const [validationToken, setValidationToken] = useState('');
   const [isActive, setIsActive] = useState(false);
-  const [offerMappings, setOfferMappings] = useState({
-    starter_offer_id: '',
-    pro_offer_id: '',
-    business_offer_id: '',
-  });
 
-  // Construir URL correta do webhook
-  const projectId = 'fnebftywudiyjguzrofg'; // ID do projeto Supabase
+  const projectId = 'fnebftywudiyjguzrofg';
   const webhookUrl = `https://${projectId}.supabase.co/functions/v1/webhook-ticto`;
 
   useEffect(() => {
     if (config) {
       setValidationToken(config.config?.validation_token || '');
       setIsActive(config.is_active);
-      
-      // Buscar os IDs das ofertas a partir dos mappings salvos
-      const starterPlan = plans?.find(p => p.slug === 'starter');
-      const proPlan = plans?.find(p => p.slug === 'pro');
-      const businessPlan = plans?.find(p => p.slug === 'business');
-      
-      // Inverter o mapeamento: procurar o offer_id que aponta para cada plan_id
-      let starterOfferId = '';
-      let proOfferId = '';
-      let businessOfferId = '';
-      
-      if (config.config?.offer_mappings) {
-        Object.entries(config.config.offer_mappings).forEach(([offerId, planId]) => {
-          if (planId === starterPlan?.id) starterOfferId = offerId;
-          if (planId === proPlan?.id) proOfferId = offerId;
-          if (planId === businessPlan?.id) businessOfferId = offerId;
-        });
-      }
-      
-      setOfferMappings({
-        starter_offer_id: starterOfferId,
-        pro_offer_id: proOfferId,
-        business_offer_id: businessOfferId,
-      });
     }
-  }, [config, plans]);
+  }, [config]);
 
   const handleCopyWebhookUrl = () => {
     navigator.clipboard.writeText(webhookUrl);
@@ -81,25 +49,9 @@ export function TictoConfigModal({ open, onOpenChange, onViewLogs }: TictoConfig
       return;
     }
 
-    const starterPlan = plans?.find(p => p.slug === 'starter');
-    const proPlan = plans?.find(p => p.slug === 'pro');
-    const businessPlan = plans?.find(p => p.slug === 'business');
-
-    const mappings: any = {};
-    if (offerMappings.starter_offer_id && starterPlan) {
-      mappings[offerMappings.starter_offer_id] = starterPlan.id;
-    }
-    if (offerMappings.pro_offer_id && proPlan) {
-      mappings[offerMappings.pro_offer_id] = proPlan.id;
-    }
-    if (offerMappings.business_offer_id && businessPlan) {
-      mappings[offerMappings.business_offer_id] = businessPlan.id;
-    }
-
     saveConfig.mutate({
       config: {
         validation_token: validationToken,
-        offer_mappings: mappings,
         webhook_url: webhookUrl,
       },
       isActive,
@@ -143,45 +95,14 @@ export function TictoConfigModal({ open, onOpenChange, onViewLogs }: TictoConfig
             </p>
           </div>
 
-          {/* Mapeamento de Ofertas */}
-          <div className="space-y-4">
-            <Label>Mapeamento de Ofertas</Label>
-            <p className="text-sm text-muted-foreground">
-              Insira o ID de cada oferta configurada na Ticto
-            </p>
-
-            <div className="grid gap-4">
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="starter_offer">Oferta Starter</Label>
-                <Input
-                  id="starter_offer"
-                  value={offerMappings.starter_offer_id}
-                  onChange={(e) => setOfferMappings({ ...offerMappings, starter_offer_id: e.target.value })}
-                  placeholder="ID da oferta Starter"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="pro_offer">Oferta Pro</Label>
-                <Input
-                  id="pro_offer"
-                  value={offerMappings.pro_offer_id}
-                  onChange={(e) => setOfferMappings({ ...offerMappings, pro_offer_id: e.target.value })}
-                  placeholder="ID da oferta Pro"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <Label htmlFor="business_offer">Oferta Business</Label>
-                <Input
-                  id="business_offer"
-                  value={offerMappings.business_offer_id}
-                  onChange={(e) => setOfferMappings({ ...offerMappings, business_offer_id: e.target.value })}
-                  placeholder="ID da oferta Business"
-                />
-              </div>
-            </div>
-          </div>
+          {/* Nota informativa sobre ofertas */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Para configurar ofertas e seus IDs de gateway, acesse{" "}
+              <strong>Planos de Assinatura → Ofertas</strong>.
+            </AlertDescription>
+          </Alert>
 
           {/* Botões de Ação */}
           <div className="flex gap-2">
