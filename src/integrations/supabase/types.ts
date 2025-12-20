@@ -1312,13 +1312,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_gateways_integration_id_fkey"
-            columns: ["integration_id"]
-            isOneToOne: false
-            referencedRelation: "integrations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "payment_gateways_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
