@@ -49,17 +49,19 @@ export default function AdminDashboard() {
     custo_ia: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [periodFilter, setPeriodFilter] = useState("last-7-days");
+  const [periodFilter, setPeriodFilter] = useState("all-time");
   const [planFilter, setPlanFilter] = useState("all");
   const [customDateOpen, setCustomDateOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [copiesByType, setCopiesByType] = useState<CopyByType[]>([]);
   const [modelConsumption, setModelConsumption] = useState<ModelConsumption[]>([]);
 
-  const getDateRange = () => {
+  const getDateRange = (): { start: Date | null; end: Date | null } => {
     const now = new Date();
     
     switch (periodFilter) {
+      case "all-time":
+        return { start: null, end: null };
       case "today":
         return { start: startOfDay(now), end: endOfDay(now) };
       case "yesterday":
@@ -78,9 +80,9 @@ export default function AdminDashboard() {
         if (dateRange?.from && dateRange?.to) {
           return { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) };
         }
-        return { start: subDays(now, 7), end: now };
+        return { start: null, end: null };
       default:
-        return { start: subDays(now, 7), end: now };
+        return { start: null, end: null };
     }
   };
 
@@ -97,9 +99,13 @@ export default function AdminDashboard() {
       let subscriptionsQuery = supabase
         .from('workspace_subscriptions')
         .select('*, subscription_plans!plan_id(*), plan_offers!plan_offer_id(price)')
-        .eq('status', 'active')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .eq('status', 'active');
+      
+      if (start && end) {
+        subscriptionsQuery = subscriptionsQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
       
       if (planFilter !== 'all') {
         subscriptionsQuery = subscriptionsQuery.eq('subscription_plans.slug', planFilter);
@@ -113,41 +119,71 @@ export default function AdminDashboard() {
       }, 0) || 0;
 
       // Clientes (filtrado por período de criação)
-      const { count: clientesCount } = await supabase
+      let clientesQuery = supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .select('id', { count: 'exact', head: true });
+      
+      if (start && end) {
+        clientesQuery = clientesQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { count: clientesCount } = await clientesQuery;
 
       // Workspaces (filtrado por período de criação)
-      const { count: workspacesCount } = await supabase
+      let workspacesQuery = supabase
         .from('workspaces')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .select('id', { count: 'exact', head: true });
+      
+      if (start && end) {
+        workspacesQuery = workspacesQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { count: workspacesCount } = await workspacesQuery;
 
       // Projetos (filtrado por período de criação)
-      const { count: projetosCount } = await supabase
+      let projetosQuery = supabase
         .from('projects')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .select('id', { count: 'exact', head: true });
+      
+      if (start && end) {
+        projetosQuery = projetosQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { count: projetosCount } = await projetosQuery;
 
       // Copies (filtrado por período de criação)
-      const { count: copiesCount } = await supabase
+      let copiesQuery = supabase
         .from('copies')
         .select('id', { count: 'exact', head: true })
-        .eq('is_template', false)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .eq('is_template', false);
+      
+      if (start && end) {
+        copiesQuery = copiesQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { count: copiesCount } = await copiesQuery;
 
       // Copies por tipo (filtrado por período de criação)
-      const { data: copiesByTypeData } = await supabase
+      let copiesByTypeQuery = supabase
         .from('copies')
         .select('copy_type')
-        .eq('is_template', false)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .eq('is_template', false);
+      
+      if (start && end) {
+        copiesByTypeQuery = copiesByTypeQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { data: copiesByTypeData } = await copiesByTypeQuery;
       
       const typeCounts = copiesByTypeData?.reduce((acc, copy) => {
         const type = copy.copy_type || 'outro';
@@ -161,12 +197,18 @@ export default function AdminDashboard() {
       })).sort((a, b) => b.count - a.count);
 
       // Créditos consumidos e Custo IA
-      const { data: transactionsData } = await supabase
+      let transactionsQuery = supabase
         .from('credit_transactions')
         .select('amount, model_used, tokens_used, input_tokens, output_tokens')
-        .eq('transaction_type', 'debit')
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
+        .eq('transaction_type', 'debit');
+      
+      if (start && end) {
+        transactionsQuery = transactionsQuery
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString());
+      }
+      
+      const { data: transactionsData } = await transactionsQuery;
 
       const creditosConsumidos = transactionsData?.reduce((sum, t) => sum + t.amount, 0) || 0;
       
@@ -227,6 +269,7 @@ export default function AdminDashboard() {
   };
 
   const periodOptions = [
+    { value: "all-time", label: "Todo o tempo" },
     { value: "today", label: "Hoje" },
     { value: "yesterday", label: "Ontem" },
     { value: "last-7-days", label: "Últimos 7 dias" },
