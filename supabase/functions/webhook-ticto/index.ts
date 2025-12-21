@@ -1130,6 +1130,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
   }
 
   // Criar invoice com informações da oferta e tracking
+  // IMPORTANTE: credits_granted armazena os créditos concedidos para remoção correta em chargeback/reembolso
   const { data: newInvoice, error: invoiceError } = await supabase
     .from('workspace_invoices')
     .insert({
@@ -1146,6 +1147,7 @@ async function handlePurchaseApproved(supabase: any, payload: TictoWebhookPayloa
       billing_period_start: new Date().toISOString(),
       billing_period_end: periodEnd?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       due_date: new Date().toISOString(),
+      credits_granted: plan.credits_per_month, // Créditos concedidos nesta compra
       line_items: [{
         description: `${plan.name} - ${offer.name}`,
         amount: payload.order.paid_amount / 100,
@@ -1236,18 +1238,23 @@ async function handleChargeback(supabase: any, payload: TictoWebhookPayload): Pr
     throw new Error('Owner do workspace não encontrado');
   }
 
-  // Remover créditos proporcionalmente
+  // Buscar saldo atual
   const { data: credits } = await supabase
     .from('workspace_credits')
     .select('balance, total_used')
     .eq('workspace_id', invoice.workspace_id)
     .single();
 
-  const debitAmount = invoice.amount * 0.1; // Exemplo: debitar 10% como penalidade
+  // CORRIGIDO: Remover exatamente os créditos concedidos naquela compra
+  // credits_granted contém o valor exato de créditos que foram adicionados
+  // Se não tiver o campo (invoices antigas), usar 0 para não afetar nada
+  const debitAmount = invoice.credits_granted || 0;
   const currentBalance = credits?.balance || 0;
   const newBalance = Math.max(0, currentBalance - debitAmount);
 
-  // CORRIGIDO: Incrementar total_used corretamente
+  console.log(`💳 Chargeback - Removendo ${debitAmount} créditos (concedidos na compra). Saldo: ${currentBalance} -> ${newBalance}`);
+
+  // Atualizar saldo de créditos
   await supabase
     .from('workspace_credits')
     .update({
@@ -1266,7 +1273,7 @@ async function handleChargeback(supabase: any, payload: TictoWebhookPayload): Pr
       amount: debitAmount,
       balance_before: currentBalance,
       balance_after: newBalance,
-      description: `Chargeback - Penalidade de 10% sobre o valor da invoice ${invoice.invoice_number}`
+      description: `Chargeback - Remoção total dos créditos da compra (Order: ${payload.order.hash})`
     });
 
   // Suspender assinatura
@@ -1281,7 +1288,7 @@ async function handleChargeback(supabase: any, payload: TictoWebhookPayload): Pr
     event_category: 'refund',
     workspace_id: invoice.workspace_id,
     credits_debited: debitAmount,
-    message: 'Chargeback processado e créditos ajustados'
+    message: 'Chargeback processado - créditos da compra removidos'
   };
 }
 
@@ -1306,18 +1313,23 @@ async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promis
     throw new Error('Owner do workspace não encontrado');
   }
 
-  // Remover créditos proporcionalmente
+  // Buscar saldo atual
   const { data: credits } = await supabase
     .from('workspace_credits')
     .select('balance, total_used')
     .eq('workspace_id', invoice.workspace_id)
     .single();
 
-  const refundAmount = invoice.amount * 0.5; // Remover 50% dos créditos
+  // CORRIGIDO: Remover exatamente os créditos concedidos naquela compra
+  // credits_granted contém o valor exato de créditos que foram adicionados
+  // Se não tiver o campo (invoices antigas), usar 0 para não afetar nada
+  const refundAmount = invoice.credits_granted || 0;
   const currentBalance = credits?.balance || 0;
   const newBalance = Math.max(0, currentBalance - refundAmount);
 
-  // CORRIGIDO: Atualizar balance e total_used
+  console.log(`💸 Reembolso - Removendo ${refundAmount} créditos (concedidos na compra). Saldo: ${currentBalance} -> ${newBalance}`);
+
+  // Atualizar saldo de créditos
   await supabase
     .from('workspace_credits')
     .update({ 
@@ -1336,7 +1348,7 @@ async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promis
       amount: refundAmount,
       balance_before: currentBalance,
       balance_after: newBalance,
-      description: `Reembolso - Remoção de 50% dos créditos referente à invoice ${invoice.invoice_number}`
+      description: `Reembolso - Remoção total dos créditos da compra (Order: ${payload.order.hash})`
     });
 
   // Cancelar assinatura associada
@@ -1354,7 +1366,7 @@ async function handleRefund(supabase: any, payload: TictoWebhookPayload): Promis
     event_category: 'refund',
     workspace_id: invoice.workspace_id,
     credits_removed: refundAmount,
-    message: 'Reembolso processado e assinatura cancelada'
+    message: 'Reembolso processado - créditos da compra removidos e assinatura cancelada'
   };
 }
 
