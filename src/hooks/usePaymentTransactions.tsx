@@ -35,7 +35,7 @@ export const usePaymentTransactions = (params?: UsePaymentTransactionsParams) =>
 
   return useQuery({
     queryKey: ['payment-transactions', gateway, status, workspaceId, limit, startDate, endDate],
-    enabled: !!startDate && !!endDate, // Só executa quando as datas estiverem definidas
+    // Executa sempre - datas são opcionais para "Todo o tempo"
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     queryFn: async (): Promise<PaymentTransaction[]> => {
@@ -165,7 +165,7 @@ export const usePaymentTransactionsSummary = (params?: { startDate?: string; end
   
   return useQuery({
     queryKey: ['payment-transactions-summary', startDate, endDate],
-    enabled: !!startDate && !!endDate, // Só executa quando as datas estiverem definidas
+    // Executa sempre - datas são opcionais para "Todo o tempo"
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     queryFn: async () => {
