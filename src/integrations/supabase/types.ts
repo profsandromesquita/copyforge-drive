@@ -2044,6 +2044,7 @@ export type Database = {
           billing_period_end: string
           billing_period_start: string
           created_at: string
+          credits_granted: number | null
           currency: string
           due_date: string
           external_payment_id: string | null
@@ -2064,6 +2065,7 @@ export type Database = {
           billing_period_end: string
           billing_period_start: string
           created_at?: string
+          credits_granted?: number | null
           currency?: string
           due_date: string
           external_payment_id?: string | null
@@ -2084,6 +2086,7 @@ export type Database = {
           billing_period_end?: string
           billing_period_start?: string
           created_at?: string
+          credits_granted?: number | null
           currency?: string
           due_date?: string
           external_payment_id?: string | null
