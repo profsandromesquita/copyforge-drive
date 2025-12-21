@@ -196,7 +196,14 @@ export const UpgradeModal = ({
 
   const getRecommendedPlan = () => {
     const betterPlans = plans.filter(isPlanBetter);
-    return betterPlans.length > 0 ? betterPlans[0] : null;
+    if (betterPlans.length === 0) return null;
+    
+    // Priorizar o plano Pro como recomendado
+    const proPlan = betterPlans.find(plan => 
+      plan.name.toLowerCase() === 'pro'
+    );
+    
+    return proPlan || betterPlans[0];
   };
 
   const recommendedPlan = getRecommendedPlan();
