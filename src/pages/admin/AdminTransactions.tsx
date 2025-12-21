@@ -37,15 +37,17 @@ const AdminTransactions = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [gatewayFilter, setGatewayFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [periodFilter, setPeriodFilter] = useState("last-7-days");
+  const [periodFilter, setPeriodFilter] = useState("all-time");
   const [customDateOpen, setCustomDateOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const navigate = useNavigate();
 
-  const getDateRange = () => {
+  const getDateRange = (): { start: Date | null; end: Date | null } => {
     const now = new Date();
     
     switch (periodFilter) {
+      case "all-time":
+        return { start: null, end: null };
       case "today":
         return { start: startOfDay(now), end: endOfDay(now) };
       case "yesterday":
@@ -66,7 +68,7 @@ const AdminTransactions = () => {
         }
         return { start: subDays(now, 7), end: now };
       default:
-        return { start: subDays(now, 7), end: now };
+        return { start: null, end: null };
     }
   };
 
@@ -75,13 +77,13 @@ const AdminTransactions = () => {
   const { data: transactions, isLoading } = usePaymentTransactions({
     gateway: gatewayFilter !== "all" ? gatewayFilter : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
+    startDate: start?.toISOString(),
+    endDate: end?.toISOString(),
   });
 
   const { data: summary } = usePaymentTransactionsSummary({
-    startDate: start.toISOString(),
-    endDate: end.toISOString(),
+    startDate: start?.toISOString(),
+    endDate: end?.toISOString(),
   });
 
   const handleViewDetails = (transaction: PaymentTransaction) => {
@@ -94,6 +96,7 @@ const AdminTransactions = () => {
   };
 
   const periodOptions = [
+    { value: "all-time", label: "Todo o tempo" },
     { value: "today", label: "Hoje" },
     { value: "yesterday", label: "Ontem" },
     { value: "last-7-days", label: "Últimos 7 dias" },
