@@ -35,6 +35,9 @@ verify_jwt = true
 [functions.generate-image]
 verify_jwt = true
 
+[functions.generate-thumbnail]
+verify_jwt = true
+
 # =============================================
 # EXCEÇÕES: Funções que DEVEM permanecer públicas
 # =============================================
@@ -49,4 +52,8 @@ verify_jwt = false
 
 # activate-workspace-payment: Webhook externo (validação via secret interno)
 [functions.activate-workspace-payment]
+verify_jwt = false
+
+# backfill-thumbnails: Função de migração (temporária)
+[functions.backfill-thumbnails]
 verify_jwt = false
