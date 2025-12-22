@@ -32,6 +32,8 @@ interface Copy {
   preview_text: string | null;
   creator_name: string | null;
   creator_avatar_url: string | null;
+  // Flag para auto-heal de thumbnails
+  has_pending_thumbnail: boolean;
 }
 
 interface DriveContextType {
@@ -186,6 +188,49 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     fetchDriveContent(currentFolder?.id || null);
   }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]);
 
+  // Auto-heal: gerar thumbnails para copies com base64 pendente
+  const thumbnailQueueRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const pendingCopies = copies.filter(c => c.has_pending_thumbnail && !thumbnailQueueRef.current.has(c.id));
+    
+    if (pendingCopies.length === 0) return;
+    
+    // Processar uma copy por vez para não sobrecarregar
+    const processNext = async () => {
+      const copy = pendingCopies[0];
+      if (!copy || thumbnailQueueRef.current.has(copy.id)) return;
+      
+      thumbnailQueueRef.current.add(copy.id);
+      console.log(`🖼️ Gerando thumbnail para copy: ${copy.id}`);
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-thumbnail', {
+          body: { copyId: copy.id }
+        });
+        
+        if (error) {
+          console.error('Erro ao gerar thumbnail:', error);
+          return;
+        }
+        
+        if (data?.thumbnailUrl) {
+          // Atualizar estado local imediatamente
+          setCopies(prev => prev.map(c => 
+            c.id === copy.id 
+              ? { ...c, preview_image_url: data.thumbnailUrl, has_pending_thumbnail: false }
+              : c
+          ));
+          console.log(`✅ Thumbnail gerado: ${data.thumbnailUrl}`);
+        }
+      } catch (err) {
+        console.error('Erro ao invocar generate-thumbnail:', err);
+      }
+    };
+    
+    processNext();
+  }, [copies]);
+
   // Listener para invalidação de cache externo (ex: após copiar template/discover)
   useEffect(() => {
     const handleInvalidate = () => {
@@ -292,6 +337,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
         preview_text: null,
         creator_name: null,
         creator_avatar_url: null,
+        has_pending_thumbnail: false,
       } as Copy;
     } catch (error) {
       console.error('Error creating copy:', error);

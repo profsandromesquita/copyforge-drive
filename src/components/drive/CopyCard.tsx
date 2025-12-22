@@ -31,6 +31,8 @@ interface CopyCardProps {
   previewImageUrl?: string | null;
   previewText?: string | null;
   copyType?: string;
+  // Flag para indicar thumbnail em geração
+  hasPendingThumbnail?: boolean;
   onClick?: () => void;
   // Props de seleção
   selectionMode?: boolean;
@@ -52,6 +54,7 @@ const CopyCard = memo(({
   previewImageUrl,
   previewText,
   copyType, 
+  hasPendingThumbnail = false,
   onClick,
   selectionMode = false,
   isSelected = false,
@@ -199,10 +202,18 @@ const CopyCard = memo(({
               <img 
                 src={previewImageUrl} 
                 alt={title}
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
             </>
+          ) : hasPendingThumbnail ? (
+            // Gerando thumbnail - mostrar placeholder animado
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="text-xs text-muted-foreground">Gerando preview...</span>
+            </div>
           ) : previewText ? (
             // Preview de texto (projetado da VIEW)
             <>
