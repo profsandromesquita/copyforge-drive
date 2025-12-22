@@ -2464,6 +2464,7 @@ export type Database = {
           creator_avatar_url: string | null
           creator_name: string | null
           folder_id: string | null
+          has_pending_thumbnail: boolean | null
           id: string | null
           preview_image_url: string | null
           preview_text: string | null

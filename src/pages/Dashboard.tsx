@@ -377,6 +377,7 @@ const Dashboard = () => {
             previewImageUrl={copy.preview_image_url}
             previewText={copy.preview_text}
             copyType={(copy as any).copy_type}
+            hasPendingThumbnail={(copy as any).has_pending_thumbnail}
           />
         )
       };
@@ -625,6 +626,7 @@ const Dashboard = () => {
                               previewImageUrl={copy.preview_image_url}
                               previewText={copy.preview_text}
                               copyType={copy.copy_type}
+                              hasPendingThumbnail={copy.has_pending_thumbnail}
                               onClick={() => !selectionMode && navigate(`/copy/${copy.id}`)}
                               selectionMode={selectionMode}
                               isSelected={selectedCopyIds.has(copy.id)}

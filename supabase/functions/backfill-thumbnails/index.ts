@@ -20,20 +20,28 @@ serve(async (req) => {
 
     console.log('[backfill-thumbnails] Starting batch processing...');
     
-    // Find copies with base64 images but no preview_image_url
+    // Usar query raw para filtrar apenas copies com base64 real usando jsonb
+    // Isso evita processar copies sem imagem base64
     const { data: copies, error } = await supabase
       .from('copies')
       .select('id, sessions')
       .is('preview_image_url', null)
       .not('sessions', 'is', null)
+      .filter('sessions', 'cs', '[{"blocks":[{"type":"image"}]}]')
       .limit(10);
 
     if (error) {
       console.error('[backfill-thumbnails] Error fetching copies:', error);
       throw error;
     }
-
-    console.log(`[backfill-thumbnails] Found ${copies?.length || 0} copies to process`);
+    
+    // Filtrar no código para garantir que só processa copies com base64
+    const copiesWithBase64 = (copies || []).filter(copy => {
+      const base64 = findBase64Image(copy.sessions);
+      return base64 !== null;
+    });
+    
+    console.log(`[backfill-thumbnails] Found ${copiesWithBase64.length} copies with base64 images to process`);
 
     const results = {
       processed: 0,
@@ -43,7 +51,7 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    for (const copy of copies || []) {
+    for (const copy of copiesWithBase64) {
       results.processed++;
       
       try {
