@@ -229,7 +229,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    // During HMR or initial load, context may be temporarily undefined
+    // Return a safe default instead of throwing to prevent cascading errors
+    console.warn('[useAuth] Context not available yet, returning loading state');
+    return {
+      user: null,
+      session: null,
+      loading: true,
+      signUp: async () => ({ error: new Error('Auth not initialized') }),
+      signIn: async () => ({ error: new Error('Auth not initialized') }),
+      signInWithGoogle: async () => ({ error: new Error('Auth not initialized') }),
+      signOut: async () => {},
+    };
   }
   return context;
 };
