@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 interface SubscriptionPlan {
   id: string;
@@ -34,11 +35,14 @@ export interface WorkspaceSubscription {
 }
 
 export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
+  const { authReady } = useAuth();
+  
   return useQuery({
     queryKey: ['workspace-subscription', workspaceId],
     queryFn: async (): Promise<WorkspaceSubscription | null> => {
       if (!workspaceId) return null;
 
+      // Use maybeSingle() instead of single() to handle cases where no active subscription exists
       const { data, error } = await supabase
         .from('workspace_subscriptions')
         .select(`
@@ -70,9 +74,14 @@ export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
         `)
         .eq('workspace_id', workspaceId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (error) {
+        // PGRST116 means no rows - workspace may not have active subscription
+        if (error.code === 'PGRST116') {
+          console.log('[useWorkspaceSubscription] No active subscription found');
+          return null;
+        }
         console.error('Error fetching workspace subscription:', error);
         return null;
       }
@@ -109,6 +118,10 @@ export const useWorkspaceSubscription = (workspaceId: string | undefined) => {
         plan_offer_id: data.plan_offer_id,
       };
     },
-    enabled: !!workspaceId,
+    // Only enable when auth is ready
+    enabled: !!workspaceId && authReady,
+    // Don't retry to prevent request storms
+    retry: false,
+    staleTime: 30000,
   });
 };

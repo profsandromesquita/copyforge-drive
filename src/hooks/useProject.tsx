@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Project } from '@/types/project-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from './useWorkspace';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+
+// Delay before fetching projects after workspace changes
+const FETCH_DELAY_MS = 300;
 
 interface ProjectContextType {
   projects: Project[];
@@ -22,7 +25,10 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeProject, setActiveProjectState] = useState<Project | null>(null);
   const [loading, setLoading] = useState(false);
   const { activeWorkspace } = useWorkspace();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
+  
+  const fetchDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWorkspaceIdRef = useRef<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
     if (!activeWorkspace?.id) {
@@ -77,12 +83,41 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProjects([]);
   }, [activeWorkspace?.id]);
 
-  // Use activeWorkspace.id as dependency to prevent re-fetches on unrelated state changes
+  // Use activeWorkspace.id AND authReady as dependencies
   useEffect(() => {
-    if (activeWorkspace?.id) {
-      fetchProjects();
+    // Clear pending fetch on dependency change
+    if (fetchDelayRef.current) {
+      clearTimeout(fetchDelayRef.current);
+      fetchDelayRef.current = null;
     }
-  }, [activeWorkspace?.id]); // Only depend on workspace ID, not the entire callback
+    
+    // Don't fetch until auth is ready
+    if (!authReady) {
+      return;
+    }
+    
+    const workspaceId = activeWorkspace?.id;
+    
+    // Skip if workspace hasn't changed
+    if (workspaceId === lastWorkspaceIdRef.current && workspaceId) {
+      return;
+    }
+    
+    lastWorkspaceIdRef.current = workspaceId ?? null;
+    
+    if (workspaceId) {
+      // Small delay to prevent rapid successive fetches
+      fetchDelayRef.current = setTimeout(() => {
+        fetchProjects();
+      }, FETCH_DELAY_MS);
+    }
+    
+    return () => {
+      if (fetchDelayRef.current) {
+        clearTimeout(fetchDelayRef.current);
+      }
+    };
+  }, [activeWorkspace?.id, authReady, fetchProjects]);
 
   const setActiveProject = useCallback((project: Project | null) => {
     setActiveProjectState(project);

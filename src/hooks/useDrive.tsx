@@ -63,7 +63,7 @@ const DriveContext = createContext<DriveContextType | undefined>(undefined);
 export const DriveProvider = ({ children }: { children: ReactNode }) => {
   const { activeWorkspace } = useWorkspace();
   const { activeProject } = useProject();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [copies, setCopies] = useState<Copy[]>([]);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
@@ -73,6 +73,8 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   // Refs para controlar fetches duplicados e prevenir race conditions
   const fetchingRef = useRef(false);
   const lastFetchParamsRef = useRef<string>('');
+  const fetchDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const lastContextRef = useRef<string>('');
 
   const fetchDriveContent = useCallback(async (folderId: string | null = null) => {
     if (!activeWorkspace?.id) return;
@@ -187,20 +189,50 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   // Track if initial fetch has been done to prevent duplicate fetches
   const initialFetchDoneRef = useRef(false);
   
-  // Use stable IDs as dependencies to prevent re-fetches on token refresh
+  // Use stable IDs AND authReady as dependencies to prevent re-fetches on token refresh
   useEffect(() => {
-    const workspaceId = activeWorkspace?.id;
-    const projectId = activeProject?.id;
-    const folderId = currentFolder?.id || null;
+    // Clear pending fetch on dependency change
+    if (fetchDelayRef.current) {
+      clearTimeout(fetchDelayRef.current);
+      fetchDelayRef.current = null;
+    }
     
-    if (!workspaceId) {
+    // Don't fetch until auth is ready
+    if (!authReady) {
       initialFetchDoneRef.current = false;
       return;
     }
     
-    fetchDriveContent(folderId);
-    initialFetchDoneRef.current = true;
-  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]); // Using stable IDs
+    const workspaceId = activeWorkspace?.id;
+    const projectId = activeProject?.id;
+    const folderId = currentFolder?.id || null;
+    const contextKey = `${workspaceId}-${projectId}-${folderId}`;
+    
+    if (!workspaceId) {
+      initialFetchDoneRef.current = false;
+      lastContextRef.current = '';
+      return;
+    }
+    
+    // Skip if context hasn't changed
+    if (contextKey === lastContextRef.current && initialFetchDoneRef.current) {
+      return;
+    }
+    
+    lastContextRef.current = contextKey;
+    
+    // Small delay to batch rapid changes
+    fetchDelayRef.current = setTimeout(() => {
+      fetchDriveContent(folderId);
+      initialFetchDoneRef.current = true;
+    }, 300);
+    
+    return () => {
+      if (fetchDelayRef.current) {
+        clearTimeout(fetchDelayRef.current);
+      }
+    };
+  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id, authReady, fetchDriveContent]);
 
   // Auto-heal: gerar thumbnails para copies com base64 pendente
   const thumbnailQueueRef = useRef<Set<string>>(new Set());

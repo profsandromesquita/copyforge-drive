@@ -14,7 +14,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Changed from autoUpdate to prompt to prevent multiple instances running simultaneously
+      // This avoids token refresh conflicts between old and new service workers
+      registerType: "prompt",
       includeAssets: ["favicon.svg", "copydrive-icon.svg", "copydrive-logo.png"],
       manifest: {
         name: "Copy Drive - Sistema de Gerenciamento de Copy",
