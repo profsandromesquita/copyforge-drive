@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { handleSessionExpiredError } from "@/lib/auth-utils";
@@ -27,88 +27,118 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track last user ID to prevent duplicate fetches
+  const lastUserIdRef = useRef<string | null>(null);
+  const fetchingRef = useRef(false);
 
   const fetchWorkspaces = async () => {
-    if (!user) {
+    if (!user?.id) {
       setWorkspaces([]);
       setActiveWorkspaceState(null);
       setLoading(false);
       return;
     }
 
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      console.log('[Workspace] Fetch already in progress, skipping...');
+      return;
+    }
+
+    fetchingRef.current = true;
     setLoading(true);
     
-    const { data, error } = await supabase
-      .from('workspace_members')
-      .select(`
-        role,
-        workspace:workspaces!workspace_members_workspace_id_fkey (
-          id,
-          name,
-          avatar_url,
-          is_active
-        )
-      `)
-      .eq('user_id', user.id);
+    try {
+      const { data, error } = await supabase
+        .from('workspace_members')
+        .select(`
+          role,
+          workspace:workspaces!workspace_members_workspace_id_fkey (
+            id,
+            name,
+            avatar_url,
+            is_active
+          )
+        `)
+        .eq('user_id', user.id);
 
-    if (error) {
-      console.error('[Workspace] Error fetching workspaces:', error);
+      if (error) {
+        console.error('[Workspace] Error fetching workspaces:', error);
+        
+        // Se sessão expirou, fazer logout
+        await handleSessionExpiredError(error);
+        
+        setLoading(false);
+        fetchingRef.current = false;
+        return;
+      }
+
+      const workspaceList = data?.map((item: any) => ({
+        id: item.workspace.id,
+        name: item.workspace.name,
+        avatar_url: item.workspace.avatar_url,
+        role: item.role,
+        is_active: item.workspace.is_active ?? true
+      })) || [];
+
+      console.log('[Workspace] Fetched workspaces:', workspaceList.length);
+
+      setWorkspaces(workspaceList);
       
-      // Se sessão expirou, fazer logout
-      await handleSessionExpiredError(error);
+      // Apenas workspaces ativos podem ser selecionados
+      const activeWorkspacesList = workspaceList.filter(w => w.is_active);
       
+      // Update active workspace or set first ACTIVE workspace
+      if (activeWorkspacesList.length > 0) {
+        if (activeWorkspace) {
+          // Update active workspace with fresh data se ainda estiver ativo
+          const updatedActiveWorkspace = activeWorkspacesList.find(w => w.id === activeWorkspace.id);
+          if (updatedActiveWorkspace) {
+            setActiveWorkspaceState(updatedActiveWorkspace);
+          } else {
+            // Se o workspace ativo ficou inativo, selecionar outro
+            setActiveWorkspaceState(activeWorkspacesList[0]);
+          }
+        } else {
+          // Set first ACTIVE workspace as active if none selected
+          const savedWorkspaceId = localStorage.getItem('activeWorkspaceId');
+          const workspace = savedWorkspaceId 
+            ? activeWorkspacesList.find(w => w.id === savedWorkspaceId) || activeWorkspacesList[0]
+            : activeWorkspacesList[0];
+          setActiveWorkspaceState(workspace);
+        }
+      } else {
+        console.log('[Workspace] No active workspaces found');
+        setActiveWorkspaceState(null);
+      }
+    } finally {
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  };
+
+  // Use user.id as dependency instead of user object to prevent re-fetches on token refresh
+  useEffect(() => {
+    const userId = user?.id;
+    
+    // Skip if user ID hasn't changed
+    if (userId === lastUserIdRef.current) {
+      return;
+    }
+    
+    lastUserIdRef.current = userId ?? null;
+    
+    if (!userId) {
+      setWorkspaces([]);
+      setActiveWorkspaceState(null);
       setLoading(false);
       return;
     }
 
-    const workspaceList = data?.map((item: any) => ({
-      id: item.workspace.id,
-      name: item.workspace.name,
-      avatar_url: item.workspace.avatar_url,
-      role: item.role,
-      is_active: item.workspace.is_active ?? true
-    })) || [];
-
-    console.log('[Workspace] Fetched workspaces:', workspaceList.length);
-
-    setWorkspaces(workspaceList);
-    
-    // Apenas workspaces ativos podem ser selecionados
-    const activeWorkspacesList = workspaceList.filter(w => w.is_active);
-    
-    // Update active workspace or set first ACTIVE workspace
-    if (activeWorkspacesList.length > 0) {
-      if (activeWorkspace) {
-        // Update active workspace with fresh data se ainda estiver ativo
-        const updatedActiveWorkspace = activeWorkspacesList.find(w => w.id === activeWorkspace.id);
-        if (updatedActiveWorkspace) {
-          setActiveWorkspaceState(updatedActiveWorkspace);
-        } else {
-          // Se o workspace ativo ficou inativo, selecionar outro
-          setActiveWorkspaceState(activeWorkspacesList[0]);
-        }
-      } else {
-        // Set first ACTIVE workspace as active if none selected
-        const savedWorkspaceId = localStorage.getItem('activeWorkspaceId');
-        const workspace = savedWorkspaceId 
-          ? activeWorkspacesList.find(w => w.id === savedWorkspaceId) || activeWorkspacesList[0]
-          : activeWorkspacesList[0];
-        setActiveWorkspaceState(workspace);
-      }
-    } else {
-      console.log('[Workspace] No active workspaces found');
-      setActiveWorkspaceState(null);
-    }
-    
-    setLoading(false);
-  };
-
-  useEffect(() => {
     fetchWorkspaces();
 
     // Setup realtime subscription for workspace changes
-    if (!user) return;
-
     const channel = supabase
       .channel('workspace-changes')
       .on(
@@ -117,7 +147,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
           event: '*',
           schema: 'public',
           table: 'workspace_members',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${userId}`
         },
         () => {
           console.log('[Workspace] Realtime update detected, refreshing...');
@@ -129,7 +159,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   const setActiveWorkspace = (workspace: Workspace) => {
     setActiveWorkspaceState(workspace);

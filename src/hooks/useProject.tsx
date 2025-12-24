@@ -77,9 +77,12 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setProjects([]);
   }, [activeWorkspace?.id]);
 
+  // Use activeWorkspace.id as dependency to prevent re-fetches on unrelated state changes
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+    if (activeWorkspace?.id) {
+      fetchProjects();
+    }
+  }, [activeWorkspace?.id]); // Only depend on workspace ID, not the entire callback
 
   const setActiveProject = useCallback((project: Project | null) => {
     setActiveProjectState(project);
