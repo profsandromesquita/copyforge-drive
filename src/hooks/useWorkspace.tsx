@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { handleSessionExpiredError } from "@/lib/auth-utils";
 
+// Delay before initial workspace fetch after auth ready
+const FETCH_DELAY_MS = 500;
+
 interface Workspace {
   id: string;
   name: string;
@@ -23,7 +26,7 @@ interface WorkspaceContextType {
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   // Track last user ID to prevent duplicate fetches
   const lastUserIdRef = useRef<string | null>(null);
   const fetchingRef = useRef(false);
+  const fetchDelayRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchWorkspaces = async () => {
     if (!user?.id) {
@@ -118,9 +122,21 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Use user.id as dependency instead of user object to prevent re-fetches on token refresh
+  // Use user.id AND authReady as dependencies to prevent fetches during token storms
   useEffect(() => {
     const userId = user?.id;
+    
+    // Clear any pending fetch delay on dependency change
+    if (fetchDelayRef.current) {
+      clearTimeout(fetchDelayRef.current);
+      fetchDelayRef.current = null;
+    }
+    
+    // Don't fetch until auth is ready
+    if (!authReady) {
+      console.log('[Workspace] Auth not ready yet, waiting...');
+      return;
+    }
     
     // Skip if user ID hasn't changed
     if (userId === lastUserIdRef.current) {
@@ -136,7 +152,10 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    fetchWorkspaces();
+    // Small delay to let auth fully stabilize
+    fetchDelayRef.current = setTimeout(() => {
+      fetchWorkspaces();
+    }, FETCH_DELAY_MS);
 
     // Setup realtime subscription for workspace changes
     const channel = supabase
@@ -158,8 +177,11 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       supabase.removeChannel(channel);
+      if (fetchDelayRef.current) {
+        clearTimeout(fetchDelayRef.current);
+      }
     };
-  }, [user?.id]); // Only depend on user.id, not the entire user object
+  }, [user?.id, authReady]); // Depend on both user.id AND authReady
 
   const setActiveWorkspace = (workspace: Workspace) => {
     setActiveWorkspaceState(workspace);
