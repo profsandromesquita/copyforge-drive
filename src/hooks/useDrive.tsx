@@ -184,9 +184,23 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     setBreadcrumbs(crumbs);
   };
 
+  // Track if initial fetch has been done to prevent duplicate fetches
+  const initialFetchDoneRef = useRef(false);
+  
+  // Use stable IDs as dependencies to prevent re-fetches on token refresh
   useEffect(() => {
-    fetchDriveContent(currentFolder?.id || null);
-  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]);
+    const workspaceId = activeWorkspace?.id;
+    const projectId = activeProject?.id;
+    const folderId = currentFolder?.id || null;
+    
+    if (!workspaceId) {
+      initialFetchDoneRef.current = false;
+      return;
+    }
+    
+    fetchDriveContent(folderId);
+    initialFetchDoneRef.current = true;
+  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id]); // Using stable IDs
 
   // Auto-heal: gerar thumbnails para copies com base64 pendente
   const thumbnailQueueRef = useRef<Set<string>>(new Set());
