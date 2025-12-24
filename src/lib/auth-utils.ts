@@ -1,6 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export const isSessionExpiredError = (error: any): boolean => {
+  // PGRST116 = "0 rows returned" - NOT a session expiration, just missing data
+  if (error?.code === 'PGRST116') return false;
+  
   return (
     error?.code === 'PGRST303' ||
     error?.message?.includes('JWT expired') ||

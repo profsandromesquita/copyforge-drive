@@ -31,10 +31,13 @@ export const useOnboarding = () => {
         .from('profiles')
         .select('onboarding_completed')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
 
       if (!error && data) {
         setIsCompleted(data.onboarding_completed ?? false);
+      } else if (!data) {
+        // Profile doesn't exist yet - treat as not completed
+        setIsCompleted(false);
       }
       setLoading(false);
     };
@@ -100,7 +103,7 @@ export const useOnboarding = () => {
       .from('profiles')
       .select('onboarding_current_step, occupation, onboarding_custom_occupation, onboarding_project_id, onboarding_project_data')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
 
     if (error || !data) return null;
 

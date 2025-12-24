@@ -31,7 +31,7 @@ export const ProfileGeneral = () => {
         .from("profiles")
         .select("name, email, avatar_url")
         .eq("id", user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
 
       if (error) throw error;
 
@@ -39,6 +39,11 @@ export const ProfileGeneral = () => {
         setName(data.name || "");
         setEmail(data.email || "");
         setAvatarUrl(data.avatar_url);
+      } else {
+        // Profile doesn't exist yet - use user data as fallback
+        setName(user.user_metadata?.name || "");
+        setEmail(user.email || "");
+        setAvatarUrl(null);
       }
     } catch (error) {
       console.error("Error loading profile:", error);

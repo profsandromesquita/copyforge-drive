@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -20,58 +20,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Guard to prevent multiple redirects
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     console.log('=== useAuth initializing ===');
     
-    // Set up auth state listener
+    // Reset redirect guard on mount
+    hasRedirected.current = false;
+    
+    // Set up auth state listener - MUST be synchronous callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, 'Session:', !!session);
+        
+        // Synchronous state updates only
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('[useAuth] User signed in:', session.user.email);
-          
-          // Check onboarding status and redirect
+        // Handle redirects with setTimeout to avoid deadlocks
+        if (event === 'SIGNED_IN' && session?.user && !hasRedirected.current) {
           const currentPath = window.location.pathname;
           console.log('[useAuth] Signed in, current path:', currentPath);
           
-            // Only redirect if on auth page or root
-            if (currentPath === '/auth' || currentPath === '/') {
-              // Wait a bit for profile to be created (Google login needs more time)
-              setTimeout(async () => {
-                try {
-                  console.log('[useAuth] Checking onboarding status...');
-                  const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('onboarding_completed')
-                    .eq('id', session.user.id)
-                    .maybeSingle();
+          // Only redirect if on auth page or root
+          if (currentPath === '/auth' || currentPath === '/') {
+            hasRedirected.current = true;
+            
+            // Defer Supabase calls with setTimeout(0) to avoid auth deadlock
+            setTimeout(async () => {
+              try {
+                const { data: profile, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('onboarding_completed')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
                   
-                  console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
-                  
-                  if (profile?.onboarding_completed) {
-                    console.log('[useAuth] Redirecting to my-project (onboarding completed)');
-                    navigate('/my-project');
-                  } else {
-                    console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
-                    navigate('/onboarding');
-                  }
-                } catch (error) {
-                  console.error('[useAuth] Error checking onboarding:', error);
-                  // Default to onboarding if there's an error
-                  console.log('[useAuth] Redirecting to onboarding (error fallback)');
+                console.log('[useAuth] Profile data:', profile, 'Error:', profileError);
+                
+                if (profile?.onboarding_completed) {
+                  console.log('[useAuth] Redirecting to my-project (onboarding completed)');
+                  navigate('/my-project');
+                } else {
+                  console.log('[useAuth] Redirecting to onboarding (first access or incomplete)');
                   navigate('/onboarding');
                 }
-              }, 1000); // Increased timeout for Google login profile creation
-            }
+              } catch (error) {
+                console.error('[useAuth] Error checking onboarding:', error);
+                // Default to onboarding if there's an error
+                navigate('/onboarding');
+              }
+            }, 0);
+          }
         } else if (event === 'SIGNED_OUT') {
+          hasRedirected.current = false;
           console.log('Signed out, redirecting to auth');
           navigate('/auth');
         }
+        // Ignore TOKEN_REFRESHED events - no action needed
       }
     );
 
@@ -113,6 +121,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Reset redirect guard before sign in
+    hasRedirected.current = false;
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -122,6 +133,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
+    // Reset redirect guard before sign in
+    hasRedirected.current = false;
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -139,6 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     // Limpar qualquer dado de onboarding do localStorage antes de deslogar
     localStorage.removeItem('onboarding_progress');
+    hasRedirected.current = false;
     await supabase.auth.signOut();
   };
 
