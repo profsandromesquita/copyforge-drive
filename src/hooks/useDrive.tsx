@@ -75,9 +75,18 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   const lastFetchParamsRef = useRef<string>('');
   const fetchDelayRef = useRef<NodeJS.Timeout | null>(null);
   const lastContextRef = useRef<string>('');
+  const lastFetchTimeRef = useRef<number>(0);
+  const MIN_FETCH_INTERVAL_MS = 2000; // 2 segundos entre fetches
 
   const fetchDriveContent = useCallback(async (folderId: string | null = null) => {
     if (!activeWorkspace?.id) return;
+
+    // Throttle: evitar fetches muito próximos
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < MIN_FETCH_INTERVAL_MS) {
+      console.log('⏭️ Fetch ignorado - muito próximo do anterior (throttle)');
+      return;
+    }
 
     // Prevenir chamadas duplicadas simultâneas
     const fetchKey = `${activeWorkspace.id}-${activeProject?.id || 'none'}-${folderId || 'root'}`;
@@ -88,6 +97,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
     fetchingRef.current = true;
     lastFetchParamsRef.current = fetchKey;
+    lastFetchTimeRef.current = now;
     setLoading(true);
     
     try {
@@ -197,9 +207,8 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       fetchDelayRef.current = null;
     }
     
-    // Don't fetch until auth is ready
+    // Don't fetch until auth is ready - mas NÃO resetar o flag
     if (!authReady) {
-      initialFetchDoneRef.current = false;
       return;
     }
     
@@ -209,14 +218,20 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     const contextKey = `${workspaceId}-${projectId}-${folderId}`;
     
     if (!workspaceId) {
+      // Só reseta quando realmente não há workspace (logout/troca de conta)
       initialFetchDoneRef.current = false;
       lastContextRef.current = '';
       return;
     }
     
-    // Skip if context hasn't changed
+    // Skip if context hasn't changed AND initial fetch already done
     if (contextKey === lastContextRef.current && initialFetchDoneRef.current) {
       return;
+    }
+    
+    // Contexto diferente = resetar flag para permitir novo fetch
+    if (contextKey !== lastContextRef.current) {
+      initialFetchDoneRef.current = false;
     }
     
     lastContextRef.current = contextKey;
