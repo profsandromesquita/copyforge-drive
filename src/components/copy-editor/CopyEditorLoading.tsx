@@ -32,7 +32,7 @@ export const CopyEditorLoading = () => {
         <img 
           src={iconSrc} 
           alt="CopyDrive" 
-          className="w-24 h-24 animate-pulse"
+          className="w-24 h-24 animate-spin"
           onError={handleImageError}
         />
         <div className="w-64 space-y-3">
