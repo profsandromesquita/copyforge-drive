@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { PreviewModal } from '@/components/copy-editor/PreviewModal';
 import { Session } from '@/types/copy-editor';
+import { sanitizePreviewText } from '@/lib/html-sanitizer';
 
 interface DiscoverCardProps {
   copy: {
@@ -104,7 +105,7 @@ export const DiscoverCard = memo(({
             <>
               <div className="absolute inset-0 p-4 overflow-hidden">
                 <p className="text-sm text-muted-foreground line-clamp-6 leading-relaxed">
-                  {copy.preview_text}
+                  {sanitizePreviewText(copy.preview_text)}
                 </p>
               </div>
               <div className="absolute bottom-0 inset-x-0 h-16 md:h-20 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />

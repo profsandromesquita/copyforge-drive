@@ -16,6 +16,7 @@ import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { getCopyTypeLabel } from '@/lib/copy-types';
 import { cn } from '@/lib/utils';
 import { TemplateCard as TemplateCardType } from '@/hooks/useTemplates';
+import { sanitizePreviewText } from '@/lib/html-sanitizer';
 
 interface TemplateCardProps {
   template: TemplateCardType;
@@ -194,7 +195,7 @@ const TemplateCard = memo(({
                 <div className="space-y-1">
                   {preview_text && (
                     <p className="text-sm text-muted-foreground/80 line-clamp-4">
-                      {preview_text}
+                      {sanitizePreviewText(preview_text)}
                     </p>
                   )}
                 </div>
