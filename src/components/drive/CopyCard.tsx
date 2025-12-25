@@ -1,5 +1,5 @@
 import { DotsThree, Trash, Pencil, ArrowsDownUp, Copy as CopyIcon, Check } from "phosphor-react";
-import { useState, memo, useRef, useCallback } from "react";
+import { useState, memo, useRef, useCallback, useEffect } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import copyDriveLogo from '@/assets/copydrive-logo.png';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -19,6 +19,9 @@ import { RenameDialog } from "@/components/ui/rename-dialog";
 import { getCopyTypeLabel } from "@/lib/copy-types";
 import { cn } from "@/lib/utils";
 import { sanitizePreviewText } from "@/lib/html-sanitizer";
+import { extractPreviewFromSessions } from "@/lib/preview-extractor";
+import { supabase } from "@/integrations/supabase/client";
+
 interface CopyCardProps {
   id: string;
   title: string;
@@ -65,6 +68,41 @@ const CopyCard = memo(({
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  
+  // Fallback: texto extraído dinamicamente se previewText for null
+  const [fallbackPreviewText, setFallbackPreviewText] = useState<string | null>(null);
+  const fetchedFallbackRef = useRef(false);
+
+  // Carregar fallback apenas quando necessário (lazy loading)
+  useEffect(() => {
+    // Só buscar se não tiver imagem, não tiver texto, não estiver pendente, e ainda não buscou
+    if (
+      !previewImageUrl && 
+      !previewText && 
+      !hasPendingThumbnail && 
+      !fetchedFallbackRef.current
+    ) {
+      fetchedFallbackRef.current = true;
+      
+      // Buscar sessions da copy para extrair preview
+      supabase
+        .from('copies')
+        .select('sessions')
+        .eq('id', id)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data?.sessions) {
+            const extracted = extractPreviewFromSessions(data.sessions as any);
+            if (extracted) {
+              setFallbackPreviewText(extracted);
+            }
+          }
+        });
+    }
+  }, [id, previewImageUrl, previewText, hasPendingThumbnail]);
+
+  // Texto efetivo para preview (DB ou fallback)
+  const effectivePreviewText = previewText || fallbackPreviewText;
 
   // Long press refs
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
@@ -214,12 +252,12 @@ const CopyCard = memo(({
               <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               <span className="text-xs text-muted-foreground">Gerando preview...</span>
             </div>
-          ) : previewText ? (
-            // Preview de texto (projetado da VIEW)
+          ) : effectivePreviewText ? (
+            // Preview de texto (projetado da VIEW ou fallback extraído)
             <>
               <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
                 <p className="text-sm text-muted-foreground/80 line-clamp-4">
-                  {sanitizePreviewText(previewText)}
+                  {sanitizePreviewText(effectivePreviewText)}
                 </p>
               </div>
               {/* Bottom Fade Overlay */}
