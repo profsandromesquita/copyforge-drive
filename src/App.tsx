@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +11,8 @@ import { ProjectProvider } from "@/hooks/useProject";
 import { DriveProvider } from "@/hooks/useDrive";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
+import { useClockDrift } from "@/hooks/useClockDrift";
+import { ClockDriftBanner } from "@/components/ui/clock-drift-banner";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
@@ -51,6 +53,25 @@ const CopyEditorWithTheme = () => {
   }, [setTheme]);
   
   return <CopyEditor />;
+};
+
+// Componente para verificar clock drift e exibir banner se necessário
+const ClockDriftChecker = ({ children }: { children: ReactNode }) => {
+  const { driftResult, isChecking, recheck, hasCriticalDrift } = useClockDrift();
+
+  return (
+    <>
+      {hasCriticalDrift && driftResult && driftResult.direction !== 'synced' && (
+        <ClockDriftBanner
+          driftMinutes={driftResult.driftMinutes}
+          direction={driftResult.direction}
+          onRecheck={recheck}
+          isRechecking={isChecking}
+        />
+      )}
+      {children}
+    </>
+  );
 };
 
 const queryClient = new QueryClient();
@@ -94,15 +115,17 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <AuthProvider>
-            <WorkspaceProvider>
-              <ProjectProvider>
-                <DriveProvider>
-                  <AppContent />
-                </DriveProvider>
-              </ProjectProvider>
-            </WorkspaceProvider>
-          </AuthProvider>
+          <ClockDriftChecker>
+            <AuthProvider>
+              <WorkspaceProvider>
+                <ProjectProvider>
+                  <DriveProvider>
+                    <AppContent />
+                  </DriveProvider>
+                </ProjectProvider>
+              </WorkspaceProvider>
+            </AuthProvider>
+          </ClockDriftChecker>
         </TooltipProvider>
       </BrowserRouter>
     </ThemeProvider>
