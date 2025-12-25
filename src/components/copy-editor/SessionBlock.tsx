@@ -68,18 +68,26 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
   const isSessionSelected = selectedItems.some(item => item.id === session.id && item.type === 'session');
 
   const handleSessionClick = (e: React.MouseEvent) => {
-    // Only deselect if clicking directly on the session container (not on blocks)
-    if (e.target === e.currentTarget) {
-      selectBlock(null);
-    }
+    const target = e.target as HTMLElement;
+    
+    // If clicked on a block, ignore (block handles its own selection)
+    if (target.closest('[data-block-id]')) return;
+    
+    // Deselect current block
+    selectBlock(null);
   };
 
   const handleSessionClickForSelection = (e: React.MouseEvent) => {
-    if (isSelectionMode && e.target === e.currentTarget) {
+    const target = e.target as HTMLElement;
+    
+    // If clicked on a block, let the block handle it
+    if (target.closest('[data-block-id]')) return;
+    
+    if (isSelectionMode) {
       e.stopPropagation();
       toggleItemSelection(session.id, 'session');
-    } else if (!isSelectionMode) {
-      handleSessionClick(e);
+    } else {
+      selectBlock(null);
     }
   };
 

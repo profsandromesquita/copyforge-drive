@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getImageFromDrop, getImageFromPaste, isValidImage, uploadImage } from '@/lib/image-upload';
 import { EmptyStateCards } from './EmptyStateCards';
 
@@ -27,11 +27,28 @@ export const SessionCanvas = ({
   isInPromptStep,
   isDraggingFromToolbar 
 }: SessionCanvasProps) => {
-  const { sessions, addSession, addBlock } = useCopyEditor();
+  const { sessions, addSession, addBlock, selectBlock } = useCopyEditor();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Click-outside handler to deselect blocks
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // If clicked on a block, ignore (block has its own handler)
+    if (target.closest('[data-block-id]')) return;
+    
+    // If clicked inside a dropdown/popover/menu, ignore
+    if (target.closest('[data-radix-popper-content-wrapper]')) return;
+    if (target.closest('[role="menu"]')) return;
+    if (target.closest('[role="dialog"]')) return;
+    if (target.closest('.block-toolbar')) return;
+    
+    // Deselect
+    selectBlock(null);
+  }, [selectBlock]);
 
   // Droppable for empty canvas
   const { setNodeRef, isOver } = useDroppable({
@@ -206,10 +223,11 @@ export const SessionCanvas = ({
 
   return (
     <div 
-      className={`flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar relative ${
+      className={`flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar relative min-h-full ${
         isDragging ? 'ring-2 ring-primary ring-offset-2' : ''
       }`}
       style={{ backgroundColor: 'rgb(245, 245, 245)' }}
+      onClick={handleCanvasClick}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

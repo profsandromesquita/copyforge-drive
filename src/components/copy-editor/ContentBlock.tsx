@@ -1142,6 +1142,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
   return (
     <div
       ref={setCombinedRef}
+      data-block-id={block.id}
       style={style}
       className={`
         relative bg-background rounded-lg border transition-all group
@@ -1152,7 +1153,14 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
         ${isNewFromChat ? 'border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20' : ''}
         ${block.id === lastAddedBlockId ? 'ring-2 ring-primary/70 animate-pulse' : ''}
       `}
-      onClick={isSelectionMode ? handleBlockClick : () => selectBlock(block.id)}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isSelectionMode) {
+          handleBlockClick(e);
+        } else {
+          selectBlock(block.id);
+        }
+      }}
     >
       {isNewFromChat && (
         <div className="absolute -top-2 -left-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full shadow-sm animate-in fade-in slide-in-from-top-1">
