@@ -4,11 +4,24 @@
  */
 
 /**
- * Removes all HTML tags from a string
+ * Removes all HTML tags from a string, including truncated/broken tags
  */
 export function stripHtmlTags(text: string): string {
   if (!text) return '';
-  return text.replace(/<[^>]*>/g, '');
+  
+  // First, remove complete HTML tags
+  let result = text.replace(/<[^>]*>/g, '');
+  
+  // Remove truncated opening tags (e.g., "<p><span..." without closing ">")
+  result = result.replace(/<[^>]*$/g, '');
+  
+  // Remove orphaned closing angle brackets at the start
+  result = result.replace(/^[^<]*>/g, (match) => {
+    // Only remove if it looks like a closing tag fragment
+    return match.includes('>') ? match.replace(/^[^<]*>/, '') : match;
+  });
+  
+  return result;
 }
 
 /**

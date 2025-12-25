@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sanitizePreviewText } from '@/lib/html-sanitizer';
 
 export interface DiscoverCard {
   id: string;
@@ -124,7 +125,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
         created_by: item.created_by,
         created_at: item.created_at,
         preview_image_url: item.preview_image_url,
-        preview_text: item.preview_text,
+        preview_text: sanitizePreviewText(item.preview_text),
         creator: {
           name: item.creator_name || 'Usuário',
           avatar_url: item.creator_avatar_url,
