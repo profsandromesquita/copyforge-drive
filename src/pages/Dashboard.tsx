@@ -38,7 +38,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { setTheme } = useTheme();
   const { activeProject } = useProject();
-  const { folders, copies, loading, navigateToFolder, createCopy, moveFolder, moveCopy, deleteCopies, deleteFolders, countCopiesInFolders } = useDrive();
+  const { folders, copies, loading, isInitialLoading, navigateToFolder, createCopy, moveFolder, moveCopy, deleteCopies, deleteFolders, countCopiesInFolders } = useDrive();
   const { checkProjectLimit, checkCopyLimit } = usePlanLimits();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [createCopyOpen, setCreateCopyOpen] = useState(false);
@@ -530,7 +530,17 @@ const Dashboard = () => {
               )}
             </DragOverlay>
             
-            {loading ? (
+            {/* Indicador de refresh sutil (quando já carregou antes) */}
+            {loading && !isInitialLoading && (
+              <div className="absolute top-2 right-2 z-50">
+                <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border">
+                  <img src={copyDriveIcon} alt="Loading" className="h-4 w-4 animate-spin" />
+                  <span className="text-xs text-muted-foreground">Atualizando...</span>
+                </div>
+              </div>
+            )}
+            
+            {isInitialLoading ? (
               <div className="flex items-center justify-center min-h-[400px]">
                 <div className="flex flex-col items-center gap-4">
                   <img 
