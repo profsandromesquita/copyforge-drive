@@ -44,12 +44,12 @@ export const GeneralSettings = () => {
         return;
       }
       
-      // Se não houver logos configuradas, usar as logos padrão dos assets
+      // Se não houver logos configuradas, usar as logos padrão do public
       setSettings({
         ...data,
-        logo_light_url: data.logo_light_url || '/src/assets/copydrive-logo.png',
-        logo_dark_url: data.logo_dark_url || '/src/assets/copydrive-logo.png',
-        favicon_url: data.favicon_url || '/src/assets/copydrive-icon.svg'
+        logo_light_url: data.logo_light_url || '/copydrive-logo.png',
+        logo_dark_url: data.logo_dark_url || '/copydrive-logo.png',
+        favicon_url: data.favicon_url || '/copydrive-icon.svg'
       });
     } catch (error) {
       console.error("Erro ao carregar configurações:", error);
@@ -206,7 +206,7 @@ export const GeneralSettings = () => {
             <Label>Logo Modo Claro</Label>
             <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
               <img 
-                src={settings.logo_light_url || '/src/assets/copydrive-logo.png'} 
+                src={settings.logo_light_url || '/copydrive-logo.png'} 
                 alt="Logo Claro" 
                 className="h-16 w-auto object-contain"
               />
@@ -250,7 +250,7 @@ export const GeneralSettings = () => {
             <Label>Logo Modo Escuro</Label>
             <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
               <img 
-                src={settings.logo_dark_url || '/src/assets/copydrive-logo.png'} 
+                src={settings.logo_dark_url || '/copydrive-logo.png'} 
                 alt="Logo Escuro" 
                 className="h-16 w-auto object-contain"
               />
@@ -294,7 +294,7 @@ export const GeneralSettings = () => {
             <Label>Favicon</Label>
             <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
               <img 
-                src={settings.favicon_url || '/src/assets/copydrive-icon.svg'} 
+                src={settings.favicon_url || '/copydrive-icon.svg'} 
                 alt="Favicon" 
                 className="h-8 w-8 object-contain"
               />
