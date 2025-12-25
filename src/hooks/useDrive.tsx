@@ -42,6 +42,7 @@ interface DriveContextType {
   currentFolder: Folder | null;
   breadcrumbs: Folder[];
   loading: boolean;
+  isInitialLoading: boolean;
   navigateToFolder: (folderId: string | null) => void;
   createFolder: (name: string) => Promise<void>;
   createCopy: (title: string, copyType?: string) => Promise<Copy | null>;
@@ -62,47 +63,48 @@ const DriveContext = createContext<DriveContextType | undefined>(undefined);
 
 export const DriveProvider = ({ children }: { children: ReactNode }) => {
   const { activeWorkspace } = useWorkspace();
-  const { activeProject } = useProject();
+  const { activeProject, loading: projectLoading } = useProject();
   const { user, authReady } = useAuth();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [copies, setCopies] = useState<Copy[]>([]);
+  
+  // NOVA ARQUITETURA: Separar navegação (ID) de dados (objeto)
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Folder[]>([]);
+  
+  // Estados de loading separados
   const [loading, setLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
   // Refs para controlar fetches duplicados e prevenir race conditions
   const fetchingRef = useRef(false);
-  const lastFetchParamsRef = useRef<string>('');
-  const fetchDelayRef = useRef<NodeJS.Timeout | null>(null);
   const lastContextRef = useRef<string>('');
-  const lastFetchTimeRef = useRef<number>(0);
-  const MIN_FETCH_INTERVAL_MS = 2000; // 2 segundos entre fetches
+  const requestIdRef = useRef(0); // Anti-race condition: só o request mais recente atualiza estado
 
-  const fetchDriveContent = useCallback(async (folderId: string | null = null) => {
+  const fetchDriveContent = useCallback(async (
+    folderId: string | null = null, 
+    source: string = 'unknown'
+  ) => {
     if (!activeWorkspace?.id) return;
 
-    // Throttle: evitar fetches muito próximos
-    const now = Date.now();
-    if (now - lastFetchTimeRef.current < MIN_FETCH_INTERVAL_MS) {
-      console.log('⏭️ Fetch ignorado - muito próximo do anterior (throttle)');
-      return;
-    }
+    // Gerar requestId único para este fetch
+    const thisRequestId = ++requestIdRef.current;
+    const timestamp = Date.now();
+    
+    console.log(`🔄 [${thisRequestId}] Fetch iniciado (source: ${source}) - workspace: ${activeWorkspace.id}, project: ${activeProject?.id || 'none'}, folder: ${folderId || 'root'}`);
 
-    // Prevenir chamadas duplicadas simultâneas
-    const fetchKey = `${activeWorkspace.id}-${activeProject?.id || 'none'}-${folderId || 'root'}`;
-    if (fetchingRef.current && lastFetchParamsRef.current === fetchKey) {
-      console.log('⏭️ Fetch já em andamento, ignorando...');
-      return;
+    // Se não é o primeiro load, não mostrar spinner central (apenas refresh)
+    if (hasLoadedOnce) {
+      setLoading(true);
+    } else {
+      setIsInitialLoading(true);
     }
-
+    
     fetchingRef.current = true;
-    lastFetchParamsRef.current = fetchKey;
-    lastFetchTimeRef.current = now;
-    setLoading(true);
     
     try {
-      // Forçar bypass de cache
-      const timestamp = Date.now();
       // Fetch folders
       const foldersQuery = supabase
         .from('folders')
@@ -123,8 +125,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: foldersData, error: foldersError } = await foldersQuery;
       if (foldersError) throw foldersError;
 
-      // Fetch copies usando VIEW otimizada (elimina over-fetching de sessions)
-      // drive_cards já projeta preview_image_url, preview_text e creator info
+      // Fetch copies usando VIEW otimizada
       const copiesQuery = supabase
         .from('drive_cards')
         .select('*')
@@ -144,12 +145,19 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       const { data: copiesData, error: copiesError } = await copiesQuery;
       if (copiesError) throw copiesError;
 
-      console.log(`✅ Fetched ${copiesData?.length || 0} copies (timestamp: ${timestamp})`);
+      // Anti-race condition: só atualizar se este ainda é o request mais recente
+      if (thisRequestId !== requestIdRef.current) {
+        console.log(`⏭️ [${thisRequestId}] Fetch obsoleto, ignorando resultado (atual: ${requestIdRef.current})`);
+        return;
+      }
+
+      console.log(`✅ [${thisRequestId}] Fetched ${copiesData?.length || 0} copies (timestamp: ${timestamp})`);
 
       setFolders(foldersData || []);
       setCopies(copiesData || []);
+      setHasLoadedOnce(true);
 
-      // Build breadcrumbs
+      // Build breadcrumbs e currentFolder
       if (folderId) {
         const { data: folderData } = await supabase
           .from('folders')
@@ -170,6 +178,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Erro ao carregar conteúdo');
     } finally {
       setLoading(false);
+      setIsInitialLoading(false);
       fetchingRef.current = false;
     }
   }, [activeWorkspace?.id, activeProject?.id]);
@@ -196,58 +205,55 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     setBreadcrumbs(crumbs);
   };
 
-  // Track if initial fetch has been done to prevent duplicate fetches
-  const initialFetchDoneRef = useRef(false);
-  
-  // Use stable IDs AND authReady as dependencies to prevent re-fetches on token refresh
+  // ====== EFEITO PRINCIPAL: ÚNICO GATILHO DE FETCH ======
+  // Depende de: workspace, project, folderId, authReady, projectLoading
   useEffect(() => {
-    // Clear pending fetch on dependency change
-    if (fetchDelayRef.current) {
-      clearTimeout(fetchDelayRef.current);
-      fetchDelayRef.current = null;
-    }
-    
-    // Don't fetch until auth is ready - mas NÃO resetar o flag
+    // Gating #1: Auth precisa estar pronto
     if (!authReady) {
+      console.log('⏸️ Drive: Aguardando auth...');
       return;
     }
     
+    // Gating #2: Workspace precisa existir
     const workspaceId = activeWorkspace?.id;
-    const projectId = activeProject?.id;
-    const folderId = currentFolder?.id || null;
-    const contextKey = `${workspaceId}-${projectId}-${folderId}`;
-    
     if (!workspaceId) {
-      // Só reseta quando realmente não há workspace (logout/troca de conta)
-      initialFetchDoneRef.current = false;
+      console.log('⏸️ Drive: Sem workspace ativo');
+      setFolders([]);
+      setCopies([]);
+      setCurrentFolder(null);
+      setBreadcrumbs([]);
+      setIsInitialLoading(false);
       lastContextRef.current = '';
       return;
     }
     
-    // Skip if context hasn't changed AND initial fetch already done
-    if (contextKey === lastContextRef.current && initialFetchDoneRef.current) {
+    // Gating #3: Aguardar projeto carregar (evita "fetch sem projeto" + "fetch com projeto")
+    if (projectLoading) {
+      console.log('⏸️ Drive: Aguardando projetos carregarem...');
       return;
     }
     
-    // Contexto diferente = resetar flag para permitir novo fetch
-    if (contextKey !== lastContextRef.current) {
-      initialFetchDoneRef.current = false;
+    // Construir contextKey baseado no estado atual
+    const projectId = activeProject?.id || 'none';
+    const folderId = currentFolderId || 'root';
+    const contextKey = `${workspaceId}-${projectId}-${folderId}`;
+    
+    // Skip se o contexto não mudou
+    if (contextKey === lastContextRef.current) {
+      console.log(`⏭️ Drive: Contexto não mudou (${contextKey}), skip fetch`);
+      return;
     }
     
+    console.log(`📍 Drive: Contexto mudou ${lastContextRef.current || '(inicial)'} -> ${contextKey}`);
     lastContextRef.current = contextKey;
     
-    // Small delay to batch rapid changes
-    fetchDelayRef.current = setTimeout(() => {
-      fetchDriveContent(folderId);
-      initialFetchDoneRef.current = true;
-    }, 300);
+    // Delay pequeno para debounce de mudanças rápidas
+    const timeoutId = setTimeout(() => {
+      fetchDriveContent(currentFolderId, 'effect');
+    }, 100);
     
-    return () => {
-      if (fetchDelayRef.current) {
-        clearTimeout(fetchDelayRef.current);
-      }
-    };
-  }, [activeWorkspace?.id, activeProject?.id, currentFolder?.id, authReady, fetchDriveContent]);
+    return () => clearTimeout(timeoutId);
+  }, [activeWorkspace?.id, activeProject?.id, currentFolderId, authReady, projectLoading, fetchDriveContent]);
 
   // Auto-heal: gerar thumbnails para copies com base64 pendente
   const thumbnailQueueRef = useRef<Set<string>>(new Set());
@@ -296,21 +302,28 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleInvalidate = () => {
       console.log('🔄 Drive cache invalidated by external event');
-      fetchDriveContent(currentFolder?.id || null);
+      // Força um novo fetch invalidando o contexto
+      lastContextRef.current = '';
+      fetchDriveContent(currentFolderId, 'invalidate');
     };
     
     window.addEventListener('drive-invalidate', handleInvalidate);
     return () => window.removeEventListener('drive-invalidate', handleInvalidate);
-  }, [fetchDriveContent, currentFolder?.id]);
+  }, [fetchDriveContent, currentFolderId]);
 
+  // NAVEGAÇÃO: Apenas atualiza o ID, o useEffect principal faz o fetch
   const navigateToFolder = useCallback((folderId: string | null) => {
+    console.log(`📂 navigateToFolder: ${folderId || 'root'}`);
+    
+    // Se navegando para raiz, limpar breadcrumbs imediatamente (UX)
     if (folderId === null) {
-      setCurrentFolder(null);
       setBreadcrumbs([]);
-    } else {
-      fetchDriveContent(folderId);
+      setCurrentFolder(null);
     }
-  }, [fetchDriveContent]);
+    
+    // Atualizar o ID - o useEffect principal vai disparar o fetch
+    setCurrentFolderId(folderId);
+  }, []);
 
   const createFolder = useCallback(async (name: string) => {
     if (!activeWorkspace?.id || !user?.id) {
@@ -329,19 +342,19 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           workspace_id: activeWorkspace.id,
           project_id: activeProject.id,
-          parent_id: currentFolder?.id || null,
+          parent_id: currentFolderId || null,
           name,
           created_by: user.id,
         });
 
       if (error) throw error;
 
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'createFolder');
     } catch (error) {
       console.error('Error creating folder:', error);
       toast.error('Erro ao criar pasta');
     }
-  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolder?.id, fetchDriveContent]);
+  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolderId, fetchDriveContent]);
 
   const createCopy = useCallback(async (title: string, copyType: string = 'outro'): Promise<Copy | null> => {
     if (!activeWorkspace?.id || !user?.id) {
@@ -379,7 +392,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           workspace_id: activeWorkspace.id,
           project_id: activeProject.id,
-          folder_id: currentFolder?.id || null,
+          folder_id: currentFolderId || null,
           title,
           copy_type: copyType,
           created_by: user.id,
@@ -390,7 +403,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Copy criada com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'createCopy');
       // Retorna dados básicos para navegação (não precisa dos campos da VIEW)
       return {
         ...data,
@@ -405,7 +418,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       toast.error('Erro ao criar copy');
       return null;
     }
-  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolder?.id, fetchDriveContent]);
+  }, [activeWorkspace?.id, activeProject?.id, user?.id, currentFolderId, fetchDriveContent]);
 
   const deleteFolder = useCallback(async (folderId: string) => {
     try {
@@ -417,12 +430,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Pasta excluída com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'deleteFolder');
     } catch (error) {
       console.error('Error deleting folder:', error);
       toast.error('Erro ao excluir pasta');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const deleteCopy = useCallback(async (copyId: string) => {
     try {
@@ -443,7 +456,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('❌ Erro ao deletar:', error);
         // 3. ROLLBACK: Se falhar, recarregar do banco
-        await fetchDriveContent(currentFolder?.id || null);
+        await fetchDriveContent(currentFolderId, 'deleteCopy-rollback');
         throw error;
       }
 
@@ -451,12 +464,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       toast.success('Copy excluída com sucesso!');
       
       // 4. Refetch para garantir sincronização
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'deleteCopy');
     } catch (error) {
       console.error('Error deleting copy:', error);
       toast.error('Erro ao excluir copy');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   // Batch delete copies
   const deleteCopies = useCallback(async (copyIds: string[]) => {
@@ -474,17 +487,17 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         // ROLLBACK
-        await fetchDriveContent(currentFolder?.id || null);
+        await fetchDriveContent(currentFolderId, 'deleteCopies-rollback');
         throw error;
       }
 
       toast.success(`${copyIds.length} copies excluídas com sucesso!`);
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'deleteCopies');
     } catch (error) {
       console.error('Error batch deleting copies:', error);
       toast.error('Erro ao excluir copies');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   // Contar copies dentro de pastas (para warning de cascade delete)
   const countCopiesInFolders = useCallback(async (folderIds: string[]): Promise<number> => {
@@ -536,17 +549,17 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         // ROLLBACK
-        await fetchDriveContent(currentFolder?.id || null);
+        await fetchDriveContent(currentFolderId, 'deleteFolders-rollback');
         throw error;
       }
 
       toast.success(`${folderIds.length} pastas excluídas com sucesso!`);
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'deleteFolders');
     } catch (error) {
       console.error('Error batch deleting folders:', error);
       toast.error('Erro ao excluir pastas');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const renameFolder = useCallback(async (folderId: string, newName: string) => {
     try {
@@ -558,12 +571,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Pasta renomeada com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'renameFolder');
     } catch (error) {
       console.error('Error renaming folder:', error);
       toast.error('Erro ao renomear pasta');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const renameCopy = useCallback(async (copyId: string, newTitle: string) => {
     try {
@@ -575,12 +588,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Copy renomeada com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'renameCopy');
     } catch (error) {
       console.error('Error renaming copy:', error);
       toast.error('Erro ao renomear copy');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const moveFolder = useCallback(async (folderId: string, targetFolderId: string | null) => {
     try {
@@ -592,12 +605,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Pasta movida com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'moveFolder');
     } catch (error) {
       console.error('Error moving folder:', error);
       toast.error('Erro ao mover pasta');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const moveCopy = useCallback(async (copyId: string, targetFolderId: string | null) => {
     try {
@@ -609,12 +622,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       toast.success('Copy movida com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'moveCopy');
     } catch (error) {
       console.error('Error moving copy:', error);
       toast.error('Erro ao mover copy');
     }
-  }, [currentFolder?.id, fetchDriveContent]);
+  }, [currentFolderId, fetchDriveContent]);
 
   const duplicateCopy = useCallback(async (copyId: string) => {
     if (!user?.id) {
@@ -650,12 +663,12 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       if (insertError) throw insertError;
 
       toast.success('Copy duplicada com sucesso!');
-      await fetchDriveContent(currentFolder?.id || null);
+      await fetchDriveContent(currentFolderId, 'duplicateCopy');
     } catch (error) {
       console.error('Error duplicating copy:', error);
       toast.error('Erro ao duplicar copy');
     }
-  }, [user?.id, currentFolder?.id, fetchDriveContent]);
+  }, [user?.id, currentFolderId, fetchDriveContent]);
 
   const value: DriveContextType = {
     folders,
@@ -663,6 +676,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     currentFolder,
     breadcrumbs,
     loading,
+    isInitialLoading,
     navigateToFolder,
     createFolder,
     createCopy,
@@ -676,7 +690,7 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
     moveFolder,
     moveCopy,
     duplicateCopy,
-    refreshDrive: () => fetchDriveContent(currentFolder?.id || null),
+    refreshDrive: () => fetchDriveContent(currentFolderId, 'manual-refresh'),
   };
 
   return (
