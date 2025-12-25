@@ -18,7 +18,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { RenameDialog } from "@/components/ui/rename-dialog";
 import { getCopyTypeLabel } from "@/lib/copy-types";
 import { cn } from "@/lib/utils";
-
+import { sanitizePreviewText } from "@/lib/html-sanitizer";
 interface CopyCardProps {
   id: string;
   title: string;
@@ -219,7 +219,7 @@ const CopyCard = memo(({
             <>
               <div className="absolute inset-0 p-4 md:p-6 scale-90 opacity-70 origin-top-left">
                 <p className="text-sm text-muted-foreground/80 line-clamp-4">
-                  {previewText}
+                  {sanitizePreviewText(previewText)}
                 </p>
               </div>
               {/* Bottom Fade Overlay */}
