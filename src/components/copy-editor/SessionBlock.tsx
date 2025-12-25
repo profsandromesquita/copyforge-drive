@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DotsThree, Copy as CopyIcon, Trash, PencilSimple, ChatCircle, CaretUp, CaretDown } from 'phosphor-react';
@@ -29,7 +29,7 @@ interface DropZoneProps {
   index: number;
 }
 
-const DropZone = ({ sessionId, index }: DropZoneProps) => {
+const DropZone = ({ sessionId, index, onClickBackground }: DropZoneProps & { onClickBackground: () => void }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: `dropzone-${sessionId}-${index}`,
     data: { sessionId, insertIndex: index },
@@ -38,7 +38,11 @@ const DropZone = ({ sessionId, index }: DropZoneProps) => {
   return (
     <div
       ref={setNodeRef}
-      className={`h-3 transition-all ${isOver ? 'h-8' : ''}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClickBackground();
+      }}
+      className={`h-3 transition-all cursor-default ${isOver ? 'h-8' : ''}`}
     >
       {isOver && (
         <div className="h-1 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50 mx-4" />
@@ -136,7 +140,15 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div 
+        className="flex items-center justify-between"
+        onClick={(e) => {
+          // Deselect if clicked on the header background (not on buttons/inputs)
+          if (e.target === e.currentTarget) {
+            selectBlock(null);
+          }
+        }}
+      >
         {isEditingTitle ? (
           <Input
             value={session.title}
@@ -147,18 +159,22 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
             }}
             className="max-w-xs"
             autoFocus
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <h2
             className="text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground flex items-center gap-2 transition-colors"
-            onClick={() => setIsEditingTitle(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingTitle(true);
+            }}
           >
             {session.title}
             <PencilSimple size={14} className="opacity-0 group-hover:opacity-100" />
           </h2>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {sessionIndex > 0 && (
             <Button
               variant="ghost"
@@ -217,7 +233,7 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
         </div>
       </div>
 
-      <div className="space-y-1 min-h-[100px]" onClick={handleSessionClick}>
+      <div className="flex flex-col gap-1 min-h-[100px]" onClick={handleSessionClick}>
         {session.blocks.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Arraste blocos da toolbar para começar
@@ -228,12 +244,12 @@ export const SessionBlock = ({ session, sessionIndex, totalSessions, onShowImage
             strategy={verticalListSortingStrategy}
           >
             {session.blocks.map((block, index) => (
-              <div key={block.id}>
-                <DropZone sessionId={session.id} index={index} />
+              <React.Fragment key={block.id}>
+                <DropZone sessionId={session.id} index={index} onClickBackground={() => selectBlock(null)} />
                 <ContentBlock block={block} sessionId={session.id} onShowImageAI={onShowImageAI} />
-              </div>
+              </React.Fragment>
             ))}
-            <DropZone sessionId={session.id} index={session.blocks.length} />
+            <DropZone sessionId={session.id} index={session.blocks.length} onClickBackground={() => selectBlock(null)} />
           </SortableContext>
         )}
       </div>
