@@ -175,6 +175,14 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     fetchDiscoverCards(true);
   }, [search, type, sort]);
 
+  // Clear liked state when user changes (logout/login)
+  useEffect(() => {
+    setLikedCopyIds(new Set());
+  }, [currentUserId]);
+
+  // Create a stable key based on actual copy IDs (not just length)
+  const copiesKey = copies.map(c => c.id).join(',');
+
   // Load user likes when userId becomes available and copies exist
   useEffect(() => {
     const fetchUserLikes = async () => {
@@ -193,7 +201,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     };
     
     fetchUserLikes();
-  }, [currentUserId, copies.length]);
+  }, [currentUserId, copiesKey]); // Use copiesKey instead of copies.length
 
   // Load more function for infinite scroll
   const loadMore = useCallback(async () => {
@@ -262,9 +270,15 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
                                error?.status === 409;
       
       if (isDuplicateError && !isCurrentlyLiked) {
-        // Tried to insert but already existed - this is OK, keep UI as liked
-        console.log('Like already existed, maintaining state');
-        return;
+        // Tried to insert but already existed - sync local state with server
+        console.log('Like already existed, syncing state');
+        // Ensure local state reflects the like exists
+        setLikedCopyIds(prev => {
+          const next = new Set(prev);
+          next.add(copyId);
+          return next;
+        });
+        return; // Don't revert, the like is there
       }
       
       // Revert optimistic update only for other errors
