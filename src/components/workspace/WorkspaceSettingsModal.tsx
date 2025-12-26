@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceGeneral } from "./settings/WorkspaceGeneral";
 import { WorkspaceUsers } from "./settings/WorkspaceUsers";
@@ -65,6 +65,10 @@ export const WorkspaceSettingsModal = ({ open, onOpenChange, defaultTab = "gener
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-7xl h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogTitle className="sr-only">Configurações do Workspace</DialogTitle>
+        <DialogDescription className="sr-only">
+          Gerencie as configurações gerais, usuários, créditos e planos do workspace.
+        </DialogDescription>
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
           <div className="w-48 border-r border-border bg-muted/30 p-4 overflow-y-auto">
