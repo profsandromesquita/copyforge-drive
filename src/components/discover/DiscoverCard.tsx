@@ -18,6 +18,7 @@ interface DiscoverCardProps {
     copy_type?: string | null;
     copy_count: number;
     likes_count: number;
+    views_count: number;
     created_by: string;
     preview_image_url: string | null;
     preview_text: string | null;
@@ -28,6 +29,7 @@ interface DiscoverCardProps {
   };
   onCopy: (copyId: string) => void;
   onLike?: (copyId: string) => void;
+  onView?: (copyId: string) => void;
   isLikedByUser?: boolean;
   isLiking?: boolean;
   isCopying?: boolean;
@@ -49,6 +51,7 @@ export const DiscoverCard = memo(({
   copy, 
   onCopy, 
   onLike,
+  onView,
   isLikedByUser = false,
   isLiking = false,
   isCopying = false,
@@ -62,6 +65,9 @@ export const DiscoverCard = memo(({
 
   // Lazy load full sessions only when preview is requested
   const handleShowPreview = async () => {
+    // Increment view count when preview is clicked
+    onView?.(copy.id);
+    
     if (previewSessions) {
       setShowPreview(true);
       return;
@@ -122,12 +128,6 @@ export const DiscoverCard = memo(({
               />
             </div>
           )}
-          {/* Preview Icon Badge */}
-          <div className="absolute top-2 right-2 flex items-center gap-2">
-            <div className="bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
-              <Eye className="h-3 w-3 text-muted-foreground" />
-            </div>
-          </div>
         </div>
 
         <CardContent className="flex-1 p-4 md:p-6">
@@ -142,7 +142,7 @@ export const DiscoverCard = memo(({
               )}
             </div>
 
-            {/* Creator Info */}
+            {/* Creator Info and Metrics */}
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={copy.creator.avatar_url || undefined} />
@@ -153,7 +153,15 @@ export const DiscoverCard = memo(({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{copy.creator.name}</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              
+              {/* Metrics - Views, Likes, Copies */}
+              <div className="flex items-center gap-3 shrink-0">
+                {/* Views Counter */}
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm">{copy.views_count || 0}</span>
+                </div>
+                
                 {/* Like Button */}
                 <button
                   onClick={(e) => {
@@ -171,7 +179,7 @@ export const DiscoverCard = memo(({
                 >
                   <Heart
                     className={cn(
-                      "h-5 w-5 transition-all duration-200",
+                      "h-4 w-4 transition-all duration-200",
                       isLikedByUser
                         ? "fill-primary text-primary scale-110"
                         : "text-muted-foreground group-hover:text-primary group-hover:scale-110"
@@ -181,7 +189,9 @@ export const DiscoverCard = memo(({
                     {copy.likes_count || 0}
                   </span>
                 </button>
-                <Badge variant="secondary">
+                
+                {/* Copies Badge */}
+                <Badge variant="secondary" className="text-xs">
                   {copy.copy_count} {copy.copy_count === 1 ? 'cópia' : 'cópias'}
                 </Badge>
               </div>
