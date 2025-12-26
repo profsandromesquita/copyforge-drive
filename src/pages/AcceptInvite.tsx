@@ -8,24 +8,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, X } from "lucide-react";
+import { Check, X, AlertTriangle, LogOut } from "lucide-react";
 import { 
   ValidateInviteResponse, 
   AcceptInviteResponse, 
   DeclineInviteResponse,
   InviteDisplayData 
 } from "@/types/invite";
+import { savePendingInvite, clearPendingInvite } from "@/lib/invite-utils";
+
+interface EmailMismatchError {
+  invitedEmail: string;
+  currentEmail: string;
+}
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { refreshWorkspaces } = useWorkspace();
   const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [inviteData, setInviteData] = useState<InviteDisplayData | null>(null);
+  const [emailMismatchError, setEmailMismatchError] = useState<EmailMismatchError | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -62,10 +69,11 @@ export default function AcceptInvite() {
         return;
       }
 
-      // If user is not logged in, redirect to auth
+      // If user is not logged in, save token and redirect silently
       if (!user) {
-        toast.error("Você precisa estar logado para aceitar o convite");
-        navigate(`/auth?redirect=/accept-invite?token=${token}`);
+        console.log('[AcceptInvite] User not logged in, saving token and redirecting to signup-invite');
+        savePendingInvite(token!);
+        navigate(`/signup-invite?token=${token}`);
         return;
       }
 
@@ -77,8 +85,12 @@ export default function AcceptInvite() {
         .single();
 
       if (profile?.email !== result.email) {
-        toast.error("Este convite foi enviado para outro email");
-        navigate("/my-project");
+        // Show email mismatch UI instead of redirecting
+        setEmailMismatchError({
+          invitedEmail: result.email!,
+          currentEmail: profile?.email || user.email || 'desconhecido'
+        });
+        setLoading(false);
         return;
       }
 
@@ -144,6 +156,9 @@ export default function AcceptInvite() {
         localStorage.setItem('activeWorkspaceId', result.workspace_id);
       }
 
+      // Clear pending invite token
+      clearPendingInvite();
+
       // Refresh workspaces (will pick up the saved workspace ID)
       await refreshWorkspaces();
 
@@ -182,6 +197,9 @@ export default function AcceptInvite() {
         return;
       }
 
+      // Clear pending invite token
+      clearPendingInvite();
+
       toast.info("Convite recusado");
       navigate("/my-project");
     } catch (error: any) {
@@ -192,10 +210,63 @@ export default function AcceptInvite() {
     }
   };
 
+  const handleSwitchAccount = async () => {
+    setProcessing(true);
+    // Save the token before signing out so user can accept after re-login
+    savePendingInvite(token!);
+    await signOut();
+    navigate(`/signup-invite?token=${token}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show email mismatch error UI
+  if (emailMismatchError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4">
+              <AlertTriangle className="h-16 w-16 text-amber-500 mx-auto" />
+            </div>
+            <CardTitle className="text-2xl">Conta Incorreta</CardTitle>
+            <CardDescription className="text-base space-y-2">
+              <p>
+                Este convite foi enviado para <strong className="text-foreground">{emailMismatchError.invitedEmail}</strong>
+              </p>
+              <p>
+                Mas você está logado como <strong className="text-foreground">{emailMismatchError.currentEmail}</strong>
+              </p>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-center text-muted-foreground">
+              Para aceitar este convite, você precisa entrar com a conta correta.
+            </p>
+            <Button 
+              onClick={handleSwitchAccount} 
+              variant="default" 
+              className="w-full"
+              disabled={processing}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {processing ? "Saindo..." : "Trocar de Conta"}
+            </Button>
+            <Button 
+              onClick={() => navigate("/my-project")} 
+              variant="outline" 
+              className="w-full"
+            >
+              Voltar ao Dashboard
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

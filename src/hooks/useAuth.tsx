@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode, useC
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-
+import { getPendingInvite, clearPendingInvite } from "@/lib/invite-utils";
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -172,6 +172,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // Defer Supabase calls with setTimeout(0) to avoid auth deadlock
               setTimeout(async () => {
                 try {
+                  // Check for pending invite token first
+                  const pendingInvite = getPendingInvite();
+                  if (pendingInvite) {
+                    console.log('[useAuth] Pending invite found, redirecting to accept-invite');
+                    navigate(`/accept-invite?token=${pendingInvite}`);
+                    return;
+                  }
+
                   const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('onboarding_completed')
