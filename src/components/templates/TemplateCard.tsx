@@ -241,9 +241,6 @@ const TemplateCard = memo(({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <div className="bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md">
-                <Eye className="h-3 w-3 text-muted-foreground" />
-              </div>
             </div>
           )}
         </div>
