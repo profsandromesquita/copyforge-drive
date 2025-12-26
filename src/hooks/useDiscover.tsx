@@ -183,6 +183,38 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     setLikedCopyIds(new Set());
   }, [currentUserId]);
 
+  // Subscribe to realtime updates for copies counters
+  useEffect(() => {
+    const channel = supabase
+      .channel('discover-copies-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'copies',
+        },
+        (payload) => {
+          const updated = payload.new as { id: string; views_count?: number; likes_count?: number; copy_count?: number };
+          setCopies(prev => prev.map(c =>
+            c.id === updated.id
+              ? {
+                  ...c,
+                  views_count: updated.views_count ?? c.views_count,
+                  likes_count: updated.likes_count ?? c.likes_count,
+                  copy_count: updated.copy_count ?? c.copy_count,
+                }
+              : c
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // Create a stable key based on actual copy IDs (not just length)
   const copiesKey = copies.map(c => c.id).join(',');
 

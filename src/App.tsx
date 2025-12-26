@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { useClockDrift } from "@/hooks/useClockDrift";
 import { ClockDriftBanner } from "@/components/ui/clock-drift-banner";
+import { PWAUpdatePrompt } from "@/components/ui/pwa-update-prompt";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Templates from "./pages/Templates";
@@ -113,6 +114,7 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <BrowserRouter>
         <TooltipProvider>
+          <PWAUpdatePrompt />
           <Toaster />
           <Sonner />
           <ClockDriftChecker>
