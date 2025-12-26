@@ -35,6 +35,7 @@ interface UseDiscoverReturn {
   refetch: () => Promise<void>;
   toggleLike: (copyId: string) => void;
   isLikedByUser: (copyId: string) => boolean;
+  isLiking: (copyId: string) => boolean;
   copyCopy: (
     copyId: string,
     workspaceId: string,
@@ -55,6 +56,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [likedCopyIds, setLikedCopyIds] = useState<Set<string>>(new Set());
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const offsetRef = useRef(0);
 
@@ -173,6 +175,26 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     fetchDiscoverCards(true);
   }, [search, type, sort]);
 
+  // Load user likes when userId becomes available and copies exist
+  useEffect(() => {
+    const fetchUserLikes = async () => {
+      if (!currentUserId || copies.length === 0) return;
+      
+      const copyIds = copies.map(c => c.id);
+      const { data: userLikes } = await supabase
+        .from('copy_likes')
+        .select('copy_id')
+        .eq('user_id', currentUserId)
+        .in('copy_id', copyIds);
+
+      if (userLikes) {
+        setLikedCopyIds(new Set(userLikes.map(l => l.copy_id)));
+      }
+    };
+    
+    fetchUserLikes();
+  }, [currentUserId, copies.length]);
+
   // Load more function for infinite scroll
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -184,12 +206,17 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     await fetchDiscoverCards(true);
   }, [fetchDiscoverCards]);
 
-  // Toggle like with optimistic update
+  // Toggle like with optimistic update and race condition prevention
   const toggleLike = useCallback(async (copyId: string) => {
     if (!currentUserId) {
       toast.error('Faça login para curtir');
       return;
     }
+
+    // Prevent duplicate clicks
+    if (likingIds.has(copyId)) return;
+    
+    setLikingIds(prev => new Set(prev).add(copyId));
 
     const isCurrentlyLiked = likedCopyIds.has(copyId);
 
@@ -228,8 +255,19 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
         
         if (error) throw error;
       }
-    } catch (error) {
-      // Revert optimistic update on error
+    } catch (error: any) {
+      // Check if it's a duplicate key error (409 conflict)
+      const isDuplicateError = error?.code === '23505' || 
+                               error?.message?.includes('duplicate') ||
+                               error?.status === 409;
+      
+      if (isDuplicateError && !isCurrentlyLiked) {
+        // Tried to insert but already existed - this is OK, keep UI as liked
+        console.log('Like already existed, maintaining state');
+        return;
+      }
+      
+      // Revert optimistic update only for other errors
       console.error('Error toggling like:', error);
       setCopies(prev => prev.map(c =>
         c.id === copyId
@@ -246,8 +284,16 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
         return next;
       });
       toast.error('Erro ao processar curtida');
+    } finally {
+      setLikingIds(prev => {
+        const next = new Set(prev);
+        next.delete(copyId);
+        return next;
+      });
     }
-  }, [currentUserId, likedCopyIds]);
+  }, [currentUserId, likedCopyIds, likingIds]);
+
+  const isLiking = useCallback((copyId: string) => likingIds.has(copyId), [likingIds]);
 
   const isLikedByUser = useCallback((copyId: string) => {
     return likedCopyIds.has(copyId);
@@ -321,6 +367,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     refetch,
     toggleLike,
     isLikedByUser,
+    isLiking,
     copyCopy,
   };
 };

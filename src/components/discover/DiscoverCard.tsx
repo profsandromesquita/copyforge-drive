@@ -29,6 +29,7 @@ interface DiscoverCardProps {
   onCopy: (copyId: string) => void;
   onLike?: (copyId: string) => void;
   isLikedByUser?: boolean;
+  isLiking?: boolean;
   isCopying?: boolean;
   copyingId?: string | null;
 }
@@ -49,6 +50,7 @@ export const DiscoverCard = memo(({
   onCopy, 
   onLike,
   isLikedByUser = false,
+  isLiking = false,
   isCopying = false,
   copyingId = null,
 }: DiscoverCardProps) => {
@@ -156,9 +158,15 @@ export const DiscoverCard = memo(({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onLike?.(copy.id);
+                    if (!isLiking) {
+                      onLike?.(copy.id);
+                    }
                   }}
-                  className="flex items-center gap-1 group"
+                  disabled={isLiking}
+                  className={cn(
+                    "flex items-center gap-1 group",
+                    isLiking && "opacity-50 cursor-not-allowed"
+                  )}
                   aria-label={isLikedByUser ? 'Remover curtida' : 'Curtir copy'}
                 >
                   <Heart
