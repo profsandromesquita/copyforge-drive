@@ -36,9 +36,7 @@ export const CopyGenerationDetailsModal = ({
 }: CopyGenerationDetailsModalProps) => {
   if (!generation) return null;
 
-  const getCategoryColor = (category: string) => {
-    return category === "text" ? "bg-blue-500/10 text-blue-500" : "bg-purple-500/10 text-purple-500";
-  };
+  // Badge variants are now standardized via design system
 
   const getGenerationType = (type: string) => {
     const types: Record<string, string> = {
@@ -119,7 +117,7 @@ export const CopyGenerationDetailsModal = ({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Tipo</p>
-                      <Badge className={getCategoryColor(generation.generation_category)}>
+                      <Badge variant="secondary">
                         {generation.generation_category === "text" ? "Texto" : "Imagem"}
                       </Badge>
                     </div>

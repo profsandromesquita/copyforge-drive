@@ -79,17 +79,7 @@ export default function AdminCopies() {
     fetchExchangeRate();
   };
 
-  const getCategoryColor = (category: string) => {
-    return category === "text" 
-      ? "bg-blue-500/10 text-blue-500 border-blue-500/20" 
-      : "bg-purple-500/10 text-purple-500 border-purple-500/20";
-  };
-
-  const getModelBadgeColor = (model: string) => {
-    if (model?.includes("gemini")) return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-    if (model?.includes("gpt")) return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-    return "bg-gray-500/10 text-gray-600 border-gray-500/20";
-  };
+  // Badge variants are now standardized via design system
 
   const formatTokens = (tokens: number) => {
     if (!tokens) return "0";
@@ -271,8 +261,8 @@ export default function AdminCopies() {
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           <Badge 
-                            variant="outline" 
-                            className={`font-mono text-xs ${getModelBadgeColor(generation.model_used)}`}
+                            variant="secondary" 
+                            className="font-mono text-xs"
                           >
                             {generation.model_used?.split("/")[1] || generation.model_used}
                           </Badge>
@@ -285,10 +275,7 @@ export default function AdminCopies() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant="outline"
-                          className={getCategoryColor(generation.generation_category)}
-                        >
+                        <Badge variant="secondary">
                           {generation.generation_category === "text" ? "Texto" : "Imagem"}
                         </Badge>
                       </TableCell>

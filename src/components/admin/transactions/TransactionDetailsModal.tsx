@@ -137,7 +137,7 @@ export const TransactionDetailsModal = ({
                   </Button>
                 </div>
               ) : (
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800">
+                <Badge variant="primary-subtle">
                   Workspace não identificado
                 </Badge>
               )}

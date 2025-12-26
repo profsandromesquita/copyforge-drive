@@ -22,12 +22,12 @@ export const PromptCard = ({ prompt, onEdit, onHistory, onRestore }: PromptCardP
             <div className="flex items-center gap-2 flex-wrap mb-2">
               <CardTitle className="text-lg break-words leading-tight">{prompt.name}</CardTitle>
               {isModified && (
-                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 flex-shrink-0">
+                <Badge variant="primary-subtle" className="flex-shrink-0">
                   Modificado
                 </Badge>
               )}
               {!isModified && (
-                <Badge className="bg-green-500/10 text-green-600 border-green-500/20 flex-shrink-0">
+                <Badge variant="secondary" className="flex-shrink-0">
                   Padrão
                 </Badge>
               )}

@@ -317,7 +317,7 @@ export const WorkspaceUsers = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                  <Badge variant="primary-subtle">
                     Pendente
                   </Badge>
                   <Badge variant="secondary">

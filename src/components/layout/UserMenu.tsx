@@ -26,19 +26,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const WorkspaceItem = ({ workspace, isActive, onClick, disabled }: any) => {
   const { data: plan } = useWorkspacePlan(workspace.id);
   
-  const getPlanColor = (slug: string) => {
-    switch (slug) {
-      case 'free':
-        return 'bg-muted/50 text-muted-foreground border-border/50';
-      case 'starter':
-        return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
-      case 'pro':
-        return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
-      case 'business':
-        return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
-      default:
-        return 'bg-muted/50 text-muted-foreground border-border/50';
-    }
+  const getPlanVariant = (slug: string): "default" | "secondary" | "muted" => {
+    if (slug === 'free') return 'secondary';
+    return 'default'; // All paid plans use primary solid
   };
 
   return (
@@ -53,7 +43,7 @@ const WorkspaceItem = ({ workspace, isActive, onClick, disabled }: any) => {
         <Buildings size={16} className="text-muted-foreground shrink-0" />
         <span className="text-sm truncate">{workspace.name}</span>
         {disabled && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">
+          <Badge variant="muted" className="text-[10px] px-1.5 py-0 h-4 font-medium">
             INATIVO
           </Badge>
         )}
@@ -61,8 +51,8 @@ const WorkspaceItem = ({ workspace, isActive, onClick, disabled }: any) => {
       <div className="flex items-center gap-2 shrink-0">
         {plan && !disabled && (
           <Badge 
-            variant="outline" 
-            className={`text-[10px] px-1.5 py-0 h-4 font-medium ${getPlanColor(plan.plan_slug)}`}
+            variant={getPlanVariant(plan.plan_slug)}
+            className="text-[10px] px-1.5 py-0 h-4 font-medium"
           >
             {plan.plan_slug.toUpperCase()}
           </Badge>
