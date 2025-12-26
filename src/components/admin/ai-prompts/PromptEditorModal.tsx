@@ -54,7 +54,7 @@ export const PromptEditorModal = ({ prompt, open, onClose, onSave }: PromptEdito
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {prompt.name}
-            <Badge className="bg-primary/10 text-primary">{prompt.category}</Badge>
+            <Badge variant="primary-subtle">{prompt.category}</Badge>
           </DialogTitle>
           <DialogDescription className="break-words">
             {prompt.purpose}

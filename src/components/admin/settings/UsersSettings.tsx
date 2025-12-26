@@ -84,12 +84,12 @@ export const UsersSettings = () => {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role: string): "default" | "primary-outline" | "secondary" => {
     switch (role) {
       case "super_admin":
-        return "destructive";
-      case "admin":
         return "default";
+      case "admin":
+        return "primary-outline";
       default:
         return "secondary";
     }

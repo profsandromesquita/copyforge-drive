@@ -182,14 +182,14 @@ export default function AdminClienteDetalhes() {
       .slice(0, 2);
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role: string): "default" | "primary-outline" | "secondary" => {
     switch (role) {
       case 'owner':
         return 'default';
       case 'admin':
-        return 'secondary';
+        return 'primary-outline';
       default:
-        return 'outline';
+        return 'secondary';
     }
   };
 

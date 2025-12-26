@@ -6,7 +6,7 @@ export const StructuralPreviewSkeleton = () => {
     <div className="flex items-center justify-center min-h-[60vh] px-6 animate-in fade-in duration-300">
       <div className="max-w-2xl w-full space-y-6 relative">
         {/* Badge indicando que é exemplo */}
-        <div className="absolute -top-3 right-4 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-300 dark:border-amber-700 z-10">
+        <div className="absolute -top-3 right-4 border-2 border-dashed border-primary/40 bg-primary/5 text-primary text-xs font-semibold px-3 py-1 rounded-full z-10">
           📋 PRÉVIA DO RESULTADO
         </div>
 
