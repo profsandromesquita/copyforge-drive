@@ -134,7 +134,7 @@ export const DiscoverCard = memo(({
           <div className="space-y-3">
             {/* Title */}
             <div>
-              <h2 className="text-lg md:text-xl font-bold line-clamp-1">{copy.title}</h2>
+              <h2 className="text-lg md:text-xl font-bold line-clamp-1 break-words">{copy.title}</h2>
               {copy.copy_type && (
                 <p className="text-xs text-muted-foreground/60 mt-1">
                   {COPY_TYPE_LABELS[copy.copy_type] || copy.copy_type}
@@ -143,7 +143,7 @@ export const DiscoverCard = memo(({
             </div>
 
             {/* Creator Info and Metrics */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={copy.creator.avatar_url || undefined} />
                 <AvatarFallback>
@@ -155,7 +155,7 @@ export const DiscoverCard = memo(({
               </div>
               
               {/* Metrics - Views, Likes, Copies */}
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 {/* Views Counter */}
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Eye className="h-4 w-4" />
@@ -191,7 +191,7 @@ export const DiscoverCard = memo(({
                 </button>
                 
                 {/* Copies Badge */}
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs whitespace-nowrap">
                   {copy.copy_count} {copy.copy_count === 1 ? 'cópia' : 'cópias'}
                 </Badge>
               </div>
