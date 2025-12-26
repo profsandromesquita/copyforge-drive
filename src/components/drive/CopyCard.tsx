@@ -331,13 +331,8 @@ const CopyCard = memo(({
 
               {status && (
                 <Badge 
-                  variant="outline"
-                  className={cn(
-                    "text-[10px] px-1.5 py-0 h-5 font-medium",
-                    status === 'published' 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/40' 
-                      : 'bg-background/80 text-muted-foreground border-border'
-                  )}
+                  variant={status === 'published' ? 'default' : 'muted'}
+                  className="text-[10px] px-1.5 py-0 h-5 font-medium"
                 >
                   {status === 'published' ? 'Publicado' : 'Rascunho'}
                 </Badge>
