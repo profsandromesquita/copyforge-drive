@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import copydriveIcon from "@/assets/copydrive-icon.svg";
 import { ValidateInviteResponse, InviteDisplayData, AcceptInviteResponse } from "@/types/invite";
-
+import { clearPendingInvite } from "@/lib/invite-utils";
 export default function SignupInvite() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -91,6 +91,7 @@ export default function SignupInvite() {
       if (error) {
         console.error("Error accepting invite:", error);
         toast.error("Erro ao aceitar convite. Tente novamente.");
+        clearPendingInvite();
         navigate("/my-project");
         return;
       }
@@ -114,9 +115,13 @@ export default function SignupInvite() {
         toast.error(errorMessages[result.error] || 'Erro ao processar convite');
       }
 
+      // Clear pending invite token after processing
+      clearPendingInvite();
+
       navigate("/my-project");
     } catch (error) {
       console.error("Error in acceptInviteAfterAuth:", error);
+      clearPendingInvite();
       navigate("/my-project");
     }
   };
