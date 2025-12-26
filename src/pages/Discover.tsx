@@ -186,7 +186,7 @@ const Discover = () => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {copies.map((copy) => (
                     <DiscoverCard
                       key={copy.id}
@@ -207,7 +207,7 @@ const Discover = () => {
                 
                 {/* Loading more indicator */}
                 {loadingMore && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {Array.from({ length: 6 }).map((_, i) => (
                       <DiscoverCardSkeleton key={`skeleton-${i}`} />
                     ))}
