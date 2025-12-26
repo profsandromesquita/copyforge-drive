@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ProfileInfo } from "./ProfileInfo";
 import { SystemPreferences } from "./SystemPreferences";
@@ -15,6 +15,10 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[600px] p-0 gap-0 flex flex-col">
+        <DialogTitle className="sr-only">Minha Conta</DialogTitle>
+        <DialogDescription className="sr-only">
+          Gerencie seu perfil e preferências do sistema.
+        </DialogDescription>
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
           <div className="w-64 border-r border-border bg-muted/30 p-6 overflow-y-auto">

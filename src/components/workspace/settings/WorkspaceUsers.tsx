@@ -139,7 +139,7 @@ export const WorkspaceUsers = () => {
         .eq('workspace_id', activeWorkspace.id)
         .eq('email', inviteEmail)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle();
 
       if (pendingInvite) {
         toast.error('Já existe um convite pendente para este email');
@@ -147,17 +147,19 @@ export const WorkspaceUsers = () => {
         return;
       }
 
-      // Create invitation
-      const { data: invitation, error: inviteError } = await supabase
+      // Generate token locally to avoid needing to read it back (RLS restriction)
+      const inviteToken = crypto.randomUUID();
+
+      // Create invitation with the token we generated
+      const { error: inviteError } = await supabase
         .from('workspace_invitations')
         .insert({
           workspace_id: activeWorkspace.id,
           email: inviteEmail,
           role: inviteRole,
           invited_by: user.id,
-        })
-        .select()
-        .single();
+          token: inviteToken,
+        });
 
       if (inviteError) throw inviteError;
 
@@ -166,15 +168,15 @@ export const WorkspaceUsers = () => {
         .from('profiles')
         .select('name')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      // Send invitation email
+      // Send invitation email using the token we generated
       const { error: emailError } = await supabase.functions.invoke('send-workspace-invite', {
         body: {
           workspace_id: activeWorkspace.id,
           email: inviteEmail,
           role: inviteRole,
-          token: invitation.token,
+          token: inviteToken,
           workspace_name: activeWorkspace.name,
           inviter_name: profile?.name || 'Um membro',
         },
