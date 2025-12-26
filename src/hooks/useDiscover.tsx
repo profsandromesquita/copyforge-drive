@@ -9,6 +9,7 @@ export interface DiscoverCard {
   copy_type: string | null;
   copy_count: number;
   likes_count: number;
+  views_count: number;
   created_by: string;
   created_at: string;
   preview_image_url: string | null;
@@ -36,6 +37,7 @@ interface UseDiscoverReturn {
   toggleLike: (copyId: string) => void;
   isLikedByUser: (copyId: string) => boolean;
   isLiking: (copyId: string) => boolean;
+  incrementView: (copyId: string) => Promise<void>;
   copyCopy: (
     copyId: string,
     workspaceId: string,
@@ -124,6 +126,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
         copy_type: item.copy_type,
         copy_count: item.copy_count || 0,
         likes_count: item.likes_count || 0,
+        views_count: item.views_count || 0,
         created_by: item.created_by,
         created_at: item.created_at,
         preview_image_url: item.preview_image_url,
@@ -313,6 +316,29 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     return likedCopyIds.has(copyId);
   }, [likedCopyIds]);
 
+  // Increment view count with optimistic update
+  const incrementView = useCallback(async (copyId: string) => {
+    // Optimistic update
+    setCopies(prev => prev.map(c =>
+      c.id === copyId
+        ? { ...c, views_count: c.views_count + 1 }
+        : c
+    ));
+
+    // Call RPC to increment in database
+    try {
+      await supabase.rpc('increment_copy_views', { p_copy_id: copyId });
+    } catch (error) {
+      console.error('Error incrementing views:', error);
+      // Revert optimistic update on error
+      setCopies(prev => prev.map(c =>
+        c.id === copyId
+          ? { ...c, views_count: Math.max(0, c.views_count - 1) }
+          : c
+      ));
+    }
+  }, []);
+
   // Copy a copy - fetches full sessions only when needed
   const copyCopy = async (
     copyId: string,
@@ -382,6 +408,7 @@ export const useDiscover = (params: UseDiscoverParams = {}): UseDiscoverReturn =
     toggleLike,
     isLikedByUser,
     isLiking,
+    incrementView,
     copyCopy,
   };
 };

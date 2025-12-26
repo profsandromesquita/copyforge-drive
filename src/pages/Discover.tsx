@@ -46,6 +46,7 @@ const Discover = () => {
     toggleLike, 
     isLikedByUser,
     isLiking,
+    incrementView,
   } = useDiscover({
     search: debouncedSearch,
     type: selectedType,
@@ -192,6 +193,7 @@ const Discover = () => {
                       copy={copy}
                       onCopy={handleCopy}
                       onLike={toggleLike}
+                      onView={incrementView}
                       isLikedByUser={isLikedByUser(copy.id)}
                       isLiking={isLiking(copy.id)}
                       isCopying={isCopying}

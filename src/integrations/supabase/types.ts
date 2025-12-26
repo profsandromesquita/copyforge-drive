@@ -385,6 +385,7 @@ export type Database = {
           system_prompt_model: string | null
           title: string
           updated_at: string
+          views_count: number | null
           workspace_id: string
         }
         Insert: {
@@ -419,6 +420,7 @@ export type Database = {
           system_prompt_model?: string | null
           title?: string
           updated_at?: string
+          views_count?: number | null
           workspace_id: string
         }
         Update: {
@@ -453,6 +455,7 @@ export type Database = {
           system_prompt_model?: string | null
           title?: string
           updated_at?: string
+          views_count?: number | null
           workspace_id?: string
         }
         Relationships: [
@@ -2424,6 +2427,7 @@ export type Database = {
           preview_image_url: string | null
           preview_text: string | null
           title: string | null
+          views_count: number | null
         }
         Relationships: [
           {
@@ -2873,6 +2877,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_copy_views: { Args: { p_copy_id: string }; Returns: undefined }
       is_workspace_admin: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
