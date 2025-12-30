@@ -71,21 +71,27 @@ export default function AdminClienteDetalhes() {
 
         setCliente(profile);
 
-        // Buscar workspaces do cliente
-        const { data: workspaceMemberships } = await supabase
+        // Buscar workspaces do cliente - usando FK específica para evitar PGRST201
+        const { data: workspaceMemberships, error: workspacesError } = await supabase
           .from('workspace_members')
           .select(`
             role,
-            workspace:workspaces (
+            workspace:workspaces!workspace_members_workspace_id_fkey (
               id,
               name
             )
           `)
           .eq('user_id', id);
 
+        if (workspacesError) {
+          console.error('Error fetching workspaces:', workspacesError);
+        }
+
         // Para cada workspace, buscar contagem de copies
         const workspacesWithCounts = await Promise.all(
           (workspaceMemberships || []).map(async (membership: any) => {
+            if (!membership.workspace) return null;
+            
             const { count } = await supabase
               .from('copies')
               .select('id', { count: 'exact', head: true })
@@ -101,10 +107,10 @@ export default function AdminClienteDetalhes() {
           })
         );
 
-        setWorkspaces(workspacesWithCounts);
+        setWorkspaces(workspacesWithCounts.filter(Boolean) as Workspace[]);
 
-        // Buscar copies do cliente
-        const { data: copiesData } = await supabase
+        // Buscar copies do cliente - usando FK específica para evitar PGRST201
+        const { data: copiesData, error: copiesError } = await supabase
           .from('copies')
           .select(`
             id,
@@ -112,12 +118,16 @@ export default function AdminClienteDetalhes() {
             copy_type,
             status,
             created_at,
-            workspace:workspaces (
+            workspace:workspaces!copies_workspace_id_fkey (
               name
             )
           `)
           .eq('created_by', id)
           .order('created_at', { ascending: false });
+
+        if (copiesError) {
+          console.error('Error fetching copies:', copiesError);
+        }
 
         setCopies(
           (copiesData || []).map((copy: any) => ({
