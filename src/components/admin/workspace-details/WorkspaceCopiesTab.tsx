@@ -221,7 +221,7 @@ export const WorkspaceCopiesTab = ({ workspaceId }: WorkspaceCopiesTabProps) => 
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/editor/${copy.id}`)}
+                        onClick={() => navigate(`/copy/${copy.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
