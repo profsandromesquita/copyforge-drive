@@ -1,4 +1,4 @@
-import { User, SignOut, Gear, Plus, Buildings, Check, CaretRight } from "phosphor-react";
+import { User, SignOut, Gear, Plus, Buildings, Check, CaretRight, ChatCircleText } from "phosphor-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -10,6 +10,7 @@ import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettings
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
 import { UserProfileModal } from "@/components/user-profile/UserProfileModal";
 import { UpgradeModal } from "@/components/workspace/UpgradeModal";
+import { FeedbackSheet } from "@/components/feedback/FeedbackSheet";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -76,6 +77,7 @@ export const UserMenu = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [selectedInactiveWorkspaceId, setSelectedInactiveWorkspaceId] = useState<string | undefined>(undefined);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Use profile avatar only - no Google fallback to avoid flash
   const userName = profile?.name || user?.email?.split('@')[0] || 'Usuário';
@@ -97,6 +99,7 @@ export const UserMenu = () => {
         limitType="general"
         workspaceId={selectedInactiveWorkspaceId}
       />
+      <FeedbackSheet open={feedbackOpen} onOpenChange={setFeedbackOpen} />
       
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
@@ -235,6 +238,13 @@ export const UserMenu = () => {
             >
               <Gear size={16} className="text-muted-foreground" />
               <span className="text-sm">Configurações do Workspace</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="cursor-pointer flex items-center gap-2 px-2 py-2 rounded-md"
+              onClick={() => setFeedbackOpen(true)}
+            >
+              <ChatCircleText size={16} className="text-muted-foreground" />
+              <span className="text-sm">Reportar Problema</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
 
