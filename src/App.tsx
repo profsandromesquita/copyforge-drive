@@ -36,6 +36,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminWorkspaces from "./pages/admin/AdminWorkspaces";
 import AdminWorkspaceDetalhes from "./pages/admin/AdminWorkspaceDetalhes";
 import AdminTransactions from "./pages/admin/AdminTransactions";
+import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import Plans from "./pages/Plans";
 import Onboarding from "./pages/Onboarding";
 
@@ -101,6 +102,7 @@ const AppContent = () => {
       <Route path="/painel/admin/workspaces" element={<AdminRoute><AdminWorkspaces /></AdminRoute>} />
       <Route path="/painel/admin/workspaces/:id" element={<AdminRoute><AdminWorkspaceDetalhes /></AdminRoute>} />
       <Route path="/painel/admin/transacoes" element={<AdminRoute><AdminTransactions /></AdminRoute>} />
+      <Route path="/painel/admin/feedbacks" element={<AdminRoute><AdminFeedbacks /></AdminRoute>} />
       <Route path="/painel/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
       <Route path="/planos" element={<Plans />} />
       <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
