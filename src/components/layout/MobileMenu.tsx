@@ -1,10 +1,11 @@
-import { Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus } from "phosphor-react";
+import { Folder, Lightbulb, Sparkle, User, SignOut, Gear, Plus, ChatCircleText } from "phosphor-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { WorkspaceSettingsModal } from "@/components/workspace/WorkspaceSettingsModal";
 import { CreateWorkspaceModal } from "@/components/workspace/CreateWorkspaceModal";
+import { FeedbackSheet } from "@/components/feedback/FeedbackSheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,11 +26,13 @@ const MobileMenu = () => {
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
     <>
       <WorkspaceSettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
       <CreateWorkspaceModal open={createWorkspaceOpen} onOpenChange={setCreateWorkspaceOpen} />
+      <FeedbackSheet open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <ul className="flex items-center justify-around px-4 py-3">
         {menuItems.map((item) => (
@@ -93,6 +96,13 @@ const MobileMenu = () => {
             >
               <Gear size={18} className="mr-2" />
               Configurações do Workspace
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="cursor-pointer"
+              onClick={() => setFeedbackOpen(true)}
+            >
+              <ChatCircleText size={18} className="mr-2" />
+              Reportar Problema
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 

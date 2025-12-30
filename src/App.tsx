@@ -12,6 +12,7 @@ import { DriveProvider } from "@/hooks/useDrive";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { useClockDrift } from "@/hooks/useClockDrift";
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
 import { ClockDriftBanner } from "@/components/ui/clock-drift-banner";
 import { PWAUpdatePrompt } from "@/components/ui/pwa-update-prompt";
 import Auth from "./pages/Auth";
@@ -122,6 +123,7 @@ const App = () => (
               <WorkspaceProvider>
                 <ProjectProvider>
                   <DriveProvider>
+                    <FeedbackWidget />
                     <AppContent />
                   </DriveProvider>
                 </ProjectProvider>
