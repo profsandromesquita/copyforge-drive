@@ -5,7 +5,8 @@ import {
   FolderOpen, 
   FileText, 
   Settings,
-  CreditCard
+  CreditCard,
+  MessageSquareText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ const menuItems = [
   { icon: FolderOpen, label: "Workspaces", path: "/painel/admin/workspaces" },
   { icon: FileText, label: "Copy IA", path: "/painel/admin/copies" },
   { icon: CreditCard, label: "Transações", path: "/painel/admin/transacoes" },
+  { icon: MessageSquareText, label: "Feedbacks", path: "/painel/admin/feedbacks" },
   { icon: Settings, label: "Configurações", path: "/painel/admin/settings" },
 ];
 
