@@ -770,9 +770,40 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
           return ratios[aspectRatio] || 'aspect-[16/9]';
         };
 
+        // Parse aspect ratio para detectar portrait vs landscape
+        const parseAspectRatio = (ratio: string): { w: number; h: number; isPortrait: boolean } => {
+          const parts = ratio.split(':').map(Number);
+          const w = parts[0] || 16;
+          const h = parts[1] || 9;
+          return { w, h, isPortrait: w < h };
+        };
+
+        const { w: ratioW, h: ratioH, isPortrait } = parseAspectRatio(aspectRatio);
+        
+        // Para portrait: calcular maxWidth baseado em maxHeight para preservar o aspect ratio
+        // Isso garante que o frame fique vertical (ex: 9:16 fica "de pé")
+        const getContainerStyle = (): React.CSSProperties => {
+          if (!isPortrait) return {};
+          
+          // maxHeight base em vh (ajustado por imageSize)
+          const maxHeightVh = imageSize === 'sm' ? 50 : imageSize === 'lg' ? 75 : 65;
+          const aspectRatioValue = ratioW / ratioH;
+          
+          return {
+            maxHeight: `${maxHeightVh}vh`,
+            maxWidth: `calc(${maxHeightVh}vh * ${aspectRatioValue})`,
+            width: 'auto',
+          };
+        };
+
+        const containerStyle = getContainerStyle();
+
         return (
           <div className="space-y-2">
-            <div className={`${getImageSizeClass()} w-full mx-auto max-h-[65vh] sm:max-h-[70vh] ${getAspectRatioClass()} overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''} bg-muted/20`}>
+            <div 
+              className={`${!isPortrait ? getImageSizeClass() + ' w-full' : ''} mx-auto ${!isPortrait ? 'max-h-[65vh] sm:max-h-[70vh]' : ''} ${getAspectRatioClass()} overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''} bg-muted/20`}
+              style={containerStyle}
+            >
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -780,7 +811,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                   className="absolute inset-0 w-full h-full object-contain"
                 />
               ) : (
-                <div className={`w-full ${getAspectRatioClass()} bg-muted flex items-center justify-center ${roundedBorders ? 'rounded-lg' : ''}`}>
+                <div className={`w-full h-full bg-muted flex items-center justify-center ${roundedBorders ? 'rounded-lg' : ''}`}>
                   <span className="text-muted-foreground">Sem imagem</span>
                 </div>
               )}
@@ -790,7 +821,7 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
                 <Button
                   onClick={() => onShowImageAI(block.id)}
                   size="icon"
-                  className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-primary shadow-lg hover:bg-primary/90 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-primary shadow-lg hover:bg-primary/90 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   title="Gerar com IA"
                 >
                   <Sparkles className="h-5 w-5" />
