@@ -317,21 +317,15 @@ export const BlockPreview = memo(({ block }: BlockPreviewProps) => {
 
         return (
           <div className="space-y-2">
-            <div className={`${getImageSizeClass()} w-full mx-auto`}>
+            <div className={`${getImageSizeClass()} w-full mx-auto ${getAspectRatioClass()} overflow-hidden ${roundedBorders ? 'rounded-lg' : ''}`}>
               {imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={imageDescription || 'Imagem'}
-                  className={`w-full h-full object-cover ${getAspectRatioClass()} ${
-                    roundedBorders ? 'rounded-lg' : ''
-                  }`}
+                  className="w-full h-full object-cover"
                 />
               ) : (
-                <div
-                  className={`w-full ${getAspectRatioClass()} bg-muted flex items-center justify-center ${
-                    roundedBorders ? 'rounded-lg' : ''
-                  }`}
-                >
+                <div className="w-full h-full bg-muted flex items-center justify-center">
                   <span className="text-muted-foreground text-sm">Sem imagem</span>
                 </div>
               )}
