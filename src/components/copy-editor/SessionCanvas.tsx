@@ -261,9 +261,8 @@ export const SessionCanvas = ({
         </div>
       )}
 
-      {sessions.length === 0 ? (
-        renderEmptyState()
-      ) : (
+      {/* Sempre mostrar variações quando existem, ou empty state quando não há sessions */}
+      {variations.length > 0 ? (
         <>
           {variations.map((variation) => (
             <VariationContainer
@@ -290,6 +289,8 @@ export const SessionCanvas = ({
             Adicionar Variação
           </Button>
         </>
+      ) : (
+        renderEmptyState()
       )}
     </div>
   );
