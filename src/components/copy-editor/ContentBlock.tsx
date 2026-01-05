@@ -772,12 +772,12 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
         return (
           <div className="space-y-2">
-            <div className={`${getImageSizeClass()} w-full mx-auto max-h-[65vh] sm:max-h-[70vh] ${getAspectRatioClass()} overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''} bg-muted/20 flex items-center justify-center`}>
+            <div className={`${getImageSizeClass()} w-full mx-auto max-h-[65vh] sm:max-h-[70vh] overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''} bg-muted/20`}>
               {imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={imageDescription || 'Imagem'}
-                  className="max-w-full max-h-full object-contain"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className={`w-full ${getAspectRatioClass()} bg-muted flex items-center justify-center ${roundedBorders ? 'rounded-lg' : ''}`}>
