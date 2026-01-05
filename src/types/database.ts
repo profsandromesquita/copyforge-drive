@@ -187,6 +187,20 @@ export interface Session {
   title: string;
   blocks: Block[];
   comments?: Comment[];
+  // Variation grouping fields
+  variationId?: string;           // ID da variação (sessions com mesmo ID = mesma variação)
+  variationName?: string;         // Nome da variação (apenas na primeira session do grupo)
+  isVariationCollapsed?: boolean; // Estado de colapso (apenas na primeira session do grupo)
+}
+
+/**
+ * Variação agrupada (derivada de sessions para UI)
+ */
+export interface Variation {
+  id: string;
+  name: string;
+  sessions: Session[];
+  isCollapsed: boolean;
 }
 
 /**

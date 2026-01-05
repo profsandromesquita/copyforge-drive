@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Session, Block, CopyType } from '@/types/copy-editor';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { Session, Block, CopyType, Variation } from '@/types/copy-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -8,6 +8,9 @@ export interface SelectedItem {
   type: 'session' | 'block';
   sessionId?: string;
 }
+
+const DEFAULT_VARIATION_ID = 'default-variation';
+const DEFAULT_VARIATION_NAME = 'Variação Principal';
 
 interface CopyEditorContextType {
   copyId: string | null;
@@ -22,15 +25,25 @@ interface CopyEditorContextType {
   isSelectionMode: boolean;
   lastAddedBlockId: string | null;
   
+  // Variation state and functions
+  activeVariationId: string | null;
+  variations: Variation[];
+  setActiveVariationId: (id: string) => void;
+  addVariation: (name?: string) => void;
+  renameVariation: (variationId: string, name: string) => void;
+  deleteVariation: (variationId: string) => void;
+  duplicateVariation: (variationId: string) => void;
+  toggleVariationCollapse: (variationId: string) => void;
+  
   setCopyId: (id: string) => void;
   setCopyTitle: (title: string) => void;
-  addSession: () => void;
-  addSessionAndGetId: () => string;
+  addSession: (variationId?: string) => void;
+  addSessionAndGetId: (variationId?: string) => string;
   removeSession: (sessionId: string) => void;
   updateSession: (sessionId: string, updates: Partial<Session>) => void;
   duplicateSession: (sessionId: string) => void;
   reorderSessions: (startIndex: number, endIndex: number) => void;
-  importSessions: (sessions: Session[]) => void;
+  importSessions: (sessions: Session[], variationId?: string) => void;
   insertSessionsAfterSelection: (sessions: Session[], selectedItems: SelectedItem[]) => void;
   
   addBlock: (sessionId: string, block: Omit<Block, 'id'>, index?: number) => void;
@@ -64,7 +77,42 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [lastAddedBlockId, setLastAddedBlockId] = useState<string | null>(null);
+  const [activeVariationId, setActiveVariationId] = useState<string | null>(DEFAULT_VARIATION_ID);
   const { toast } = useToast();
+
+  // Compute variations from sessions (grouped by variationId)
+  const variations = useMemo<Variation[]>(() => {
+    const variationMap = new Map<string, { name: string; sessions: Session[]; isCollapsed: boolean }>();
+    
+    sessions.forEach((session, index) => {
+      const varId = session.variationId || DEFAULT_VARIATION_ID;
+      
+      if (!variationMap.has(varId)) {
+        variationMap.set(varId, {
+          name: session.variationName || (varId === DEFAULT_VARIATION_ID ? DEFAULT_VARIATION_NAME : `Variação ${variationMap.size + 1}`),
+          sessions: [],
+          isCollapsed: session.isVariationCollapsed || false,
+        });
+      }
+      variationMap.get(varId)!.sessions.push(session);
+    });
+    
+    // Ensure at least one variation exists
+    if (variationMap.size === 0) {
+      variationMap.set(DEFAULT_VARIATION_ID, {
+        name: DEFAULT_VARIATION_NAME,
+        sessions: [],
+        isCollapsed: false,
+      });
+    }
+    
+    return Array.from(variationMap.entries()).map(([id, data]) => ({
+      id,
+      name: data.name,
+      sessions: data.sessions,
+      isCollapsed: data.isCollapsed,
+    }));
+  }, [sessions]);
 
   // Auto-save every 3 seconds
   useEffect(() => {
@@ -76,6 +124,22 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     return () => clearTimeout(timer);
   }, [sessions, copyTitle, copyId]);
+
+  // Migrate existing sessions without variationId to default variation
+  const migrateSessionsToVariations = useCallback((rawSessions: Session[]): Session[] => {
+    if (!rawSessions || rawSessions.length === 0) return [];
+    
+    // Check if any session already has variationId
+    const hasVariations = rawSessions.some(s => s.variationId);
+    if (hasVariations) return rawSessions;
+    
+    // Migrate all sessions to default variation
+    return rawSessions.map((session, index) => ({
+      ...session,
+      variationId: DEFAULT_VARIATION_ID,
+      variationName: index === 0 ? DEFAULT_VARIATION_NAME : undefined,
+    }));
+  }, []);
 
   const loadCopy = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -102,7 +166,16 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setCopyId(data.id);
       setCopyTitle(data.title);
       setCopyType(data.copy_type as CopyType);
-      setSessions((data.sessions as any) || []);
+      
+      // Migrate sessions if needed
+      const migratedSessions = migrateSessionsToVariations((data.sessions as any) || []);
+      setSessions(migratedSessions);
+      
+      // Set active variation to the first one
+      if (migratedSessions.length > 0) {
+        setActiveVariationId(migratedSessions[0].variationId || DEFAULT_VARIATION_ID);
+      }
+      
       setStatus((data.status as 'draft' | 'published') || 'draft');
       
       // Pequeno delay para garantir renderização suave
@@ -120,7 +193,7 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, migrateSessionsToVariations]);
 
   const saveCopy = useCallback(async () => {
     if (!copyId) return;
@@ -149,25 +222,171 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [copyId, copyTitle, sessions, status, toast]);
 
-  const addSession = useCallback(() => {
+  // ============================================================================
+  // VARIATION FUNCTIONS
+  // ============================================================================
+
+  const addVariation = useCallback((name?: string) => {
+    const newVariationId = `variation-${Date.now()}`;
+    const variationCount = variations.length;
+    const variationName = name || `Variação ${variationCount + 1}`;
+    
     const newSession: Session = {
       id: `session-${Date.now()}`,
-      title: `Sessão ${sessions.length + 1}`,
+      title: `Sessão 1`,
       blocks: [],
+      variationId: newVariationId,
+      variationName: variationName,
     };
-    setSessions([...sessions, newSession]);
-  }, [sessions]);
+    
+    setSessions(prev => [...prev, newSession]);
+    setActiveVariationId(newVariationId);
+    
+    toast({
+      title: 'Variação criada',
+      description: `"${variationName}" foi adicionada.`,
+    });
+  }, [variations.length, toast]);
 
-  const addSessionAndGetId = useCallback(() => {
+  const renameVariation = useCallback((variationId: string, name: string) => {
+    setSessions(prev => prev.map((session, index) => {
+      if (session.variationId === variationId) {
+        // Find if this is the first session of this variation
+        const isFirstOfVariation = prev.findIndex(s => s.variationId === variationId) === index;
+        if (isFirstOfVariation) {
+          return { ...session, variationName: name };
+        }
+      }
+      return session;
+    }));
+  }, []);
+
+  const deleteVariation = useCallback((variationId: string) => {
+    // Don't delete the last variation
+    if (variations.length <= 1) {
+      toast({
+        title: 'Não é possível excluir',
+        description: 'Você precisa manter pelo menos uma variação.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const variationToDelete = variations.find(v => v.id === variationId);
+    setSessions(prev => prev.filter(s => s.variationId !== variationId));
+    
+    // Set active to first remaining variation
+    if (activeVariationId === variationId) {
+      const remainingVariation = variations.find(v => v.id !== variationId);
+      if (remainingVariation) {
+        setActiveVariationId(remainingVariation.id);
+      }
+    }
+    
+    toast({
+      title: 'Variação excluída',
+      description: `"${variationToDelete?.name}" foi removida.`,
+    });
+  }, [variations, activeVariationId, toast]);
+
+  const duplicateVariation = useCallback((variationId: string) => {
+    const variationToDuplicate = variations.find(v => v.id === variationId);
+    if (!variationToDuplicate) return;
+    
+    const newVariationId = `variation-${Date.now()}`;
+    const newVariationName = `${variationToDuplicate.name} (Cópia)`;
+    
+    const duplicatedSessions = variationToDuplicate.sessions.map((session, index) => ({
+      ...session,
+      id: `session-${Date.now()}-${index}-${Math.random()}`,
+      variationId: newVariationId,
+      variationName: index === 0 ? newVariationName : undefined,
+      blocks: session.blocks.map(block => ({
+        ...block,
+        id: `block-${Date.now()}-${Math.random()}`,
+      })),
+    }));
+    
+    setSessions(prev => [...prev, ...duplicatedSessions]);
+    setActiveVariationId(newVariationId);
+    
+    toast({
+      title: 'Variação duplicada',
+      description: `"${newVariationName}" foi criada.`,
+    });
+  }, [variations, toast]);
+
+  const toggleVariationCollapse = useCallback((variationId: string) => {
+    setSessions(prev => prev.map((session, index) => {
+      if (session.variationId === variationId) {
+        const isFirstOfVariation = prev.findIndex(s => s.variationId === variationId) === index;
+        if (isFirstOfVariation) {
+          return { ...session, isVariationCollapsed: !session.isVariationCollapsed };
+        }
+      }
+      return session;
+    }));
+  }, []);
+
+  // ============================================================================
+  // SESSION FUNCTIONS (updated to support variations)
+  // ============================================================================
+
+  const addSession = useCallback((variationId?: string) => {
+    const targetVariationId = variationId || activeVariationId || DEFAULT_VARIATION_ID;
+    const targetVariation = variations.find(v => v.id === targetVariationId);
+    const sessionCount = targetVariation?.sessions.length || 0;
+    
+    const newSession: Session = {
+      id: `session-${Date.now()}`,
+      title: `Sessão ${sessionCount + 1}`,
+      blocks: [],
+      variationId: targetVariationId,
+    };
+    
+    // Insert after last session of this variation
+    setSessions(prev => {
+      const lastIndexOfVariation = prev.reduce((lastIdx, s, idx) => 
+        s.variationId === targetVariationId ? idx : lastIdx, -1);
+      
+      if (lastIndexOfVariation === -1) {
+        return [...prev, newSession];
+      }
+      
+      const result = [...prev];
+      result.splice(lastIndexOfVariation + 1, 0, newSession);
+      return result;
+    });
+  }, [activeVariationId, variations]);
+
+  const addSessionAndGetId = useCallback((variationId?: string) => {
+    const targetVariationId = variationId || activeVariationId || DEFAULT_VARIATION_ID;
+    const targetVariation = variations.find(v => v.id === targetVariationId);
+    const sessionCount = targetVariation?.sessions.length || 0;
     const newSessionId = `session-${Date.now()}`;
+    
     const newSession: Session = {
       id: newSessionId,
-      title: `Sessão ${sessions.length + 1}`,
+      title: `Sessão ${sessionCount + 1}`,
       blocks: [],
+      variationId: targetVariationId,
     };
-    setSessions(prev => [...prev, newSession]);
+    
+    setSessions(prev => {
+      const lastIndexOfVariation = prev.reduce((lastIdx, s, idx) => 
+        s.variationId === targetVariationId ? idx : lastIdx, -1);
+      
+      if (lastIndexOfVariation === -1) {
+        return [...prev, newSession];
+      }
+      
+      const result = [...prev];
+      result.splice(lastIndexOfVariation + 1, 0, newSession);
+      return result;
+    });
+    
     return newSessionId;
-  }, [sessions.length]);
+  }, [activeVariationId, variations]);
 
   const removeSession = useCallback((sessionId: string) => {
     setSessions(sessions.filter(s => s.id !== sessionId));
@@ -200,13 +419,17 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSessions(result);
   }, [sessions]);
 
-  const importSessions = useCallback((importedSessions: Session[]) => {
+  const importSessions = useCallback((importedSessions: Session[], variationId?: string) => {
+    const targetVariationId = variationId || activeVariationId || DEFAULT_VARIATION_ID;
+    
     // Regenerar IDs únicos para sessões e blocos importados
     let blockCounter = 0;
     let firstBlockId: string | null = null;
     const sessionsWithNewIds = importedSessions.map((session, sessionIndex) => ({
       ...session,
       id: `session-${Date.now()}-${sessionIndex}-${Math.random()}`,
+      variationId: targetVariationId,
+      variationName: undefined, // Don't override the variation name
       blocks: session.blocks.map((block) => {
         blockCounter++;
         const newBlockId = `block-${Date.now()}-${blockCounter}-${Math.random()}`;
@@ -219,9 +442,22 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       })
     }));
     
-    setSessions([...sessions, ...sessionsWithNewIds]);
+    // Insert after last session of this variation
+    setSessions(prev => {
+      const lastIndexOfVariation = prev.reduce((lastIdx, s, idx) => 
+        s.variationId === targetVariationId ? idx : lastIdx, -1);
+      
+      if (lastIndexOfVariation === -1) {
+        return [...prev, ...sessionsWithNewIds];
+      }
+      
+      const result = [...prev];
+      result.splice(lastIndexOfVariation + 1, 0, ...sessionsWithNewIds);
+      return result;
+    });
+    
     if (firstBlockId) setLastAddedBlockId(firstBlockId);
-  }, [sessions]);
+  }, [activeVariationId]);
 
   const insertSessionsAfterSelection = useCallback((importedSessions: Session[], selectedItems: SelectedItem[]) => {
     const lastSelected = selectedItems[selectedItems.length - 1];
@@ -460,6 +696,16 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     selectedItems,
     isSelectionMode,
     lastAddedBlockId,
+    // Variation state and functions
+    activeVariationId,
+    variations,
+    setActiveVariationId,
+    addVariation,
+    renameVariation,
+    deleteVariation,
+    duplicateVariation,
+    toggleVariationCollapse,
+    // Session functions
     setCopyId,
     setCopyTitle,
     addSession,
