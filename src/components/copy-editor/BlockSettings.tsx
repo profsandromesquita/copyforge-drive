@@ -605,7 +605,10 @@ export const BlockSettings = ({ block, onBack }: BlockSettingsProps) => {
           '2:1', '16:9', '3:2', '14:10', '4:3', '5:4', '1:1', 
           '4:5', '3:4', '10:14', '2:3', '6:10', '9:16', '1:2'
         ];
-        const currentRatioIndex = aspectRatios.indexOf(block.config?.aspectRatio || '16:9');
+        // Normalize aspectRatio (handle legacy '16/9' format) and fallback to 16:9 default
+        const normalizedRatio = (block.config?.aspectRatio || '16:9').replace('/', ':');
+        let currentRatioIndex = aspectRatios.indexOf(normalizedRatio);
+        if (currentRatioIndex === -1) currentRatioIndex = 1; // fallback to 16:9
         
         return (
           <>

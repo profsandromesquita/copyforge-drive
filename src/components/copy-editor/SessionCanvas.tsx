@@ -141,7 +141,7 @@ export const SessionCanvas = ({
         config: {
           imageUrl,
           imageDescription: file.name,
-          aspectRatio: '16/9',
+          aspectRatio: '16:9',
           imageSize: 'md',
           roundedBorders: true,
         },
