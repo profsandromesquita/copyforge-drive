@@ -266,7 +266,7 @@ export const SessionCanvas = ({
             ))}
           </SortableContext>
 
-          <Button variant="ghost" onClick={addSession} className="w-full">
+          <Button variant="ghost" onClick={() => addSession()} className="w-full">
             <Plus size={20} className="mr-2" />
             Adicionar Sessão
           </Button>

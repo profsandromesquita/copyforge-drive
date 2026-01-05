@@ -15,6 +15,7 @@ export type {
   BlockConfig,
   Block,
   Session,
+  Variation,
   TypedCopy as Copy,
   CopyRow,
   CopyInsert,
