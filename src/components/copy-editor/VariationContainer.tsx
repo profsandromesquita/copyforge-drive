@@ -15,7 +15,6 @@ import {
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
@@ -85,23 +84,21 @@ export const VariationContainer = ({
         <div className="flex items-center justify-between p-4 border-b border-dashed border-muted-foreground/20">
           {/* Lado esquerdo: Toggle + Nome editável */}
           <div className="flex items-center gap-3">
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleCollapse();
-                }}
-              >
-                {variation.isCollapsed ? (
-                  <CaretRight size={18} className="text-muted-foreground" />
-                ) : (
-                  <CaretDown size={18} className="text-muted-foreground" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCollapse();
+              }}
+            >
+              {variation.isCollapsed ? (
+                <CaretRight size={18} className="text-muted-foreground" />
+              ) : (
+                <CaretDown size={18} className="text-muted-foreground" />
+              )}
+            </Button>
 
             {isEditingName ? (
               <Input
