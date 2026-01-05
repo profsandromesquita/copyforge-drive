@@ -772,15 +772,15 @@ export const ContentBlock = ({ block, sessionId, onShowImageAI }: ContentBlockPr
 
         return (
           <div className="space-y-2">
-            <div className={`${getImageSizeClass()} w-full mx-auto ${getAspectRatioClass()} overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''}`}>
+            <div className={`${getImageSizeClass()} w-full mx-auto max-h-[65vh] sm:max-h-[70vh] ${getAspectRatioClass()} overflow-hidden relative group ${roundedBorders ? 'rounded-lg' : ''} bg-muted/20 flex items-center justify-center`}>
               {imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={imageDescription || 'Imagem'}
-                  className="w-full h-full object-cover"
+                  className="max-w-full max-h-full object-contain"
                 />
               ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
+                <div className={`w-full ${getAspectRatioClass()} bg-muted flex items-center justify-center ${roundedBorders ? 'rounded-lg' : ''}`}>
                   <span className="text-muted-foreground">Sem imagem</span>
                 </div>
               )}
