@@ -71,113 +71,113 @@ export const VariationContainer = ({
   };
 
   return (
-    <div
-      onClick={onActivate}
-      className={cn(
-        'border-2 border-dashed rounded-xl mb-6 transition-all',
-        isActive
-          ? 'border-primary/50 bg-primary/5'
-          : 'border-muted-foreground/20 bg-muted/5 hover:border-muted-foreground/40'
-      )}
-    >
-      {/* Header da Variação */}
-      <div className="flex items-center justify-between p-4 border-b border-dashed border-muted-foreground/20">
-        {/* Lado esquerdo: Toggle + Nome editável */}
-        <div className="flex items-center gap-3">
-          <CollapsibleTrigger asChild onClick={(e) => e.stopPropagation()}>
+    <Collapsible open={!variation.isCollapsed}>
+      <div
+        onClick={onActivate}
+        className={cn(
+          'border-2 border-dashed rounded-xl mb-6 transition-all',
+          isActive
+            ? 'border-primary/50 bg-primary/5'
+            : 'border-muted-foreground/20 bg-muted/5 hover:border-muted-foreground/40'
+        )}
+      >
+        {/* Header da Variação */}
+        <div className="flex items-center justify-between p-4 border-b border-dashed border-muted-foreground/20">
+          {/* Lado esquerdo: Toggle + Nome editável */}
+          <div className="flex items-center gap-3">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleCollapse();
+                }}
+              >
+                {variation.isCollapsed ? (
+                  <CaretRight size={18} className="text-muted-foreground" />
+                ) : (
+                  <CaretDown size={18} className="text-muted-foreground" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+
+            {isEditingName ? (
+              <Input
+                value={localName}
+                onChange={(e) => setLocalName(e.target.value)}
+                onBlur={handleNameSubmit}
+                onKeyDown={handleKeyDown}
+                className="max-w-[200px] h-8"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEditing();
+                }}
+                className="flex items-center gap-2 group/name"
+              >
+                <h3 className="font-semibold text-lg text-foreground group-hover/name:text-primary transition-colors">
+                  {variation.name}
+                </h3>
+                <PencilSimple
+                  size={14}
+                  className="text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity"
+                />
+              </button>
+            )}
+
+            <span className="text-sm text-muted-foreground">
+              ({variation.sessions.length} {variation.sessions.length === 1 ? 'seção' : 'seções'})
+            </span>
+          </div>
+
+          {/* Lado direito: Ações */}
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleCollapse();
-              }}
+              size="sm"
+              onClick={onAddSession}
+              className="text-muted-foreground hover:text-foreground"
             >
-              {variation.isCollapsed ? (
-                <CaretRight size={18} className="text-muted-foreground" />
-              ) : (
-                <CaretDown size={18} className="text-muted-foreground" />
-              )}
+              <Plus size={16} className="mr-1" />
+              Seção
             </Button>
-          </CollapsibleTrigger>
 
-          {isEditingName ? (
-            <Input
-              value={localName}
-              onChange={(e) => setLocalName(e.target.value)}
-              onBlur={handleNameSubmit}
-              onKeyDown={handleKeyDown}
-              className="max-w-[200px] h-8"
-              autoFocus
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                startEditing();
-              }}
-              className="flex items-center gap-2 group/name"
-            >
-              <h3 className="font-semibold text-lg text-foreground group-hover/name:text-primary transition-colors">
-                {variation.name}
-              </h3>
-              <PencilSimple
-                size={14}
-                className="text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity"
-              />
-            </button>
-          )}
-
-          <span className="text-sm text-muted-foreground">
-            ({variation.sessions.length} {variation.sessions.length === 1 ? 'seção' : 'seções'})
-          </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <DotsThree size={20} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={startEditing}>
+                  <PencilSimple size={16} className="mr-2" />
+                  Renomear
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onDuplicate}>
+                  <CopyIcon size={16} className="mr-2" />
+                  Duplicar Variação
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  disabled={!canDelete}
+                  className={cn(canDelete && 'text-destructive focus:text-destructive')}
+                >
+                  <Trash size={16} className="mr-2" />
+                  Excluir Variação
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {/* Lado direito: Ações */}
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAddSession}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Plus size={16} className="mr-1" />
-            Seção
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <DotsThree size={20} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={startEditing}>
-                <PencilSimple size={16} className="mr-2" />
-                Renomear
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDuplicate}>
-                <CopyIcon size={16} className="mr-2" />
-                Duplicar Variação
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onDelete}
-                disabled={!canDelete}
-                className={cn(canDelete && 'text-destructive focus:text-destructive')}
-              >
-                <Trash size={16} className="mr-2" />
-                Excluir Variação
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {/* Conteúdo colapsável */}
-      <Collapsible open={!variation.isCollapsed}>
+        {/* Conteúdo colapsável */}
         <CollapsibleContent className="p-4 space-y-4">
           {variation.sessions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -204,7 +204,7 @@ export const VariationContainer = ({
             </SortableContext>
           )}
         </CollapsibleContent>
-      </Collapsible>
-    </div>
+      </div>
+    </Collapsible>
   );
 };
