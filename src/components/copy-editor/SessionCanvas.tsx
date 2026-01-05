@@ -1,7 +1,7 @@
 import { Plus, PlusCircle } from 'phosphor-react';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
-import { SessionBlock } from './SessionBlock';
+import { VariationContainer } from './VariationContainer';
 import { Button } from '@/components/ui/button';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,7 +27,20 @@ export const SessionCanvas = ({
   isInPromptStep,
   isDraggingFromToolbar 
 }: SessionCanvasProps) => {
-  const { sessions, addSession, addBlock, selectBlock } = useCopyEditor();
+  const { 
+    sessions, 
+    variations,
+    activeVariationId,
+    setActiveVariationId,
+    addSession, 
+    addVariation,
+    renameVariation,
+    deleteVariation,
+    duplicateVariation,
+    toggleVariationCollapse,
+    addBlock, 
+    selectBlock 
+  } = useCopyEditor();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
@@ -247,28 +260,34 @@ export const SessionCanvas = ({
           </div>
         </div>
       )}
+
       {sessions.length === 0 ? (
         renderEmptyState()
       ) : (
         <>
-          <SortableContext
-            items={sessions.map(s => s.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {sessions.map((session, index) => (
-              <SessionBlock 
-                key={session.id} 
-                session={session} 
-                sessionIndex={index}
-                totalSessions={sessions.length}
-                onShowImageAI={onShowImageAI} 
-              />
-            ))}
-          </SortableContext>
+          {variations.map((variation) => (
+            <VariationContainer
+              key={variation.id}
+              variation={variation}
+              isActive={variation.id === activeVariationId}
+              onActivate={() => setActiveVariationId(variation.id)}
+              onToggleCollapse={() => toggleVariationCollapse(variation.id)}
+              onRename={(name) => renameVariation(variation.id, name)}
+              onDuplicate={() => duplicateVariation(variation.id)}
+              onDelete={() => deleteVariation(variation.id)}
+              onAddSession={() => addSession(variation.id)}
+              onShowImageAI={onShowImageAI}
+              canDelete={variations.length > 1}
+            />
+          ))}
 
-          <Button variant="ghost" onClick={() => addSession()} className="w-full">
+          <Button 
+            variant="outline" 
+            onClick={() => addVariation()} 
+            className="w-full border-dashed border-2 hover:border-primary hover:bg-primary/5"
+          >
             <Plus size={20} className="mr-2" />
-            Adicionar Sessão
+            Adicionar Variação
           </Button>
         </>
       )}
