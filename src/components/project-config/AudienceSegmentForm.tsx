@@ -49,9 +49,11 @@ export const AudienceSegmentForm = ({
   const [originalId, setOriginalId] = useState(segment?.id || '');
   const [localSegment, setLocalSegment] = useState<AudienceSegment | null>(null);
 
-  const MIN_CHARS = 50;
+const MIN_CHARS = 50;
 
   const mountedRef = useRef(true);
+  const lastSyncedAnalysisRef = useRef<string | null>(null);
+  const [activeInnerTab, setActiveInnerTab] = useState('basic');
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
@@ -89,19 +91,27 @@ export const AudienceSegmentForm = ({
   }, [segment]);
 
   // Sincronizar formData quando allSegments mudar (ex: após regenerar análise avançada)
+  // Bug fix: Usar ref para evitar loop e sobrescrita de texto colado
   useEffect(() => {
     if (segment && allSegments.length > 0) {
       const updatedSegment = allSegments.find(s => s.id === segment.id);
-      if (updatedSegment && JSON.stringify(updatedSegment.advanced_analysis) !== JSON.stringify(formData.advanced_analysis)) {
-        // Atualizar apenas advanced_analysis sem sobrescrever campos editados
-        setFormData(prev => ({
-          ...prev,
-          advanced_analysis: updatedSegment.advanced_analysis,
-          analysis_generated_at: updatedSegment.analysis_generated_at
-        }));
+      if (updatedSegment) {
+        const newAnalysisStr = JSON.stringify(updatedSegment.advanced_analysis);
+        
+        // Só atualiza se a análise avançada realmente mudou E não foi sincronizada antes
+        if (newAnalysisStr !== lastSyncedAnalysisRef.current) {
+          lastSyncedAnalysisRef.current = newAnalysisStr;
+          
+          // Atualiza APENAS advanced_analysis, preservando outros campos
+          setFormData(prev => ({
+            ...prev,
+            advanced_analysis: updatedSegment.advanced_analysis,
+            analysis_generated_at: updatedSegment.analysis_generated_at
+          }));
+        }
       }
     }
-  }, [allSegments, segment, formData.advanced_analysis]);
+  }, [allSegments, segment?.id]);
 
   // Save draft to localStorage
   useEffect(() => {
@@ -315,10 +325,10 @@ export const AudienceSegmentForm = ({
         localStorage.removeItem('audience-segment-draft');
       }
       
-      toast.success('Segmento concluído!');
+      toast.success('Informações básicas salvas! Agora gere a análise avançada.');
       
-      // Fechar o formulário e atualizar a lista
-      onSave(updatedSegments);
+      // Mudar para aba de análise avançada ao invés de fechar
+      setActiveInnerTab('advanced');
     } catch (error) {
       console.error('Erro ao concluir segmento:', error);
       toast.error('Erro ao concluir segmento');
@@ -424,7 +434,7 @@ export const AudienceSegmentForm = ({
 
       {/* Form fields - only show after segment is created */}
       {segmentCreated && (
-        <Tabs defaultValue="basic" className="space-y-6">
+        <Tabs value={activeInnerTab} onValueChange={setActiveInnerTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
             <TabsTrigger value="advanced">Informações Avançadas</TabsTrigger>
@@ -486,20 +496,23 @@ export const AudienceSegmentForm = ({
                 className="flex-1 h-11"
                 size="lg"
               >
-                Concluir Público
+                Avançar para Análise
               </Button>
             </div>
           </TabsContent>
 
           <TabsContent value="advanced">
             <AdvancedAnalysisTab
-              segment={segment}
+              segment={segment || localSegment as AudienceSegment}
               allSegments={allSegments}
               onUpdate={(updatedSegments) => {
                 onUpdate?.(updatedSegments);
                 if (activeProject) {
                   setActiveProject({ ...activeProject, audience_segments: updatedSegments });
                 }
+              }}
+              onClose={() => {
+                onSave(allSegments);
               }}
             />
           </TabsContent>

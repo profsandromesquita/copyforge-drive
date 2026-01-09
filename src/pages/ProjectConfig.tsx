@@ -11,6 +11,8 @@ import { useProject } from '@/hooks/useProject';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Lock, ArrowLeft } from 'phosphor-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Project } from '@/types/project-config';
 
 const ProjectConfig = () => {
   const { id } = useParams<{ id: string }>();
@@ -55,15 +57,25 @@ const ProjectConfig = () => {
         setActiveProject(null);
         setLoading(false);
       } else if (id) {
-        // Load existing project
+        // Load existing project - Buscar diretamente do banco para garantir dados atualizados
         setIsNew(false);
-        await refreshProjects();
-        const project = projects.find(p => p.id === id);
-        if (project) {
-          setActiveProject(project);
-        } else {
+        setLoading(true);
+        
+        // Buscar diretamente do Supabase para evitar race condition
+        const { data: freshProject, error } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error || !freshProject) {
+          console.error('Projeto não encontrado:', error);
           navigate('/my-project');
+          setLoading(false);
+          return;
         }
+        
+        setActiveProject(freshProject as unknown as Project);
         setLoading(false);
       } else {
         navigate('/my-project');
