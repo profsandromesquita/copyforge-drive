@@ -322,7 +322,16 @@ export const CopyAITab = ({
           brand_personality: activeProject.brand_personality,
           keywords: activeProject.keywords
         };
-        projectMethodology = activeProject.methodology || null;
+        // Buscar metodologia selecionada pelo ID ou usar primeira como fallback
+        if (methodologyId && Array.isArray(activeProject.methodology)) {
+          projectMethodology = activeProject.methodology.find((m: any) => m.id === methodologyId) || null;
+        } else if (Array.isArray(activeProject.methodology) && activeProject.methodology.length > 0) {
+          projectMethodology = activeProject.methodology[0];
+        } else {
+          projectMethodology = null;
+        }
+        console.log('📐 Methodology selected:', methodologyId);
+        console.log('📐 Methodology data:', projectMethodology ? projectMethodology.name : 'NONE');
         if (audienceSegmentId) {
           audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
         }
@@ -433,7 +442,16 @@ export const CopyAITab = ({
           voice_tones: activeProject.voice_tones,
           keywords: activeProject.keywords
         };
-        projectMethodology = activeProject.methodology || null;
+        // Buscar metodologia selecionada pelo ID ou usar primeira como fallback
+        if (methodologyId && Array.isArray(activeProject.methodology)) {
+          projectMethodology = activeProject.methodology.find((m: any) => m.id === methodologyId) || null;
+        } else if (Array.isArray(activeProject.methodology) && activeProject.methodology.length > 0) {
+          projectMethodology = activeProject.methodology[0];
+        } else {
+          projectMethodology = null;
+        }
+        console.log('📐 Methodology selected:', methodologyId);
+        console.log('📐 Methodology data:', projectMethodology ? projectMethodology.name : 'NONE');
         if (audienceSegmentId) {
           audienceSegment = audienceSegments.find(s => s.id === audienceSegmentId);
         }
