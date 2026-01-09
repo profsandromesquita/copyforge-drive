@@ -51,12 +51,12 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
     templates: 0,
   });
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm({
     resolver: zodResolver(identitySchema),
     defaultValues: {
-      brand_name: '',
-      sector: '',
-      central_purpose: '',
+      brand_name: activeProject?.brand_name || activeProject?.name || '',
+      sector: activeProject?.sector || '',
+      central_purpose: activeProject?.central_purpose || '',
     },
   });
 
@@ -71,15 +71,30 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
     }
   }, [isNew, activeProject?.brand_name, activeProject?.name, activeProject?.sector]);
 
+  // Sincronizar formulário quando activeProject mudar
   useEffect(() => {
     if (activeProject && !isNew) {
-      // Usar name como fallback se brand_name for null
-      setValue('brand_name', activeProject.brand_name || activeProject.name || '');
-      setValue('sector', activeProject.sector || '');
-      setValue('central_purpose', activeProject.central_purpose || '');
+      reset({
+        brand_name: activeProject.brand_name || activeProject.name || '',
+        sector: activeProject.sector || '',
+        central_purpose: activeProject.central_purpose || '',
+      });
       setBrandPersonality(activeProject.brand_personality || []);
     }
-  }, [activeProject, isNew, setValue]);
+  }, [activeProject?.id, isNew, reset]);
+
+  // Garantir população dos campos quando componente monta com projeto existente
+  useEffect(() => {
+    if (!isNew && activeProject) {
+      reset({
+        brand_name: activeProject.brand_name || activeProject.name || '',
+        sector: activeProject.sector || '',
+        central_purpose: activeProject.central_purpose || '',
+      });
+      setBrandPersonality(activeProject.brand_personality || []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const togglePersonality = (personality: string) => {
     setBrandPersonality(prev =>
