@@ -39,7 +39,9 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
   const { activeWorkspace } = useWorkspace();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [brandPersonality, setBrandPersonality] = useState<string[]>([]);
+  const [brandPersonality, setBrandPersonality] = useState<string[]>(
+    activeProject?.brand_personality || []
+  );
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -71,19 +73,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
     }
   }, [isNew, activeProject?.brand_name, activeProject?.name, activeProject?.sector]);
 
-  // Sincronizar formulário quando activeProject mudar
-  useEffect(() => {
-    if (activeProject && !isNew) {
-      reset({
-        brand_name: activeProject.brand_name || activeProject.name || '',
-        sector: activeProject.sector || '',
-        central_purpose: activeProject.central_purpose || '',
-      });
-      setBrandPersonality(activeProject.brand_personality || []);
-    }
-  }, [activeProject?.id, isNew, reset]);
-
-  // Garantir população dos campos quando componente monta com projeto existente
+  // Sincronizar formulário e personalidade quando activeProject mudar ou componente montar
   useEffect(() => {
     if (!isNew && activeProject) {
       reset({
@@ -93,8 +83,7 @@ export const IdentityTab = ({ isNew, onSaveSuccess }: IdentityTabProps) => {
       });
       setBrandPersonality(activeProject.brand_personality || []);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeProject, isNew, reset]);
 
   const togglePersonality = (personality: string) => {
     setBrandPersonality(prev =>
