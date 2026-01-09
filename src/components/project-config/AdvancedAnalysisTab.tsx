@@ -12,12 +12,14 @@ interface AdvancedAnalysisTabProps {
   segment: AudienceSegment;
   allSegments: AudienceSegment[];
   onUpdate: (segments: AudienceSegment[]) => void;
+  onClose?: () => void;
 }
 
 export function AdvancedAnalysisTab({
   segment,
   allSegments,
   onUpdate,
+  onClose,
 }: AdvancedAnalysisTabProps) {
   const { activeProject, refreshProjects } = useProject();
   const { activeWorkspace } = useWorkspace();
@@ -290,6 +292,15 @@ export function AdvancedAnalysisTab({
         editedAnalysis={editedAnalysis}
         onFieldChange={handleFieldChange}
       />
+      
+      {/* Botão de conclusão final */}
+      {onClose && !isEditing && (
+        <div className="flex justify-end pt-6 border-t border-border mt-6">
+          <Button onClick={onClose} size="lg">
+            Concluir e Fechar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

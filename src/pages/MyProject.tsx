@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useNavigate } from "react-router-dom";
-import { Buildings, Users, Megaphone, Strategy } from "phosphor-react";
+import { Buildings, Users, Megaphone, Strategy, Palette } from "phosphor-react";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -10,11 +10,12 @@ import { IdentityTab } from "@/components/project-config/IdentityTab";
 import { AudienceTab } from "@/components/project-config/AudienceTab";
 import { OffersTab } from "@/components/project-config/OffersTab";
 import { MethodologyTab } from "@/components/project-config/MethodologyTab";
+import { VisualIdentityTab } from "@/components/project-config/VisualIdentityTab";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import copyDriveIcon from "@/assets/copydrive-icon.svg";
 
-type ProjectSection = 'identity' | 'audience' | 'offers' | 'methodology';
+type ProjectSection = 'identity' | 'visual-identity' | 'audience' | 'offers' | 'methodology';
 
 const MyProject = () => {
   const { setTheme } = useTheme();
@@ -60,6 +61,11 @@ const MyProject = () => {
       id: 'identity' as ProjectSection,
       icon: Buildings,
       label: 'Identidade',
+    },
+    {
+      id: 'visual-identity' as ProjectSection,
+      icon: Palette,
+      label: 'Identidade Visual',
     },
     {
       id: 'audience' as ProjectSection,
@@ -147,6 +153,7 @@ const MyProject = () => {
                 <ScrollArea className="h-full">
                   <div className="p-6">
                     {activeSection === 'identity' && <IdentityTab isNew={false} />}
+                    {activeSection === 'visual-identity' && <VisualIdentityTab />}
                     {activeSection === 'audience' && <AudienceTab />}
                     {activeSection === 'offers' && <OffersTab />}
                     {activeSection === 'methodology' && <MethodologyTab />}
