@@ -243,8 +243,19 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
+    // Gating #4: CRÍTICO - Não fazer fetch sem projeto ativo
+    // Isso evita o flash de "todas as copies" antes do projeto ser selecionado
+    if (!activeProject?.id) {
+      console.log('⏸️ Drive: Sem projeto ativo, aguardando seleção...');
+      setFolders([]);
+      setCopies([]);
+      setIsInitialLoading(false);
+      lastContextRef.current = '';
+      return;
+    }
+    
     // Construir contextKey baseado no estado atual
-    const projectId = activeProject?.id || 'none';
+    const projectId = activeProject.id;
     const folderId = currentFolderId || 'root';
     const contextKey = `${workspaceId}-${projectId}-${folderId}`;
     
