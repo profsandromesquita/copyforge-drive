@@ -464,6 +464,55 @@ serve(async (req) => {
     
     console.log('✅ Imagem extraída com sucesso');
 
+    // ===== UPLOAD PARA STORAGE SE FOR BASE64 =====
+    if (generatedImageUrl && generatedImageUrl.startsWith('data:image')) {
+      console.log('📤 Imagem é base64, fazendo upload para Storage...');
+      
+      try {
+        // Extrair dados do base64
+        const matches = generatedImageUrl.match(/^data:image\/([^;]+);base64,(.+)$/);
+        if (matches) {
+          const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+          const base64Data = matches[2];
+          
+          // Converter base64 para Uint8Array
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          
+          // Gerar nome único para o arquivo
+          const fileName = `${user.id}/${Date.now()}-ai-generated.${extension}`;
+          
+          // Fazer upload para Storage
+          const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+            .from('copy-images')
+            .upload(fileName, bytes, {
+              contentType: `image/${matches[1]}`,
+              cacheControl: '3600',
+              upsert: false,
+            });
+          
+          if (uploadError) {
+            console.error('⚠️ Erro no upload para Storage:', uploadError);
+            // Continuar com base64 se falhar (fallback)
+          } else {
+            // Obter URL pública
+            const { data: { publicUrl } } = supabaseAdmin.storage
+              .from('copy-images')
+              .getPublicUrl(uploadData.path);
+            
+            generatedImageUrl = publicUrl;
+            console.log('✅ Imagem salva no Storage:', publicUrl);
+          }
+        }
+      } catch (uploadErr) {
+        console.error('⚠️ Exceção ao fazer upload para Storage:', uploadErr);
+        // Continuar com base64 se falhar
+      }
+    }
+
     // Extrair informações de uso
     const usage = data.usage || {};
     const inputTokens = usage.prompt_tokens || 0;

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useCopyEditor } from '@/hooks/useCopyEditor';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { Block } from '@/types/copy-editor';
+import { uploadImage } from '@/lib/image-upload';
 
 interface ImageAITabProps {
   block: Block;
@@ -109,6 +110,30 @@ ${variationPrompt.trim() ? `Additional instructions: ${variationPrompt.trim()}` 
       }
 
       if (data?.imageUrl) {
+        let finalImageUrl = data.imageUrl;
+        
+        // Se ainda for base64, fazer upload para Storage (fallback de segurança)
+        if (finalImageUrl.startsWith('data:image')) {
+          console.log('⚠️ Imagem retornada como base64, fazendo upload no frontend...');
+          try {
+            // Converter base64 para File
+            const response = await fetch(finalImageUrl);
+            const blob = await response.blob();
+            const extension = blob.type.split('/')[1] || 'png';
+            const file = new File([blob], `ai-generated-${Date.now()}.${extension}`, { type: blob.type });
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              finalImageUrl = await uploadImage(file, user.id);
+              console.log('✅ Upload fallback concluído:', finalImageUrl);
+            }
+          } catch (uploadError) {
+            console.error('Erro no fallback de upload:', uploadError);
+            toast.error('Erro ao processar imagem. A imagem não será salva corretamente.');
+            return;
+          }
+        }
+        
         if (type === 'variation') {
           // Criar um novo bloco de imagem com a variação
           const position = getBlockPosition();
@@ -117,7 +142,7 @@ ${variationPrompt.trim() ? `Additional instructions: ${variationPrompt.trim()}` 
               type: 'image',
               content: '',
               config: {
-                imageUrl: data.imageUrl,
+                imageUrl: finalImageUrl,
                 aspectRatio: '1:1',
                 imageSize: block.config.imageSize || 'md',
                 roundedBorders: block.config.roundedBorders || false,
@@ -128,7 +153,7 @@ ${variationPrompt.trim() ? `Additional instructions: ${variationPrompt.trim()}` 
           // Atualizar o bloco existente para gerar e otimizar
           updateBlock(block.id, {
             config: {
-              imageUrl: data.imageUrl,
+              imageUrl: finalImageUrl,
               aspectRatio: '1:1'
             }
           });
