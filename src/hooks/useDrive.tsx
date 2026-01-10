@@ -89,11 +89,21 @@ export const DriveProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     if (!activeWorkspace?.id) return;
 
+    // CRÍTICO: Não buscar sem projeto ativo (evita flash de "todas as copies")
+    if (!activeProject?.id) {
+      console.log('⏸️ Drive: Sem projeto ativo, limpando estado...');
+      setFolders([]);
+      setCopies([]);
+      setIsInitialLoading(false);
+      setLoading(false);
+      return;
+    }
+
     // Gerar requestId único para este fetch
     const thisRequestId = ++requestIdRef.current;
     const timestamp = Date.now();
     
-    console.log(`🔄 [${thisRequestId}] Fetch iniciado (source: ${source}) - workspace: ${activeWorkspace.id}, project: ${activeProject?.id || 'none'}, folder: ${folderId || 'root'}`);
+    console.log(`🔄 [${thisRequestId}] Fetch iniciado (source: ${source}) - workspace: ${activeWorkspace.id}, project: ${activeProject.id}, folder: ${folderId || 'root'}`);
 
     // Se não é o primeiro load, não mostrar spinner central (apenas refresh)
     if (hasLoadedOnce) {

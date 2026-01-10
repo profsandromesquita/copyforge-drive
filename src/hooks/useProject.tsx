@@ -23,7 +23,7 @@ const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProject, setActiveProjectState] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Inicia true para evitar flash no Drive
   const { activeWorkspace } = useWorkspace();
   const { user, authReady } = useAuth();
   
@@ -34,6 +34,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!activeWorkspace?.id) {
       setProjects([]);
       setActiveProjectState(null);
+      setLoading(false); // Sem workspace = sem projetos para carregar
       return;
     }
 
