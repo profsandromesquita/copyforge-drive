@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Session, Block, CopyType, Variation } from '@/types/copy-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -114,13 +114,37 @@ export const CopyEditorProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }));
   }, [sessions]);
 
-  // Auto-save every 3 seconds
+  // Referência para tracking de mudanças e evitar saves desnecessários
+  const lastSavedHashRef = useRef<string>('');
+  
+  // Auto-save com debounce maior e verificação de mudanças
   useEffect(() => {
     if (!copyId || sessions.length === 0) return;
     
+    // Criar hash do conteúdo atual para detectar mudanças reais
+    const currentState = JSON.stringify({ sessions, copyTitle });
+    const currentHash = currentState.length.toString() + '-' + currentState.slice(0, 100);
+    
+    // Se não houve mudança, não salvar
+    if (currentHash === lastSavedHashRef.current) return;
+    
     const timer = setTimeout(() => {
+      // Verificar tamanho aproximado antes de salvar
+      const estimatedSize = new Blob([currentState]).size;
+      const sizeMB = estimatedSize / 1024 / 1024;
+      
+      if (estimatedSize > 5 * 1024 * 1024) { // 5MB
+        console.warn('⚠️ Copy muito grande para auto-save:', sizeMB.toFixed(2), 'MB');
+        toast({
+          title: 'Aviso: Copy muito grande',
+          description: `Esta copy tem ${sizeMB.toFixed(1)}MB. Imagens devem ser otimizadas para evitar problemas de salvamento.`,
+          variant: 'default',
+        });
+      }
+      
       saveCopy();
-    }, 3000);
+      lastSavedHashRef.current = currentHash;
+    }, 5000); // 5 segundos ao invés de 3
 
     return () => clearTimeout(timer);
   }, [sessions, copyTitle, copyId]);
