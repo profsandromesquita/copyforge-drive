@@ -9,7 +9,7 @@ import { Offer, OFFER_TYPES } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, Circle } from 'phosphor-react';
+import { CheckCircle, Circle, CircleNotch } from 'phosphor-react';
 
 interface OfferFormProps {
   offer: Offer | null;
@@ -34,17 +34,23 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   });
   const [identification, setIdentification] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Estado para indicar salvamento em progresso
   const [offerCreated, setOfferCreated] = useState(false);
   const [originalId, setOriginalId] = useState<string | null>(null);
+  
+  // Estado local para oferta recém-criada (resolve bug de auto-save não funcionar)
+  const [localOffer, setLocalOffer] = useState<Offer | null>(null);
 
   const mountedRef = useRef(true);
   
   // Refs para valores usados no cleanup (evita loop infinito)
   const offerRef = useRef(offer);
+  const localOfferRef = useRef(localOffer);
   const offerCreatedRef = useRef(offerCreated);
   const formDataRef = useRef(formData);
   const identificationRef = useRef(identification);
   const autoSaveRef = useRef<() => Promise<void>>();
+  const allOffersRef = useRef(allOffers);
 
   useEffect(() => {
     return () => { mountedRef.current = false; };
@@ -57,6 +63,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       setIdentification(offer.name);
       setOfferCreated(true);
       setOriginalId(offer.id);
+      setLocalOffer(offer); // Sincronizar com localOffer
 
       // Merge per-offer draft if exists (survives tab switches)
       try {
@@ -91,7 +98,8 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
   // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
-    if (!activeProject || !offerCreated || !offer) return;
+    const currentOffer = offer || localOffer;
+    if (!activeProject || !offerCreated || !currentOffer) return;
 
     if (mountedRef.current) {
       setAutoSaving(true);
@@ -100,17 +108,19 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
     try {
       const updatedOffer: Offer = {
-        ...offer,
+        ...currentOffer,
         ...formData,
-        name: identification || offer.name
+        name: identification || currentOffer.name
       } as Offer;
 
-      const updatedOffers = allOffers.map(o => o.id === offer.id ? updatedOffer : o);
+      const updatedOffers = allOffers.map(o => o.id === currentOffer.id ? updatedOffer : o);
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ offers: updatedOffers as any })
         .eq('id', activeProject.id);
+
+      if (error) throw error;
 
       // Atualizar o estado local sem perder foco
       onUpdate?.(updatedOffers);
@@ -121,7 +131,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
       }
 
       // Limpa draft específico após salvar com sucesso
-      try { localStorage.removeItem(`offer-draft-${offer.id}`); } catch {}
+      try { localStorage.removeItem(`offer-draft-${currentOffer.id}`); } catch {}
     } catch (error) {
       console.error('Auto-save error:', error);
       toast.error('Erro ao salvar automaticamente');
@@ -131,32 +141,40 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
         onAutoSavingChange?.(false);
       }
     }
-  }, [activeProject, offerCreated, offer, formData, identification, allOffers, onUpdate, onAutoSavingChange]);
+  }, [activeProject, offerCreated, offer, localOffer, formData, identification, allOffers, onUpdate, onAutoSavingChange, setActiveProject]);
 
   // Handler para salvar ao tirar o foco do campo
   const handleBlur = useCallback(() => {
-    if (offer && offerCreated) {
+    const currentOffer = offer || localOffer;
+    if (currentOffer && offerCreated) {
       autoSaveToDatabase();
     }
-  }, [offer, offerCreated, autoSaveToDatabase]);
+  }, [offer, localOffer, offerCreated, autoSaveToDatabase]);
 
   // Manter refs atualizados
   useEffect(() => { offerRef.current = offer; }, [offer]);
+  useEffect(() => { localOfferRef.current = localOffer; }, [localOffer]);
   useEffect(() => { offerCreatedRef.current = offerCreated; }, [offerCreated]);
   useEffect(() => { formDataRef.current = formData; }, [formData]);
   useEffect(() => { identificationRef.current = identification; }, [identification]);
   useEffect(() => { autoSaveRef.current = autoSaveToDatabase; }, [autoSaveToDatabase]);
+  useEffect(() => { allOffersRef.current = allOffers; }, [allOffers]);
 
   // Flush auto-save on unmount ONLY (array vazio = executa apenas no unmount real)
   useEffect(() => {
     return () => {
-      const currentOffer = offerRef.current;
+      const currentOffer = offerRef.current || localOfferRef.current;
       if (currentOffer && offerCreatedRef.current) {
         try {
           localStorage.setItem(
             `offer-draft-${currentOffer.id}`,
-            JSON.stringify({ formData: formDataRef.current, identification: identificationRef.current })
+            JSON.stringify({ 
+              formData: formDataRef.current, 
+              identification: identificationRef.current,
+              timestamp: Date.now()
+            })
           );
+          console.log('🔒 Backup de oferta salvo no localStorage');
         } catch {}
         // Fire-and-forget save via ref (não causa re-render)
         autoSaveRef.current?.();
@@ -191,16 +209,18 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
 
       const updatedOffers = [...allOffers, newOffer];
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ offers: updatedOffers as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
-      
-      // Atualizar o contexto do projeto imediatamente
+      if (error) throw error;
+
+      // CRÍTICO: Atualizar contexto local IMEDIATAMENTE após sucesso
       setActiveProject({ ...activeProject, offers: updatedOffers });
       
+      // Salvar referência local para nova oferta (resolve bug de auto-save)
+      setLocalOffer(newOffer);
       setOfferCreated(true);
       setOriginalId(newOffer.id);
       localStorage.removeItem('offer-draft');
@@ -216,19 +236,22 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
   };
 
   const handleUpdateIdentification = async () => {
-    if (!identification.trim() || !offer || !activeProject) return;
+    if (!identification.trim() || !activeProject) return;
+    
+    const currentOffer = offer || localOffer;
+    if (!currentOffer) return;
 
     try {
-      const updatedOffer = { ...offer, name: identification };
-      const updatedOffers = allOffers.map(o => o.id === offer.id ? updatedOffer : o);
+      const updatedOffer = { ...currentOffer, name: identification };
+      const updatedOffers = allOffers.map(o => o.id === currentOffer.id ? updatedOffer : o);
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ offers: updatedOffers as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
-      
+      if (error) throw error;
+
       // Atualizar o contexto do projeto imediatamente
       setActiveProject({ ...activeProject, offers: updatedOffers });
       
@@ -247,27 +270,114 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
     );
   };
 
+  // CORREÇÃO: Função "Concluir Oferta" que salva antes de fechar
   const handleComplete = async () => {
     if (!isAllFieldsFilled()) {
       toast.error('Preencha todos os campos obrigatórios com o mínimo de caracteres');
       return;
     }
 
-    if (activeProject) {
-      localStorage.removeItem(`offer-editing-${activeProject.id}`);
+    if (!activeProject) {
+      onCancel();
+      return;
     }
-    onCancel();
-    toast.success('Oferta concluída com sucesso!');
+
+    const currentOffer = offer || localOffer;
+    if (!currentOffer || !offerCreated) {
+      onCancel();
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // CRÍTICO: Salvar dados antes de fechar
+      const updatedOffer: Offer = {
+        ...currentOffer,
+        ...formData,
+        name: identification || currentOffer.name
+      } as Offer;
+
+      const updatedOffers = allOffers.map(o => o.id === currentOffer.id ? updatedOffer : o);
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ offers: updatedOffers as any })
+        .eq('id', activeProject.id);
+
+      if (error) throw error;
+
+      // Atualizar contexto
+      setActiveProject({ ...activeProject, offers: updatedOffers });
+      onUpdate?.(updatedOffers);
+
+      // Limpar drafts
+      localStorage.removeItem(`offer-editing-${activeProject.id}`);
+      localStorage.removeItem('offer-draft');
+      localStorage.removeItem(`offer-draft-${currentOffer.id}`);
+
+      toast.success('Oferta concluída com sucesso!');
+      onCancel();
+    } catch (error) {
+      console.error('Error completing offer:', error);
+      toast.error('Erro ao salvar oferta. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  // CORREÇÃO: Função "Salvar e Fechar" que realmente salva antes de fechar
   const handleClose = async () => {
-    if (offerCreated && offer) {
-      await autoSaveToDatabase();
+    if (!activeProject) {
+      onCancel();
+      return;
     }
-    if (activeProject) {
+
+    const currentOffer = offer || localOffer;
+    if (!currentOffer || !offerCreated) {
+      if (activeProject) {
+        localStorage.removeItem(`offer-editing-${activeProject.id}`);
+      }
+      onCancel();
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // CRÍTICO: Salvar dados ANTES de fechar
+      const updatedOffer: Offer = {
+        ...currentOffer,
+        ...formData,
+        name: identification || currentOffer.name
+      } as Offer;
+
+      const updatedOffers = allOffers.map(o => o.id === currentOffer.id ? updatedOffer : o);
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ offers: updatedOffers as any })
+        .eq('id', activeProject.id);
+
+      if (error) throw error;
+
+      // Atualizar contexto
+      setActiveProject({ ...activeProject, offers: updatedOffers });
+      onUpdate?.(updatedOffers);
+
+      // Limpar drafts
       localStorage.removeItem(`offer-editing-${activeProject.id}`);
+      localStorage.removeItem('offer-draft');
+      localStorage.removeItem(`offer-draft-${currentOffer.id}`);
+
+      toast.success('Oferta salva com sucesso!');
+      onCancel();
+    } catch (error) {
+      console.error('Erro ao salvar oferta:', error);
+      toast.error('Erro ao salvar. Tente novamente.');
+    } finally {
+      setIsSaving(false);
     }
-    onCancel();
   };
 
   const getCharCount = (field: keyof Offer) => {
@@ -332,7 +442,7 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
                 }}
                 onOpenChange={(open) => {
                   // Salva quando o dropdown fecha (após state estar atualizado)
-                  if (!open && offer && offerCreated) {
+                  if (!open && (offer || localOffer) && offerCreated) {
                     autoSaveToDatabase();
                   }
                 }}
@@ -495,19 +605,34 @@ export const OfferForm = ({ offer, allOffers, onSave, onUpdate, onCancel, onAuto
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button 
               variant="outline" 
-              onClick={handleClose} 
+              onClick={handleClose}
+              disabled={isSaving}
               className="flex-1 h-11"
               size="lg"
             >
-              Salvar e Fechar
+              {isSaving ? (
+                <>
+                  <CircleNotch size={18} className="animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar e Fechar'
+              )}
             </Button>
             <Button 
               onClick={handleComplete} 
-              disabled={!isAllFieldsFilled()}
+              disabled={!isAllFieldsFilled() || isSaving}
               className="flex-1 h-11"
               size="lg"
             >
-              Concluir Oferta
+              {isSaving ? (
+                <>
+                  <CircleNotch size={18} className="animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Concluir Oferta'
+              )}
             </Button>
           </div>
         </div>

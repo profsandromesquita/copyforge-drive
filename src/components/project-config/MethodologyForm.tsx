@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { VoiceInput } from './VoiceInput';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info } from 'phosphor-react';
+import { Info, CircleNotch } from 'phosphor-react';
 import { Methodology } from '@/types/project-config';
 import { useProject } from '@/hooks/useProject';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,17 +42,23 @@ export const MethodologyForm = ({
   });
   const [identification, setIdentification] = useState('');
   const [autoSaving, setAutoSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Estado para indicar salvamento em progresso
   const [methodologyCreated, setMethodologyCreated] = useState(false);
+  
+  // Estado local para metodologia recém-criada (resolve bug de auto-save não funcionar)
+  const [localMethodology, setLocalMethodology] = useState<Methodology | null>(null);
 
   const MIN_CHARS = 50;
 
   // Refs para valores usados no cleanup (evita problemas de closure)
   const mountedRef = useRef(true);
   const methodologyRef = useRef(editingMethodology);
+  const localMethodologyRef = useRef(localMethodology);
   const methodologyCreatedRef = useRef(methodologyCreated);
   const formDataRef = useRef(formData);
   const identificationRef = useRef(identification);
   const autoSaveRef = useRef<() => Promise<void>>();
+  const allMethodologiesRef = useRef(allMethodologies);
 
   useEffect(() => {
     return () => { mountedRef.current = false; };
@@ -64,6 +70,7 @@ export const MethodologyForm = ({
       setFormData(editingMethodology);
       setIdentification(editingMethodology.name);
       setMethodologyCreated(true);
+      setLocalMethodology(editingMethodology); // Sincronizar com localMethodology
 
       // Merge per-methodology draft if exists (survives tab switches)
       try {
@@ -98,14 +105,16 @@ export const MethodologyForm = ({
 
   // Manter refs atualizados para uso no cleanup
   useEffect(() => { methodologyRef.current = editingMethodology; }, [editingMethodology]);
+  useEffect(() => { localMethodologyRef.current = localMethodology; }, [localMethodology]);
   useEffect(() => { methodologyCreatedRef.current = methodologyCreated; }, [methodologyCreated]);
   useEffect(() => { formDataRef.current = formData; }, [formData]);
   useEffect(() => { identificationRef.current = identification; }, [identification]);
+  useEffect(() => { allMethodologiesRef.current = allMethodologies; }, [allMethodologies]);
 
   // Flush auto-save on unmount - APENAS no unmount real
   useEffect(() => {
     return () => {
-      const currentMethodology = methodologyRef.current;
+      const currentMethodology = methodologyRef.current || localMethodologyRef.current;
       if (currentMethodology && methodologyCreatedRef.current) {
         // Salvar draft no localStorage como backup
         try {
@@ -113,9 +122,11 @@ export const MethodologyForm = ({
             `methodology-draft-${currentMethodology.id}`,
             JSON.stringify({
               formData: formDataRef.current,
-              identification: identificationRef.current
+              identification: identificationRef.current,
+              timestamp: Date.now()
             })
           );
+          console.log('🔒 Backup salvo no localStorage');
         } catch (e) {
           console.error('Erro ao salvar draft no unmount:', e);
         }
@@ -127,7 +138,8 @@ export const MethodologyForm = ({
 
   // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
-    if (!activeProject || !methodologyCreated || !editingMethodology) return;
+    const currentMethodology = editingMethodology || localMethodology;
+    if (!activeProject || !methodologyCreated || !currentMethodology) return;
 
     if (mountedRef.current) {
       setAutoSaving(true);
@@ -136,19 +148,21 @@ export const MethodologyForm = ({
 
     try {
       const updatedMethodology: Methodology = {
-        ...editingMethodology,
+        ...currentMethodology,
         ...formData,
-        name: identification || editingMethodology.name
+        name: identification || currentMethodology.name
       } as Methodology;
 
       const updatedMethodologies = allMethodologies.map(m => 
-        m.id === editingMethodology.id ? updatedMethodology : m
+        m.id === currentMethodology.id ? updatedMethodology : m
       );
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ methodology: updatedMethodologies as any })
         .eq('id', activeProject.id);
+
+      if (error) throw error;
 
       // Atualizar o estado local sem perder foco
       onUpdate?.(updatedMethodologies);
@@ -159,10 +173,11 @@ export const MethodologyForm = ({
       }
 
       // Save per-methodology draft
-      if (editingMethodology) {
-        localStorage.setItem(`methodology-draft-${editingMethodology.id}`, JSON.stringify({
+      if (currentMethodology) {
+        localStorage.setItem(`methodology-draft-${currentMethodology.id}`, JSON.stringify({
           formData,
-          identification
+          identification,
+          timestamp: Date.now()
         }));
       }
     } catch (error) {
@@ -174,21 +189,22 @@ export const MethodologyForm = ({
         onAutoSavingChange?.(false);
       }
     }
-  }, [activeProject, methodologyCreated, editingMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange, setActiveProject]);
+  }, [activeProject, methodologyCreated, editingMethodology, localMethodology, formData, identification, allMethodologies, onUpdate, onAutoSavingChange, setActiveProject]);
 
   // Manter autoSaveRef atualizado
   useEffect(() => { autoSaveRef.current = autoSaveToDatabase; }, [autoSaveToDatabase]);
 
   // Trigger auto-save com debounce de 3 segundos
   useEffect(() => {
-    if (editingMethodology && methodologyCreated) {
+    const currentMethodology = editingMethodology || localMethodology;
+    if (currentMethodology && methodologyCreated) {
       const timer = setTimeout(() => {
         autoSaveToDatabase();
       }, 3000); // Aumentado para 3 segundos para melhor UX
 
       return () => clearTimeout(timer);
     }
-  }, [formData, identification, editingMethodology, methodologyCreated, autoSaveToDatabase]);
+  }, [formData, identification, editingMethodology, localMethodology, methodologyCreated, autoSaveToDatabase]);
 
   const handleCreateMethodology = async () => {
     if (!identification.trim()) {
@@ -218,12 +234,18 @@ export const MethodologyForm = ({
 
       const updatedMethodologies = [...allMethodologies, newMethodology];
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ methodology: updatedMethodologies as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      if (error) throw error;
+
+      // CRÍTICO: Atualizar contexto local IMEDIATAMENTE após sucesso
+      setActiveProject({ ...activeProject, methodology: updatedMethodologies as any });
+      
+      // Salvar referência local para nova metodologia (resolve bug de auto-save)
+      setLocalMethodology(newMethodology);
       setMethodologyCreated(true);
       localStorage.removeItem('methodology-draft');
       toast.success('Metodologia criada! Preencha os campos abaixo.');
@@ -237,17 +259,101 @@ export const MethodologyForm = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFinish = async () => {
-    if (!activeProject || !methodologyCreated) return;
+  // CORREÇÃO: Função "Salvar e Fechar" que realmente salva antes de fechar
+  const handleSaveAndClose = async () => {
+    if (!activeProject) {
+      onCancel();
+      return;
+    }
+
+    const currentMethodology = editingMethodology || localMethodology;
+    if (!currentMethodology || !methodologyCreated) {
+      onCancel();
+      return;
+    }
+
+    setIsSaving(true);
 
     try {
-      await refreshProjects();
+      // CRÍTICO: Salvar dados ANTES de fechar
+      const updatedMethodology: Methodology = {
+        ...currentMethodology,
+        ...formData,
+        name: identification || currentMethodology.name
+      } as Methodology;
+
+      const updatedMethodologies = allMethodologies.map(m => 
+        m.id === currentMethodology.id ? updatedMethodology : m
+      );
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ methodology: updatedMethodologies as any })
+        .eq('id', activeProject.id);
+
+      if (error) throw error;
+
+      // Atualizar contexto
+      setActiveProject({ ...activeProject, methodology: updatedMethodologies as any });
+      onUpdate?.(updatedMethodologies);
+
+      // Limpar drafts
       localStorage.removeItem('methodology-draft');
+      localStorage.removeItem(`methodology-draft-${currentMethodology.id}`);
+
       toast.success('Metodologia salva com sucesso!');
       onCancel();
     } catch (error) {
-      console.error('Error finishing:', error);
-      toast.error('Erro ao finalizar');
+      console.error('Erro ao salvar metodologia:', error);
+      toast.error('Erro ao salvar. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // CORREÇÃO: Função "Concluir Metodologia" que salva antes de finalizar
+  const handleFinish = async () => {
+    if (!activeProject || !methodologyCreated) return;
+
+    const currentMethodology = editingMethodology || localMethodology;
+    if (!currentMethodology) return;
+
+    setIsSaving(true);
+
+    try {
+      // CRÍTICO: Salvar dados ANTES de qualquer outra operação
+      const updatedMethodology: Methodology = {
+        ...currentMethodology,
+        ...formData,
+        name: identification || currentMethodology.name
+      } as Methodology;
+
+      const updatedMethodologies = allMethodologies.map(m => 
+        m.id === currentMethodology.id ? updatedMethodology : m
+      );
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ methodology: updatedMethodologies as any })
+        .eq('id', activeProject.id);
+
+      if (error) throw error;
+
+      // Atualizar contexto local
+      setActiveProject({ ...activeProject, methodology: updatedMethodologies as any });
+      onUpdate?.(updatedMethodologies);
+
+      // Limpar todos os drafts
+      localStorage.removeItem('methodology-draft');
+      localStorage.removeItem(`methodology-draft-${currentMethodology.id}`);
+
+      toast.success('Metodologia concluída com sucesso!');
+      onCancel();
+    } catch (error) {
+      console.error('Error finishing methodology:', error);
+      toast.error('Erro ao salvar metodologia. Tente novamente.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -440,19 +546,34 @@ export const MethodologyForm = ({
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button 
               variant="outline" 
-              onClick={onCancel} 
+              onClick={handleSaveAndClose}
+              disabled={isSaving}
               className="flex-1 h-11"
               size="lg"
             >
-              Salvar e Fechar
+              {isSaving ? (
+                <>
+                  <CircleNotch size={18} className="animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar e Fechar'
+              )}
             </Button>
             <Button 
               onClick={handleFinish} 
-              disabled={!allFieldsValid}
+              disabled={!allFieldsValid || isSaving}
               className="flex-1 h-11"
               size="lg"
             >
-              Concluir Metodologia
+              {isSaving ? (
+                <>
+                  <CircleNotch size={18} className="animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Concluir Metodologia'
+              )}
             </Button>
           </div>
         </div>
