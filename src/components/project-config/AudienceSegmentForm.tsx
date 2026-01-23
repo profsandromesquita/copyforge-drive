@@ -48,6 +48,7 @@ export const AudienceSegmentForm = ({
   const [segmentCreated, setSegmentCreated] = useState(!!segment);
   const [originalId, setOriginalId] = useState(segment?.id || '');
   const [localSegment, setLocalSegment] = useState<AudienceSegment | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
 const MIN_CHARS = 50;
 
@@ -135,7 +136,9 @@ const MIN_CHARS = 50;
 
   // Auto-save to database - Silencioso, sem refresh da página
   const autoSaveToDatabase = useCallback(async () => {
-    if (!identification || !activeProject || !segmentCreated || !segment) return;
+    // CORREÇÃO: Usar segment OU localSegment para nova metodologia
+    const currentSegment = segment || localSegment;
+    if (!identification || !activeProject || !segmentCreated || !currentSegment) return;
 
     if (mountedRef.current) {
       setAutoSaving(true);
@@ -144,35 +147,33 @@ const MIN_CHARS = 50;
 
     try {
       const updatedSegment: AudienceSegment = {
-        ...segment,
+        ...currentSegment,
         ...formData,
-        id: identification || segment.id
+        id: identification || currentSegment.id
       } as AudienceSegment;
 
       const updatedSegments = allSegments.map(s => 
-        s.id === segment.id ? updatedSegment : s
+        s.id === currentSegment.id ? updatedSegment : s
       );
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
+
+      if (error) throw error;
 
       // Atualizar o estado local sem perder foco
       onUpdate?.(updatedSegments);
 
       // Atualizar o contexto do projeto para manter sincronização entre abas
-      if (activeProject) {
-        setActiveProject({ ...activeProject, audience_segments: updatedSegments });
-      }
+      setActiveProject({ ...activeProject, audience_segments: updatedSegments });
 
       // Save per-segment draft
-      if (segment) {
-        localStorage.setItem(`audience-segment-draft-${segment.id}`, JSON.stringify({
-          formData,
-          identification
-        }));
-      }
+      localStorage.setItem(`audience-segment-draft-${currentSegment.id}`, JSON.stringify({
+        formData,
+        identification
+      }));
     } catch (error) {
       console.error('Auto-save error:', error);
       toast.error('Erro ao salvar automaticamente');
@@ -182,7 +183,7 @@ const MIN_CHARS = 50;
         onAutoSavingChange?.(false);
       }
     }
-  }, [identification, formData, activeProject, segment, allSegments, onUpdate, onAutoSavingChange, segmentCreated, setActiveProject]);
+  }, [identification, formData, activeProject, segment, localSegment, allSegments, onUpdate, onAutoSavingChange, segmentCreated, setActiveProject]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -304,26 +305,33 @@ const MIN_CHARS = 50;
   const handleComplete = async () => {
     if (!identification || !activeProject) return;
 
+    const currentSegment = segment || localSegment;
+    if (!currentSegment) return;
+
+    setIsSaving(true);
     try {
       const updatedFormData = { ...formData, is_completed: true };
       const segmentId = identification;
-      const newSegment: AudienceSegment = { ...updatedFormData, id: segmentId } as AudienceSegment;
+      const updatedSegment: AudienceSegment = { ...updatedFormData, id: segmentId } as AudienceSegment;
 
       const updatedSegments = allSegments.map(s => 
-        s.id === segmentId ? newSegment : s
+        s.id === currentSegment.id ? updatedSegment : s
       );
 
-      await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ audience_segments: updatedSegments as any })
         .eq('id', activeProject.id);
 
-      await refreshProjects();
+      if (error) throw error;
+
+      // CORREÇÃO: Atualizar contexto local imediatamente (sem refreshProjects)
+      setActiveProject({ ...activeProject, audience_segments: updatedSegments });
+      onUpdate?.(updatedSegments);
       
       // Limpar rascunho do localStorage
-      if (!segment) {
-        localStorage.removeItem('audience-segment-draft');
-      }
+      localStorage.removeItem('audience-segment-draft');
+      localStorage.removeItem(`audience-segment-draft-${currentSegment.id}`);
       
       toast.success('Informações básicas salvas! Agora gere a análise avançada.');
       
@@ -332,21 +340,64 @@ const MIN_CHARS = 50;
     } catch (error) {
       console.error('Erro ao concluir segmento:', error);
       toast.error('Erro ao concluir segmento');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleClose = async () => {
-    // Salvar antes de fechar se houver dados
-    if (identification && segmentCreated && Object.values(formData).some(v => v)) {
-      await autoSaveToDatabase();
-      await refreshProjects();
+  // CORREÇÃO: Função robusta de salvar e fechar com salvamento síncrono
+  const handleSaveAndClose = async () => {
+    if (!activeProject) {
+      onCancel();
+      return;
     }
+
+    const currentSegment = segment || localSegment;
     
-    if (!segment) {
+    // Se não tem segmento criado, apenas fechar
+    if (!currentSegment || !segmentCreated) {
       localStorage.removeItem('audience-segment-draft');
+      onCancel();
+      return;
     }
-    
-    onCancel();
+
+    setIsSaving(true);
+    try {
+      // CRÍTICO: Salvar dados síncronamente antes de fechar
+      const updatedSegment: AudienceSegment = {
+        ...currentSegment,
+        ...formData,
+        id: identification || currentSegment.id
+      } as AudienceSegment;
+
+      const updatedSegments = allSegments.map(s => 
+        s.id === currentSegment.id ? updatedSegment : s
+      );
+
+      const { error } = await supabase
+        .from('projects')
+        .update({ audience_segments: updatedSegments as any })
+        .eq('id', activeProject.id);
+
+      if (error) throw error;
+
+      // Atualizar contexto local
+      setActiveProject({ ...activeProject, audience_segments: updatedSegments });
+      onUpdate?.(updatedSegments);
+
+      // Limpar drafts
+      localStorage.removeItem('audience-segment-draft');
+      localStorage.removeItem(`audience-segment-draft-${currentSegment.id}`);
+
+      toast.success('Público-alvo salvo com sucesso!');
+      onCancel();
+    } catch (error) {
+      console.error('Erro ao salvar público-alvo:', error);
+      toast.error('Erro ao salvar. Tente novamente.');
+      // NÃO fechar se falhar
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const getCharCount = (fieldId: string) => {
@@ -484,19 +535,20 @@ const MIN_CHARS = 50;
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button 
                 variant="outline" 
-                onClick={handleClose} 
+                onClick={handleSaveAndClose}
+                disabled={isSaving}
                 className="flex-1 h-11"
                 size="lg"
               >
-                Salvar e Fechar
+                {isSaving ? 'Salvando...' : 'Salvar e Fechar'}
               </Button>
               <Button 
                 onClick={handleComplete} 
-                disabled={!isAllFieldsFilled()}
+                disabled={!isAllFieldsFilled() || isSaving}
                 className="flex-1 h-11"
                 size="lg"
               >
-                Avançar para Análise
+                {isSaving ? 'Salvando...' : 'Avançar para Análise'}
               </Button>
             </div>
           </TabsContent>
