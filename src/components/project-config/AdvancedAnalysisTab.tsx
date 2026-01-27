@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AudienceSegment } from '@/types/project-config';
 import { Pencil, Save, X, RotateCw, Loader2 } from 'lucide-react';
@@ -27,9 +27,18 @@ export function AdvancedAnalysisTab({
   const [editedAnalysis, setEditedAnalysis] = useState<any>(segment.advanced_analysis || null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Estado local que pode ser atualizado após regeneração
+  const [localSegment, setLocalSegment] = useState<AudienceSegment>(segment);
+  
+  // Sincronizar quando prop segment mudar externamente
+  useEffect(() => {
+    setLocalSegment(segment);
+    setEditedAnalysis(segment.advanced_analysis || null);
+  }, [segment.id, segment.advanced_analysis]);
 
   const handleEdit = () => {
-    setEditedAnalysis(segment.advanced_analysis || null);
+    setEditedAnalysis(localSegment.advanced_analysis || null);
     setIsEditing(true);
   };
 
@@ -38,8 +47,13 @@ export function AdvancedAnalysisTab({
 
     setIsSaving(true);
     try {
+      const updatedSegment: AudienceSegment = {
+        ...localSegment,
+        advanced_analysis: editedAnalysis
+      };
+      
       const updatedSegments = allSegments.map(s =>
-        s.id === segment.id ? { ...s, advanced_analysis: editedAnalysis } : s
+        s.id === segment.id ? updatedSegment : s
       );
 
       const { error: updateError } = await supabase
@@ -49,7 +63,9 @@ export function AdvancedAnalysisTab({
 
       if (updateError) throw updateError;
 
-      // Atualizar primeiro o estado local
+      // Atualizar estado local imediatamente para refletir na UI
+      setLocalSegment(updatedSegment);
+      // Atualizar estado do pai
       onUpdate(updatedSegments);
       setIsEditing(false);
       // Depois recarregar do banco para sincronizar
@@ -64,7 +80,7 @@ export function AdvancedAnalysisTab({
   };
 
   const handleCancel = () => {
-    setEditedAnalysis(segment.advanced_analysis || null);
+    setEditedAnalysis(localSegment.advanced_analysis || null);
     setIsEditing(false);
   };
 
@@ -116,7 +132,9 @@ export function AdvancedAnalysisTab({
 
       if (updateError) throw updateError;
 
-      // Atualizar primeiro o estado local
+      // Atualizar estado local imediatamente para refletir na UI
+      setLocalSegment(updatedSegment);
+      // Atualizar estado do pai
       onUpdate(updatedSegments);
       // Depois recarregar do banco para sincronizar
       await refreshProjects();
@@ -179,7 +197,9 @@ export function AdvancedAnalysisTab({
 
       if (updateError) throw updateError;
 
-      // Atualizar primeiro o estado local
+      // Atualizar estado local imediatamente para refletir na UI
+      setLocalSegment(updatedSegment);
+      // Atualizar estado do pai
       onUpdate(updatedSegments);
       // Depois recarregar do banco para sincronizar
       await refreshProjects();
@@ -202,7 +222,7 @@ export function AdvancedAnalysisTab({
   };
 
   // Se não tem análise gerada ainda, mostrar botão para gerar
-  if (!segment.advanced_analysis) {
+  if (!localSegment.advanced_analysis) {
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-4">
         <p className="text-muted-foreground text-center">
@@ -231,9 +251,9 @@ export function AdvancedAnalysisTab({
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 pb-4 border-b border-border">
         <div className="flex-1">
-          {segment.analysis_generated_at && (
+        {localSegment.analysis_generated_at && (
             <p className="text-xs text-muted-foreground">
-              Gerada em: {new Date(segment.analysis_generated_at).toLocaleString('pt-BR')}
+              Gerada em: {new Date(localSegment.analysis_generated_at).toLocaleString('pt-BR')}
             </p>
           )}
         </div>
@@ -287,7 +307,7 @@ export function AdvancedAnalysisTab({
       </div>
 
       <AdvancedAnalysisView
-        segment={segment}
+        segment={localSegment}
         isEditing={isEditing}
         editedAnalysis={editedAnalysis}
         onFieldChange={handleFieldChange}
