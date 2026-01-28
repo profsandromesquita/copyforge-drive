@@ -129,7 +129,7 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 8000,
+        max_tokens: 12000,
         tools: [
           {
             type: "function",
@@ -326,6 +326,13 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
     }
 
     const aiData = await aiResponse.json();
+    
+    // Verificar se a resposta foi truncada por limite de tokens
+    const finishReason = aiData.choices?.[0]?.finish_reason;
+    if (finishReason === 'length') {
+      console.error('AVISO: Resposta da IA foi truncada por limite de tokens - conteúdo pode estar incompleto');
+    }
+    
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall || !toolCall.function?.arguments) {
@@ -333,6 +340,29 @@ Seja específico, detalhado e focado em ENTENDER verdadeiramente quem é essa pe
     }
 
     const analysis = JSON.parse(toolCall.function.arguments);
+    
+    // Validar campos críticos
+    const requiredFields = [
+      'psychographic_profile', 'consciousness_level', 'emotional_state',
+      'hidden_pain', 'primary_fear', 'emotional_desire', 'problem_misperception',
+      'internal_mechanism', 'limiting_belief', 'internal_narrative',
+      'internal_contradiction', 'dominant_behavior', 'decision_trigger',
+      'communication_style', 'psychological_resistances'
+    ];
+
+    const incompleteFields = requiredFields.filter(field => {
+      const value = analysis[field];
+      return !value || typeof value !== 'string' || value.length < 50;
+    });
+
+    if (incompleteFields.length > 0) {
+      console.warn('Campos incompletos detectados:', incompleteFields);
+      console.warn('Tamanhos dos campos:', requiredFields.map(f => `${f}: ${analysis[f]?.length || 0}`).join(', '));
+    }
+    
+    // Log para debug de campos críticos
+    console.log('Campos gerados:', Object.keys(analysis));
+    console.log('Tamanho dominant_behavior:', analysis.dominant_behavior?.length || 0);
 
     // Registrar uso de tokens (estimado)
     const totalTokens = (aiData.usage?.total_tokens || 5000);
