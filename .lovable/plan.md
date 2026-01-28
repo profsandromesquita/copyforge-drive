@@ -1,199 +1,145 @@
 
+## O que eu já investiguei (com evidência)
 
-# Plano de Correção Definitiva: Botão "Regenerar" - Informações Avançadas
+### 1) O problema NÃO é “UI não atualiza”
+A UI está exibindo exatamente o que está salvo no banco para esse público/projeto.
 
-## Diagnóstico Detalhado
+Eu consultei os dados do projeto **“Comunidade SubHumano”** no workspace **“Sandro Mesquita”** e encontrei que o campo:
 
-### Problemas Identificados
+- `advanced_analysis.dominant_behavior` está salvo como **"O comportamento dominante é a  "**  
+- tamanho: **30 caracteres** (muito abaixo do esperado)
 
-A investigação revelou **três problemas distintos** que podem contribuir para o conteúdo incompleto:
+Ao mesmo tempo, os outros campos estão longos (300–500 caracteres). Ou seja: **a geração está vindo “boa” em quase tudo, mas especificamente `dominant_behavior` vem vazio/incompleto** e é isso que você vê na tela.
 
-#### 1. Truncamento da Resposta da IA (Causa Raiz Principal)
-Os dados no banco de dados mostram que o campo `dominant_behavior` do projeto "Comunidade SubHumano" contém apenas `"O comportamento dominante é a "` - uma frase incompleta/truncada.
+### 2) Causa raiz real (backend)
+A função `analyze-audience` hoje:
+- aceita o retorno do modelo mesmo com campo incompleto (apenas dá `console.warn`)
+- **depois debita créditos**
+- e retorna `analysis` para o frontend salvar
 
-Isso indica que a API de IA está cortando a resposta antes de completar todos os campos. A análise dos logs mostra:
-- `output_tokens: 2796` - relativamente baixo para 16 campos densos
-- O código define `max_tokens: 8000`, mas a IA pode estar parando antes por outras razões
-- **Não há verificação de `finish_reason`** para detectar truncamento
+Ou seja: quando o modelo devolve `dominant_behavior` incompleto (mesmo que raramente), **o sistema permite persistir o erro**.
 
-#### 2. Uso de Prop Estática no handleRegenerate
-No arquivo `AdvancedAnalysisTab.tsx`, a função `handleRegenerate` usa `segment` (prop original) ao invés de `localSegment`:
+O aumento de `max_tokens` para 12000 não resolve porque:
+- o problema não é falta de tokens do output total (os outros campos vêm completos)
+- o modelo simplesmente está retornando **um valor curto para 1 campo** dentro do JSON (tool call) e o código aceita.
 
-```typescript
-// Linha 159 - PROBLEMA
-segment,  // ← Usa prop original
+## Objetivo do conserto definitivo
+Garantir que, ao clicar em **Regenerar**, o sistema **nunca** salve (nem mostre) uma análise com `dominant_behavior` incompleto.
 
-// Linha 183-184 - PROBLEMA  
-const updatedSegment: AudienceSegment = {
-  ...segment,  // ← Usa prop original, não localSegment
-```
-
-Isso pode causar dessincronização entre o que é enviado para a API e o estado local.
-
-#### 3. Falta de Validação da Resposta da IA
-O código não valida se todos os campos obrigatórios foram retornados com conteúdo válido antes de salvar.
+Para isso, precisamos de um mecanismo de **validação + correção automática** no backend.
 
 ---
 
-## Solução Proposta
+## Plano de correção definitiva (mínimo impacto e focado só no fluxo “Regenerar/Gerar análise”)
 
-### Arquivo 1: `supabase/functions/analyze-audience/index.ts`
+### A) Corrigir definitivamente no backend (principal)
+**Arquivo:** `supabase/functions/analyze-audience/index.ts`
 
-#### Alteração 1.1: Aumentar max_tokens e adicionar verificação de truncamento
+#### A1) Tornar a validação “bloqueante”, não só log
+- Transformar a validação atual em uma regra:
+  - se `dominant_behavior` (e demais campos críticos) vier com tamanho < mínimo, a função **não pode** retornar sucesso “como se estivesse OK”.
 
-**Localização**: Linha 132
+Definir mínimo alinhado com a UI:
+- `dominant_behavior`: **>= 150 chars**
+- (podemos manter 150 para os demais campos críticos também, ou seguir uma tabela por campo)
 
-```typescript
-// DE:
-max_tokens: 8000,
+#### A2) Implementar “auto-repair” (1–2 tentativas) para completar SOMENTE os campos incompletos
+Quando detectar campos incompletos, executar automaticamente uma segunda chamada de IA para preencher apenas os campos faltantes.
 
-// PARA:
-max_tokens: 12000,  // Aumentar para garantir resposta completa
-```
+Estratégia:
+1. Primeira chamada: gera a análise completa (como hoje).
+2. Valida.
+3. Se houver incompletos (ex.: `dominant_behavior`):
+   - fazer uma segunda chamada com um **tool schema que contém somente os campos incompletos** como `required`
+   - instrução explícita: “gere novamente apenas esses campos; mínimo 150 caracteres; 2–4 frases; não deixe frases incompletas”.
+4. Merge: sobrescrever no objeto final somente os campos reparados.
+5. Validar novamente:
+   - se OK: retorna sucesso
+   - se ainda falhar: retorna erro controlado (422) e **não cobra créditos**
 
-#### Alteração 1.2: Verificar finish_reason após resposta
+Modelos:
+- manter a primeira chamada no modelo atual (para não mudar comportamento geral)
+- usar um modelo mais robusto apenas na etapa de “repair” (ex.: `google/gemini-3-flash-preview`) para aumentar a taxa de sucesso do campo problemático, sem encarecer tudo.
 
-**Localização**: Após linha 328 (após `const aiData = await aiResponse.json();`)
+#### A3) Debitar créditos SOMENTE se a análise final for válida
+Hoje debita sempre. Vamos alterar para:
+- somar tokens das tentativas (1ª + repair, se houver)
+- debitar somente se o retorno final passou na validação
 
-Adicionar verificação:
-```typescript
-const aiData = await aiResponse.json();
+Se falhar (422):
+- não debita
+- retorna payload de erro amigável e rastreável:
+  ```json
+  {
+    "error": "incomplete_analysis",
+    "incomplete_fields": ["dominant_behavior"],
+    "message": "A análise veio incompleta. Tente novamente."
+  }
+  ```
 
-// Verificar se a resposta foi truncada
-const finishReason = aiData.choices?.[0]?.finish_reason;
-if (finishReason === 'length') {
-  console.error('AVISO: Resposta da IA foi truncada por limite de tokens');
-  // Ainda processa, mas registra o problema
-}
-```
+#### A4) Melhorar logs (para auditoria e rastreio do problema)
+Adicionar logs que não dependem de “adivinhar”:
+- `workspace_id`, `segment.id` (se existir), e lista de `incomplete_fields`
+- tamanho de cada campo incompleto
+- número de tentativas realizadas
+- `finish_reason` quando disponível
 
-#### Alteração 1.3: Adicionar validação de campos obrigatórios
-
-**Localização**: Após linha 335 (após `const analysis = JSON.parse(...)`)
-
-Adicionar validação:
-```typescript
-const analysis = JSON.parse(toolCall.function.arguments);
-
-// Validar campos críticos
-const requiredFields = [
-  'psychographic_profile', 'consciousness_level', 'emotional_state',
-  'hidden_pain', 'primary_fear', 'emotional_desire', 'problem_misperception',
-  'internal_mechanism', 'limiting_belief', 'internal_narrative',
-  'internal_contradiction', 'dominant_behavior', 'decision_trigger',
-  'communication_style', 'psychological_resistances'
-];
-
-const incompleteFields = requiredFields.filter(field => {
-  const value = analysis[field];
-  return !value || typeof value !== 'string' || value.length < 50;
-});
-
-if (incompleteFields.length > 0) {
-  console.warn('Campos incompletos detectados:', incompleteFields);
-  // Opcionalmente, tentar nova geração ou retornar erro específico
-}
-```
-
-#### Alteração 1.4: Adicionar logging detalhado do conteúdo
-
-**Localização**: Após parsing do analysis
-
-```typescript
-// Log para debug de campos críticos
-console.log('Campos gerados:', Object.keys(analysis));
-console.log('Tamanho dominant_behavior:', analysis.dominant_behavior?.length || 0);
-```
+Isso garante que, se ainda ocorrer, teremos prova objetiva no log do porquê e em que etapa falhou.
 
 ---
 
-### Arquivo 2: `src/components/project-config/AdvancedAnalysisTab.tsx`
+### B) Ajuste mínimo no frontend para lidar com o novo erro “422 incomplete_analysis”
+**Arquivo:** `src/components/project-config/AdvancedAnalysisTab.tsx`
 
-#### Alteração 2.1: Corrigir handleRegenerate para usar localSegment
+Hoje o frontend só trata bem:
+- `insufficient_credits`
+- `rate_limit`
+- demais viram “Erro ao regenerar análise. Tente novamente.”
 
-**Localização**: Linhas 157-187 (função handleRegenerate)
+Vamos ajustar apenas o necessário:
+- se o backend retornar `incomplete_analysis`, mostrar toast específico:
+  - “A IA retornou uma análise incompleta (Comportamento Dominante). Clique em Regenerar novamente.”
+- e **não** atualizar estado local nem salvar no banco (isso já acontece automaticamente se a função retornar status != 200; mas garantiremos mensagem clara para o usuário)
 
-```typescript
-// Linha 159 - CORRIGIR
-// DE:
-segment,
-
-// PARA:
-segment: localSegment,
-
-// Linhas 183-184 - CORRIGIR  
-// DE:
-const updatedSegment: AudienceSegment = {
-  ...segment,
-
-// PARA:
-const updatedSegment: AudienceSegment = {
-  ...localSegment,
-```
-
-#### Alteração 2.2: Corrigir handleGenerate para usar localSegment
-
-**Localização**: Linhas 92-95 e 118-119 (função handleGenerate)
-
-```typescript
-// Linha 94 - CORRIGIR
-// DE:
-segment,
-
-// PARA:
-segment: localSegment,
-
-// Linhas 118-119 - CORRIGIR
-// DE:
-const updatedSegment: AudienceSegment = {
-  ...segment,
-
-// PARA:
-const updatedSegment: AudienceSegment = {
-  ...localSegment,
-```
-
-#### Alteração 2.3: Adicionar atualização de editedAnalysis após regeneração
-
-**Localização**: Após `setLocalSegment(updatedSegment)` na handleRegenerate
-
-```typescript
-// Atualizar estado local imediatamente para refletir na UI
-setLocalSegment(updatedSegment);
-// Também atualizar editedAnalysis para manter sincronizado
-setEditedAnalysis(data.analysis);
-```
+Observação: não vamos mexer no resto do fluxo (edição, salvar manual, fechar etc.).
 
 ---
 
-## Resumo das Alterações
+## Como vou validar que ficou resolvido (checklist objetivo)
 
-| Arquivo | Alteração | Propósito |
-|---------|-----------|-----------|
-| `analyze-audience/index.ts` | Aumentar max_tokens para 12000 | Evitar truncamento por limite de tokens |
-| `analyze-audience/index.ts` | Verificar finish_reason | Detectar e logar truncamentos |
-| `analyze-audience/index.ts` | Validar campos obrigatórios | Garantir integridade dos dados |
-| `analyze-audience/index.ts` | Adicionar logging detalhado | Facilitar debug futuro |
-| `AdvancedAnalysisTab.tsx` | Usar localSegment nas funções | Garantir consistência de dados |
-| `AdvancedAnalysisTab.tsx` | Atualizar editedAnalysis | Sincronizar estado de edição |
-
----
-
-## Resultado Esperado
-
-Após a implementação:
-
-1. A IA terá mais espaço (12000 tokens) para gerar respostas completas
-2. Truncamentos serão detectados e logados para investigação
-3. Campos incompletos serão identificados antes de salvar
-4. O frontend usará sempre os dados mais atualizados
-5. O conteúdo regenerado será exibido corretamente na UI
+1) No projeto problemático (Sandro Mesquita → Comunidade SubHumano), clicar “Regenerar” 3–5 vezes.
+2) Em todas as vezes:
+   - `dominant_behavior` deve ter **>= 150 caracteres**
+   - deve ser um texto completo (não terminar em “é a”, “é o”, etc.)
+3) Confirmar que, se a IA falhar em alguma tentativa:
+   - o usuário vê um toast “análise incompleta”
+   - a análise anterior não é sobrescrita
+   - créditos não são debitados no backend nessa tentativa falha
+4) Conferir logs da função para:
+   - presença de `attempt=1/2`, `incomplete_fields`
+   - tokens contabilizados corretamente
 
 ---
 
-## Restrições Respeitadas
+## Riscos e como mitigaremos
 
-- Apenas arquivos diretamente relacionados ao fluxo de regeneração foram alterados
-- Nenhuma funcionalidade externa foi modificada
-- A lógica de edição, salvamento e fechamento permanece inalterada
+- **Risco:** Repair loop infinito  
+  **Mitigação:** limitar tentativas (máximo 2: geração + 1 repair; ou 3 no máximo).
+- **Risco:** custo de tokens maior em casos raros  
+  **Mitigação:** repair só roda quando necessário; e podemos usar repair com prompt bem curto + schema minimal.
+- **Risco:** “mudança de comportamento” do texto final  
+  **Mitigação:** não mudar o modelo principal; apenas usar modelo melhor no repair do campo faltante.
+
+---
+
+## Entregáveis (arquivos que serão alterados)
+1) `supabase/functions/analyze-audience/index.ts`  
+   - validação bloqueante  
+   - auto-repair de campos incompletos  
+   - débito condicionado a sucesso  
+   - logs melhores  
+2) `src/components/project-config/AdvancedAnalysisTab.tsx`  
+   - tratamento de erro `incomplete_analysis` (toast específico)
+
+Nada além desses pontos será alterado, para respeitar sua restrição de escopo.
 
