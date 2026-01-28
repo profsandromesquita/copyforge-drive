@@ -91,7 +91,7 @@ export function AdvancedAnalysisTab({
     try {
       const { data, error } = await supabase.functions.invoke('analyze-audience', {
         body: { 
-          segment,
+          segment: localSegment,
           workspace_id: activeWorkspace.id,
           project_context: {
             brand_name: activeProject.brand_name,
@@ -116,7 +116,7 @@ export function AdvancedAnalysisTab({
       }
 
       const updatedSegment: AudienceSegment = {
-        ...segment,
+        ...localSegment,
         advanced_analysis: data.analysis,
         analysis_generated_at: new Date().toISOString()
       };
@@ -134,6 +134,8 @@ export function AdvancedAnalysisTab({
 
       // Atualizar estado local imediatamente para refletir na UI
       setLocalSegment(updatedSegment);
+      // Também atualizar editedAnalysis para manter sincronizado
+      setEditedAnalysis(data.analysis);
       // Atualizar estado do pai
       onUpdate(updatedSegments);
       // Depois recarregar do banco para sincronizar
@@ -156,7 +158,7 @@ export function AdvancedAnalysisTab({
     try {
       const { data, error } = await supabase.functions.invoke('analyze-audience', {
         body: { 
-          segment,
+          segment: localSegment,
           workspace_id: activeWorkspace.id,
           project_context: {
             brand_name: activeProject.brand_name,
@@ -181,7 +183,7 @@ export function AdvancedAnalysisTab({
       }
 
       const updatedSegment: AudienceSegment = {
-        ...segment,
+        ...localSegment,
         advanced_analysis: data.analysis,
         analysis_generated_at: new Date().toISOString()
       };
@@ -199,6 +201,8 @@ export function AdvancedAnalysisTab({
 
       // Atualizar estado local imediatamente para refletir na UI
       setLocalSegment(updatedSegment);
+      // Também atualizar editedAnalysis para manter sincronizado
+      setEditedAnalysis(data.analysis);
       // Atualizar estado do pai
       onUpdate(updatedSegments);
       // Depois recarregar do banco para sincronizar
