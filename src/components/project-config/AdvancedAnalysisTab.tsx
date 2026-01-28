@@ -112,6 +112,11 @@ export function AdvancedAnalysisTab({
           toast.error('Limite de requisições excedido. Tente novamente em alguns instantes.');
           throw error;
         }
+        if (error.message?.includes('incomplete_analysis') || error.context?.error === 'incomplete_analysis') {
+          const incompleteFields = error.context?.incomplete_fields || [];
+          toast.error(`A IA retornou uma análise incompleta${incompleteFields.length > 0 ? ` (${incompleteFields.join(', ')})` : ''}. Clique em Regenerar novamente.`);
+          throw error;
+        }
         throw error;
       }
 
@@ -177,6 +182,11 @@ export function AdvancedAnalysisTab({
         }
         if (error.message?.includes('rate_limit') || error.context?.error === 'rate_limit') {
           toast.error('Limite de requisições excedido. Tente novamente em alguns instantes.');
+          throw error;
+        }
+        if (error.message?.includes('incomplete_analysis') || error.context?.error === 'incomplete_analysis') {
+          const incompleteFields = error.context?.incomplete_fields || [];
+          toast.error(`A IA retornou uma análise incompleta${incompleteFields.length > 0 ? ` (${incompleteFields.join(', ')})` : ''}. Clique em Regenerar novamente.`);
           throw error;
         }
         throw error;
